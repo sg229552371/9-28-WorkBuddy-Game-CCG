@@ -70,20 +70,30 @@ vm.runInContext(`
   // 6) 工匠世界
   const aw = new World(1920,1080,false);
   console.assert(aw.npc && aw.exitBeacon && aw.monsters.length===0, "工匠世界安全区");
-  // 7) 击杀→进度/Boss/工匠雕像触发
+  // 7) 击杀→进度/Boss/工匠雕像触发（雕像改由「雕像池」投放：触发条件投配额 + 限制器决定落地）
   G.mainWorld.boss = null;
   G.run.kills = CFG.levels[0].artisanAtKills;
   onMonsterKilled(G.mainWorld, { x:500, y:500, d: CFG.monsters.NM0010, dead:true });
-  console.assert(G.run.artisanSpawned, "工匠雕像按击杀进度刷出");
-  console.assert(G.mainWorld.altars.some(a=>a.id==="ALTAR_005"), "工匠雕像在祭坛列表");
+  // 推进池逻辑：触发条件在池更新时结算 → 配额 → 随机延迟 → 落地（压缩延迟，避免依赖随机时长）
+  updateArtisanPool(G.mainWorld, 0);
+  console.assert(G.run.artisanPool.quota >= 1, "击杀里程碑把配额投进雕像池");
+  console.assert(G.mainWorld.altars.every(a => a.id !== "ALTAR_005"), "配额未就绪时雕像不直接落地（限制器：延迟投放）");
+  G.run.artisanPool.readyAt = 0;
+  updateArtisanPool(G.mainWorld, 0.1);
+  console.assert(G.run.artisanSpawned && G.mainWorld.altars.some(a=>a.id==="ALTAR_005"), "配额经限制器落地为工匠雕像");
   G.run.kills = CFG.levels[0].progressGoal;
   onMonsterKilled(G.mainWorld, { x:500, y:500, d: CFG.monsters.NM0010, dead:true });
   console.assert(G.run.bossSpawned && G.mainWorld.boss, "进度满触发 Boss");
-  // 8) Boss 击败 → 撤离点代币（5.2 按文档重构）
+  console.assert(G.run.stats && G.run.stats.timeToBoss === G.run.runTime, "Boss 出现时记录 timeToBoss（结算 Boss 耗时依赖）");
+  // 8) Boss 击败 → 死亡位置生成撤离点雕像（5.2 按文档定稿）
   G.mainWorld.boss.dead = true; G.mainWorld.boss.x = 800; G.mainWorld.boss.y = 400;
   G.mainWorld.monsters = G.mainWorld.monsters.filter(m => !m.dead);
+  const _rtBak = G.run.runTime;
+  G.run.runTime = _rtBak + 12;             // 模拟 Boss 战耗时 12 秒
   onBossDefeated(G.mainWorld);
-  console.assert(G.run.extractToken === true, "Boss 击败掉落撤离点代币");
+  console.assert(G.run.stats.bossFightTime === 12, "Boss 耗时按 出现→击杀 计算，got " + G.run.stats.bossFightTime);
+  G.run.runTime = _rtBak;
+  console.assert(G.run.exitStatue && G.run.exitStatue.x === 800 && G.run.exitStatue.y === 400, "Boss 击败在死亡位置生成撤离点雕像");
   console.assert(CFG.extract.channel === 8.0, "撤离读条 8 秒");
   // 9) 局外元进度：结晶 / 局外等级 / 出战加成
   console.assert(typeof Meta.data.crystals === "number", "Meta 默认数据");
@@ -102,24 +112,33 @@ vm.runInContext(`
   console.assert(boosted.hp === CFG.heroes[0].hp + 8 && boosted.atk === CFG.heroes[0].atk + 2
     && boosted.def === CFG.heroes[0].def + 1 && boosted.outLevel === 2, "局外加成生效");
   console.assert(CFG.heroes[0].hp === 100, "CFG 原表不被污染");
-  // 9b) 武器等级（金币升级，工匠世界内；技能等级 = 武器等级；1-10 手写表）
+  // 9b) 武器/技能等级（局外结晶升级；技能等级 = 武器等级；上限 100，公式曲线）
+  console.assert(CFG.weaponLevel.maxLv === 100, "武器/技能等级上限 = 100");
   console.assert(Meta.weaponLv("H001") === 1, "武器初始 LV1");
-  console.assert(Meta.weaponUpCost("H001") === CFG.weaponLevels[1].cost, "LV1→2 消耗 = 表值");
+  console.assert(Meta.weaponUpCost("H001") === weaponLevelEntry(1).cost, "LV1→2 消耗 = 曲线值");
+  console.assert(weaponLevelEntry(1).cost === 120 && weaponLevelEntry(2).cost === 130,
+    "成本曲线 120 → 130（×1.05 取整到 10），got " + weaponLevelEntry(1).cost + "/" + weaponLevelEntry(2).cost);
   console.assert(Meta.weaponUp("H001") && Meta.weaponLv("H001") === 2, "武器升级成功（永久资产）");
   const skBoosted = applyOutLevel(CFG.heroes[0]);
   console.assert(skBoosted.weaponLv === 2 && skBoosted.outSkillLv === 2, "出战副本带武器等级");
-  // 武器等级伤害走手写表（技能 dmgMul × skillMul；普攻 × basicMul）
+  // 武器等级伤害走曲线（技能 dmgMul × skillMul；普攻 × basicMul）
   // 注：清空武器栏模组，避免模组连接/套装（16.7）加成混入本断言
   G.run = run; G.heroDef = skBoosted;
   run.weaponInv.items.length = 0;
   const baseDmg = CFG.skills[CFG.weapons[skBoosted.weapon].skills.skill].dmgMul;
   const baseBasic = CFG.skills[CFG.weapons[skBoosted.weapon].skills.basic].dmgMul;
   recomputeWeapon();
-  console.assert(Math.abs(G.run.weapon.skill.dmgMul - baseDmg * CFG.weaponLevels[1].skillMul) < 1e-6,
-    "技能 LV2 伤害走武器表 ×" + CFG.weaponLevels[1].skillMul + ", got " + G.run.weapon.skill.dmgMul);
-  console.assert(Math.abs(G.run.weapon.basic.dmgMul - baseBasic * CFG.weaponLevels[1].basicMul) < 1e-6,
-    "普攻 LV2 伤害走武器表 ×" + CFG.weaponLevels[1].basicMul);
-  console.assert(Meta.weaponLv("H001") === 2 && Meta.weaponUpCost("H001") === CFG.weaponLevels[2].cost, "LV2→3 消耗 = 表值");
+  const lv2 = weaponLevelEntry(2);
+  console.assert(Math.abs(G.run.weapon.skill.dmgMul - baseDmg * lv2.skillMul) < 1e-6,
+    "技能 LV2 伤害走曲线 ×" + lv2.skillMul + ", got " + G.run.weapon.skill.dmgMul);
+  console.assert(Math.abs(G.run.weapon.basic.dmgMul - baseBasic * lv2.basicMul) < 1e-6,
+    "普攻 LV2 伤害走曲线 ×" + lv2.basicMul);
+  console.assert(Meta.weaponLv("H001") === 2 && Meta.weaponUpCost("H001") === weaponLevelEntry(2).cost, "LV2→3 消耗 = 曲线值");
+  // 曲线边界：满级不再可升、成本为 0；100 级倍率 = 1 + 每级增量 × 99
+  const lvMax = weaponLevelEntry(CFG.weaponLevel.maxLv);
+  console.assert(lvMax.cost === 0 && weaponLevelEntry(999).lv === CFG.weaponLevel.maxLv, "满级/越界等级安全");
+  console.assert(Math.abs(lvMax.basicMul - (1 + 0.04 * 99)) < 1e-9 && Math.abs(lvMax.skillMul - (1 + 0.06 * 99)) < 1e-9,
+    "100 级倍率符合线性曲线，got basic=" + lvMax.basicMul + " skill=" + lvMax.skillMul);
   // 10) 属性卡牌（8.3：升级获得资产 / 工匠世界使用 / 同属性去重）
   console.assert(run.cardAssets === 0 && run.cardRefresh === CFG.cardPool.refreshPerRun && run.appliedCards.length === 0, "卡牌初始状态");
   run.exp = 999; gainExp(0);
@@ -163,10 +182,11 @@ vm.runInContext(`
   console.assert(Math.abs(computeStats().cdMul - 0.96) < 1e-6, "冷却卡乘算生效");
   run.appliedCards.push({ attr: "lifesteal", q: 0, value: 0.02 });
   console.assert(Math.abs(computeStats().lifesteal - 0.02) < 1e-6, "吸血卡生效");
-  // 刷新次数
+  // 刷新次数（规则2：免费次数优先，用完后扣金币；金币不足则失败）
   run.cardRefresh = 1;
   console.assert(refreshCards() && run.cardRefresh === 0, "刷新 -1");
-  console.assert(!refreshCards(), "次数用完不能刷新");
+  run.coin = 0;
+  console.assert(!refreshCards(), "免费耗尽且金币不足不能刷新");
   G.inArtisan = false;
   // 11) 批次 B：关卡扩展（2/3 关配置完整性 + 解锁链）
   console.assert(CFG.levels.length === 3, "3 个关卡");
@@ -258,17 +278,16 @@ vm.runInContext(`
   console.assert(!comp.alive && comp.hp === 0, "队友可阵亡");
   console.assert(nearestHero(0, 0) === G.player || nearestHero(0, 0).alive !== false, "阵亡队友不再成为目标");
   G.team = null;
-  // 17) 撤离信标祭坛 → 代币（场景掉落来源）
+  // 17) 撤离点仅由 Boss 生成（场景掉落撤离信标已删除）
   G.team = [CFG.heroes[0]]; G.run = createRun(CFG.heroes[0]); G.heroDef = CFG.heroes[0];
-  G.mainWorld.altars.push({ cfg: CFG.altars.EXTRACT_BEACON, x: 500, y: 500, id: "T" });
-  const exAltar = G.mainWorld.altars.find(a => a.id === "T");
-  G.mainWorld.triggerAltar(exAltar);
-  console.assert(G.run.extractToken === true, "撤离信标祭坛 → 获得代币");
-  console.assert(!G.mainWorld.altars.some(a => a.id === "T"), "触发后信标消失");
-  // 上限 1：再次触发不再获得
-  G.mainWorld.altars.push({ cfg: CFG.altars.EXTRACT_BEACON, x: 500, y: 500, id: "T2" });
-  G.mainWorld.triggerAltar(G.mainWorld.altars.find(a => a.id === "T2"));
-  console.assert(G.mainWorld.altars.every(a => a.id !== "T2"), "已有代币时信标仍消失（不重复获得）");
+  console.assert(!CFG.altars.EXTRACT_BEACON, "不应再存在场景掉落撤离信标配置（撤离点只由 Boss 生成）");
+  G.mainWorld.boss = { x: 500, y: 500, dead: true };
+  onBossDefeated(G.mainWorld);
+  console.assert(G.run.exitStatue && G.run.exitStatue.x === 500 && G.run.exitStatue.y === 500, "Boss 死亡位置生成雕像");
+  // 上限 1：再次结算不重复生成（位置不变）
+  G.mainWorld.boss = { x: 900, y: 900, dead: true };
+  onBossDefeated(G.mainWorld);
+  console.assert(G.run.exitStatue.x === 500 && G.run.exitStatue.y === 500, "已有雕像时不重复生成（位置不变）");
   // 18) 保险契约（方案 A）——使用当前 G.run；3 件等价装备全损 → 3 份契约全保护
   G.run.backpack = new Inventory(6, 4, "backpack");
   G.run.weaponInv = new Inventory(CFG.weaponGrid.cols, CFG.weaponGrid.rows, "weapon");
@@ -282,12 +301,19 @@ vm.runInContext(`
   console.assert(pen2.lost.length === 0, "全部保护后无损失");
   console.assert(insuranceCount(G.run) === 0, "契约已消耗");
   console.assert(!pen2.lost.some(i => i.kind === "insurance"), "契约本身不参与损失");
-  // 撤离折算：n 份 × crystalRefund
-  console.assert(3 * CFG.insurance.crystalRefund === 60, "3 份契约撤离折算 60 结晶");
+  // 撤离折算：保险契约按**固定价值 × 统一折算率**折算（不再有独立 crystalRefund）
+  console.assert(CFG.insurance.crystalRefund === undefined, "保险契约无独立折算价（统一走固定价值×折算率）");
+  console.assert(Math.floor(3 * CFG.insurance.value * CFG.settleConvert.valueRate) === 90, "3 份契约按固定价值统一折算 90 结晶");
   // 19) 空间裂缝子地图
   const rw = new World(CFG.rift.worldSize, CFG.rift.worldSize, false, "rift");
   console.assert(rw.returnBeacon && rw.monsters.length > 0 && rw.circles.length === 2, "裂缝子地图初始化（信标+怪+2圆）");
   console.assert(rw.kind === "rift" && !rw.isMain, "裂缝世界类型正确");
+  // 开场冻结（5.1）：子地图进场即冻结 3 秒（全员静止+无敌）；冻结行为本身由 rift_test.js 专项覆盖，
+  // 此处直接跳过，以便继续验证一次性投放数量与返回信标读条
+  console.assert(rw.freezeTimer === CFG.rift.freezeTime, "子地图应带开场冻结");
+  console.assert(rw.monsters.length === CFG.rift.defaultSpawnCount + rw.eliteTargetCount(),
+    "无任务直接构造时按兜底数量一次性投放，got " + rw.monsters.length);
+  rw.freezeTimer = 0;
   // 返回信标读条：圈内积累（CFG.rift.channel=5），8 帧后应积累 4s 且未触发（<5）
   console.assert(CFG.rift.channel === 5.0, "返回读条 5 秒");
   rw.returnProgress = 0;
@@ -307,7 +333,7 @@ vm.runInContext(`
   const baseM = new Monster("NM0010", 0, 0, 1);
   const em2 = new Monster("NM0010", 800, 800, 1);
   applyElite(em2);
-  console.assert(em2.elite && em2.elite.length >= 1 && em2.elite.length <= 2, "精英词缀 1-2 条");
+  console.assert(em2.isElite && em2.eliteAffixes.length >= 1 && em2.eliteAffixes.length <= 2, "精英词缀 1-2 条");
   console.assert(em2.r > baseM.r, "精英体型放大");
   // 血量断言改多次抽样：词缀随机可能抽到无 hpMul 组合（迅捷/狂暴），20 次必出血量加成
   let hpBoosted = false;
@@ -322,5 +348,96 @@ vm.runInContext(`
   G.activeWorld = G.mainWorld;
   onMonsterKilled(G.mainWorld, em3);
   console.assert(G.run.backpack.items.some(i => i.kind === "chest"), "精英击杀必掉宝箱入包");
+
+  // 21) 独立精英怪 ED（3.3 原方案：关卡层定点投放，不进随机圆）
+  {
+    const eds = Object.keys(CFG.monsters).filter(k => k.slice(0, 2) === "ED");
+    console.assert(eds.length === 3 && eds.every(k => CFG.monsters[k].sprite), "3 只 ED 精英已定义");
+    const nmB = CFG.monsters.NM0010, edB = CFG.monsters.ED0001;
+    console.assert(edB.hp > nmB.hp && edB.atk > nmB.atk && edB.def > nmB.def && edB.radius > nmB.radius, "ED 属性强于小怪");
+    console.assert(CFG.levels.every(l => l.eliteBase > 0 && l.elitePool && l.elitePool.split("/").every(s => s.slice(0, 2) === "ED")), "关卡 eliteBase/elitePool");
+    console.assert(Object.keys(CFG.spawnCircles).every(k => !/ED|BS/.test(CFG.spawnCircles[k].pool)), "圆模板 pool 无 ED/BS");
+    G.levelCfg = CFG.levels[0]; G.heroDef = CFG.heroes[0]; G.team = [CFG.heroes[0]];
+    G.player = { x: 100, y: 100, r: 18 };
+    G.run = createRun(G.heroDef);
+    const w = new World(1920, 1920, true); G.mainWorld = w;
+    const cc = { ...CFG.spawnCircles.SC01, x: 1700, y: 1700, radius: 30 };
+    let badED = 0;
+    for (let i = 0; i < 100; i++) { w.monsters = []; w.spawnWave(cc); badED += w.monsters.filter(m => m.defId.slice(0, 2) === "ED").length; }
+    console.assert(badED === 0, "spawnWave 不产 ED（100 波抽样）");
+    // 精英投放：目标数 = round(eliteBase×倍率)，首发延迟后定点投放，达标不补投
+    G.run.scale.eliteCount.mul = 2;
+    console.assert(w.eliteTargetCount() === CFG.levels[0].eliteBase * 2, "精英数量倍率 → 目标数翻倍");
+    w.monsters = []; w.eliteTimer = CFG.eliteSpawn.firstDelay;
+    let guard = 0;
+    while (w.eliteTimer > 0.5 + 1e-9 && guard++ < 100) w.updateEliteSpawn(0.5);
+    console.assert(w.countElites() === 0, "首投延迟前不投放");
+    w.updateEliteSpawn(0.5);
+    const el = w.monsters.find(m => m.isElite);
+    console.assert(el && el.defId.slice(0, 2) === "ED" && el.eliteAffixes.length >= 1 && el.eliteAffixes.length <= 2, "到点投放 1 只 ED（带 1~2 词缀）");
+    G.run.scale.eliteCount.mul = 1;   // 目标数回到 eliteBase
+    w.eliteTimer = 0; w.updateEliteSpawn(0.01);
+    console.assert(w.countElites() === CFG.levels[0].eliteBase, "未达目标继续补投");
+    w.eliteTimer = 0; w.updateEliteSpawn(0.01);
+    console.assert(w.countElites() === CFG.levels[0].eliteBase, "达标不补投");
+    // 裂缝走同一套投放（独立 eliteBase）
+    const rw2 = new World(CFG.rift.worldSize, CFG.rift.worldSize, false, "rift");
+    console.assert(rw2.eliteBaseCount() === CFG.rift.eliteBase && rw2.eliteTargetCount() === CFG.rift.eliteBase, "裂缝独立 eliteBase");
+    console.assert(new World(1920, 1080, false).eliteBaseCount() === 0, "工匠世界不投放精英");
+  }
+
+  // 22) 邪神雕像 5 变体（多效果并列倍率表：覆盖/叠加/永久）
+  {
+    G.levelCfg = CFG.levels[0]; G.heroDef = CFG.heroes[0];
+    G.run = createRun(G.heroDef);
+    G.player = { x: 100, y: 100, r: 18 };
+    const w = new World(1920, 1920, true); G.mainWorld = w;
+    const ids = ["ALTAR_004a", "ALTAR_004b", "ALTAR_004c", "ALTAR_004d", "ALTAR_004e"];
+    const keyOf = { ALTAR_004a: "smallCount", ALTAR_004b: "smallStat", ALTAR_004c: "eliteCount", ALTAR_004d: "eliteStat", ALTAR_004e: "bossStat" };
+    console.assert(ids.every(k => CFG.altars[k] && CFG.altars[k].weight >= 4 && CFG.altars[k].effects[0].type === "adjustMonsters"
+      && CFG.altars[k].effects[0].range[0] === -100 && CFG.altars[k].effects[0].range[1] === 100), "邪神 5 行配置（adjustMonsters / ±100）");
+    console.assert(Object.keys(CFG.monsterScale.targets).length === 5 && CFG.monsterScale.targets["精英数量"].key === "eliteCount", "monsterScale 5 目标映射");
+    const trig = (id, ov) => {
+      const b = CFG.altars[id];
+      const cfg = ov ? { ...b, effects: b.effects.map(e => ({ ...e, ...ov })) } : b;
+      const a = { cfg, x: 500, y: 500, id }; w.altars.push(a); w.triggerAltar(a);
+    };
+    for (const id of ids) {
+      for (const k in G.run.scale) G.run.scale[k] = { mul: 1, remain: 0 };
+      trig(id);
+      console.assert(G.run.scale[keyOf[id]].remain === 30, id + " 生效写入对应 scale 条目");
+      console.assert(Object.keys(G.run.scale).filter(k => k !== keyOf[id]).every(k => G.run.scale[k].remain === 0), id + " 不误改其他条目");
+    }
+    // 同目标再次触发：覆盖（非叠乘）并重新计时
+    G.run.scale.smallStat = { mul: 1, remain: 0 };
+    trig("ALTAR_004b", { range: [50, 50] }); trig("ALTAR_004b", { range: [50, 50] });
+    console.assert(Math.abs(G.run.scale.smallStat.mul - 1.5) < 1e-9 && G.run.scale.smallStat.remain === 30, "同目标覆盖非叠乘 + 重新计时");
+    // 5 变体可同时并存（叠加）
+    for (const id of ids) trig(id);
+    console.assert(ids.every(id => G.run.scale[keyOf[id]].remain === 30), "5 变体可叠加并存");
+    // 永久（-1）不倒计时
+    G.run.scale.bossStat = { mul: 1, remain: 0 };
+    trig("ALTAR_004e", { range: [40, 40], duration: -1 });
+    // 隔离计时验证：清空怪场并桩化玩家承伤，避免超大 dt 下怪物/弹道命中触发未实现方法
+    w.monsters = []; w.circles = []; w.enemyBullets = []; w.eliteTimer = 1e9;
+    G.player.takeDamage = () => { };
+    w.update(120);   // 远超 30s
+    console.assert(G.run.scale.bossStat.remain === -1 && Math.abs(G.run.scale.bossStat.mul - 1.4) < 1e-9, "duration=-1 永久不倒计时");
+    console.assert(!("monsterDebuff" in G.run), "派生 HUD 摘要字段已清理（HUD 直接遍历 scale）");
+    // 作用点：小怪数量 / 刷新间隔 / 小怪属性 / BOSS属性
+    const cc = { ...CFG.spawnCircles.SC01, x: 1700, y: 1700, radius: 30 };
+    for (const k in G.run.scale) G.run.scale[k] = { mul: 1, remain: 0 };
+    w.monsters = []; G.run.scale.smallCount.mul = 2; w.spawnWave(cc);
+    console.assert(w.monsters.length === CFG.spawnCircles.SC01.waveSize * 2, "小怪数量 → 每波 ×2");
+    console.assert(Math.abs(w.spawnInterval(CFG.spawnCircles.SC01) - CFG.spawnCircles.SC01.interval / 2) < 1e-9, "小怪数量 → 刷新间隔 ÷mul");
+    G.run.scale.smallCount.mul = 1; G.run.scale.smallStat.mul = 3;
+    const nmS = w.spawnMonster("NM0010", 1500, 1500);
+    console.assert(Math.abs(nmS.hpMax - 20 * 3) < 1e-6 && Math.abs(nmS.atk - 8 * 3) < 1e-6, "小怪属性 → 新怪 hp/atk ×3");
+    G.run.scale.smallStat.mul = 1; G.run.scale.bossStat.mul = 2;
+    w.findFreeSpot = () => ({ x: 900, y: 900 }); w.bossSpawned = false; spawnBoss(w);
+    console.assert(Math.abs(w.boss.hpMax - CFG.monsters[G.levelCfg.boss].hp * 2) < 1e-6, "BOSS属性 → BOSS 生成时 hp ×2");
+    G.run.scale.bossStat.mul = 1;
+  }
+
   console.log("SMOKE OK");
 `, ctx, { filename: "inline" });

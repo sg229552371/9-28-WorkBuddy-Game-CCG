@@ -11,14 +11,38 @@
   <!-- 游戏画布（局内） -->
   <canvas id="game-canvas" width="1920" height="1080"></canvas>
 
+  <!-- ====== 界面层：主菜单 ====== -->
+  <div id="screen-main" class="screen hidden">
+    <h1 class="title">弹幕射击 Roguelike × 背包肉鸽</h1>
+    <p class="subtitle">搜打撤 · 枪火与背包的极限博弈</p>
+    <div class="panel main-panel">
+      <button id="btn-main-start" class="btn primary big">开始游戏</button>
+      <button id="btn-main-meta" class="btn big">局外成长</button>
+    </div>
+  </div>
+
   <!-- ====== 界面层：关卡选择 ====== -->
-  <div id="screen-level" class="screen">
+  <div id="screen-level" class="screen hidden">
     <h1 class="title">弹幕射击 Roguelike × 背包肉鸽</h1>
     <p class="subtitle">HTML 原型 · 首版基准（第十六章）</p>
     <div class="panel level-panel">
       <h2>关卡选择</h2>
       <div id="level-list"></div>
       <div class="tip">完成目标击杀数或坚持到时限 → 触发 Boss；击败 Boss 生成撤离点；工匠雕像按击杀进度刷新。</div>
+      <div class="btn-row"><button id="btn-level-back" class="btn ghost">返回主菜单</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：局外成长 ====== -->
+  <div id="screen-meta" class="screen hidden">
+    <div class="panel meta-panel">
+      <div class="meta-head">
+        <h2>局外成长</h2>
+        <div id="meta-crystals" class="meta-crystals">◆ 进化结晶 <b>0</b></div>
+      </div>
+      <div id="meta-char-list"></div>
+      <div class="tip">局外等级提升基础属性；武器等级 = 技能等级，同步强化普攻与主动技能。升级消耗进化结晶（撤离/击杀获得，死亡仅保留 30%）。</div>
+      <div class="btn-row"><button id="btn-meta-back" class="btn ghost">返回主菜单</button></div>
     </div>
   </div>
 
@@ -78,7 +102,7 @@
       </div>
       <div class="bp-body" id="bp-grid-unit">
         <div class="grid-zone">
-          <h3>武器栏（放这里才生效）4×3</h3>
+          <h3>武器栏 · 小队技能栏（放这里才生效）4×3</h3>
           <div id="grid-weapon" class="grid w43"></div>
           <div id="weapon-tags" class="tags"></div>
         </div>
@@ -119,7 +143,7 @@
         </div>
         <div id="art-grids" class="art-grids"><!-- 背包/武器栏单元在此处与背包面板间移动 --></div>
       </div>
-      <div class="tip">升级获得属性卡牌资产，仅可在工匠世界使用；同一属性使用后本局不再出现。</div>
+      <div class="tip">升级获得属性卡牌资产，仅可在工匠世界使用；生效后<b>对小队全体成员</b>（队长 + 队友）生效；同一属性使用后本局不再出现。</div>
     </div>
   </div>
 

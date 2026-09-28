@@ -24,7 +24,7 @@ const Game = {
       UI.toast("本地文件模式：素材抠图被浏览器安全策略禁用（角色/怪物带底色）。建议通过助手预览打开", "", 5000);
     }
     G.state = "menu";
-    UI.showScreen("screen-level");
+    UI.showScreen("screen-main");   // 启动落到主菜单（→ 关卡选择 → 角色选择）
     requestAnimationFrame((t) => this.loop(t));
   },
   fitCanvas() {
@@ -39,10 +39,11 @@ const Game = {
     UI.selectedChars = [];   // 每次进入选角重新组队
     UI.buildCharList();
     const startBtn = document.getElementById("btn-char-start");
-    startBtn.disabled = true;
-    startBtn.textContent = `开始游戏（0/${CFG.team.maxSize}）`;
-    document.getElementById("screen-level").classList.add("hidden");
-    document.getElementById("screen-character").classList.remove("hidden");
+    if (startBtn) {
+      startBtn.disabled = true;
+      startBtn.textContent = `开始游戏（0/${CFG.team.maxSize}）`;
+    }
+    UI.showScreen("screen-character");
   },
   startRun(chars) {
     // 多角色组队：1~3 名英雄，第一名是队长（玩家操控），其余为 AI 队友
@@ -58,43 +59,70 @@ const Game = {
     G.subWorld = null;
     G.inArtisan = false;
     G.activeWorld = G.mainWorld;
+    recomputeWeapon();   // 开局即解析全队技能（含队友），避免首帧前 c.skills 为空
     G.state = "playing";
     UI.showHudOnly();
     UI.toast(`进入 ${G.levelCfg.name} · 局外 LV${G.heroDef.outLevel} · WASD 移动 · Space 技能 · B 背包`, "gold");
   },
-  backToMenu() {
+  /* 清理局内状态（返回任一界面层前的统一收尾，不动 settings/config） */
+  _clearRunState() {
     G.state = "menu"; G.run = null; G.player = null; G.team = null;
     G.mainWorld = null; G.subWorld = null; G.riftWorld = null; G.activeWorld = null;
     G.inArtisan = false; G.inRift = false;
     UI.toggleBackpack(false); UI.toggleArtisan(false);
+  },
+  backToMenu() {
+    // 语义保持：回到【关卡选择页】（结算/死亡界面的「确认返回选关」依赖此落点）
+    this._clearRunState();
     UI.buildLevelList();
     UI.showScreen("screen-level");
+  },
+  toMainMenu() {
+    // 回到【主菜单】（清理逻辑与 backToMenu 一致，仅落点不同）
+    this._clearRunState();
+    UI.buildLevelList();
+    UI.showScreen("screen-main");
+  },
+  openLevelSelect() {
+    // 主菜单「开始游戏」→ 关卡选择页
+    G.state = "menu";
+    UI.buildLevelList();
+    UI.showScreen("screen-level");
+  },
+  openMeta() {
+    // 主菜单「局外成长」→ 局外成长界面
+    G.state = "menu";
+    UI.renderMeta();
+    UI.showScreen("screen-meta");
   },
 
   /* ---------- 事件（事件总线 13.14） ---------- */
   bindEvents() {
-    document.getElementById("btn-char-back").onclick = () => {
-      G.state = "menu";
-      document.getElementById("screen-character").classList.add("hidden");
-      document.getElementById("screen-level").classList.remove("hidden");
-    };
-    document.getElementById("btn-char-start").onclick = () => {
+    // 空值保护的事件绑定：测试 DOM 桩下元素可能缺失，不应抛异常
+    const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+    on("btn-main-start", () => this.openLevelSelect());        // 主菜单 → 关卡选择
+    on("btn-main-meta", () => this.openMeta());                // 主菜单 → 局外成长
+    on("btn-level-back", () => this.toMainMenu());             // 关卡选择 → 主菜单
+    on("btn-meta-back", () => this.toMainMenu());              // 局外成长 → 主菜单
+    on("btn-char-back", () => this.openLevelSelect());         // 角色选择 → 关卡选择
+    on("btn-char-start", () => {
       if (UI.selectedChars && UI.selectedChars.length) this.startRun(UI.selectedChars);
-    };
-    document.getElementById("btn-bp-close").onclick = () => UI.toggleBackpack(false);
-    document.getElementById("btn-artisan-close").onclick = () => UI.toggleArtisan(false);
-    document.getElementById("btn-card-refresh").onclick = () => {
-      if (!refreshCards(true)) UI.toast("刷新失败（免费次数用完且结晶不足 ◆15）", "bad");
+    });
+    on("btn-bp-close", () => UI.toggleBackpack(false));
+    on("btn-artisan-close", () => UI.toggleArtisan(false));
+    on("btn-card-refresh", () => {
+      refreshCards();          // 免费次数优先，用完后扣金币；失败（金币不足）时内部已 toast
       UI.renderCards();
-    };
-    document.getElementById("btn-settle-ok").onclick = () => this.backToMenu();
-    document.getElementById("btn-death-ok").onclick = () => this.backToMenu();
+    });
+    on("btn-settle-ok", () => this.backToMenu());
+    on("btn-death-ok", () => this.backToMenu());
 
     EventBus.on("openArtisanUI", () => UI.toggleArtisan(true));
     EventBus.on("enterArtisan", () => {
       G.subWorld = new World(1920, 1920, false);   // 工匠世界：固定 1920×1920（与关卡地图统一）
       G.inArtisan = true;
       G.activeWorld = G.subWorld;
+      clearExtractChannel();   // 离开主地图 → 撤离读条状态清空（雕像保留，回来可继续读）
       // 出生点规则：出口正上方不远处，但在出口判定圈之外（圈内会自动累计返回读条）
       const exitR = 100 * CFG.altarJudgeMul;
       G.player.x = G.subWorld.exitBeacon.x;
@@ -118,19 +146,19 @@ const Game = {
     /* ---------- 空间裂缝（5.1 / 13.10） ---------- */
     EventBus.on("enterRift", () => {
       if (G.state !== "playing" || G.inRift) return;
-      if (G.run.extractChanneling) { G.run.extractChanneling = false; G.run.extractProgress = 0; }   // 传送取消撤离读条（代币保留）
+      if (G.run.extractChanneling) clearExtractChannel();   // 传送取消撤离读条（雕像保留）
       G.riftReturnPos = { x: G.player.x, y: G.player.y };       // 保存 A 地图离开位置
+      // 先定任务、先把玩家挪到子地图出生点：子地图构造时会按 spawnCount 一次性投放敌人并据此避让玩家
+      const tw = {}; CFG.rift.tasks.forEach((t, i) => tw[i] = t.weight);
+      const tdef = CFG.rift.tasks[Number(U.weightedPick(tw))];
+      G.run.riftKills = 0; G.run.riftRewarded = false;
+      G.run.riftTask = { ...tdef, remain: tdef.time || 0, done: false, failed: false };
+      G.player.x = CFG.rift.worldSize / 2; G.player.y = CFG.rift.worldSize / 2;
       G.riftWorld = new World(CFG.rift.worldSize, CFG.rift.worldSize, false, "rift");
       G.activeWorld = G.riftWorld;
       G.inRift = true;
-      G.player.x = G.riftWorld.w / 2; G.player.y = G.riftWorld.h / 2;
       seedTrail(G.riftWorld, CFG.team.follow.seedDir[0], CFG.team.follow.seedDir[1]);
       snapCompanions(G.riftWorld);
-      G.run.riftKills = 0; G.run.riftRewarded = false;
-      // 任务变体（待细化 20 / §五）：按权重随机一个任务（非强制，完成给额外高价值宝箱）
-      const tw = {}; CFG.rift.tasks.forEach((t, i) => tw[i] = t.weight);
-      const tdef = CFG.rift.tasks[Number(U.weightedPick(tw))];
-      G.run.riftTask = { ...tdef, remain: tdef.time || 0, done: false, failed: false };
       UI.toast(`◈ 进入空间裂缝！本次任务【${tdef.name}】：${tdef.desc}（完成得额外宝箱）`, "gold");
     });
     EventBus.on("returnFromRift", () => {
@@ -145,15 +173,13 @@ const Game = {
     EventBus.on("extractSuccess", () => {
       if (G.state !== "playing") return;
       G.state = "settled";
-      // 保险契约折算：撤离成功时剩余契约折算进化结晶
-      const n = insuranceCount(G.run);
-      const refund = n * CFG.insurance.crystalRefund;
-      if (n > 0) { consumeInsurance(G.run, n); Meta.data.crystals += refund; Meta.commit(); }
-      // 局内→局外资源转化（待细化 5）：金币/未开封宝箱/装备模组/剩余卡牌 → 结晶
+      // 局内→局外资源转化（待细化 5 已定）：背包/武器栏内**所有物品**按各自**固定价值 × 统一折算率**
+      // 折算为结晶（宝箱 / 装备 / 武器模块 / 消耗品 / 卡牌同一口径；保险契约不再单独折算）。
+      // 局内经验与金币归零、不参与折算。
       const conv = calcSettleConvert(G.run);
       if (conv.total > 0) { Meta.data.crystals += conv.total; Meta.commit(); }
       G.run.settleConv = conv;   // 结算界面展示明细
-      const crystals = Meta.awardRun(G.run.kills, G.run.bossDefeated, true) + refund + conv.total;
+      const crystals = Meta.awardRun(G.run.kills, G.run.bossDefeated, true) + conv.total;
       // 解锁链：撤离成功解锁下一关（死亡不解锁，搜打撤的"搜"是门票）
       const idx = CFG.levels.indexOf(G.levelCfg);
       if (idx >= 0 && idx + 1 < CFG.levels.length && Meta.data.unlockedLevels < idx + 2) {
@@ -185,11 +211,17 @@ const Game = {
       if (k === " ") e.preventDefault();
       if (k === "b" && G.state === "playing") UI.toggleBackpack();
       if (k === "e" && G.inArtisan && G.state === "playing") UI.toggleArtisan();
-      // 撤离点代币（5.2）：主地图任意位置按 E 激活/取消读条（8 秒，受击/移动归零）
-      if (k === "e" && G.state === "playing" && !G.inArtisan && !G.inRift && G.run && G.run.extractToken) {
-        G.run.extractChanneling = !G.run.extractChanneling;
-        G.run.extractProgress = 0;
-        UI.toast(G.run.extractChanneling ? "开始撤离读条 8 秒（移动/受击将打断）…" : "已取消撤离读条", "gold");
+      // 撤离点雕像（5.2）：**站进雕像圈内自动读条**（8 秒，受击归零）；E 仅用于查看进度 / 节流提示
+      if (k === "e" && G.state === "playing" && !G.inArtisan && !G.inRift && G.run && G.run.exitStatue) {
+        const st = G.run.exitStatue;
+        // 判定圈规则（5.2）：**任一存活英雄在圈内即自动读条**，E 不再是开关，只用于查看进度/提示
+        if (heroInCircle(st.x, st.y, CFG.extract.radius)) {
+          const sec = Math.max(0, CFG.extract.channel - (G.run.extractProgress || 0));
+          UI.toast(`撤离读条中：剩余 ${sec.toFixed(1)} 秒（站进圈内自动读条，无需按键）`, "gold");
+        } else if (G.time - (this._extractHintT || 0) > 3) {
+          this._extractHintT = G.time;
+          UI.toast("撤离点：让任一小队成员站进雕像圈内即自动读条 8 秒（受击归零）", "bad");
+        }
       }
     });
     window.addEventListener("keyup", (e) => { G.keys[e.key.toLowerCase()] = false; });
@@ -225,23 +257,20 @@ const Game = {
     G.time += dt;
     if (G.state === "playing") {
       recomputeWeapon();
-      G.player.update(G.activeWorld, dt);
-      updateCompanions(G.activeWorld, dt);
-      G.activeWorld.update(dt);
-      // 撤离读条推进（5.2）：移动打断归零并停止（受击打断在 heroTakeDamage 中处理）
-      const r = G.run;
-      if (r.extractChanneling) {
-        if (Math.abs(G.player.mvx) + Math.abs(G.player.mvy) > 0) {
-          r.extractChanneling = false; r.extractProgress = 0;
-          UI.toast("撤离读条被打断！（代币保留，可再次按 E）", "bad");
-        } else {
-          r.extractProgress = (r.extractProgress || 0) + dt;
-          if (r.extractProgress >= CFG.extract.channel) {
-            r.extractChanneling = false; r.extractProgress = 0;
-            EventBus.emit("extractSuccess");
-          }
-        }
+      // 子地图开场冻结（5.1）：全员静止 + 全员无敌 —— 跳过玩家/同伴更新，也不推进撤离读条；
+      // 怪物/子弹/祭坛等由 World.update 内部同样的闸门拦住，伤害结算天然不会发生
+      const frozen = G.activeWorld && G.activeWorld.freezeTimer > 0;
+      if (frozen) {
+        G.player.mvx = 0; G.player.mvy = 0;   // 清零移动意图，避免解冻瞬间滑行
+      } else {
+        G.player.update(G.activeWorld, dt);
+        updateCompanions(G.activeWorld, dt);
       }
+      G.activeWorld.update(dt);
+      // 撤离读条推进（5.2）：**任一存活英雄在圈内即自动读条**（判定圈统一规则，见 judgeChannel）；
+      // 移动本身不再打断，圈内英雄全部离开才按判定规则衰退；受击打断在 heroTakeDamage 中处理。
+      // 仅主地图存在撤离点，工匠世界 / 裂缝中不推进。
+      if (!frozen && G.activeWorld && G.activeWorld.isMain) updateExtractJudge(dt);
       updateFX(dt);
       UI.updateHUD();
     } else {

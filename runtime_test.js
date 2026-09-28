@@ -124,29 +124,38 @@ vm.runInContext(`
   frames(400);   // Boss 战 6~7 秒（爆炸预警/小怪）
   if (G.mainWorld.boss.dead) throw new Error("Boss 不应被玩家误杀");
 
-  // ---- 阶段4：击杀 Boss → 撤离点代币 → 按 E 任意位置读条 8 秒撤离 ----
+  // ---- 阶段4：击杀 Boss → 死亡位置生成撤离点雕像 → 雕像处读条 8 秒撤离 ----
   while (!G.mainWorld.boss.dead) damageMonster(G.mainWorld, G.mainWorld.boss, 999999);
   frames(5);
   if (!G.run.bossDefeated) throw new Error("Boss 击败未结算");
-  if (!G.run.extractToken) throw new Error("撤离点代币未掉落");
+  if (!G.run.exitStatue) throw new Error("撤离点雕像未生成");
+  console.log("撤离点雕像 OK: 生成于 Boss 死亡位置 (" + Math.round(G.run.exitStatue.x) + "," + Math.round(G.run.exitStatue.y) + ")");
   // 清场（模拟玩家清完残余怪再撤离），移除其他雕像避免干扰（如工匠雕像恰好在附近触发传送）
   G.mainWorld.monsters.forEach(m => m.dead = true);
   G.mainWorld.altars = [];
   frames(3);
-  // 移动打断：读条中按移动键 → 归零且代币保留
-  G.run.extractChanneling = true;
-  G.keys["d"] = true;
-  frames(3);
-  G.keys["d"] = false;
-  if (G.run.extractChanneling || G.run.extractProgress !== 0) throw new Error("移动打断撤离读条失败");
-  if (!G.run.extractToken) throw new Error("打断后代币应保留");
-  // 静止读条 8 秒（清空残留敌方弹道，避免命中打断）
+  // 判定圈（5.2 新口径）：**任一英雄站进雕像圈内即自动读条**（无需按 E）；
+  // 走出判定圈 → 进度按判定通用规则衰退归零；受击归零（后续步骤验证）
+  G.player.x = G.run.exitStatue.x + 400; G.player.y = G.run.exitStatue.y + 400;   // 先站到判定圈外
+  G.player.mvx = 0; G.player.mvy = 0;
+  G.run.extractProgress = 0; G.run.extractChanneling = false;
+  frames(5);
+  if (G.run.extractChanneling || G.run.extractProgress !== 0) throw new Error("判定圈外不应读条");
+  G.player.x = G.run.exitStatue.x; G.player.y = G.run.exitStatue.y;                // 站进圈内
+  frames(30);                                                                      // ~0.5s
+  if (!G.run.extractChanneling || G.run.extractProgress <= 0.3)
+    throw new Error("圈内应自动读条, channeling=" + G.run.extractChanneling + " progress=" + (G.run.extractProgress || 0));
+  G.player.x = G.run.exitStatue.x + 400; G.player.y = G.run.exitStatue.y + 400;    // 走出判定圈
+  frames(60);                                                                      // 衰退 → 归零
+  if (G.run.extractProgress !== 0) throw new Error("离开判定圈后进度应衰退归零, got " + G.run.extractProgress);
+  if (!G.run.exitStatue) throw new Error("离开判定圈后撤离点雕像应仍在原地");
+  // 静止在雕像圈内读满 8 秒（清空残留敌方弹道，避免命中打断；玩家移到雕像处）
   G.player.mvx = 0; G.player.mvy = 0;
   G.mainWorld.enemyBullets = [];
-  G.run.extractChanneling = true;
+  G.player.x = G.run.exitStatue.x; G.player.y = G.run.exitStatue.y;
   frames(560);   // ~9.3s > 8s 读条
   if (G.state !== "settled") throw new Error("撤离未成功, state=" + G.state + " progress=" + (G.run.extractProgress || 0));
-  console.log("撤离成功（代币任意位置读条 + 移动打断验证）→ 结算, 状态:", G.state);
+  console.log("撤离成功（圈内自动读条 + 离开圈衰退验证）→ 结算, 状态:", G.state);
 
   // ---- 阶段5：新的一局 → 死亡惩罚 ----
   Game.backToMenu();
@@ -207,12 +216,13 @@ vm.runInContext(`
   // 撤离 → 解锁链（当前 unlockedLevels=3，撤离第 2 关不会越界，验证不报错即可）
   while (!G.mainWorld.boss.dead) damageMonster(G.mainWorld, G.mainWorld.boss, 9999999);
   frames(5);
-  if (!G.run.bossDefeated || !G.run.extractToken) throw new Error("Boss2 未结算或未掉代币");
+  if (!G.run.bossDefeated || !G.run.exitStatue) throw new Error("Boss2 未结算或未生成撤离点雕像");
   G.run.hp = 100000;
   G.mainWorld.monsters.forEach(m => m.dead = true);
   G.mainWorld.enemyBullets = [];
   G.mainWorld.altars = [];    // 清掉随机祭坛（如空间裂缝），避免传送打断读条
-  G.run.extractChanneling = true;
+  G.player.x = G.run.exitStatue.x; G.player.y = G.run.exitStatue.y;   // 站进雕像圈内 → 自动读条 8 秒
+  G.run.extractProgress = 0;
   frames(560);
   if (G.state !== "settled") throw new Error("第 2 关撤离未成功, state=" + G.state);
   console.log("第 2 关撤离 OK → 结算, 解锁关卡数:", Meta.data.unlockedLevels);
@@ -232,6 +242,10 @@ vm.runInContext(`
   if (G.riftWorld.monsters.length === 0) throw new Error("裂缝子地图应有怪");
   console.log("进入裂缝 OK: 怪", G.riftWorld.monsters.length, "信标@", Math.round(G.riftWorld.returnBeacon.x) + "," + Math.round(G.riftWorld.returnBeacon.y));
   G.run.hp = 100000;
+  // 开场冻结（5.1）：进场后全员静止+无敌 3 秒 —— 走真实帧推进等它自然结束，再做信标读条测试
+  for (let i = 0; i < 40 && G.riftWorld.freezeTimer > 0; i++) frames(10);
+  if (G.riftWorld.freezeTimer > 0) throw new Error("开场冻结未在预期时间内结束");
+  console.log("开场冻结结束 OK");
   // 击杀 12 只 → 奖励宝箱雕像
   G.run.riftKills = 0;
   for (let i = 0; i < CFG.rift.rewardKills; i++) {

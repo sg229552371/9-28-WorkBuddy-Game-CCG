@@ -61,23 +61,24 @@ const driver = `
   Game.startRun([CFG.heroes[0]]);
   {
     const r = G.run;
-    r.coin = 100;                                   // 100 / 20 = 5
-    r.cardAssets = 3;                               // 3 × 2 = 6
-    const chest = makeChestItem("epic");            // value 150 → ×0.5 = 75
+    const R = CFG.settleConvert.valueRate;          // 统一折算率（0.5：2 价值 = 1 结晶）
+    r.coin = 100;                                   // 金币归零、不折算
+    r.cardAssets = 3;                               // 3 × 固定价值 4 × 0.5 = 6
+    const chest = makeChestItem("epic");            // 固定价值 150 → 75
     r.backpack.place(chest, 0, 0);
-    const gear = makeGear("G001", 0);               // value 30 → ×0.25 = 7
+    const gear = makeGear("G001", 0);               // 固定价值 30 → 15
     r.backpack.place(gear, 1, 0);
-    const ins = makeInsurance(2);                   // 保险不计入折算（单独结算）
+    const ins = makeInsurance(2);                   // 固定价值 120 → 60（与其它物品同一口径）
     r.backpack.place(ins, 2, 0);
-    const mod = makeModule("M009", 1);              // value round(45×1.8)=81 → ×0.25 = 20
+    const mod = makeModule("M009", 1);              // 固定价值 round(45×1.8)=81 → 40
     r.weaponInv.place(mod, 0, 0);
     const b = calcSettleConvert(r);
-    check("折算-金币 100→5", b.coin === 5);
-    check("折算-宝箱 150→75", b.chest === 75);
-    check("折算-装备/模组 30+81→" + b.item, b.item === Math.floor((30 + 81) * 0.25));
-    check("折算-卡牌 3→6", b.card === 6);
-    check("折算-保险契约不计入", b.item !== Math.floor((30 + 81 + ins.value) * 0.25));
-    check("折算-合计 = " + b.total, b.total === b.coin + b.chest + b.item + b.card);
+    check("折算-金币不参与（归零不算）", b.coin === undefined);
+    check("折算-宝箱 150×" + R + "→" + b.chest, b.chest === Math.floor(150 * R));
+    check("折算-装备/模组 (30+81) 同一口径→" + b.gear, b.gear === Math.floor(30 * R) + Math.floor(81 * R));
+    check("折算-卡牌 3×价值4×" + R + "→" + b.card, b.card === Math.floor(3 * CFG.settleConvert.cardValue * R));
+    check("折算-保险契约走同一口径 价值" + ins.value + "→" + b.item, b.item === Math.floor(ins.value * R));
+    check("折算-合计 = " + b.total, b.total === b.chest + b.gear + b.item + b.card);
   }
 
   /* ============ 二、诅咒道具（待细化36） ============ */
@@ -142,17 +143,25 @@ const driver = `
     check("连接-不相邻不触发", syn2.links === 0);
   }
 
-  /* ============ 四、卡牌付费刷新（待细化37） ============ */
+  /* ============ 四、卡牌刷新（待细化37 定稿：每局免费 2 次 + 之后扣金币） ============ */
   {
     Game.startRun([CFG.heroes[0]]);
     const r = G.run;
     G.inArtisan = true;
-    r.cardRefresh = 0;
     r.cardCandidates = null;
-    Meta.data.crystals = 100;
-    check("付费刷新-成功扣结晶", refreshCards(true) === true && Meta.data.crystals === 100 - CFG.cardPool.refreshCrystalCost);
-    Meta.data.crystals = 0;
-    check("付费刷新-结晶不足失败", refreshCards(true) === false);
+    // 免费次数优先：扣次数、不扣金币
+    r.cardRefresh = 2; r.coin = 1000;
+    check("刷新-免费次数优先且不扣金币", refreshCards() === true && r.cardRefresh === 1 && r.coin === 1000);
+    // 免费耗尽 → 扣金币
+    r.cardRefresh = 0;
+    check("刷新-金币刷新成功且扣款", refreshCards() === true && r.coin === 1000 - CFG.cardPool.refreshCost);
+    // 金币不足 → 失败且不扣钱
+    r.coin = CFG.cardPool.refreshCost - 1;
+    check("刷新-金币不足失败且不扣钱", refreshCards() === false && r.coin === CFG.cardPool.refreshCost - 1);
+    // 非工匠世界禁止刷新
+    G.inArtisan = false;
+    check("刷新-非工匠世界禁止", refreshCards() === false);
+    G.inArtisan = true;
     // 卡池含新属性 energyMax 且数值表完整
     check("卡池-新增能量上限属性", CFG.cardPool.attrs.energyMax && CFG.cardPool.attrs.energyMax.flat.length === 4);
     computeStats();   // energyMax 卡应能被 computeStats 消费（不抛错）
@@ -167,6 +176,7 @@ const driver = `
     const r = G.run;
     const rw = new World(CFG.rift.worldSize, CFG.rift.worldSize, false, "rift");
     G.riftWorld = rw; G.activeWorld = rw; G.inRift = true;
+    rw.freezeTimer = 0;   // 跳过开场冻结（5.1），直接验证任务判定；冻结行为见 rift_test.js
     // 歼灭任务（限时）：达标 → 任务宝箱
     r.riftTask = { ...CFG.rift.tasks[1], remain: 75, done: false, failed: false };   // purge goal 18
     r.riftKills = 18;
@@ -188,6 +198,9 @@ const driver = `
     check("工匠服务-品质强化 3 档价格", S.qualityUp.costs.length === 3 && S.qualityUp.costs.every(c => c > 0));
     check("工匠服务-三档宝箱售价", ["advanced", "epic", "divine"].every(q => S.buyChest[q] > 0));
     check("工匠服务-保险/洗词缀价格", S.buyInsurance.cost > 0 && S.rerollModule.cost > 0);
+    check("工匠服务-购买武器模块配置", S.buyModule && S.buyModule.cost > 0 && S.buyModule.desc
+      && Object.values(S.buyModule.qualityWeights).reduce((a, b) => a + b, 0) > 0);
+    check("工匠服务-购买道具配置", S.buyItem && S.buyItem.cost > 0 && !!S.buyItem.desc);
   }
 
   Game.backToMenu();

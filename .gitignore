@@ -8,3 +8,6 @@
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# 助手调试临时目录（非项目产物）
+.agent_tmp/

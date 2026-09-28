@@ -79,6 +79,85 @@ class Inventory {
   }
 }
 
+/* ============ 武器 / 技能等级曲线（配置驱动公式，上限 100 级） ============
+ * 技能等级 = 武器等级（8.2）。曲线参数全在 CFG.weaponLevel，改参数即调全曲线；
+ * lv 为 1 基（1..maxLv）。cost = 从 lv 升到 lv+1 所需的进化结晶。 */
+function weaponLevelEntry(lv) {
+  const w = CFG.weaponLevel;
+  const n = Math.max(1, Math.min(Math.round(lv || 1), w.maxLv));
+  const raw = w.costBase * Math.pow(w.costGrowth, n - 1);
+  return {
+    lv: n,
+    basicMul: 1 + w.basicMulPerLv * (n - 1),
+    skillMul: 1 + w.skillMulPerLv * (n - 1),
+    cost: n >= w.maxLv ? 0 : Math.round(raw / w.costRound) * w.costRound,
+  };
+}
+
+/* ============ 技能等级结算（P1：统一 skillEntry，1~100 级） ============
+ * 技能效果填写三种方式（详见 js/config.js 的 CFG.skills 头注释）：
+ *   ① 公式驱动：平铺字段 = LV1 基础值，按每级成长率线性放大（普攻 +4%/级、技能 +6%/级）
+ *   ② 锚点插值：anchors 只填 3~5 行关键等级，区间内线性插值后取整
+ *   ③ 分段公式：由 growth 扩展（数值待策划填） */
+
+/** 锚点表线性插值：table 形如 { 1:3, 25:4, 60:5, 100:6 }
+ *  取整规则：锚点值全为整数 → 向下取整；含小数 → 保留两位小数。 */
+function anchorLerp(table, lv) {
+  const ks = Object.keys(table).map(Number).sort((a, b) => a - b);
+  if (!ks.length) return 0;
+  const allInt = ks.every((k) => Number.isInteger(table[k]));
+  const round = (v) => (allInt ? Math.floor(v) : Math.round(v * 100) / 100);
+  if (lv <= ks[0]) return round(table[ks[0]]);
+  const last = ks[ks.length - 1];
+  if (lv >= last) return round(table[last]);
+  for (let i = 0; i < ks.length - 1; i++) {
+    const a = ks[i], b = ks[i + 1];
+    if (lv >= a && lv <= b) return round(table[a] + (table[b] - table[a]) * (lv - a) / (b - a));
+  }
+  return round(table[last]);
+}
+
+/** 技能在不同等级下的完整数值（唯一的技能等级结算入口）。
+ *  @param skill   技能表 ID（CFG.skills 的键）**或**技能条目对象本身
+ *  @param lv      技能等级 = 武器等级（1..CFG.weaponLevel.maxLv）
+ *  @returns 展开基础字段后的副本，dmgMul 已按等级折算、anchors 字段已插值；找不到返回 null */
+function skillEntry(skill, lv) {
+  const sk = (typeof skill === "string") ? CFG.skills[skill] : skill;
+  if (!sk) return null;
+  const w = CFG.weaponLevel;
+  const n = Math.max(1, Math.min(Math.round(lv || 1), w.maxLv));
+  const out = { ...sk, lv: n };
+  const anchored = new Set(Object.keys(sk.anchors || {}));
+  const wl = weaponLevelEntry(n);          // 曲线唯一来源：weaponLevelEntry
+  // ① 公式驱动：默认只作用于 dmgMul —— 普攻 +4%/级、技能 +6%/级；
+  //    未声明 kind 的条目（敌人技能 / 增益 / 减益）不吃等级伤害成长（敌人由怪物等级另行缩放）
+  const dmgLevelMul = (sk.growth && sk.growth.dmgMul != null)
+    ? 1 + sk.growth.dmgMul * (n - 1)
+    : (sk.kind === "basic" ? wl.basicMul : (sk.kind === "skill" ? wl.skillMul : 1));
+  if (out.dmgMul != null && !anchored.has("dmgMul")) out.dmgMul *= dmgLevelMul;
+  for (const k in (sk.growth || {})) {
+    if (k === "dmgMul" || anchored.has(k) || out[k] == null) continue;
+    out[k] *= 1 + sk.growth[k] * (n - 1);   // 乘算成长（如 growth:{ cd:-0.004 }）
+  }
+  // ② 锚点插值：整数离散值（覆盖同名字段，不再叠加公式成长）
+  for (const k in (sk.anchors || {})) out[k] = anchorLerp(sk.anchors[k], n);
+  return out;
+}
+/** Buff 效果文案（按等级生成，供 toast 与 UI 提示使用）。
+ *  stat 决定单位与方向：`cdMul` 是「越小越快」的乘算因子，显示为攻速百分比。 */
+function buffEffectLabel(skillId, lv) {
+  const e = skillEntry(skillId, lv);
+  if (!e) return "";
+  const pc = (v) => Math.round(Math.abs(v) * 100);
+  switch (e.stat) {
+    case "atk": return `攻击力 +${pc(e.mul - 1)}%`;
+    case "spd": return `移速 +${pc(e.mul - 1)}%`;
+    case "cdMul": return `攻速 +${pc(1 - e.mul)}%`;
+    case "lifesteal": return `吸血 ${pc(e.mul)}%`;
+    default: return e.label || `${e.stat} ×${Number(e.mul).toFixed(2)}`;
+  }
+}
+
 /* ============ 物品构造 ============ */
 function makeGear(defId, itemQ) {
   const d = CFG.gearDefs.find(g => g.id === defId);
@@ -93,9 +172,9 @@ function makeModule(defId, itemQ) {
   const q = CFG.itemQualities[itemQ];
   const affix = { tag: d.affix.tag, mode: d.affix.mode, value: d.affix.vals[itemQ] };
   return { uid: UID++, kind: "module", defId, itemQ, name: d.name, shape: d.shape.slice(),
-    weight: d.weight, value: Math.round(45 * q.valueMul), affix, lv: 1 };   // lv：模组等级（叠加升级 1~9）
+    weight: d.weight, value: Math.round(45 * q.valueMul), affix, lv: 1 };   // lv：武器模块等级（叠加升级 1~9）
 }
-/* 模组等级系统：主词缀有效值 = 基础值 × (1 + (lv-1) × valueStep)；阶段 = ceil(lv / perStage) */
+/* 武器模块等级系统：主词缀有效值 = 基础值 × (1 + (lv-1) × valueStep)；阶段 = ceil(lv / perStage) */
 function moduleEffValue(it) {
   const ml = CFG.moduleLevel;
   return it.affix.value * (1 + ((it.lv || 1) - 1) * (ml ? ml.valueStep : 0));
@@ -153,7 +232,7 @@ function useCurseItem(it) {
 /* 诅咒的生效点：怪物生成（hp/atk/spd 乘算）、受伤判定（def 乘算）、掉落（rewardMul） */
 function affixText(it) {
   if (!it.affix) return "";
-  const v = it.kind === "module" ? moduleEffValue(it) : it.affix.value;   // 模组按等级缩放后的有效值
+  const v = it.kind === "module" ? moduleEffValue(it) : it.affix.value;   // 武器模块按等级缩放后的有效值
   if (it.affix.mode === "flat") return `${it.affix.tag} +${Math.round(v * 100) / 100}`;
   return `${it.affix.tag} ${v > 0 ? "+" : ""}${Math.round(v * 100)}%`;
 }
@@ -164,21 +243,33 @@ function createRun(heroDef) {
     heroDef,
     hp: heroDef.hp, hpMax: heroDef.hp,
     energy: heroDef.energyMax, energyMax: heroDef.energyMax,
-    lv: 1, exp: 0, expNext: 14, coin: 0, kills: 0,
+    lv: 1, exp: 0, expNext: 14, coin: 0, kills: 0, eliteKills: 0,
     backpack: new Inventory(CFG.backpack.cols, CFG.backpack.rows, "backpack"),
     weaponInv: new Inventory(CFG.weaponGrid.cols, CFG.weaponGrid.rows, "weapon"),
     buffs: [],                      // 战争雕像增益 {id, stat, mul, remain, label}
     pendingItems: [],               // 工匠开箱待分配区（未拖入背包前存放，放弃即作废）
-    monsterDebuff: null,            // 邪神雕像 {hpMul, atkMul, remain}
+    // 邪神雕像：多效果并列倍率表（同一目标再次触发为覆盖并重新计时，非叠乘；remain=-1 永久）
+    scale: {
+      smallCount: { mul: 1, remain: 0 },   // 小怪数量
+      smallStat:  { mul: 1, remain: 0 },   // 小怪属性
+      eliteCount: { mul: 1, remain: 0 },   // 精英数量
+      eliteStat:  { mul: 1, remain: 0 },   // 精英属性
+      bossStat:   { mul: 1, remain: 0 },   // BOSS 属性
+    },
     curse: null,                    // 诅咒道具（待细化36）{defMul,hpMul,atkMul,spdMul,rewardMul,remain}
-    monsterHpMul: 1, monsterAtkMul: 1,
     lifesteal: 0,
     cardAssets: 0,                  // 属性卡牌资产（升级 +1，仅工匠世界可使用，8.3）
     cardRefresh: CFG.cardPool.refreshPerRun,   // 本局剩余刷新次数
     cardCandidates: null,           // 当前候选卡牌（进入工匠世界时抽取）
     appliedCards: [],               // 已使用卡牌 {attr, q, value}，退出局内随 run 清除
-    artisanSpawned: false, artisanUsed: false,
+    artisanSpawned: false, artisanUsed: false,   // artisanUsed = 本关是否进过（仅用于提示，不再限制次数）
+    // 工匠雕像池（4.6）：触发条件投配额 → 限制器决定何时落地；子世界可无限次进入
+    artisanPool: createArtisanPool(),
     bossSpawned: false, bossDefeated: false,
+    // 撤离点雕像（5.2）：主地图当前撤离点（null = 没有）；读条字段保留原名与语义
+    exitStatue: null,
+    extractChanneling: false, extractProgress: 0,
+    extractHolder: null,     // 撤离判定的持有者：同一判定同时只有一个持有者（多英雄同圈不会各自触发）
     runTime: 0,
     stats: {                        // 本局统计（数值收敛用）
       dmgDealt: 0, dmgTaken: 0,
@@ -186,12 +277,19 @@ function createRun(heroDef) {
       timeToBoss: 0, bossFightTime: 0,
     },
     // 多角色组队（CFG.team.maxSize=3）：队长由玩家操控，其余为 AI 队友
-    companions: (G.team || []).slice(1).map((hd) => ({
+    companions: (G.team || []).slice(1).map((hd, i) => ({
       heroDef: hd, id: hd.id, name: hd.name,
       hp: hd.hp, hpMax: hd.hp, r: hd.radius,
       x: 0, y: 0, fireTimer: 0, alive: true, faceDir: 1,
+      isCompanion: true,   // 标记：吸血 / 增益 / 产物池按「各自独立」结算（applyLifesteal、companionStats）
+      skills: null,   // 由 recomputeWeapon() 解析：武器栏内的武器模块对小队全体成员生效
+      skillTimer: (i + 1) * (CFG.team.skillStagger || 0.6),   // 主动技能冷却；错峰避免全员同帧起手
+      // 队友是独立个体：**自带能量池**（上限 / 回复可被武器栏装备、属性卡、雕像 Buff 加成）
+      energy: hd.energyMax, energyMax: hd.energyMax, regen: hd.energyRegen,
+      cdMul: 1, lifesteal: 0,   // 由 updateCompanions() 每帧同步（属性卡 / 雕像 Buff 全队生效）
     })),
-    drones: [],       // 召唤物（无人机）：跟随队长、自动攻击、可被敌人击毁
+    // 产物池：**每个成员各自独立**（召唤物 / 陷阱都带 owner = 召唤者），互不顶替、各自计上限
+    drones: [],       // 召唤物（无人机）：环绕各自的召唤者、自动攻击、可被敌人击毁
     traps: [],        // 陷阱（大地雷）：不受敌人攻击，敌人入圈延迟引爆
     weapon: computeWeaponDefaults(),
   };
@@ -207,7 +305,7 @@ const Meta = {
   data: { crystals: 0, heroes: {}, unlockedLevels: 1 },
   load() {
     try { const raw = localStorage.getItem(SAVE_KEY); if (raw) Object.assign(this.data, JSON.parse(raw)); } catch (e) { /* 无 localStorage（测试环境）则用默认值 */ }
-    // 迁移：旧的"结晶技能升级"并入武器等级（技能等级 = 武器等级，金币升级）
+    // 迁移：旧的"结晶技能升级"并入武器等级（技能等级 = 武器等级，局外结晶升级）——老存档字段保留兼容
     for (const id in this.data.heroes) {
       const rec = this.data.heroes[id];
       if (rec.skillLevel && !rec.weaponLv) rec.weaponLv = rec.skillLevel;
@@ -227,25 +325,10 @@ const Meta = {
     this.commit();
     return true;
   },
-  // 技能局外等级（永久生效，每角色独立）
-  skillLevel(id) { return (this.data.heroes[id] && this.data.heroes[id].skillLevel) || 1; },
-  skillUpCost(id) { return CFG.skills2.costBase + (this.skillLevel(id) - 1) * CFG.skills2.costStep; },
-  skillUp(id) {
-    const lv = this.skillLevel(id);
-    if (lv >= CFG.skills2.maxSkillLv) return false;
-    const cost = this.skillUpCost(id);
-    if (this.data.crystals < cost) return false;
-    this.data.crystals -= cost;
-    const rec = this.data.heroes[id] || {};
-    this.data.heroes[id] = { ...rec, skillLevel: lv + 1 };
-    this.commit();
-    return true;
-  },
-  // 武器等级（永久资产，按英雄存档；工匠世界花金币升级；技能等级与其同步）
+  // 武器等级（永久资产，按英雄存档；主菜单「局外成长」花结晶升级；技能等级 = 武器等级同步）
   weaponLv(id) { return (this.data.heroes[id] && this.data.heroes[id].weaponLv) || 1; },
   weaponUpCost(id) {
-    const lv = Math.min(this.weaponLv(id), CFG.weaponLevel.maxLv - 1);
-    return CFG.weaponLevels[lv].cost;
+    return weaponLevelEntry(this.weaponLv(id)).cost;
   },
   weaponUp(id) {
     const lv = this.weaponLv(id);
@@ -275,14 +358,14 @@ function applyOutLevel(def) {
 }
 
 /* ---------- 武器词条计算（16.5：先加算后乘算） ----------
- * forSkill=true 时额外计入模组阶段词缀（阶段词缀只强化主动技能，不影响普攻基础值） */
+ * forSkill=true 时额外计入武器模块阶段词缀（阶段词缀只强化主动技能，不影响普攻基础值） */
 function tagCalc(tag, forSkill) {
   const t = CFG.affixTags[tag];
   let flat = 0, mul = 1;
   const ml = CFG.moduleLevel;
   for (const it of G.run.weaponInv.items) {
     if (it.kind === "module" && it.affix && it.affix.tag === tag) {
-      const eff = moduleEffValue(it);   // 主词缀随模组等级成长
+      const eff = moduleEffValue(it);   // 主词缀随武器模块等级成长
       if (it.affix.mode === "flat") flat += eff;
       else mul *= (1 + eff);
       // 阶段词缀（LV4~6 解锁第1条、LV7~9 第2条、LV9 满 3 条按 perStage 推进）
@@ -306,9 +389,9 @@ function tagCalc(tag, forSkill) {
   if (t.round === "floor") v = Math.floor(v);
   return v;
 }
-/* ---------- 模组深度（16.7）：连接效果 + 套装效果（仅统计武器栏内模组） ----------
- * 连接：边相邻（共享棱）且同品质的模组，每对提供 linkBonus 技能伤害（几何摆放的构建收益）；
- * 套装：同系列模组在武器栏内集齐 N 件触发词缀强化（CFG.moduleSets，策划改表即调）。 */
+/* ---------- 武器模块深度（16.7）：连接效果 + 套装效果（仅统计武器栏内武器模块） ----------
+ * 连接：边相邻（共享棱）且同品质的武器模块，每对提供 linkBonus 技能伤害（几何摆放的构建收益）；
+ * 套装：同系列武器模块在武器栏内集齐 N 件触发词缀强化（CFG.moduleSets，策划改表即调）。 */
 function moduleSynergy() {
   const mods = G.run.weaponInv.items.filter(it => it.kind === "module");
   const out = { dmgMul: 1, cdMul: 1, bullets: 0, links: 0, sets: [] };
@@ -338,92 +421,162 @@ function moduleSynergy() {
   }
   return out;
 }
-function recomputeWeapon() {
-  const w = G.run.weapon;
-  const sk = CFG.weapons[G.heroDef.weapon].skills;
-  const b = CFG.skills[sk.basic], s = CFG.skills[sk.skill];
-  // 模组深度（16.7）：连接（相邻同品质）+ 套装 → 技能向加成（普攻吃伤害/冷却/弹道部分）
-  const syn = moduleSynergy();
-  G.run.moduleSyn = syn;   // 缓存给 UI 展示（连接/套装一览；召唤/陷阱分支提前 return 也能拿到）
-  // 词条按「武器基础值 + 词条增量」叠加：先加算后乘算（16.5）
-  const wl = CFG.weaponLevels[Math.min((G.heroDef.weaponLv || 1), CFG.weaponLevel.maxLv) - 1];
-  w.basic = { ...b, dmgMul: b.dmgMul * wl.basicMul * syn.dmgMul,
-    bullets: b.bullets + tagCalc("弹道数量") + syn.bullets - CFG.affixTags["弹道数量"].base,
-    cd: b.cd * tagCalc("冷却") * syn.cdMul, bulletSpd: b.bulletSpd * tagCalc("弹速"),
-    pierce: b.pierce + tagCalc("穿透") - CFG.affixTags["穿透"].base,
-    bounce: b.bounce + tagCalc("弹射次数") - CFG.affixTags["弹射次数"].base };
-  // 武器等级 ↔ 技能等级同步（8.2）：技能效果按武器等级走手写表 skillMul；
-  // 有 lv 表的技能（召唤/陷阱）按等级索引属性行；技能标签匹配词条（16.5）
-  const skLv = G.heroDef.weaponLv || 1;   // 召唤/陷阱 lv 表内再用 Math.min 按数组长度截断
-  const st_ = s.tags || [];
-  const has = (t) => st_.includes(t);
-  if (s.type === "summon" || s.type === "trap") {
-    // 召唤物 / 陷阱技能：属性行由技能 lv 表决定（数据驱动，改表即调平衡）
-    const row = {};
-    for (const k in (s.lv || {})) {
-      const arr = s.lv[k];
-      row[k] = arr[Math.min(skLv, arr.length) - 1];
-    }
-    w.skill = { ...s, row,
+/** 技能 → 本局实际数值：skillEntry（统一的 1~100 级曲线）+ 词条标签 + 武器模块连接/套装加成。
+ *  普攻与主动技能共用同一条路径；召唤/陷阱额外产出 row（召唤物/陷阱属性行）。 */
+function resolveSkill(sk, lv, syn) {
+  const e = skillEntry(sk, lv);          // ① 等级曲线（公式 + 锚点插值）
+  const has = (t) => (sk.tags || []).includes(t);
+  const isBasic = sk.kind === "basic";
+  // 词条标签生效规则（16.5）：主动技能只有声明了该标签才吃；普攻吃除「伤害」外的全部标签
+  //（「伤害」倍率与武器模块阶段词缀只强化主动技能，不影响普攻基础值，见 tagCalc）。
+  const E = (t) => (isBasic ? t !== "伤害" : has(t));
+  if (sk.type === "summon" || sk.type === "trap") {
+    // 召唤物 / 陷阱：离散属性全部来自 anchors，伤害走「伤害 / 召唤物 / 陷阱」标签倍率
+    const row = { count: e.count, hp: e.hp, atk: e.atk, fireCd: e.fireCd, orbit: e.orbit,
+      dmgMul: e.dmgMul, radius: e.radius };
+    return { ...e, row,
       dmgMul: (row.dmgMul || 1) * (has("伤害") ? tagCalc("伤害", true) : 1)
         * (has("召唤物") ? tagCalc("召唤物", true) : 1) * (has("陷阱") ? tagCalc("陷阱", true) : 1)
         * syn.dmgMul,
-      cd: s.cd * (has("冷却") ? tagCalc("冷却", true) : 1) * syn.cdMul,
-      radius: (row.radius || s.radius || 100) * (has("范围") ? tagCalc("范围", true) : 1),
-      count: row.count || 1, armDelay: s.armDelay || 0.5,
+      cd: e.cd * (has("冷却") ? tagCalc("冷却", true) : 1) * syn.cdMul,
+      radius: (row.radius || e.radius || 100) * (has("范围") ? tagCalc("范围", true) : 1),
+      count: row.count || 1, armDelay: sk.armDelay || 0.5,
       summonMul: (has("召唤物") ? tagCalc("召唤物", true) : 1) * (has("伤害") ? tagCalc("伤害", true) : 1),
       trapMul: (has("陷阱") ? tagCalc("陷阱", true) : 1) * (has("伤害") ? tagCalc("伤害", true) : 1),
     };
-    return;
   }
-  w.skill = { ...s,
-    dmgMul: s.dmgMul * wl.skillMul * (has("伤害") ? tagCalc("伤害") : 1) * syn.dmgMul,
-    cd: s.cd * (has("冷却") ? tagCalc("冷却") : 1) * syn.cdMul,
-    radius: s.radius * (has("范围") ? tagCalc("范围") : 1),
-    bullets: (s.bullets || 1) + (has("弹道数量") ? tagCalc("弹道数量") + syn.bullets - CFG.affixTags["弹道数量"].base : 0),
-    bulletSpd: (s.bulletSpd || 480) * (has("弹速") ? tagCalc("弹速") : 1),
-    pierce: (s.pierce || 0) + (has("穿透") ? tagCalc("穿透") - CFG.affixTags["穿透"].base : 0),
+  // 弹道技能（普攻 / 主动）
+  return { ...e,
+    dmgMul: (e.dmgMul != null ? e.dmgMul : 1) * (E("伤害") ? tagCalc("伤害") : 1) * syn.dmgMul,
+    cd: e.cd * (E("冷却") ? tagCalc("冷却") : 1) * syn.cdMul,
+    radius: e.radius != null ? e.radius * (E("范围") ? tagCalc("范围") : 1) : e.radius,
+    bullets: (e.bullets != null ? e.bullets : 1)
+      + (E("弹道数量") ? tagCalc("弹道数量") + syn.bullets - CFG.affixTags["弹道数量"].base : 0),
+    bulletSpd: (e.bulletSpd != null ? e.bulletSpd : 480) * (E("弹速") ? tagCalc("弹速") : 1),
+    pierce: (e.pierce || 0) + (E("穿透") ? tagCalc("穿透") - CFG.affixTags["穿透"].base : 0),
+    bounce: (e.bounce || 0) + (E("弹射次数") ? tagCalc("弹射次数") - CFG.affixTags["弹射次数"].base : 0),
+  };
+}
+/** 重算全队技能（武器栏 = 小队共用的技能栏）。
+ *  队长：解析结果写入 G.run.weapon.basic / .skill（保留原名，调用点与 UI 均依赖）。
+ *  队友：各自解析一份 skillSet 缓存到 c.skills —— 武器栏内的武器模块（模块）
+ *  对小队**所有成员**生效，按各成员自己武器的技能标签（skill.tags）过滤，
+ *  等级走各自的武器等级（各自局外升级线），连接/套装加成全队共享。 */
+function recomputeWeapon() {
+  const syn = moduleSynergy();          // 连接（相邻同品质）+ 套装 → 全队共享的技能向加成
+  G.run.moduleSyn = syn;                // 缓存给 UI 展示（连接/套装一览）
+  const resolveSet = (heroDef) => {
+    const ids = CFG.weapons[heroDef.weapon].skills;
+    const lv = heroDef.weaponLv || 1;   // 武器等级 = 技能等级（8.2）
+    return { basic: resolveSkill(CFG.skills[ids.basic], lv, syn),
+             skill: resolveSkill(CFG.skills[ids.skill], lv, syn) };
+  };
+  const main = resolveSet(G.heroDef);
+  G.run.weapon.basic = main.basic;
+  G.run.weapon.skill = main.skill;
+  for (const c of (G.run.companions || [])) c.skills = resolveSet(c.heroDef);
+}
+
+/* ---------- 武器栏装备（属性件）提供的属性加成 ----------
+ * 16.5：武器栏 = 小队技能栏，栏内物品**对小队全体成员生效**——
+ * 武器模块改技能（见 recomputeWeapon），装备改属性（队长 computeStats + 队友 companionStats）。 */
+const ZERO_GEAR = { hp: 0, atk: 0, def: 0, spd: 0, energyMax: 0, regen: 0, summonMax: 0, trapMax: 0 };
+function weaponGearBonus() {
+  const b = { ...ZERO_GEAR };
+  const inv = G.run && G.run.weaponInv;
+  if (!inv) return b;
+  for (const it of inv.items) {
+    if (it.kind !== "gear" || !it.stats) continue;
+    for (const k in b) if (it.stats[k]) b[k] += it.stats[k];
+  }
+  return b;
+}
+/* ---------- 局内增益修正（属性卡牌 + 战争雕像 Buff）----------
+ * 16.5 / 8.3 / 4.4：属性卡与雕像 Buff 都是「本局内生效」的增益，**对小队全体成员生效**
+ *（队长 + 全部 AI 队友），与武器栏装备同源共享。
+ * 分两个通道返回，避免加算/乘算顺序歧义：
+ *   add —— 加算项（属性卡 flat 值 + Buff 的吸血）
+ *   mul —— 乘算项（Buff 的属性倍率 + 属性卡的冷却缩减）
+ * 统一结算式：最终 = (基础值 + 武器栏装备 + add) × mul
+ * 说明：regen / energyMax 对**队长与队友都有意义**——队友是独立个体，各自有能量池（见 companionStats）。 */
+function runBonus() {
+  const r = G.run;
+  const add = { hp: 0, atk: 0, def: 0, spd: 0, regen: 0, energyMax: 0, lifesteal: 0, summonMax: 0, trapMax: 0 };
+  const mul = { atk: 1, spd: 1, cd: 1 };
+  for (const b of (r.buffs || [])) {          // 战争雕像 Buff（4.4）：**按等级取效果**——同一条 Buff 叠的是等级
+    const e = b.skillId ? skillEntry(b.skillId, b.lv || 1) : null;
+    const stat = e ? e.stat : b.stat, mv = e ? e.mul : b.mul;
+    if (stat === "atk") mul.atk *= mv;
+    else if (stat === "spd") mul.spd *= mv;
+    else if (stat === "cdMul") mul.cd *= mv;
+    else if (stat === "lifesteal") add.lifesteal += mv;
+  }
+  for (const c of (r.appliedCards || [])) {    // 属性卡牌（8.3，工匠世界使用后随本局）
+    if (c.attr === "cd") mul.cd *= c.value;
+    else if (c.attr === "bullets") { /* 弹道数量在 tagCalc / resolveSkill 内生效（全队同源） */ }
+    else if (add[c.attr] != null) add[c.attr] += c.value;
+  }
+  return { add, mul };
+}
+/** 队友属性：与队长同源——局内等级成长 + 武器栏装备 + 局内增益（属性卡 / 雕像 Buff）。
+ *  16.5：武器栏与局内增益**对小队全体成员生效**。
+ *  队友是**独立个体**：有自己的生命 / 攻击 / 防御 / 移速，也有自己的**能量上限与能量回复**。 */
+function companionStats(c) {
+  const r = G.run, g = weaponGearBonus(), bo = runBonus(), n = r.lv - 1;
+  return {
+    hpMax: c.heroDef.hp + 8 * n + g.hp + bo.add.hp,
+    atk: Math.round((c.heroDef.atk + 2 * n + g.atk) * bo.mul.atk + bo.add.atk),
+    def: (c.heroDef.def || 0) + g.def + bo.add.def,
+    spd: (c.heroDef.spd + g.spd + bo.add.spd) * bo.mul.spd,
+    energyMax: c.heroDef.energyMax + g.energyMax + bo.add.energyMax,   // 能量上限（英雄基础 + 装备 + 属性卡）
+    regen: c.heroDef.energyRegen + g.regen + bo.add.regen,             // 能量回复
+    // 召唤物 / 陷阱上限（英雄属性，限制该类型技能的上限）：同样走属性管线（基础 + 装备 + 局内增益）
+    summonMax: heroUnitLimit(c.heroDef, "summon") + g.summonMax + bo.add.summonMax,
+    trapMax: heroUnitLimit(c.heroDef, "trap") + g.trapMax + bo.add.trapMax,
+    cdMul: bo.mul.cd,                 // 冷却缩减（属性卡「攻速」+ 增益「迅击」）
+    lifesteal: bo.add.lifesteal,      // 吸血（属性卡「吸血」+ 增益「汲血」）
   };
 }
 
-/* ---------- 玩家属性（武器栏装备 + Buff + 等级） ---------- */
+/* ---------- 玩家属性（武器栏装备 + 局内增益 + 等级） ----------
+ * 与队友 companionStats() 同源：走同一个 runBonus()（属性卡 / 雕像 Buff 全队生效）。 */
 function computeStats() {
   const r = G.run, h = r.heroDef;
+  const g = weaponGearBonus(), bo = runBonus(), n = r.lv - 1;
   const st = {
-    hpMax: h.hp + 8 * (r.lv - 1), atk: h.atk + 2 * (r.lv - 1), def: h.def,
-    spd: h.spd, energyMax: h.energyMax, regen: h.energyRegen, lifesteal: 0,
-    spdMul: 1, cdMul: 1,
+    hpMax: h.hp + 8 * n + g.hp + bo.add.hp,
+    atk: (h.atk + 2 * n + g.atk) * bo.mul.atk + bo.add.atk,
+    def: h.def + g.def + bo.add.def,
+    spd: h.spd + g.spd + bo.add.spd,
+    energyMax: h.energyMax + g.energyMax + bo.add.energyMax,
+    regen: h.energyRegen + g.regen + bo.add.regen,
+    summonMax: heroUnitLimit(h, "summon") + g.summonMax + bo.add.summonMax,
+    trapMax: heroUnitLimit(h, "trap") + g.trapMax + bo.add.trapMax,
+    lifesteal: bo.add.lifesteal,
+    spdMul: bo.mul.spd, cdMul: bo.mul.cd,
   };
-  for (const it of r.weaponInv.items) {
-    if (it.kind === "gear" && it.stats) {
-      if (it.stats.hp) st.hpMax += it.stats.hp;
-      if (it.stats.atk) st.atk += it.stats.atk;
-      if (it.stats.def) st.def += it.stats.def;
-      if (it.stats.spd) st.spd += it.stats.spd;
-      if (it.stats.energyMax) st.energyMax += it.stats.energyMax;
-      if (it.stats.regen) st.regen += it.stats.regen;
-    }
-  }
-  for (const b of r.buffs) {
-    if (b.stat === "atk") st.atk *= b.mul;
-    else if (b.stat === "spd") st.spdMul *= b.mul;
-    else if (b.stat === "cdMul") st.cdMul *= b.mul;
-    else if (b.stat === "lifesteal") st.lifesteal += b.mul;
-  }
-  // 属性卡牌加成（13.7 属性修改器体系：随本局，退出失效）
-  for (const c of r.appliedCards) {
-    if (c.attr === "cd") st.cdMul *= c.value;
-    else if (c.attr === "lifesteal") st.lifesteal += c.value;
-    else if (c.attr === "bullets") { /* 弹道数量在 recomputeWeapon 中生效 */ }
-    else if (c.attr === "hp") st.hpMax += c.value;
-    else if (c.attr === "atk") st.atk += c.value;
-    else if (c.attr === "def") st.def += c.value;
-    else if (c.attr === "spd") st.spd += c.value;
-    else if (c.attr === "regen") st.regen += c.value;
-    else if (c.attr === "energyMax") st.energyMax += c.value;
-  }
   st.atk = Math.round(st.atk);
   return st;
+}
+
+/* ---------- 召唤物 / 陷阱上限（英雄属性，限制「该类型技能」的上限） ----------
+ * 数值口径（12.3 已定）：召唤物上限 / 陷阱数量上限是**英雄属性**，走完整属性管线
+ *（英雄基础值 + 武器栏装备 + 局内增益），与能量上限同源。
+ * 实际上限 = min(技能锚点数量, 英雄该属性) —— 技能等级决定「想召几架」，英雄属性决定「最多几架」。 */
+function heroUnitLimit(heroDef, kind) {
+  const h = heroDef || (G.run && G.run.heroDef) || G.heroDef || {};
+  const v = kind === "trap" ? h.trapMax : h.summonMax;
+  return v === undefined ? (CFG.unitLimit[kind === "trap" ? "trapMax" : "summonMax"] || 0) : v;
+}
+/** 取某成员在该类型技能上的实际上限（队长走 computeStats、队友走 companionStats，同源）。 */
+function unitLimitOf(caster, kind) {
+  const st = (caster && caster.isCompanion) ? companionStats(caster) : computeStats();
+  const v = kind === "trap" ? st.trapMax : st.summonMax;
+  return Math.max(0, Math.floor(v || 0));
+}
+/** 实际上限 = min(技能锚点数量, 英雄该类型上限) */
+function unitCap(caster, kind, skillCount) {
+  return Math.max(0, Math.min(Math.floor(skillCount || 0), unitLimitOf(caster, kind)));
 }
 
 /* ---------- 负重惩罚（9.2 线性递减） ---------- */
@@ -435,13 +588,81 @@ function weightFactor() {
   return { w, f, over: true };
 }
 
+/* ============ 技能执行器（P2：玩家 / 队友 / 召唤物共用同一套释放逻辑） ============
+ * 释放形态由技能表的 type 决定：bullet 弹道 / summon 召唤物 / trap 陷阱。
+ * 所有数值都来自 resolveSkill 的产物（队长 = G.run.weapon.*，队友 = c.skills.*），执行器本身不存数值。 */
+const SkillSystem = {
+  /** 弹道技能：按 bullets 数散射，命中带 AoE 半径（技能弹）。
+   *  opts: { side, isSkill, atk, spread } */
+  castBullet(w, caster, sk, ang, opts = {}) {
+    const side = opts.side || "player";
+    const isSkill = opts.isSkill != null ? opts.isSkill : (sk.kind !== "basic");
+    const atk = opts.atk != null ? opts.atk : caster.atk;
+    const n = sk.bullets || 1;
+    const spread = opts.spread != null ? opts.spread : (isSkill ? 0.18 : 0.14);
+    const pool = side === "player" ? w.playerBullets : w.enemyBullets;
+    for (let i = 0; i < n; i++) {
+      const a = ang + (n > 1 ? (i - (n - 1) / 2) * spread : 0);
+      pool.push(new Bullet(caster.x, caster.y, a, sk.bulletSpd || 480,
+        Math.max(1, Math.round(atk * (sk.dmgMul != null ? sk.dmgMul : 1))), side,
+        sk.pierce || 0, sk.bounce || 0, isSkill ? sk.radius : 0, isSkill, caster));
+    }
+    return n;
+  },
+  /** 召唤物：**按召唤者独立编队**——只补足「自己名下」的数量（阵亡的重新召出）。
+   *  再次施放补满自己的编队，不会顶掉其他成员的召唤物（产物池按成员隔离）。
+   *  数量上限 = min(技能锚点数量, **英雄「召唤物上限」属性**)：技能等级决定想召几架，
+   *  英雄属性（召唤师 6 / 其他 2，见 CFG.heroes + CFG.unitLimit）决定最多几架。
+   *  归属固定为召唤者：无人机**随召唤者**移动，召唤者倒下也**不回收**（继续留在场上作战）。 */
+  castSummon(w, caster, sk, atk) {
+    const row = sk.row || {};
+    const want = unitCap(caster, "summon", row.count || 3);
+    const orbit = row.orbit || 70;
+    const mine = () => (G.run.drones || []).filter(d => d.hp > 0 && d.owner === caster);
+    while (mine().length > want) G.run.drones.splice(G.run.drones.indexOf(mine()[0]), 1);   // 超上限只回收自己最旧的
+    for (let i = mine().length; i < want; i++) {
+      const a = (i / Math.max(1, want)) * Math.PI * 2;
+      G.run.drones.push(new Drone(
+        caster.x + Math.cos(a) * orbit, caster.y + Math.sin(a) * orbit,
+        a, row.hp || 40, Math.max(1, Math.round((row.atk || 6) * (sk.summonMul || 1))),
+        row.fireCd || 0.8, orbit, caster));
+    }
+    return { n: mine().length, cap: want };
+  },
+  /** 陷阱：在脚下布设，超出**自己名下**的数量上限时回收自己最旧的那颗。
+   *  数量上限 = min(技能锚点数量, **英雄「陷阱数量上限」属性**)。
+   *  布置后**留在原地**，与布设者脱钩：布设者走开/倒下都不影响，敌人入圈即延迟引爆。 */
+  castTrap(w, caster, sk, atk) {
+    const row = sk.row || {};
+    const cap = unitCap(caster, "trap", row.count || 1);
+    const mine = () => (G.run.traps || []).filter(t => t.owner === caster);
+    if (cap <= 0) return { n: mine().length, cap: 0 };            // 上限为 0：该技能不产出（防死循环）
+    while (mine().length >= cap) G.run.traps.splice(G.run.traps.indexOf(mine()[0]), 1);   // 只回收自己的
+    G.run.traps.push({
+      x: caster.x, y: caster.y, r: 10,
+      radius: sk.radius || row.radius || 110,     // 触发范围 = 伤害范围（同源）
+      armDelay: sk.armDelay != null ? sk.armDelay : 0.5,
+      armed: false, fuse: 0, owner: caster,       // 归属：产物池按成员独立
+      dmg: Math.max(1, Math.round(atk * (sk.dmgMul || 1) * (sk.trapMul || 1))),
+    });
+    return { n: mine().length, cap };
+  },
+  /** 释放总入口：按 type 分发；返回本次释放的表现类型 + 数量信息（n / cap），供调用方播放音效/提示。 */
+  cast(w, caster, sk, target, opts = {}) {
+    const ang = target ? Math.atan2(target.y - caster.y, target.x - caster.x) : (opts.ang || 0);
+    if (sk.type === "summon") return { kind: "summon", ...this.castSummon(w, caster, sk, opts.atk) };
+    if (sk.type === "trap") return { kind: "trap", ...this.castTrap(w, caster, sk, opts.atk) };
+    return { kind: "bullet", n: this.castBullet(w, caster, sk, ang, opts) };
+  },
+};
+
 /* ============ 实体 ============ */
 class Player {
   constructor(x, y) {
     this.x = x; this.y = y; this.r = G.heroDef.radius;
     this.fireTimer = 0; this.skillTimer = 0;
     this.faceDir = 1;
-    this.mvx = 0; this.mvy = 0;   // 当前移动方向（0=静止；撤离读条的移动打断依赖此值）
+    this.mvx = 0; this.mvy = 0;   // 当前移动方向（0=静止；队友列队与朝向依赖此值）
   }
   update(w, dt) {
     const st = computeStats();
@@ -460,7 +681,7 @@ class Player {
       this.x = U.clamp(this.x + dx * spd * dt, this.r, w.w - this.r);
       this.y = U.clamp(this.y + dy * spd * dt, this.r, w.h - this.r);
       resolveObstacles(this, w);
-    } else { this.mvx = 0; this.mvy = 0; }   // 停止移动即清零（撤离读条的移动打断判定用）
+    } else { this.mvx = 0; this.mvy = 0; }   // 停止移动即清零
     // 能量恢复
     G.run.energy = Math.min(G.run.energyMax, G.run.energy + st.regen * dt);
     // 自动攻击：锁定屏幕内最近敌人
@@ -476,62 +697,21 @@ class Player {
     }
   }
   fireBasic(w, target, st) {
-    const b = G.run.weapon.basic;
-    const n = b.bullets;
-    const ang0 = Math.atan2(target.y - this.y, target.x - this.x);
-    for (let i = 0; i < n; i++) {
-      const spread = n > 1 ? (i - (n - 1) / 2) * 0.14 : 0;
-      w.playerBullets.push(new Bullet(this.x, this.y, ang0 + spread, b.bulletSpd,
-        Math.max(1, Math.round(st.atk * b.dmgMul)), "player", b.pierce, b.bounce));
-    }
+    SkillSystem.castBullet(w, this, G.run.weapon.basic,
+      Math.atan2(target.y - this.y, target.x - this.x),
+      { side: "player", isSkill: false, atk: st.atk, spread: 0.14 });
     SFX.play("shoot");
   }
   fireSkill(w, target, st) {
     const s = G.run.weapon.skill;
     G.run.energy -= s.energy;
-    // 技能类型分发：默认弹道技能；summon 召唤物；trap 陷阱（技能原型积木）
-    if (s.type === "summon") { this.castSummon(w, st); return; }
-    if (s.type === "trap") { this.castTrap(w, st); return; }
-    const ang0 = Math.atan2(target.y - this.y, target.x - this.x);
-    const n = s.bullets || 1;
-    for (let i = 0; i < n; i++) {
-      const spread = n > 1 ? (i - (n - 1) / 2) * 0.18 : 0;
-      w.playerBullets.push(new Bullet(this.x, this.y, ang0 + spread, s.bulletSpd || 480,
-        Math.max(1, Math.round(st.atk * s.dmgMul)), "player", s.pierce || 0, 0, s.radius, true));
-    }
+    // 释放形态由技能表 type 决定（bullet / summon / trap），统一走 SkillSystem
+    const res = SkillSystem.cast(w, this, s, target, { side: "player", isSkill: true, atk: st.atk });
     SFX.play("skill");
-    UI.toast(`${s.name}！`, "gold");
-  }
-  /* ---------- 召唤物：补充无人机至技能表数量（阵亡的重新召出） ---------- */
-  castSummon(w, st) {
-    const s = G.run.weapon.skill, row = s.row || {};
-    const want = row.count || 3;
-    const alive = G.run.drones.filter(d => d.hp > 0).length;
-    for (let i = alive; i < want; i++) {
-      const a = (i / want) * Math.PI * 2;
-      const orbit = row.orbit || 70;
-      G.run.drones.push(new Drone(
-        this.x + Math.cos(a) * orbit, this.y + Math.sin(a) * orbit,
-        a, row.hp || 40, Math.max(1, Math.round((row.atk || 6) * (s.summonMul || 1))),
-        row.fireCd || 0.8, orbit));
-    }
-    SFX.play("skill");
-    UI.toast(`${s.name}！无人机编队 ${G.run.drones.filter(d => d.hp > 0).length}/${want}`, "gold");
-  }
-  /* ---------- 陷阱：在脚下布设地雷，超出数量上限时回收最旧的 ---------- */
-  castTrap(w, st) {
-    const s = G.run.weapon.skill, row = s.row || {};
-    const cap = row.count || 1;
-    while (G.run.traps.length >= cap) G.run.traps.shift();   // 最旧的回收
-    G.run.traps.push({
-      x: this.x, y: this.y, r: 10,
-      radius: s.radius || row.radius || 110,          // 触发范围 = 伤害范围（同源）
-      armDelay: s.armDelay != null ? s.armDelay : 0.5,
-      armed: false, fuse: 0,
-      dmg: Math.max(1, Math.round(st.atk * (s.dmgMul || 1) * (s.trapMul || 1))),
-    });
-    SFX.play("skill");
-    UI.toast(`${s.name}！已布设（场上 ${G.run.traps.length}/${cap}）`, "gold");
+    // 召唤 / 陷阱返回 { n: 现存量, cap: 实际上限 }（上限 = min(技能锚点数量, 英雄该类型上限)）
+    if (res.kind === "summon") UI.toast(`${s.name}！我的无人机编队 ${res.n}/${res.cap}（上限＝英雄召唤物上限）`, "gold");
+    else if (res.kind === "trap") UI.toast(`${s.name}！已布设（本人地雷 ${res.n}/${res.cap}，留原地待敌）`, "gold");
+    else UI.toast(`${s.name}！`, "gold");
   }
   takeDamage(w, dmg) {
     const st = computeStats();
@@ -563,13 +743,48 @@ function nearestHero(x, y) {
   }
   return best || G.player;
 }
+
+/* ============ 判定圈统一入口（4.4 雕像 / 4.6 工匠 / 5.1 信标 / 5.2 撤离点共用） ============
+ * 规则（本轮已定，别再各自写一套）：
+ *   ① **所有英雄都是独立个体**，判定不再区分「只有队长能触发」——**任一存活英雄**
+ *      在判定圈内都能推进该判定（队长或任意 AI 队友都算，`aliveHeroes()`）；
+ *   ② 但**同一个判定同一时刻只可能有一个触发者**——判定是**单一实例**：
+ *      进度只有一份、持有者只有一位（`holder`），**不会因为两名英雄同处一圈而加速、也不会各触发一次**；
+ *   ③ 判定完成即被**消费**（雕像移除 / 读条触发事件）并把进度归零 → 第二个英雄不可能再触发同一个判定；
+ *   ④ 圈内英雄**全部离开**后进度按 `decay`（默认 1.2 倍速）缓慢衰退，不是瞬间清零
+ *     （裂缝返回信标例外：`decay = 0`，旧规则「离开圈进度保留」）。
+ * 判定半径 = 绘制半径 × CFG.altarJudgeMul（1.2，外扩 20% 容差）。 */
+function heroInCircle(x, y, radius) {
+  const R = radius * CFG.altarJudgeMul;
+  for (const h of aliveHeroes()) if (U.dist(h.x, h.y, x, y) < R) return h;
+  return null;
+}
+/** 推进一个判定圈。返回 true = 本帧读条完成（调用方负责消费该判定：移除雕像 / 派发事件）。
+ *  j —— 判定对象（进度/持有者写回它本身，字段名可用 pKey/hKey 覆盖，便于沿用既有的 xxxProgress 字段）
+ *  x, y —— 判定中心；radius —— 绘制半径；dt —— 帧时长；channel —— 需要的读条秒数（不传则取 j.channel） */
+function judgeChannel(j, x, y, radius, dt, channel, pKey, hKey, decay) {
+  const pk = pKey || "progress", hk = hKey || "holder";
+  const need = channel != null ? channel : j.channel;
+  const holder = heroInCircle(x, y, radius);
+  j[hk] = holder || null;                      // 同一判定同时只有一个持有者（原子占用）
+  if (holder) {
+    j[pk] = (j[pk] || 0) + dt;
+    if (j[pk] >= need) { j[pk] = 0; j[hk] = null; return true; }   // 完成即消费，判定不可被第二个英雄重复触发
+  } else if ((j[pk] || 0) > 0) {
+    j[pk] = Math.max(0, j[pk] - dt * (decay === undefined ? 1.2 : decay));
+  }
+  return false;
+}
 function heroTakeDamage(w, h, dmg) {
-  // 受击打断：撤离读条归零（代币保留）；裂缝返回信标读条归零
+  // 受击打断：撤离读条归零（雕像保留）；裂缝返回信标读条归零
   const r = G.run;
-  if (r && r.extractChanneling) { r.extractChanneling = false; r.extractProgress = 0; UI.toast("撤离读条被打断！（代币保留，可再次按 E）", "bad"); }
+  if (r && r.extractChanneling) {
+    r.extractChanneling = false; r.extractProgress = 0; r.extractHolder = null;
+    UI.toast("撤离读条被打断！（雕像仍在原地，重新站回圈内即可继续）", "bad");
+  }
   if (w && w.kind === "rift" && w.returnProgress > 0) { w.returnProgress = 0; UI.toast("返回信标读条被打断！", "bad"); }
   if (h === G.player) { G.player.takeDamage(w, dmg); return; }
-  const real = Math.max(1, Math.round(dmg - (h.heroDef.def || 0)));
+  const real = Math.max(1, Math.round(dmg - companionStats(h).def));   // 含武器栏装备的防御加成（16.5）
   h.hp -= real;
   if (G.run.stats) G.run.stats.dmgTaken += real;
   spawnFloat(h.x, h.y - 30, `-${real}`, "#ff9a7f");
@@ -641,48 +856,64 @@ function updateCompanions(w, dt) {
   const trail = trailPush(w);
   r.companions.forEach((c, i) => {
     if (!c.alive) return;
+    // 属性与队长同源：局内等级成长 + 武器栏装备加成（16.5 武器栏对全队生效）
+    const st = companionStats(c);
+    if (c.hpMax !== st.hpMax) { c.hpMax = st.hpMax; if (c.hp > c.hpMax) c.hp = c.hpMax; }
+    if (c.energyMax !== st.energyMax) { c.energyMax = st.energyMax; if (c.energy > c.energyMax) c.energy = c.energyMax; }
+    c.regen = st.regen;
+    c.cdMul = st.cdMul; c.lifesteal = st.lifesteal;   // 冷却缩减 / 吸血：属性卡与雕像 Buff 全队生效
     // 蛇形跟随：目标 = 队长尾迹上 (i+1)*DEPTH 深度处的历史点（沿真实路径）
     const t = trailTarget(trail, (i + 1) * TEAM_DEPTH, teamLateral(i));
     const tx = U.clamp(t.x, 20, w.w - 20), ty = U.clamp(t.y, 20, w.h - 20);
     const d = U.dist(c.x, c.y, tx, ty);
     if (d > 6) {
-      const spd = c.heroDef.spd * 1.15;
+      const spd = st.spd * 1.15;
       c.x += (tx - c.x) / d * spd * dt; c.y += (ty - c.y) / d * spd * dt;
       if (Math.abs(tx - c.x) > 4) c.faceDir = tx > c.x ? 1 : -1;
       resolveObstacles(c, w);
     }
-    // 自动普攻（队友不装模块，不吃词条；攻击随局内等级成长保持相关性）
+    // 自动普攻（武器栏内的武器模块对全队生效：技能值取 recomputeWeapon 解析出的 c.skills）
     c.fireTimer -= dt;
     const tgt = nearestMonster(w, c.x, c.y);
     if (tgt && c.fireTimer <= 0) {
-      const b = CFG.skills[CFG.weapons[c.heroDef.weapon].skills.basic];
-      const atk = c.heroDef.atk + 2 * (r.lv - 1);
-      const ang0 = Math.atan2(tgt.y - c.y, tgt.x - c.x);
-      const n = b.bullets || 1;
-      for (let k = 0; k < n; k++) {
-        const spread = n > 1 ? (k - (n - 1) / 2) * 0.14 : 0;
-        w.playerBullets.push(new Bullet(c.x, c.y, ang0 + spread, b.bulletSpd,
-          Math.max(1, Math.round(atk * b.dmgMul)), "player", b.pierce || 0, b.bounce || 0));
-      }
-      c.fireTimer = b.cd;
+      const b = (c.skills && c.skills.basic)
+        || CFG.skills[CFG.weapons[c.heroDef.weapon].skills.basic];   // 兜底：未重算时用技能表原始值
+      SkillSystem.castBullet(w, c, b, Math.atan2(tgt.y - c.y, tgt.x - c.x),
+        { side: "player", isSkill: false, atk: st.atk, spread: 0.14 });
+      c.fireTimer = b.cd * st.cdMul;   // 冷却缩减（属性卡「攻速」/ 增益「迅击」）对队友同样生效
+      c.faceDir = tgt.x > c.x ? 1 : -1;
+    }
+    // 主动技能（技能石）：与队长同一套 SkillSystem。队友是**独立个体**——
+    // 用**自己的能量池**（各自恢复、各自扣费），不占用队长能量池（CFG.team.aiSkill 可关）。
+    c.skillTimer = (c.skillTimer || 0) - dt;
+    c.energy = Math.min(c.energyMax, (c.energy || 0) + st.regen * dt);
+    const cs = c.skills && c.skills.skill;
+    if (CFG.team.aiSkill !== false && tgt && cs && c.skillTimer <= 0 && c.energy >= (cs.energy || 0)) {
+      c.energy -= (cs.energy || 0);
+      SkillSystem.cast(w, c, cs, tgt, { side: "player", isSkill: true, atk: st.atk });
+      c.skillTimer = cs.cd * st.cdMul;
       c.faceDir = tgt.x > c.x ? 1 : -1;
     }
   });
 }
 
-/* ---------- 召唤物：无人机（会被敌人攻击；跟随队长 + 自动攻击） ---------- */
+/* ---------- 召唤物：无人机（会被敌人攻击；环绕召唤者 + 自动攻击） ----------
+ * 归属规则（已定）：**谁的技能就随谁** —— 无人机环绕自己的召唤者（owner），
+ * 召唤者倒下也**不做「倒下即回收」**：无人机留在场上继续作战，只是改为跟随队长（保证不乱飘）。 */
 class Drone {
-  constructor(x, y, orbitA, hp, atk, fireCd, orbit) {
+  constructor(x, y, orbitA, hp, atk, fireCd, orbit, owner = null) {
     this.isDrone = true;
     this.x = x; this.y = y; this.r = 12;
     this.hpMax = hp; this.hp = hp;
     this.atk = atk; this.fireCd = fireCd;
     this.orbitA = orbitA; this.orbit = orbit;
+    this.owner = owner || G.player;   // 归属：每个成员有**自己的召唤物池**（环绕召唤者）
     this.fireTimer = U.rand(0.2, 0.6);
   }
   update(w, dt) {
-    // 环绕队长缓慢公转，脱离轨道时平滑归位
-    const p = G.player;
+    // 环绕**召唤者**缓慢公转（召唤者倒下也不回收，改为跟随队长继续作战），脱离轨道时平滑归位
+    const o = this.owner;
+    const p = (o && (o === G.player || o.alive)) ? o : G.player;
     if (p) {
       this.orbitA += dt * 0.6;
       const tx = p.x + Math.cos(this.orbitA) * this.orbit;
@@ -694,12 +925,12 @@ class Drone {
         this.y += (ty - this.y) / d * spd * dt;
       }
     }
-    // 自动攻击最近怪物
+    // 自动攻击最近怪物（伤害归属召唤者 → 吸血回召唤者自己的血）
     this.fireTimer -= dt;
     const tgt = nearestMonster(w, this.x, this.y);
     if (tgt && this.fireTimer <= 0) {
       const ang = Math.atan2(tgt.y - this.y, tgt.x - this.x);
-      w.playerBullets.push(new Bullet(this.x, this.y, ang, 560, this.atk, "player"));
+      w.playerBullets.push(new Bullet(this.x, this.y, ang, 560, this.atk, "player", 0, 0, 0, false, this.owner));
       this.fireTimer = this.fireCd;
     }
   }
@@ -726,13 +957,28 @@ function targetTakeDamage(w, t, dmg) {
   if (t.isDrone) droneTakeDamage(w, t, dmg);
   else heroTakeDamage(w, t, dmg);
 }
+/* ---------- 吸血结算（属性卡「吸血」+ 增益「汲血」，小队全体成员各自独立）----------
+ * owner = 伤害来源：队长 G.player 或队友 companion（各自回自己的血）。
+ * 未记 owner（无人机 / 陷阱等召唤物）时回落到队长，与旧行为一致。
+ * 注：AOE 爆炸（explode）不参与直击吸血，与队长既有口径一致。 */
+function applyLifesteal(owner, dmg) {
+  const r = G.run;
+  if (!r || !(dmg > 0)) return;
+  const src = owner || G.player;
+  if (src === G.player || !src.isCompanion) {
+    if (r.lifesteal > 0) r.hp = Math.min(r.hpMax, r.hp + dmg * r.lifesteal);
+  } else if (src.hp > 0 && (src.lifesteal || 0) > 0) {
+    src.hp = Math.min(src.hpMax, src.hp + dmg * src.lifesteal);
+  }
+}
 
 class Bullet {
-  constructor(x, y, ang, spd, dmg, side, pierce = 0, bounce = 0, aoe = 0, isSkill = false) {
+  constructor(x, y, ang, spd, dmg, side, pierce = 0, bounce = 0, aoe = 0, isSkill = false, owner = null) {
     this.x = x; this.y = y;
     this.vx = Math.cos(ang) * spd; this.vy = Math.sin(ang) * spd;
     this.dmg = dmg; this.side = side; this.pierce = pierce; this.bounce = bounce;
     this.aoe = aoe; this.isSkill = isSkill;
+    this.owner = owner;                       // 发射者（吸血归属：队长 / 队友各自独立）
     this.dead = false; this.life = 2.2; this.hitSet = new Set();
   }
   update(w, dt) {
@@ -756,7 +1002,7 @@ class Bullet {
           this.hitSet.add(m);
           if (this.aoe > 0) { explode(w, this.x, this.y, this.aoe, this.dmg, this.side); this.dead = true; return; }
           damageMonster(w, m, this.dmg);
-          if (G.run.lifesteal > 0) G.run.hp = Math.min(G.run.hpMax, G.run.hp + this.dmg * G.run.lifesteal);
+          applyLifesteal(this.owner, this.dmg);   // 吸血归属发射者（全队各自独立）
           if (this.pierce > 0) { this.pierce--; }
           else if (this.bounce > 0) {
             this.bounce--;
@@ -794,6 +1040,40 @@ class Bullet {
   }
 }
 
+/* ============ 怪物攻击技能（P2：攻击参数全部来自技能表 4e 视图） ============
+ * 怪物表只保留 type（AI 行为）与属性；攻击参数由 d.skillList[0] 对应的技能条目提供。
+ * 技能表用通用字段名（cd / radius / warnTime / dmgMul），此处归一化成 AI 调用的别名；
+ * 显式写了别名时以别名为准（如 boss 的 touchCd 与 cd 不同义）。 */
+const MON_ATK_DEFAULT = {
+  touchCd: 0.8, fireCd: 2.0, keepDist: 260, bulletSpd: 300,
+  chargeRange: 300, telegraph: 0.6, dashSpd: 520, dashTime: 0.4, chargeCd: 3.0,
+  boomWarn: 1.5, boomRadius: 200, touchMul: 0.6,
+  minionId: "NM0010", minionWave: 2, minionCd: 8.0,
+};
+function monsterAttackSkill(d, lv) {
+  const skId = d.skillList && d.skillList[0];
+  const se = (skId ? skillEntry(skId, lv) : null) || {};
+  const D = MON_ATK_DEFAULT;
+  const pick = (alias, generic) => (se[alias] != null ? se[alias]
+    : (generic && se[generic] != null ? se[generic] : D[alias]));
+  return {
+    id: skId || null, name: se.name || d.name,
+    atkMul: se.dmgMul != null ? se.dmgMul : 1,      // 攻击伤害倍率（× 怪物 atk）
+    touchCd: pick("touchCd", "cd"),
+    fireCd: pick("fireCd", "cd"),
+    chargeCd: pick("chargeCd", "cd"),
+    boomCd: pick("boomCd", "cd"),
+    boomWarn: pick("boomWarn", "warnTime"),
+    boomRadius: pick("boomRadius", "radius"),
+    keepDist: pick("keepDist", null), bulletSpd: pick("bulletSpd", null),
+    chargeRange: pick("chargeRange", null), telegraph: pick("telegraph", null),
+    dashSpd: pick("dashSpd", null), dashTime: pick("dashTime", null),
+    touchMul: pick("touchMul", null),
+    minionId: pick("minionId", null), minionWave: pick("minionWave", null),
+    minionCd: pick("minionCd", null),
+  };
+}
+
 class Monster {
   constructor(defId, x, y, lv) {
     const d = CFG.monsters[defId];
@@ -801,13 +1081,15 @@ class Monster {
     this.r = d.radius * (CFG.monsterSizeMul || 1);   // 体积倍数：碰撞与贴图同步
     const lvMul = 1 + (lv - 1) * 0.12;
     const cu = G.run && G.run.curse;   // 诅咒道具（待细化36）：向新生成的敌人附加属性修改器
-    this.hpMax = d.hp * lvMul * G.run.monsterHpMul * (cu ? cu.hpMul : 1); this.hp = this.hpMax;
-    this.atk = d.atk * lvMul * G.run.monsterAtkMul * (cu ? cu.atkMul : 1);
+    // 邪神雕像倍率不在此处套用（区分 BOSS/精英/小怪类别），由生成方调用 applyMonsterScale
+    this.hpMax = d.hp * lvMul * (cu ? cu.hpMul : 1); this.hp = this.hpMax;
+    this.atk = d.atk * lvMul * (cu ? cu.atkMul : 1);
     this.effSpd = d.spd * (cu ? cu.spdMul : 1);   // 实际移速（基础 × 诅咒附加的移速修改器）
+    this.ak = monsterAttackSkill(d, lv || 1);     // 攻击技能（技能表 4e 视图）
     this.dead = false;
-    this.touchTimer = 0; this.fireTimer = U.rand(0.5, d.fireCd || 2);
+    this.touchTimer = 0; this.fireTimer = U.rand(0.5, this.ak.fireCd);
     this.state = "chase"; this.stateT = 0; this.dashVx = 0; this.dashVy = 0;
-    this.boomTimer = d.boomCd || 0; this.warnT = 0; this.minionTimer = d.minionCd || 0;
+    this.boomTimer = this.ak.boomCd || 0; this.warnT = 0; this.minionTimer = this.ak.minionCd || 0;
     this.sprite = G.sprites[d.sprite];
     this.flashT = 0;
   }
@@ -815,6 +1097,7 @@ class Monster {
     this.flashT -= dt;
     const p = G.player;
     const distP = U.dist(this.x, this.y, p.x, p.y);
+    const ak = this.ak;   // 攻击技能参数（来自技能表 4e 视图，见 monsterAttackSkill）
     switch (this.d.type) {
       case "melee": {
         const h = nearestTarget(this.x, this.y);
@@ -823,7 +1106,7 @@ class Monster {
         this.y += Math.sin(ang) * this.effSpd * dt;
         this.touchTimer -= dt;
         if (U.dist(this.x, this.y, h.x, h.y) < this.r + h.r + 2 && this.touchTimer <= 0) {
-          targetTakeDamage(w, h, this.atk); this.touchTimer = this.d.touchCd;
+          targetTakeDamage(w, h, this.atk * ak.atkMul); this.touchTimer = ak.touchCd;
         }
         break;
       }
@@ -831,15 +1114,15 @@ class Monster {
         const h = nearestTarget(this.x, this.y);
         const ang = Math.atan2(h.y - this.y, h.x - this.x);
         const distH = U.dist(this.x, this.y, h.x, h.y);
-        if (distH > this.d.keepDist + 40) {
+        if (distH > ak.keepDist + 40) {
           this.x += Math.cos(ang) * this.effSpd * dt; this.y += Math.sin(ang) * this.effSpd * dt;
-        } else if (distH < this.d.keepDist - 60) {
+        } else if (distH < ak.keepDist - 60) {
           this.x -= Math.cos(ang) * this.effSpd * 0.7 * dt; this.y -= Math.sin(ang) * this.effSpd * 0.7 * dt;
         }
         this.fireTimer -= dt;
         if (this.fireTimer <= 0 && distH < 620) {
-          this.fireTimer = this.d.fireCd;
-          w.enemyBullets.push(new Bullet(this.x, this.y, ang, this.d.bulletSpd, this.atk, "enemy"));
+          this.fireTimer = ak.fireCd;
+          w.enemyBullets.push(new Bullet(this.x, this.y, ang, ak.bulletSpd, this.atk * ak.atkMul, "enemy"));
         }
         break;
       }
@@ -850,17 +1133,17 @@ class Monster {
         if (this.state === "chase") {
           const ang = Math.atan2(h.y - this.y, h.x - this.x);
           this.x += Math.cos(ang) * this.effSpd * dt; this.y += Math.sin(ang) * this.effSpd * dt;
-          if (distH < this.d.chargeRange && this.stateT <= 0) { this.state = "telegraph"; this.stateT = this.d.telegraph; }
+          if (distH < ak.chargeRange && this.stateT <= 0) { this.state = "telegraph"; this.stateT = ak.telegraph; }
         } else if (this.state === "telegraph") {
           if (this.stateT <= 0) {
             const ang = Math.atan2(h.y - this.y, h.x - this.x);
-            this.dashVx = Math.cos(ang) * this.d.dashSpd; this.dashVy = Math.sin(ang) * this.d.dashSpd;
-            this.state = "dash"; this.stateT = this.d.dashTime;
+            this.dashVx = Math.cos(ang) * ak.dashSpd; this.dashVy = Math.sin(ang) * ak.dashSpd;
+            this.state = "dash"; this.stateT = ak.dashTime;
           }
         } else if (this.state === "dash") {
           this.x += this.dashVx * dt; this.y += this.dashVy * dt;
-          if (distH < this.r + h.r + 2) { targetTakeDamage(w, h, this.atk); this.state = "chase"; this.stateT = this.d.chargeCd; }
-          if (this.stateT <= 0) { this.state = "chase"; this.stateT = this.d.chargeCd; }
+          if (distH < this.r + h.r + 2) { targetTakeDamage(w, h, this.atk * ak.atkMul); this.state = "chase"; this.stateT = ak.chargeCd; }
+          if (this.stateT <= 0) { this.state = "chase"; this.stateT = ak.chargeCd; }
         }
         break;
       }
@@ -874,28 +1157,30 @@ class Monster {
           this.warnT -= dt;
           if (this.warnT <= 0) {
             for (const h of enemyTargets()) {
-              if (U.dist(this.x, this.y, h.x, h.y) <= this.d.boomRadius) targetTakeDamage(w, h, this.atk * this.d.boomDmgMul);
+              if (U.dist(this.x, this.y, h.x, h.y) <= ak.boomRadius) targetTakeDamage(w, h, this.atk * ak.atkMul);
             }
-            spawnBurst(this.x, this.y, "#e5484d", 40, this.d.boomRadius);
-            this.boomTimer = this.d.boomCd;
+            spawnBurst(this.x, this.y, "#e5484d", 40, ak.boomRadius);
+            this.boomTimer = ak.boomCd;
           }
         } else if (this.boomTimer <= 0) {
-          this.warnT = this.d.boomWarn;
+          this.warnT = ak.boomWarn;
         }
-        // 刷小怪
+        // 刷小怪（召唤技能由技能表的 minionId / minionWave 决定）
         this.minionTimer -= dt;
         if (this.minionTimer <= 0) {
-          this.minionTimer = this.d.minionCd;
-          for (let i = 0; i < this.d.minionWave; i++) {
-            if (w.monsters.length < G.levelCfg.monsterCap) {
+          this.minionTimer = ak.minionCd;
+          for (let i = 0; i < ak.minionWave; i++) {
+            if (w.monsters.length < monsterCap()) {
               const a = U.rand(0, Math.PI * 2);
-              w.spawnMonster("NM0010", this.x + Math.cos(a) * 90, this.y + Math.sin(a) * 90);
+              w.spawnMonster(ak.minionId, this.x + Math.cos(a) * 90, this.y + Math.sin(a) * 90);
             }
           }
         }
         this.touchTimer -= dt;
         const hb = nearestTarget(this.x, this.y);
-        if (U.dist(this.x, this.y, hb.x, hb.y) < this.r + hb.r && this.touchTimer <= 0) { targetTakeDamage(w, hb, this.atk * 0.6); this.touchTimer = 1; }
+        if (U.dist(this.x, this.y, hb.x, hb.y) < this.r + hb.r && this.touchTimer <= 0) {
+          targetTakeDamage(w, hb, this.atk * ak.touchMul); this.touchTimer = ak.touchCd;
+        }
         break;
       }
     }
@@ -939,7 +1224,14 @@ function damageMonster(w, m, dmg) {
   }
 }
 
-/* ---------- 精英怪：基础怪 + 1~2 条随机词缀（词缀表 CFG.elites.affixes） ---------- */
+/* 精英怪编号判定（ED 前缀）：ED 由关卡层定点投放，不进随机圆 */
+function isEliteDef(id) {
+  return typeof id === "string" && id.slice(0, 2) === "ED";
+}
+
+/* ---------- 精英怪标注：独立精英（ED）与词缀转化共用 ----------
+ * 字段约定：m.isElite = 精英标记；m.eliteAffixes = 携带的 1~2 条词缀名数组。
+ * （旧字段 m.elite 曾同时表示"标记 + 词缀数组"，语义冲突，已拆分。） */
 function applyElite(m) {
   const ecfg = CFG.elites;
   const names = Object.keys(ecfg.affixes);
@@ -947,7 +1239,8 @@ function applyElite(m) {
   const picked = [];
   const pool = names.slice();
   for (let i = 0; i < n && pool.length; i++) picked.push(pool.splice(U.randInt(0, pool.length - 1), 1)[0]);
-  m.elite = picked;
+  m.isElite = true;
+  m.eliteAffixes = picked;
   for (const name of picked) {
     const a = ecfg.affixes[name];
     if (a.hpMul) { m.hpMax *= a.hpMul; m.hp = m.hpMax; }
@@ -957,6 +1250,39 @@ function applyElite(m) {
     if (a.shieldHp) m.shield = a.shieldHp;
   }
   m.r *= ecfg.sizeMul;   // 体型放大（碰撞与贴图同步）
+}
+
+/* ---------- 邪神雕像倍率（多效果并列，见 CFG.monsterScale） ----------
+ * 读 r.scale[key] 的 mul；只影响"后续生成"的怪物，不回溯已生成的怪。 */
+function monsterScaleMul(key) {
+  const r = G.run;
+  const s = r && r.scale && r.scale[key];
+  return (s && typeof s.mul === "number") ? s.mul : 1;
+}
+// 把某个"目标"的倍率套用到怪物（按 CFG.monsterScale.targets 的 applyHp/applyAtk 开关）
+function applyMonsterScale(m, targetName) {
+  const tcfg = CFG.monsterScale.targets[targetName];
+  if (!tcfg || !tcfg.key) return;
+  const mul = monsterScaleMul(tcfg.key);
+  if (mul === 1) return;
+  if (tcfg.applyHp) { m.hpMax *= mul; m.hp = m.hpMax; }
+  if (tcfg.applyAtk) { m.atk *= mul; }
+}
+// 全场怪物上限（"小怪数量"开 applyCap 时 ×mul，默认关闭；有性能风险）
+function monsterCap() {
+  const base = (G.levelCfg && G.levelCfg.monsterCap) || 200;
+  const tcfg = CFG.monsterScale.targets["小怪数量"];
+  if (tcfg && tcfg.applyCap) return Math.max(1, Math.round(base * monsterScaleMul(tcfg.key)));
+  return base;
+}
+/* 解析"编号:权重/编号:权重"怪物池字符串（ED/BS 不进随机圆，此处只透传，过滤在 spawnWave） */
+function parseWeightPool(str) {
+  const out = {};
+  (str || "").split("/").forEach(s => {
+    const [id, wt] = s.split(":");
+    if (id && wt != null) out[id] = Number(wt);
+  });
+  return out;
 }
 
 function explode(w, x, y, radius, dmg, side) {
@@ -986,12 +1312,9 @@ function onMonsterKilled(w, m) {
     const n = m.d.type === "boss" ? 5 : 1;
     for (let i = 0; i < n; i++) spawnPickup(w, m.x, m.y, "coin", Math.max(1, Math.round(m.d.coin / n * rm)));
     for (let i = 0; i < n; i++) spawnPickup(w, m.x, m.y, "exp", Math.max(1, Math.round(m.d.exp / n * rm)));
-    // 工匠雕像触发
-    if (!r.artisanSpawned && !r.artisanUsed && r.kills >= lv.artisanAtKills) {
-      r.artisanSpawned = true;
-      const pos = w.findFreeSpot(120);
-      if (pos) { w.altars.push({ cfg: CFG.altars.ALTAR_005, x: pos.x, y: pos.y, id: "ALTAR_005" }); UI.toast("⚒ 工匠雕像出现了！", "gold"); }
-    }
+    // 精英击杀计数（工匠雕像池"精英猎杀"触发条件用）
+    if (m.isElite) r.eliteKills = (r.eliteKills || 0) + 1;
+    // 工匠雕像改由「雕像池」投放（CFG.artisan，见 updateArtisanPool）：此处不再定点生成
     // Boss 触发：进度满 或 时限到（先到者）
     if (!r.bossSpawned && (r.kills >= lv.progressGoal || r.runTime >= lv.timeLimit)) {
       spawnBoss(w);
@@ -1011,11 +1334,11 @@ function onMonsterKilled(w, m) {
       }
     }
   }
-  // 精英怪：必掉宝箱（按权重自动入包）+ 额外经验
-  if (m.elite) {
+  // 精英怪（独立 ED 或词缀转化）：必掉宝箱（按权重自动入包）+ 额外经验
+  if (m.isElite) {
     const item = makeChestItem(U.weightedPick(CFG.elites.dropChest));
     if (r.backpack.tryStackChest(item) || (() => { const s = r.backpack.findSpot(item); return s ? (r.backpack.place(item, s.x, s.y), true) : false; })()) {
-      UI.toast(`★ 精英「${m.elite.join("·")}」掉落 ${item.name}`, "gold");
+      UI.toast(`★ 精英「${(m.eliteAffixes || []).join("·")}」掉落 ${item.name}`, "gold");
     } else UI.toast("背包已满，精英宝箱作废", "bad");
     for (let i = 0; i < CFG.elites.extraExp; i++) spawnPickup(w, m.x, m.y, "exp", Math.max(2, Math.round(m.d.exp)));
   }
@@ -1028,12 +1351,91 @@ function spawnPickup(w, x, y, type, value) {
     vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 30 });
 }
 
+/* ---------- 工匠雕像池（4.6）：配额池 + 限制器 + 多触发条件 ----------
+ * 模型：**触发条件（多条并存）把配额投进池** → **限制器**决定配额何时、以何频率落成
+ * 地图上的一座真实雕像。雕像被使用后立即从地图移除（"生效后消失"），池继续产出，
+ * 因此**工匠子世界可无限次进入**——"无限次"由池的持续产出保证，而非次数豁免。 */
+function createArtisanPool() {
+  return {
+    quota: 0,                    // 池中待投放配额
+    spawned: 0,                  // 本关已投放座数（受 limiter.maxPerLevel 限制）
+    cooldown: 0,                 // 使用雕像后的冷却剩余（秒）
+    pending: false, readyAt: 0,  // 配额就绪 → 随机延迟后落地
+    state: { firstDone: false, progressMarks: 0, bossDone: false, eliteMarks: 0, pityTimer: 0 },
+  };
+}
+
+/* 场上工匠雕像数量（限制器：同屏最多 maxOnField 座） */
+function artisanFieldCount(w) {
+  let n = 0;
+  for (const a of w.altars) if (a.id === "ALTAR_005") n++;
+  return n;
+}
+
+function updateArtisanPool(w, dt) {
+  const r = G.run, lv = G.levelCfg, cfg = CFG.artisan;
+  if (!r || !r.artisanPool || !w.isMain || !cfg) return;
+  const lim = cfg.limiter, a = r.artisanPool, st = a.state;
+  if (a.cooldown > 0) a.cooldown = Math.max(0, a.cooldown - dt);
+  // --- 触发条件：多条并存，任一满足即投配额（互不排斥） ---
+  for (const t of cfg.triggers) {
+    switch (t.type) {
+      case "levelKills":      // 首次里程碑：击杀数达到关卡 artisanAtKills
+        if (!st.firstDone && r.kills >= (lv.artisanAtKills || 0)) { st.firstDone = true; a.quota += t.quota; }
+        break;
+      case "progressStep": {  // 击杀进度每 step 一次（最多 max 次）
+        const marks = Math.floor((r.kills / Math.max(1, lv.progressGoal)) / t.step);
+        const cap = t.max === undefined ? marks : Math.min(marks, t.max);
+        while (st.progressMarks < cap) { st.progressMarks++; a.quota += t.quota; }
+        break;
+      }
+      case "bossDefeated":
+        if (!st.bossDone && r.bossDefeated) { st.bossDone = true; a.quota += t.quota; }
+        break;
+      case "eliteKills": {    // 每击杀 perQuota 只精英一次（最多 max 次）
+        const marks = Math.floor((r.eliteKills || 0) / Math.max(1, t.perQuota || 1));
+        const cap = t.max === undefined ? marks : Math.min(marks, t.max);
+        while (st.eliteMarks < cap) { st.eliteMarks++; a.quota += t.quota; }
+        break;
+      }
+      case "pity":            // 保底：距上次雕像出现超过 interval 秒
+        st.pityTimer += dt;
+        if (st.pityTimer >= t.interval) { st.pityTimer = 0; a.quota += t.quota; }
+        break;
+    }
+  }
+  // --- 限制器：每关上上限（配额再高也不再产出） ---
+  if (a.spawned >= lim.maxPerLevel) { a.quota = 0; a.pending = false; return; }
+  // --- 落地判定：有配额 + 场上未超上限 + 无冷却 ---
+  if (!a.pending && a.quota > 0 && artisanFieldCount(w) < lim.maxOnField && a.cooldown <= 0) {
+    a.pending = true;
+    a.readyAt = U.rand(lim.spawnDelay[0], lim.spawnDelay[1]);   // 随机延迟落地，出现时机显得"随机"
+  }
+  if (a.pending) {
+    a.readyAt -= dt;
+    if (a.readyAt <= 0) {
+      a.pending = false;
+      const pos = w.findFreeSpot(lim.minDistFromPlayer);
+      if (pos) {
+        w.altars.push({ cfg: CFG.altars.ALTAR_005, x: pos.x, y: pos.y, id: "ALTAR_005" });
+        a.quota = Math.max(0, a.quota - 1);
+        a.spawned++;
+        st.pityTimer = 0;                 // 保底计时以"上次雕像出现"为起点
+        r.artisanSpawned = true;
+        UI.toast("⚒ 工匠雕像出现了！", "gold");
+      }
+    }
+  }
+}
+
 function spawnBoss(w) {
   const r = G.run;
   r.bossSpawned = true;
+  if (r.stats) r.stats.timeToBoss = r.runTime;   // 记录 Boss 出现时刻（结算"Boss 耗时"依赖它）
   const pos = w.findFreeSpot(200);   // 至少离玩家 200，离墙 90
   const bossId = G.levelCfg.boss || "BS0001";
   const boss = new Monster(bossId, pos.x, pos.y, G.levelCfg.monsterLevel || 1);
+  applyMonsterScale(boss, "BOSS属性");   // 邪神"BOSS属性"倍率：生成时套用一次（不回溯）
   w.monsters.push(boss);
   w.boss = boss;
   UI.toast(`⚠ BOSS「${CFG.monsters[bossId].name}」出现了！`, "bad");
@@ -1043,12 +1445,37 @@ function spawnBoss(w) {
 function onBossDefeated(w) {
   const r = G.run;
   r.bossDefeated = true;
-  if (r.stats) r.stats.bossFightTime = r.runTime - (r.stats.timeToBoss || r.runTime);
-  // 撤离点代币（5.2）：Boss 掉落，不占格无重量，上限 1；任意位置按 E 读条 8 秒撤离
-  if (!r.extractToken) {
-    r.extractToken = true;
-    UI.toast("BOSS 已被击败！获得【撤离点代币】· 按 E 任意位置读条 8 秒撤离", "gold");
+  if (r.stats) {
+    // 注意不能用 `||`：timeToBoss 为 0 时是合法值，会被误判为缺失导致耗时恒为 0
+    const t0 = r.stats.timeToBoss === undefined ? r.runTime : r.stats.timeToBoss;
+    r.stats.bossFightTime = Math.max(0, r.runTime - t0);
   }
+  // 撤离点雕像（5.2）：Boss 死亡位置生成撤离点雕像，小队成员站进雕像圈内即自动读条 8 秒撤离
+  if (!r.exitStatue) {
+    r.exitStatue = { x: w.boss.x, y: w.boss.y };
+    UI.toast("BOSS 已被击败！撤离点雕像在原地出现，**站进雕像圈内**即自动读条 8 秒撤离", "gold");
+  }
+}
+
+/** 撤离点判定（5.2，口径已更新）：
+ *  **任一存活英雄在圈内即自动读条**（队长或任一 AI 队友都算，不再需要按 E）；
+ *  「圈内英雄全部离开」→ 进度按判定通用规则衰退（移动本身不再单独打断）；
+ *  受击仍立即归零（见 heroTakeDamage）；撤离点雕像始终留在原地，可反复重读。
+ *  判定是单一实例（单一进度 + 单一持有者 extractHolder）→ 多个英雄同圈不可能同时触发同一个撤离判定。 */
+function updateExtractJudge(dt) {
+  const r = G.run;
+  if (!r || !r.exitStatue) return;
+  const st = r.exitStatue;
+  const done = judgeChannel(r, st.x, st.y, CFG.extract.radius, dt, CFG.extract.channel,
+    "extractProgress", "extractHolder");
+  if (done) { r.extractChanneling = false; EventBus.emit("extractSuccess"); }
+  else r.extractChanneling = !!r.extractHolder;   // 兼容字段：供 HUD / 提示显示「是否正在读条」
+}
+/** 离开主地图（进工匠世界 / 裂缝）时清空撤离读条状态：雕像保留在原地，回来站进圈内可继续读 */
+function clearExtractChannel() {
+  const r = G.run;
+  if (!r) return;
+  r.extractChanneling = false; r.extractProgress = 0; r.extractHolder = null;
 }
 
 function gainExp(v) {
@@ -1094,22 +1521,67 @@ function useCard(idx) {
   SFX.play("altar");
   return true;
 }
-function refreshCards(paid) {
+/* 刷新候选卡牌（规则 2：局内金币三用途之一 —— 刷新属性卡牌）
+ * 先用每局免费次数；免费次数为 0 后扣金币（CFG.cardPool.refreshCost）；金币不足则刷新失败
+ * （不扣钱）并提示。契约：成功返回 true，失败返回 false（界面层据此决定提示）。 */
+function refreshCards() {
   const r = G.run;
   if (!G.inArtisan) return false;
-  // 免费刷新（每局固定次数）优先；用完后可花结晶付费刷新（待细化 #37）
-  if (r.cardRefresh > 0) {
+  if (r.cardRefresh > 0) {                     // 免费次数优先（每局固定 2 次）
     r.cardRefresh--;
     r.cardCandidates = drawCardCandidates();
     return true;
   }
-  if (paid && Meta.data.crystals >= CFG.cardPool.refreshCrystalCost) {
-    Meta.data.crystals -= CFG.cardPool.refreshCrystalCost;
-    Meta.commit();
-    r.cardCandidates = drawCardCandidates();
-    return true;
+  const cost = CFG.cardPool.refreshCost;       // 免费次数用完 → 金币刷新
+  if (r.coin < cost) {
+    UI.toast(`金币不足，无法刷新候选卡牌（需 ${cost}）`, "bad");
+    return false;
   }
+  r.coin -= cost;
+  r.cardCandidates = drawCardCandidates();
+  return true;
+}
+
+/* ---------- 工匠世界金币服务（规则 2：局内金币三用途之二三 —— 购买武器模块 / 购买道具） ----------
+ * 交易接口契约（界面层按此调用）：返回 {ok:boolean, msg:string}；
+ * 内部完成金币判定与扣除、物品生成与入包、失败原因文案；不调 UI.toast（统一由界面层提示）。
+ * 背包放不下 → 物品放入 r.pendingItems（工匠待分配区，与开箱/商店同机制）。
+ * 仅工匠世界内可用（G.inArtisan），否则拒绝。 */
+const QUAL_KEY_INDEX = { normal: 0, advanced: 1, epic: 2, divine: 3 };   // 品质名 → itemQualities 下标
+/* 物品入包：复用既有入包路径（保险先叠加未满堆叠；宝箱按品质叠加；否则找空位；再不行进待分配区）。
+ * 返回 true = 已入背包；false = 已放入待分配区。 */
+function grantItemToRun(r, item) {
+  if (item.kind === "insurance") {
+    const exist = r.backpack.items.find(x => x.kind === "insurance" && x.count < CFG.insurance.maxStack);
+    if (exist) { exist.count++; exist.value = CFG.insurance.value * exist.count; return true; }
+  }
+  if (r.backpack.tryStackChest(item)) return true;
+  const s = r.backpack.findSpot(item);
+  if (s) { r.backpack.place(item, s.x, s.y); return true; }
+  r.pendingItems.push(item);
   return false;
+}
+function shopBuyModule() {
+  if (!G.inArtisan || !G.run) return { ok: false, msg: "仅可在工匠世界内购买" };
+  const r = G.run, cfg = CFG.artisanServices.buyModule;
+  if (r.coin < cfg.cost) return { ok: false, msg: `金币不足（需 ${cfg.cost}）` };
+  r.coin -= cfg.cost;
+  // 复用 makeModule（品质/词缀/等级生成与掉落完全一致）：品质按配置权重，定义随机取自模块表
+  const itemQ = QUAL_KEY_INDEX[U.weightedPick(cfg.qualityWeights)] || 0;
+  const item = makeModule(U.pick(CFG.moduleDefs).id, itemQ);
+  const placed = grantItemToRun(r, item);
+  return { ok: true, msg: placed ? `已购买：${item.name}` : `已购买：${item.name}（背包已满，已放入待分配区）` };
+}
+function shopBuyItem() {
+  if (!G.inArtisan || !G.run) return { ok: false, msg: "仅可在工匠世界内购买" };
+  const r = G.run, cfg = CFG.artisanServices.buyItem;
+  if (r.coin < cfg.cost) return { ok: false, msg: `金币不足（需 ${cfg.cost}）` };
+  r.coin -= cfg.cost;
+  // 道具池 = 现有两类消耗品：保险契约 / 诅咒道具（复用各自构造器与既有入包路径，不新增物品类型）
+  const kind = U.weightedPick({ ins: CFG.insurance.chance, curse: CFG.curseItems.chance });
+  const item = kind === "ins" ? makeInsurance() : makeCurse();
+  const placed = grantItemToRun(r, item);
+  return { ok: true, msg: placed ? `已购买：${item.name}` : `已购买：${item.name}（背包已满，已放入待分配区）` };
 }
 
 /* ---------- 玩家死亡（16.6） ---------- */
@@ -1151,22 +1623,24 @@ function calcDeathPenalty(run) {
   return { lost, kept, lostValue, totalValue, contractsUsed: used, contractsLeft: had - used };
 }
 
-/* ---------- 局内→局外资源转化（待细化 5：撤离成功时折算，死亡不折算） ---------- */
+/* ---------- 局内→局外资源转化（待细化 5 已定：撤离成功时只折算背包物品） ---------- */
+/* 撤离结算折算（统一口径）：背包 / 武器栏内**每件物品**都有固定「价值」，
+ * 一律 × CFG.settleConvert.valueRate 折算为结晶 —— 宝箱 / 装备 / 武器模块 / 消耗品同一套，不再分类别。
+ * 局内经验与金币一律归零、不参与折算（死亡时同样不折算）。 */
 function calcSettleConvert(run) {
   const sc = CFG.settleConvert;
-  const b = { coin: 0, chest: 0, item: 0, card: 0, total: 0 };
-  b.coin = Math.floor((run.coin || 0) / sc.coinPerCrystal);
-  let chestVal = 0, itemVal = 0;
-  for (const it of run.backpack.items) {
-    if (it.kind === "chest") chestVal += it.value;
-    else if (it.kind === "gear" || it.kind === "module") itemVal += it.value;
-    // 保险契约单独折算（CFG.insurance.crystalRefund），不计入此处
-  }
-  for (const it of run.weaponInv.items) if (it.kind === "gear" || it.kind === "module") itemVal += it.value;
-  b.chest = Math.floor(chestVal * sc.chestRatio);
-  b.item = Math.floor(itemVal * sc.itemRatio);
-  b.card = (run.cardAssets || 0) * sc.cardCrystal;
-  b.total = b.coin + b.chest + b.item + b.card;
+  const rate = sc.valueRate;
+  const b = { chest: 0, gear: 0, item: 0, card: 0, total: 0 };
+  const take = (it) => {
+    const v = Math.floor((it.value || 0) * rate);
+    if (it.kind === "chest") b.chest += v;                                          // 未开封宝箱（不带出本体，价值折算）
+    else if (it.kind === "gear" || it.kind === "module") b.gear += v;               // 装备 / 武器模块
+    else b.item += v;                                                               // 消耗品：保险契约 / 诅咒道具 等
+  };
+  for (const it of run.backpack.items) take(it);
+  for (const it of run.weaponInv.items) take(it);
+  b.card = Math.floor((run.cardAssets || 0) * sc.cardValue * rate);                 // 属性卡牌资产（固定价值 4/张）
+  b.total = b.chest + b.gear + b.item + b.card;
   return b;
 }
 
@@ -1181,6 +1655,10 @@ class World {
     this.circles = []; this.spawnTimer = 0;
     this.boss = null;
     this.npc = null; this.exitBeacon = null; this.returnBeacon = null;
+    // 子地图开场冻结（5.1）：>0 时全员静止 + 全员无敌，只推进倒计时；0 = 正常战斗
+    this.freezeTimer = 0;
+    // 子地图交互读条进度：显式初始化，避免"未跑过 update 时为 undefined"造成的取值歧义
+    this.returnProgress = 0; this.npcProgress = 0; this.exitProgress = 0;
     if (isMain) this.setupMain();
     else if (this.kind === "rift") this.setupRift();
     else this.setupArtisan();
@@ -1225,44 +1703,101 @@ class World {
     this.exitBeacon = { x: this.w / 2, y: this.h - 130 };
   }
   setupRift() {
-    // 空间裂缝子地图（5.1）：全新战斗地图，无任务、纯探索战斗 + 击杀奖励；
-    // 返回信标以场景物体形式在地上随机刷出（读条 5 秒，受击归零）
+    // 空间裂缝子地图（5.1）：一次性投放战斗场景
+    // 流程：开场冻结 freezeTime 秒（全员静止+无敌，红字倒计时）→ 一次性投放任务全部敌人 + 独立精英
+    //       → 之后不再增援（任务完成/失败均不新增）→ 剩余敌人留场可继续清剿 / 走返回信标返回
     this.obstacles = [
       { x: U.rand(300, 500), y: U.rand(200, 400), w: U.rand(150, 260), h: 70 },
       { x: U.rand(this.w - 560, this.w - 360), y: U.rand(200, 400), w: U.rand(150, 260), h: 70 },
       { x: U.rand(300, 500), y: U.rand(this.h - 420, this.h - 240), w: U.rand(120, 220), h: 70 },
       { x: U.rand(this.w - 520, this.w - 360), y: U.rand(this.h - 420, this.h - 240), w: 120, h: 120 },
     ];
-    // 两个刷怪圆（复用主关卡首个圆模板）
+    // 两个投放区域（复用主关卡首个圆模板）：不再作为持续刷新点，只作一次性投放的敌人散布中心
     const tpl = CFG.spawnCircles[Object.keys(CFG.spawnCircles)[0]];
     this.circles = [
       { ...tpl, x: this.w * 0.3, y: this.h * 0.35, timer: 1.0 },
       { ...tpl, x: this.w * 0.7, y: this.h * 0.65, timer: 2.5 },
     ];
-    for (const c of this.circles) this.spawnWave(c);
-    // 返回信标：地上随机刷出（远离玩家出生点）
+    // 返回信标：地上随机刷出（远离玩家出生点）——先定信标，投放敌人时据此避让
     this.returnBeacon = this.findFreeSpot(400, 90, 90) || { x: this.w / 2, y: this.h - 200 };
+    // ① 一次性投放任务所需的全部小怪
+    this.spawnRiftBatch();
+    // ② 独立精英：随敌群一次性投放（数量 = eliteBase × "精英数量"倍率）；静默，避免连刷多条提示
+    for (let i = 0, en = this.eliteTargetCount(); i < en; i++) this.spawnElite(true);
+    // ③ 开场冻结：全员静止 + 全员无敌（红字倒计时由 render 绘制，倒计时归零后才开战）
+    this.freezeTimer = CFG.rift.freezeTime;
+  }
+  /* 裂缝投放点采样：投放区域内随机取点（避开障碍 / 玩家 / 返回信标 / 祭坛），失败退回全图 findFreeSpot */
+  riftSpawnSpot(c) {
+    const p = G.player || { x: this.w / 2, y: this.h / 2 }, b = this.returnBeacon;
+    for (let t = 0; t < 40; t++) {
+      const a = U.rand(0, Math.PI * 2), rr = U.rand(0, c.radius);
+      const x = c.x + Math.cos(a) * rr, y = c.y + Math.sin(a) * rr;
+      if (x < 60 || x > this.w - 60 || y < 60 || y > this.h - 60) continue;
+      if (blockedByObstacle(this, x, y)) continue;
+      if (U.dist(x, y, p.x, p.y) < CFG.spawnRules.minDistFromPlayer) continue;
+      if (b && U.dist(x, y, b.x, b.y) < 160) continue;
+      if (this.altars.some(al => U.dist(x, y, al.x, al.y) < 150)) continue;
+      return { x, y };
+    }
+    return this.findFreeSpot(CFG.spawnRules.minDistFromPlayer);
+  }
+  /* 一次性投放任务所需的全部小怪（数量 = 任务 spawnCount）
+   * 子地图不按解锁进度过滤：裂缝是纯战斗场景，怪物池全量开放（否则低进度下只剩一种怪） */
+  spawnRiftBatch() {
+    const t = G.run && G.run.riftTask;
+    // 无任务时用兜底投放数（直接构造子地图的场景，如单元测试）
+    const total = Math.max(0, (t && t.spawnCount) || CFG.rift.defaultSpawnCount);
+    if (!total) return 0;
+    const pool = parseWeightPool(CFG.rift.spawnPool);
+    const circles = this.circles.length ? this.circles : [{ x: this.w / 2, y: this.h / 2, radius: 240 }];
+    let n = 0, guard = 0;
+    // 采样可能失败（空间被障碍/信标挤占），多给几轮重试直到投满或达到保险次数
+    while (n < total && guard < total * 5) {
+      guard++;
+      const pos = this.riftSpawnSpot(circles[n % circles.length]);
+      if (!pos) continue;
+      if (this.spawnMonster(U.weightedPick(pool), pos.x, pos.y)) n++;
+    }
+    return n;
   }
   spawnMonster(defId, x, y) {
-    if (this.monsters.length >= G.levelCfg.monsterCap) return null;
+    if (this.monsters.length >= monsterCap()) return null;
     x = U.clamp(x, 40, this.w - 40); y = U.clamp(y, 40, this.h - 40);
     const lv = (G.levelCfg.monsterLevel || 1);
     const m = new Monster(defId, x, y, lv);
-    // 精英怪：按地图类型概率 + 击杀进度加成（裂缝子地图概率更高）
-    if (m.d.type !== "boss") {
+    // 词缀转化（旧机制·配置开关）：ED 精英与 BOSS 不参与转化
+    if (m.d.type !== "boss" && !isEliteDef(defId)) {
       const progress = Math.min(1, (G.run.kills || 0) / Math.max(1, G.levelCfg.progressGoal));
+      // 主地图由 convertChance 总开关控制（默认 0 = 关闭，已由 ED 定点投放替代）；
+      // 裂缝子地图沿用 riftChance；代码路径保留供策划日后开启。
       const chance = this.kind === "rift" ? CFG.elites.riftChance
-        : CFG.elites.chance + progress * CFG.elites.chanceProgress;
+        : (CFG.elites.convertChance > 0 ? CFG.elites.convertChance + progress * CFG.elites.chanceProgress : 0);
       if (Math.random() < chance) applyElite(m);
     }
+    // 邪神雕像倍率：按最终类别（BOSS / 精英 / 小怪）套用，只影响新生成的怪
+    applyMonsterScale(m, m.isElite ? "精英属性" : (m.d.type === "boss" ? "BOSS属性" : "小怪属性"));
     this.monsters.push(m);
     return m;
   }
+  /* 刷怪圆刷新间隔：受邪神"小怪数量"倍率影响（applyInterval 时 ÷mul） */
+  spawnInterval(c) {
+    const cntCfg = CFG.monsterScale.targets["小怪数量"];
+    if (!cntCfg || !cntCfg.applyInterval) return c.interval;
+    const mul = monsterScaleMul(cntCfg.key);
+    const d = mul > 0 ? mul : 0.1;   // mul 为 0/负时兜底，避免除零与负间隔
+    return Math.max(0.5, c.interval / d);
+  }
   spawnWave(c) {
+    // 每波数量受邪神"小怪数量"倍率影响（向上取整、最小 1）
+    let wave = c.waveSize;
+    const cntCfg = CFG.monsterScale.targets["小怪数量"];
+    if (cntCfg && cntCfg.applyWaveSize) wave = Math.max(1, Math.ceil(wave * monsterScaleMul(cntCfg.key)));
     // 圆内随机取点：避开墙体、与玩家保持最小距离
     let spawned = 0, attempts = 0;
+    const maxAttempts = Math.max(24, wave * 8);
     const p = G.player;
-    while (spawned < c.waveSize && attempts < 24) {
+    while (spawned < wave && attempts < maxAttempts) {
       attempts++;
       const a = U.rand(0, Math.PI * 2), rr = U.rand(0, c.radius);
       const x = c.x + Math.cos(a) * rr, y = c.y + Math.sin(a) * rr;
@@ -1271,19 +1806,64 @@ class World {
       if (U.dist(x, y, p.x, p.y) < CFG.spawnRules.minDistFromPlayer) continue;
       // BOSS 存活期间：刷怪点远离 BOSS，避免小怪贴脸刷出
       if (this.boss && !this.boss.dead && U.dist(x, y, this.boss.x, this.boss.y) < CFG.spawnRules.bossClearRadius) continue;
-      // 按解锁进度过滤怪物池
-      const progress = G.run.kills / G.levelCfg.progressGoal;
+      // 按解锁进度过滤怪物池；ED/BS 不进随机圆（即便误配进 pool 也在此过滤）
+      const progress = G.run.kills / Math.max(1, G.levelCfg.progressGoal);
+      const raw = parseWeightPool(c.pool);
       const pool = {};
-      c.pool.split("/").forEach(s => {
-        const [id, wt] = s.split(":");
+      for (const id in raw) {
+        if (isEliteDef(id) || (CFG.monsters[id] && CFG.monsters[id].type === "boss")) continue;
         const unlock = CFG.monsterUnlock[id] ?? 0;
-        if (progress >= unlock) pool[id] = Number(wt);
-      });
+        if (progress >= unlock) pool[id] = raw[id];
+      }
       if (!Object.keys(pool).length) pool.NM0010 = 1;
       const defId = U.weightedPick(pool);
       const m = this.spawnMonster(defId, x, y);
       if (m) spawned++;
     }
+  }
+  /* ---------- 独立精英怪投放（3.3 原方案：关卡层定点投放） ---------- */
+  eliteBaseCount() {
+    if (this.isMain) return (G.levelCfg && G.levelCfg.eliteBase) || 0;
+    if (this.kind === "rift") return CFG.rift.eliteBase || 0;
+    return 0;   // 工匠世界等安全区不投放
+  }
+  elitePoolStr() {
+    if (this.isMain) return (G.levelCfg && G.levelCfg.elitePool) || "";
+    if (this.kind === "rift") return CFG.rift.elitePool || "";
+    return "";
+  }
+  // 目标数 = round(基础数量 × "精英数量"倍率)：倍率变化实时重算，只影响后续投放、不回收已投放
+  eliteTargetCount() {
+    const tcfg = CFG.monsterScale.targets["精英数量"];
+    const mul = (tcfg && tcfg.applySpawnTarget) ? monsterScaleMul(tcfg.key) : 1;
+    return Math.max(0, Math.round(this.eliteBaseCount() * mul));
+  }
+  countElites() {
+    let n = 0;
+    for (const m of this.monsters) if (!m.dead && m.isElite) n++;
+    return n;
+  }
+  updateEliteSpawn(dt) {
+    if (!G.run || !this.elitePoolStr()) return;
+    if (this.isMain && G.run.bossDefeated) return;     // Boss 阶段结束不再补投
+    this.eliteTimer = (this.eliteTimer == null) ? CFG.eliteSpawn.firstDelay : this.eliteTimer - dt;
+    if (this.eliteTimer > 0) return;
+    this.eliteTimer = CFG.eliteSpawn.interval;          // 每 interval 秒检查一次
+    if (this.countElites() < this.eliteTargetCount()) this.spawnElite();
+  }
+  spawnElite(silent) {
+    if (this.monsters.length >= monsterCap()) return null;
+    const defId = U.weightedPick(parseWeightPool(this.elitePoolStr()));
+    if (!defId) return null;
+    // 定点投放：复用 findFreeSpot，避开玩家（CFG.spawnRules.minDistFromPlayer）与障碍
+    const pos = this.findFreeSpot(CFG.spawnRules.minDistFromPlayer);
+    if (!pos) return null;
+    const m = new Monster(defId, pos.x, pos.y, (G.levelCfg && G.levelCfg.monsterLevel) || 1);
+    applyElite(m);                            // 携带 1~2 条随机词缀
+    applyMonsterScale(m, "精英属性");          // 邪神"精英属性"倍率（只影响新投放的精英）
+    this.monsters.push(m);
+    if (!silent) UI.toast(`★ 精英「${CFG.monsters[defId].name}」出现！`, "bad");
+    return m;
   }
   findFreeSpot(minDistFromPlayer = 0, minDistFromWalls = 90, clearance = 70) {
     for (let t = 0; t < 60; t++) {
@@ -1299,6 +1879,16 @@ class World {
   }
   update(dt) {
     const r = G.run;
+    // 子地图开场冻结（5.1）：全员静止 + 全员无敌 —— 只推进倒计时，其余战斗逻辑（怪物/子弹/祭坛/
+    // 拾取/任务限时/伤害结算）全部暂停；玩家与同伴的更新由 main.js 主循环同步跳过
+    if (this.freezeTimer > 0) {
+      this.freezeTimer = Math.max(0, this.freezeTimer - dt);
+      if (this.freezeTimer === 0) {
+        const t = r.riftTask;
+        UI.toast(t ? `⚔ 战斗开始！任务【${t.name}】：${t.desc}` : "⚔ 战斗开始！", "bad");
+      }
+      return;
+    }
     if (this.isMain) r.runTime += dt;
     // 刷怪：每个圆独立计时（圆模板的刷新间隔生效）
     if (this.isMain && !r.bossDefeated) {
@@ -1306,7 +1896,7 @@ class World {
       if (!bossActive) {
         for (const c of this.circles) {
           c.timer -= dt;
-          if (c.timer <= 0) { c.timer = c.interval; this.spawnWave(c); }
+          if (c.timer <= 0) { c.timer = this.spawnInterval(c); this.spawnWave(c); }
         }
       } else {
         // Boss 阶段：继续少量刷新更强的普通怪
@@ -1317,16 +1907,14 @@ class World {
         }
       }
     } else if (this.kind === "rift") {
-      for (const c of this.circles) {
-        c.timer -= dt;
-        if (c.timer <= 0) { c.timer = c.interval; this.spawnWave(c); }
-      }
+      // 敌人已在进场时一次性投放完毕（见 setupRift）：此处不再持续刷怪，任务完成/失败均不增援；
+      // 场上剩余敌人留场，玩家可继续清剿或走返回信标离开。
       // 裂缝任务变体（待细化 20 / §五）：歼灭/限时目标；完成 → 额外高价值任务宝箱；超时 → 失败
       const t = r.riftTask;
       if (t && !t.done && !t.failed) {
         if (t.time) {
           t.remain -= dt;
-          if (t.remain <= 0) { t.failed = true; UI.toast(`✘ 任务失败：${t.name}（超时）`, "bad"); }
+          if (t.remain <= 0) { t.failed = true; UI.toast(`✘ 任务失败：${t.name}（超时）· 敌人不再增援，可清剿余敌或返回`, "bad"); }
         }
         if (!t.failed && (r.riftKills || 0) >= t.goal) {
           t.done = true;
@@ -1334,17 +1922,23 @@ class World {
           if (pos) {
             this.altars.push({ cfg: { name: "任务奖励宝箱", color: "#ff8c5a", icon: "▣", radius: 91, channel: 1.2,
               effects: [{ type: "giveChest", weights: CFG.rift.taskBonusWeights }] }, x: pos.x, y: pos.y, id: "RIFT_TASK" });
-            UI.toast(`✔ 任务完成：${t.name}！高价值任务宝箱出现了`, "gold");
+            UI.toast(`✔ 任务完成：${t.name}！高价值任务宝箱出现了（敌人不再增援）`, "gold");
           }
         }
       }
     }
-    // Buff / 邪神计时：所有地图统一走表（裂缝战斗中 Buff 正常倒计时）
-    if (r.monsterDebuff) {
-      r.monsterDebuff.remain -= dt;
-      if (r.monsterDebuff.remain <= 0) r.monsterDebuff = null;
-      r.monsterHpMul = r.monsterDebuff ? r.monsterDebuff.hpMul : 1;
-      r.monsterAtkMul = r.monsterDebuff ? r.monsterDebuff.atkMul : 1;
+    // 独立精英怪投放：主地图按间隔补投；裂缝子地图的精英已在进场时随敌群一次性投放（见 setupRift）
+    if (this.isMain) this.updateEliteSpawn(dt);
+    // 工匠雕像池（4.6）：触发条件投配额 → 限制器决定落地；主地图专属
+    if (this.isMain) updateArtisanPool(this, dt);
+    // 邪神倍率计时：多效果并列；-1 表示永久（不倒计时）；到期恢复 mul=1
+    if (r.scale) {
+      for (const k in r.scale) {
+        const s = r.scale[k];
+        if (!s || !(s.remain > 0)) continue;   // remain<=0（含 -1 永久）不倒计时
+        s.remain -= dt;
+        if (s.remain <= 0) { s.remain = 0; s.mul = 1; }
+      }
     }
     for (const b of r.buffs) b.remain -= dt;
     r.buffs = r.buffs.filter(b => b.remain > 0);
@@ -1360,10 +1954,11 @@ class World {
     const before = this.monsters.length;
     this.monsters = this.monsters.filter(m => !m.dead);
     if (this.isMain && this.boss && this.boss.dead && !r.bossDefeated) onBossDefeated(this);
-    // 召唤物（无人机）：跟随 + 自动攻击；阵亡移除
+    // 召唤物（无人机）：随召唤者 + 自动攻击；仅「被击毁」时移除（召唤者倒下不回收）
     for (const d of (r.drones || [])) if (d.hp > 0) d.update(this, dt);
     r.drones = (r.drones || []).filter(d => d.hp > 0);
-    // 陷阱（大地雷）：不被敌人攻击；敌人进入范围 → 引信延迟 → 爆炸 → 消失
+    // 陷阱（大地雷）：**留在原地**，与布设者脱钩（布设者走开/倒下都不影响）；不被敌人攻击；
+    // 敌人进入范围 → 引信延迟 → 爆炸 → 消失
     for (let i = (r.traps || []).length - 1; i >= 0; i--) {
       const t = r.traps[i];
       if (!t.armed) {
@@ -1414,46 +2009,25 @@ class World {
       if (picked) continue;
     }
     this.pickups = this.pickups.filter(pk => pk.life > 0);
-    // 祭坛交互：进度条与雕像绑定——圈内积累，离开缓慢衰退（衰退速度 = 积累速度 × 1.2）
+    // 祭坛 / 雕像 / 信标 / NPC 交互：统一走 judgeChannel（判定圈规则见其注释）
     // 判定半径 = 虚线绘制半径 × altarJudgeMul（1.2，外扩 20% 容差）
     for (const a of this.altars.slice()) {
-      // 判定：任意存活英雄（队长或队友）在圈内即积累；全部离开才衰退
-      const inCircle = aliveHeroes().some(h => U.dist(h.x, h.y, a.x, a.y) < a.cfg.radius * CFG.altarJudgeMul);
-      if (inCircle) {
-        a.progress = (a.progress || 0) + dt;
-        if (a.progress >= a.cfg.channel) { this.triggerAltar(a); }
-      } else if (a.progress > 0) {
-        a.progress = Math.max(0, a.progress - dt * 1.2);
-      }
+      if (judgeChannel(a, a.x, a.y, a.cfg.radius, dt, a.cfg.channel)) this.triggerAltar(a);
     }
-    // 工匠世界交互（同规则：判定 = 虚线圈 × altarJudgeMul，离开衰退）
+    // 工匠世界交互（同规则：**任一成员**在圈内即可，不限队长；触发后需先离开圈再重新进入，同一判定不重复触发）
     if (!this.isMain && this.kind === "artisan") {
-      const nearNpc = U.dist(p.x, p.y, this.npc.x, this.npc.y) < 90 * CFG.altarJudgeMul;
-      if (nearNpc) {
-        this.npcProgress = (this.npcProgress || 0) + dt;
-        if (this.npcProgress >= 1.0 && !this._npcBlocked) {
-          this._npcBlocked = true;
-          EventBus.emit("openArtisanUI");
-        }
-      } else {
-        this.npcProgress = Math.max(0, (this.npcProgress || 0) - dt * 1.2);
-        this._npcBlocked = false;
-      }
-      const nearExit = U.dist(p.x, p.y, this.exitBeacon.x, this.exitBeacon.y) < 100 * CFG.altarJudgeMul;
-      if (nearExit) {
-        this.exitProgress = (this.exitProgress || 0) + dt;
-        if (this.exitProgress >= 3.0) { this.exitProgress = 0; EventBus.emit("returnToMain"); }
-      } else {
-        this.exitProgress = Math.max(0, (this.exitProgress || 0) - dt * 1.2);
-      }
+      const nearNpc = !!heroInCircle(this.npc.x, this.npc.y, 90);
+      const fired = judgeChannel(this, this.npc.x, this.npc.y, 90, dt, 1.0, "npcProgress", "npcHolder");
+      if (fired && !this._npcBlocked) { this._npcBlocked = true; EventBus.emit("openArtisanUI"); }
+      if (!nearNpc) this._npcBlocked = false;
+      if (judgeChannel(this, this.exitBeacon.x, this.exitBeacon.y, 100, dt, 3.0, "exitProgress", "exitHolder"))
+        EventBus.emit("returnToMain");
     }
-    // 空间裂缝返回信标（5.1）：读条 5 秒；仅受击归零（移动不打断，用户已改规则）；离开圈进度保留
+    // 空间裂缝返回信标（5.1）：读条 5 秒；仅受击归零（移动不打断，用户已改规则）；离开圈进度保留（decay=0）
     if (this.kind === "rift" && this.returnBeacon) {
-      const nearBeacon = aliveHeroes().some(h => U.dist(h.x, h.y, this.returnBeacon.x, this.returnBeacon.y) < 100 * CFG.altarJudgeMul);
-      if (nearBeacon) {
-        this.returnProgress = (this.returnProgress || 0) + dt;
-        if (this.returnProgress >= CFG.rift.channel) { this.returnProgress = 0; EventBus.emit("returnFromRift"); }
-      }
+      if (judgeChannel(this, this.returnBeacon.x, this.returnBeacon.y, 100, dt,
+        CFG.rift.channel, "returnProgress", "returnHolder", 0))
+        EventBus.emit("returnFromRift");
     }
   }
   triggerAltar(a) {
@@ -1467,11 +2041,36 @@ class World {
   execEffect(ef, a) {
     const r = G.run, p = G.player;
     switch (ef.type) {
-      case "heal": p.heal(ef.pct); UI.toast(`${a.cfg.name}：恢复 ${ef.pct * 100}% 生命`, "gold"); break;
+      case "heal": {
+        // 雕像效果 = 小队共享（16.5）：全队在圈内的成员一起恢复
+        for (const h of aliveHeroes()) {
+          if (h === p) p.heal(ef.pct);
+          else {
+            const add = h.hpMax * ef.pct;
+            h.hp = Math.min(h.hpMax, h.hp + add);
+            spawnFloat(h.x, h.y - 30, `+${Math.round(add)}`, "#7de08a");
+          }
+        }
+        UI.toast(`${a.cfg.name}：全队恢复 ${ef.pct * 100}% 生命`, "gold");
+        break;
+      }
       case "randomBuff": {
+        // 战争雕像（4.4）：重复触发**同类 Buff 叠加的是等级**（不是多份效果），并刷新持续时间。
+        // stackable=false 的 Buff 只刷新时间、不升级；等级上限 = 条目 maxLv（默认 CFG.buffLevel.maxLv）。
         const b = U.pick(CFG.warBuffs);
-        r.buffs.push({ ...b, remain: ef.duration });
-        UI.toast(`战争雕像：获得「${b.id}」${b.label}（${ef.duration}秒）`, "gold");
+        const cur = r.buffs.find((x) => (x.skillId || "") === b.skillId);
+        const inc = b.stackable === false ? 0 : (b.stackPerTrigger || 1);
+        let lv, stacked = false;
+        if (cur) {
+          const before = cur.lv;
+          cur.lv = Math.min(b.maxLv, cur.lv + inc);
+          cur.remain = ef.duration;
+          lv = cur.lv; stacked = cur.lv > before;
+        } else {
+          r.buffs.push({ skillId: b.skillId, id: b.id, lv: 1, remain: ef.duration });
+          lv = 1;
+        }
+        UI.toast(`战争雕像：获得「${b.id}」Lv${lv} ${buffEffectLabel(b.skillId, lv)}（${ef.duration}秒）${stacked ? " ⬆升级" : ""}`, "gold");
         break;
       }
       case "giveChest": {
@@ -1483,25 +2082,32 @@ class World {
         break;
       }
       case "adjustMonsters": {
-        const v = U.randInt(ef.range[0], ef.range[1]);
-        const mul = 1 + v / 100;
-        r.monsterDebuff = { hpMul: mul, atkMul: mul, remain: ef.duration };
-        r.monsterHpMul = mul; r.monsterAtkMul = mul;
-        UI.toast(`邪神雕像：小怪属性 ${v >= 0 ? "+" : ""}${v}%（${ef.duration}秒）`, v >= 0 ? "bad" : "gold");
+        // 邪神雕像（4.5）：按配置表的"目标"决定作用点，触发时在区间内随机取值 →
+        // mul = 1 + v/100；同一 target 再次触发为"覆盖 + 重新计时"（不是无限叠乘）。
+        const tcfg = CFG.monsterScale.targets[ef.target];
+        if (!tcfg || !tcfg.key) { UI.toast(`邪神雕像：未配置的目标「${ef.target}」`, "bad"); break; }
+        const range = ef.range || CFG.monsterScale.range;
+        const duration = (ef.duration != null) ? ef.duration : CFG.monsterScale.duration;
+        const v = U.randInt(range[0], range[1]);
+        const mul = Math.max(0, 1 + v / 100);
+        r.scale[tcfg.key] = { mul, remain: duration };   // 覆盖该条并重新计时（duration=-1 永久）
+        const durTxt = duration < 0 ? "永久" : `${duration}秒`;
+        UI.toast(`☠ ${a.cfg.name}：${ef.target} ${v >= 0 ? "+" : ""}${v}%（${durTxt}）`, v >= 0 ? "bad" : "gold");
         break;
       }
       case "teleport": {
         if (ef.submap === "artisan") {
-          if (!r.artisanUsed) { r.artisanUsed = true; EventBus.emit("enterArtisan"); }
+          // 工匠雕像"生效后消失"（4.6）：使用即从地图上移除该雕像；
+          // 不设"每关仅一次"限制——雕像池会继续产出新雕像，**子世界可无限次进入**。
+          const idx = this.altars.indexOf(a);
+          if (idx >= 0) this.altars.splice(idx, 1);
+          if (r.artisanPool) r.artisanPool.cooldown = CFG.artisan.limiter.cooldown;   // 限制器：使用后冷却
+          r.artisanUsed = true;
+          EventBus.emit("enterArtisan");
         }
         break;
       }
       case "rift": EventBus.emit("enterRift"); break;
-      case "giveExtractToken": {
-        if (!r.extractToken) { r.extractToken = true; UI.toast("▲ 获得【撤离点代币】· 按 E 任意位置读条 8 秒撤离（上限 1 个）", "gold"); }
-        else UI.toast("已持有撤离点代币（上限 1 个），信标消散", "bad");
-        break;
-      }
       case "extract": EventBus.emit("extractSuccess"); break;
     }
   }
@@ -1600,6 +2206,28 @@ function render() {
       ctx.fillText(Math.floor(frac * 100) + "%", a.x, a.y - 44);
     }
   }
+  // 撤离点雕像（5.2）：主地图当前撤离点，绿色系信标风格（虚线圈 = 判定圈，与祭坛同一契约）
+  if (w.isMain && G.run && G.run.exitStatue) {
+    const st = G.run.exitStatue, rExt = CFG.extract.radius;
+    ctx.setLineDash([6, 6]); ctx.strokeStyle = "#7de08a55";
+    ctx.beginPath(); ctx.arc(st.x, st.y, rExt, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(st.x, st.y, 30, 0, Math.PI * 2);
+    ctx.fillStyle = "#7de08a33"; ctx.fill();
+    ctx.strokeStyle = "#7de08a"; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.fillStyle = "#7de08a"; ctx.font = "20px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("▲", st.x, st.y);
+    ctx.font = "13px sans-serif"; ctx.fillStyle = "#7de08a";
+    ctx.fillText(`撤离点（圈内自动读条 ${CFG.extract.channel} 秒）`, st.x, st.y - 46);
+    // 读条进度环：画在雕像位置（受击归零；圈内英雄全部离开则缓慢衰退）
+    if (G.run.extractChanneling && G.run.extractProgress > 0) {
+      const frac = Math.min(1, G.run.extractProgress / CFG.extract.channel);
+      ctx.strokeStyle = "#ffd76a"; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(st.x, st.y, 40, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = "#ffd76a"; ctx.font = "bold 13px sans-serif";
+      ctx.fillText(Math.floor(frac * 100) + "%", st.x, st.y - 58);
+    }
+  }
   // 工匠世界 NPC / 返回信标（虚线圈 = 判定圈，与祭坛同一契约）
   if (!w.isMain && w.kind === "artisan") {
     ctx.setLineDash([6, 6]); ctx.strokeStyle = "#ffd76a55";
@@ -1676,15 +2304,16 @@ function render() {
   const szMul = CFG.monsterSizeMul || 1;
   for (const m of w.monsters) {
     const img = m.sprite;
-    const size = (m.d.type === "boss" ? 130 : 48) * szMul * (m.elite ? CFG.elites.sizeMul : 1);
+    const size = (m.d.type === "boss" ? 130 : 48) * szMul * (m.isElite ? CFG.elites.sizeMul : 1);
     // 精英光环 + 词缀名
-    if (m.elite) {
-      const col = CFG.elites.affixes[m.elite[0]].color;
+    if (m.isElite) {
+      const affixes = m.eliteAffixes || [];
+      const col = (CFG.elites.affixes[affixes[0]] && CFG.elites.affixes[affixes[0]].color) || "#e5a04b";
       ctx.beginPath(); ctx.arc(m.x, m.y, m.r + 8, 0, Math.PI * 2);
       ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.stroke();
       ctx.fillStyle = col + "22"; ctx.fill();
       ctx.font = "bold 11px sans-serif"; ctx.textAlign = "center";
-      ctx.fillStyle = col; ctx.fillText("精英·" + m.elite.join("·"), m.x, m.y - size / 2 - 20);
+      ctx.fillStyle = col; ctx.fillText("精英·" + affixes.join("·"), m.x, m.y - size / 2 - 20);
       // 护盾条
       if (m.shield > 0) {
         ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(m.x - 20, m.y - size / 2 - 32, 40, 4);
@@ -1709,15 +2338,15 @@ function render() {
     if (m.d.type === "charger" && m.state === "telegraph") {
       const ang = Math.atan2(G.player.y - m.y, G.player.x - m.x);
       ctx.strokeStyle = "#ff5b5b"; ctx.setLineDash([8, 6]); ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x + Math.cos(ang) * m.d.chargeRange, m.y + Math.sin(ang) * m.d.chargeRange); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x + Math.cos(ang) * m.ak.chargeRange, m.y + Math.sin(ang) * m.ak.chargeRange); ctx.stroke();
       ctx.setLineDash([]);
     }
     // Boss 爆炸预警圈
     if (m.d.type === "boss" && m.warnT > 0) {
-      const t = m.warnT / m.d.boomWarn;
+      const t = m.warnT / m.ak.boomWarn;
       ctx.strokeStyle = `rgba(229,72,77,${0.4 + 0.4 * Math.sin(G.time * 14)})`;
       ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.arc(m.x, m.y, m.d.boomRadius * (1 - t * 0.15), 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(m.x, m.y, m.ak.boomRadius * (1 - t * 0.15), 0, Math.PI * 2); ctx.stroke();
       ctx.fillStyle = "rgba(229,72,77,0.08)"; ctx.fill();
     }
   }
@@ -1763,10 +2392,13 @@ function render() {
       } else {
         ctx.fillStyle = "#8fd0a0"; ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); ctx.fill();
       }
-      // 头顶血条
+      // 头顶血条 + 能量条（队友是独立个体：各自有能量池）
       ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(c.x - 20, c.y - 40, 40, 4);
       ctx.fillStyle = "#7de08a";
       ctx.fillRect(c.x - 20, c.y - 40, 40 * Math.max(0, c.hp / c.hpMax), 4);
+      ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(c.x - 20, c.y - 34, 40, 3);
+      ctx.fillStyle = "#6cb2ff";
+      ctx.fillRect(c.x - 20, c.y - 34, 40 * Math.max(0, Math.min(1, (c.energy || 0) / (c.energyMax || 1))), 3);
     }
   }
   // 陷阱（大地雷）：触发圈虚线 = 触发范围（与伤害范围同源）；引信期闪烁
@@ -1840,6 +2472,22 @@ function render() {
       ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center";
       ctx.fillStyle = "#ff8c5a";
       ctx.fillText(`☠ ${cu.name} ${Math.ceil(cu.remain)}s · 敌人强化中 · 掉落 ×${cu.rewardMul}`, G.W / 2, 56);
+    }
+    // 子地图开场冻结倒计时（5.1）：全员静止 + 全员无敌，红色大字 3/2/1
+    const fw = G.activeWorld;
+    if (fw && fw.freezeTimer > 0) {
+      const n = Math.max(1, Math.ceil(fw.freezeTimer));
+      ctx.save();
+      ctx.fillStyle = "rgba(8,12,20,0.35)"; ctx.fillRect(0, 0, G.W, G.H);   // 压暗战场，突出倒计时
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.font = "bold 132px sans-serif";
+      ctx.lineWidth = 8; ctx.strokeStyle = "rgba(0,0,0,0.65)";
+      ctx.strokeText(String(n), G.W / 2, G.H / 2 - 24);
+      ctx.fillStyle = "#ff3b3b";
+      ctx.fillText(String(n), G.W / 2, G.H / 2 - 24);
+      ctx.font = "bold 20px sans-serif"; ctx.fillStyle = "#ffb3b3";
+      ctx.fillText("全员冻结中 · 准备战斗", G.W / 2, G.H / 2 + 70);
+      ctx.restore();
     }
   }
 }

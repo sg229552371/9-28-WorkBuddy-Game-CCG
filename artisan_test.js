@@ -120,5 +120,110 @@ vm.runInContext(`
   console.assert(G.player.x > x3 + 50, "返回主地图后可移动, dx=" + (G.player.x - x3));
   console.log("返回主地图后移动 OK: dx =", Math.round(G.player.x - x3));
 
-  console.log("ARTISAN MOVE TEST OK");
+  /* ============ 阶段6：工匠雕像池（配额池 + 限制器 + 多触发条件，4.6） ============
+   * 设计目标：子世界可无限次进入 —— 雕像"使用后消失"，池按触发条件持续产出新雕像。 */
+
+  // 干净场地：清掉场上已有雕像，重置池状态
+  const mainW = G.mainWorld;
+  function clearStatues() { mainW.altars = mainW.altars.filter(a => a.id !== "ALTAR_005"); }
+  function poolReset() { G.run.artisanPool = createArtisanPool(); clearStatues(); }
+  function settlePool(dt) { updateArtisanPool(mainW, 0); G.run.artisanPool.readyAt = 0; updateArtisanPool(mainW, dt || 0.1); }
+  function fieldStatues() { return mainW.altars.filter(a => a.id === "ALTAR_005").length; }
+
+  // 6.1 触发条件各自独立投配额，多条并存互不排斥
+  poolReset();
+  G.run.kills = CFG.levels[0].artisanAtKills;                 // 首次里程碑
+  G.run.bossDefeated = false; G.run.eliteKills = 0;
+  updateArtisanPool(mainW, 0);
+  const qFirst = G.run.artisanPool.quota;
+  console.assert(qFirst >= 1, "触发条件①击杀里程碑投配额，quota=" + qFirst);
+  G.run.bossDefeated = true;                                  // BOSS 击败（与上一条并存）
+  const qBoss0 = G.run.artisanPool.quota;
+  updateArtisanPool(mainW, 0);
+  console.assert(G.run.artisanPool.quota > qBoss0, "触发条件②BOSS 击败并行追加配额，quota=" + G.run.artisanPool.quota);
+  G.run.eliteKills = 2;                                       // 精英猎杀（每 2 只 1 次）
+  const qBeforeElite = G.run.artisanPool.quota;
+  updateArtisanPool(mainW, 0);
+  console.assert(G.run.artisanPool.quota > qBeforeElite, "触发条件③精英猎杀投配额");
+  // 保底单独验证：用干净池（配额保持 0），避免同帧落地扣配额干扰计数
+  poolReset();
+  G.run.kills = 0; G.run.bossDefeated = false; G.run.eliteKills = 0;
+  const pityCfg = CFG.artisan.triggers.find(t => t.type === "pity");
+  updateArtisanPool(mainW, pityCfg.interval - 1);
+  console.assert(G.run.artisanPool.quota === 0, "保底未到点时不投配额");
+  updateArtisanPool(mainW, 1);
+  console.assert(G.run.artisanPool.quota === 1, "触发条件④保底计时到点投配额");
+  console.log("雕像池触发条件 OK: 首次/BOSS/精英/保底 均独立生效");
+
+  // 6.2 限制器：配额就绪不立即落地（随机延迟），压缩延迟后才落地
+  poolReset();
+  G.run.kills = CFG.levels[0].artisanAtKills;
+  updateArtisanPool(mainW, 0);
+  console.assert(G.run.artisanPool.pending && fieldStatues() === 0, "限制器①：配额就绪后进入延迟投放（不当场贴脸生成）");
+  G.run.artisanPool.readyAt = 0; updateArtisanPool(mainW, 0.1);
+  console.assert(fieldStatues() === 1, "延迟结束后落地 1 座");
+
+  // 6.3 限制器：同屏最多 maxOnField 座（有配额也不再落地）
+  const lim = CFG.artisan.limiter;
+  G.run.artisanPool.quota = 5;
+  updateArtisanPool(mainW, 0.1);
+  console.assert(fieldStatues() === lim.maxOnField, "限制器②：同屏最多 " + lim.maxOnField + " 座，got " + fieldStatues());
+
+  // 6.4 使用雕像 → 雕像消失 + 进入冷却 + 子世界可再次进入
+  const st = mainW.altars.find(a => a.id === "ALTAR_005");
+  const before = fieldStatues();
+  mainW.triggerAltar(st);
+  console.assert(fieldStatues() === before - 1, "雕像生效后从地图上消失（使用即消耗）");
+  console.assert(G.run.artisanPool.cooldown === lim.cooldown, "使用后进入冷却 " + lim.cooldown + "s");
+  console.assert(G.inArtisan === true, "雕像使用后可进入工匠子世界（不限次数）");
+  mainW.altars = mainW.altars.filter(a => a.id !== "ALTAR_005");   // 清场以便验证冷却
+
+  // 6.5 冷却期内不投放；冷却结束后可再投放（→ 无限次进入的机制保证）
+  poolReset();
+  G.run.artisanPool.quota = 3;
+  G.run.artisanPool.cooldown = lim.cooldown;
+  settlePool(0.1);
+  console.assert(fieldStatues() === 0, "限制器③：冷却期内不投放");
+  G.run.artisanPool.cooldown = 0;
+  settlePool(0.1);
+  console.assert(fieldStatues() === 1, "冷却结束后可再次投放（子世界可无限次进入）");
+
+  // 6.6 限制器：每关投放上限
+  poolReset();
+  G.run.artisanPool.spawned = lim.maxPerLevel;
+  G.run.artisanPool.quota = 9;
+  settlePool(0.1);
+  console.assert(fieldStatues() === 0 && G.run.artisanPool.quota === 0, "限制器④：达到每关上限后不再产出");
+
+  // 6.7 非主地图不投放（工匠世界/裂缝不产生工匠雕像）
+  poolReset();
+  const subW = new World(1920, 1080, false);
+  G.run.artisanPool.quota = 3;
+  updateArtisanPool(subW, 0); G.run.artisanPool.readyAt = 0; updateArtisanPool(subW, 0.1);
+  console.assert(subW.altars.every(a => a.id !== "ALTAR_005"), "非主地图不投放工匠雕像");
+
+  // 6.8 节奏模拟：一整关（击杀 0 → progressGoal，200 秒），雕像一出现就"使用"
+  //     期望：受配额来源（首次1 + 进度3 + BOSS1 = 5）+ 限制器（冷却20s / 每关上限6）约束，
+  //     全关落地 4~6 座 —— 既不至于进不了工匠世界，也不会刷成"无脑无限进"。
+  poolReset();
+  G.run.kills = 0; G.run.bossDefeated = false; G.run.eliteKills = 0;
+  const lvCfg = CFG.levels[0];
+  let used = 0, simT = 0;
+  while (simT < 200) {
+    G.run.kills = Math.min(lvCfg.progressGoal, Math.floor(simT / 200 * lvCfg.progressGoal));
+    if (simT > 150) G.run.bossDefeated = true;                 // 模拟 BOSS 在中后段被击败
+    updateArtisanPool(mainW, 0.5); simT += 0.5;
+    for (const s of mainW.altars.filter(a => a.id === "ALTAR_005")) {   // 出现即使用（含"使用后消失 + 冷却"）
+      mainW.altars.splice(mainW.altars.indexOf(s), 1);
+      G.run.artisanPool.cooldown = lim.cooldown;
+      used++;
+    }
+  }
+  const spawnedTotal = G.run.artisanPool.spawned;
+  console.assert(spawnedTotal === used, "每次投放都被使用（雕像不堆积），spawned=" + spawnedTotal + " used=" + used);
+  console.assert(spawnedTotal <= lim.maxPerLevel, "全关投放不超过每关上限 " + lim.maxPerLevel + "，got " + spawnedTotal);
+  console.assert(spawnedTotal >= 4 && spawnedTotal <= 6, "全关约 4~6 次工匠机会（节奏合理），got " + spawnedTotal);
+  console.log("雕像池节奏模拟 OK: 全关投放 " + spawnedTotal + " 座（上限 " + lim.maxPerLevel + "）");
+
+  console.log("ARTISAN POOL TEST OK");
 `, ctx, { filename: "inline" });
