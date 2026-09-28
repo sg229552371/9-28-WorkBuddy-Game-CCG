@@ -782,14 +782,35 @@ function autoFightMove(p, w, dt) {
   let goal = null;   // {x, y}
   const target = nearestMonster(w, p.x, p.y);
   const tDist = target ? U.dist(p.x, p.y, target.x, target.y) : Infinity;
+  // 雕像分类：按 id 识别（裂缝/任务奖励宝箱无 id，按效果类型兜底）；工匠雕像 AI 永不主动踩
+  const altarKind = (a) => {
+    const eff = (a.cfg && a.cfg.effects) || [];
+    if (a.id === "ALTAR_005" || (a.cfg && a.cfg.name && a.cfg.name.indexOf("工匠") >= 0)) return "artisan";
+    if (a.id === "ALTAR_002" || eff.some(e => e.type === "randomBuff")) return "war";
+    if (a.id === "ALTAR_001" || eff.some(e => e.type === "heal")) return "goddess";
+    if ((a.id || "").indexOf("ALTAR_004") === 0 || eff.some(e => e.type === "adjustMonsters")) return "evil";
+    return "chest";
+  };
   // ① 雕像/祭坛激活：锁定目标 → 走进交互圈 → 圈内站桩读条（读条由 World.update 的 judgeChannel 推进）
-  if (style.altar) {
+  //    风格决定踩哪类：war/chest/evil 按开关；女神需生命 ≤ goddessHp 门槛；残血达门槛时女神优先于其他雕像。
+  //    门槛在选目标时判定一次，锁定后读条不反悔（威胁让位时进度保留可回来续读）。
+  if (style.altar && typeof style.altar === "object") {
+    const ac = style.altar;
     if (r.aiAltar && w.altars.indexOf(r.aiAltar) < 0) { r.aiAltar = null; r.aiAltarT = 0; }   // 已触发被移除
     if (!r.aiAltar) {
-      let bd = af.altarRange;
+      const hpFrac = r.hp / r.hpMax;
+      let bd = af.altarRange, bp = 0;   // bp 优先级：女神(达门槛)=2 > 战争/宝箱/邪神=1
       for (const a of w.altars) {
+        const kind = altarKind(a);
+        let prio = 0;
+        if (kind === "goddess") { if (ac.goddessHp != null && hpFrac <= ac.goddessHp) prio = 2; }
+        else if (ac[kind]) prio = 1;    // war / chest / evil；artisan 永不在 ac 中开启
+        if (prio <= 0) continue;
         const d = U.dist(p.x, p.y, a.x, a.y);
-        if (d < bd) { bd = d; r.aiAltar = a; r.aiAltarT = 0; }
+        if (d >= af.altarRange) continue;
+        if (prio < bp) continue;                    // 低优先级不抢高优先级
+        if (prio === bp && d >= bd) continue;       // 同级取最近
+        bd = d; bp = prio; r.aiAltar = a; r.aiAltarT = 0;
       }
     }
     if (r.aiAltar) {
@@ -801,18 +822,28 @@ function autoFightMove(p, w, dt) {
       } else goal = { x: r.aiAltar.x, y: r.aiAltar.y };
     }
   }
-  // ② 掉落拾取（金币/经验宝石/地上宝箱）：战斗目标较远或已清场时才主动去捡；就近选一个
-  if (!goal && style.loot !== "passive" && threat < 1.2 && (!target || tDist > af.engageBase * style.engageMul + 50)) {
-    const R = af.lootRange[style.loot] || 0;
-    let bd = R;
-    for (const pk of w.pickups) {
-      const d = U.dist(p.x, p.y, pk.x, pk.y);
-      if (d < bd) { bd = d; goal = { x: pk.x, y: pk.y }; }
+  // ② 掉落拾取（金币/经验宝石/地上宝箱）：gate 决定触发时机——
+  //    path=战斗中顺路（贴身小半径，不抢战斗）/ gap=战斗目标较远或清场（战斗间隙）/ clear=战后清扫（目标在清扫圈外）
+  if (!goal && threat < 1.2) {
+    const loot = style.loot || {};
+    const R = loot.range || 0;
+    let gate = false;
+    if (R > 0) {
+      if (loot.gate === "path") gate = true;
+      else if (loot.gate === "clear") gate = !target || tDist > R;
+      else gate = !target || tDist > af.engageBase * style.engageMul + 50;   // gap（默认）
     }
-    if ((r.aiChestCool || 0) <= 0) {
-      for (const c of w.groundChests) {
-        const d = U.dist(p.x, p.y, c.x, c.y);
-        if (d < bd) { bd = d; goal = { x: c.x, y: c.y }; }
+    if (gate) {
+      let bd = R;
+      for (const pk of w.pickups) {
+        const d = U.dist(p.x, p.y, pk.x, pk.y);
+        if (d < bd) { bd = d; goal = { x: pk.x, y: pk.y }; }
+      }
+      if (loot.chests && (r.aiChestCool || 0) <= 0) {
+        for (const c of w.groundChests) {
+          const d = U.dist(p.x, p.y, c.x, c.y);
+          if (d < bd) { bd = d; goal = { x: c.x, y: c.y }; }
+        }
       }
     }
   }

@@ -92,8 +92,12 @@ CFG.skills2 = {
  *   dodgeMargin    预警圈/冲锋线躲避半径放大系数（冷静档提前更多离开危险区）
  *   reactDelay     威胁反应延迟秒（疯狂档反应慢 → 偶尔吃刀，保留游戏张力）
  *   lowHpFlee      血量低于该比例时转入拉开距离风筝（0 = 莽到底不退）
- *   loot           拾取习惯：passive=不主动捡 / near=战斗目标较远时顺路捡近处 / far=战后主动清扫大范围掉落与地上宝箱
- *   altar          是否主动去踩雕像/祭坛交互圈读条（进圈后原地站桩至读条完成） */
+ *   loot           拾取习惯（对象）：range 扫描半径(px，0=不捡) / chests 是否捡地上宝箱 / gate 触发时机
+ *                  gate: "path"=战斗中顺路捡（100px 内视为贴身顺路）/ "gap"=战斗目标较远或清场时（战斗间隙）
+ *                        "clear"=战后清扫（战斗目标在清扫圈外或已清场）
+ *   altar          雕像激活习惯（对象）：war 战争雕像 / chest 宝箱雕像 / evil 邪神雕像 / artisan 工匠雕像（bool）；
+ *                  goddessHp 女神雕像激活的生命门槛（比例，null=从不）；残血达门槛时女神优先于其他雕像
+ *                  （门槛在选目标时判定一次，读条开始后不反悔；威胁让位/超时等保护规则全局生效） */
 CFG.autoFight = {
   defaultStyle: "balanced",
   manualResumeDelay: 0.5,   // 玩家手动操作松手后，AI 恢复接管前的延迟（无缝切换）
@@ -104,14 +108,22 @@ CFG.autoFight = {
   strafeT: 1.6,             // 风筝环绕方向的切换周期(秒)
   wallMargin: 110,          // 边界回避：距墙该范围内受向内软推力（角落自救）
   wallWeight: 3.0,          // 边界力权重（高于威胁躲避：贴墙保命优先，风筝不会把队长顶进墙角）
-  lootRange: { near: 220, far: 520 },   // 拾取扫描半径（按风格档位）
   altarRange: 640,          // 雕像/祭坛激活扫描半径
   altarTimeout: 8,          // 走向雕像超时放弃（秒），防止目标失效后卡死
   chestFailCooldown: 3,     // 地上宝箱拾取失败（背包满）后的跳过时长（秒），防止 AI 反复撞击刷 toast
   styles: {
-    berserk:  { name: "疯狂", engageMul: 0.35, dodgeBullets: false, dodgeTelegraph: true, dodgeMargin: 1.15, reactDelay: 0.4, lowHpFlee: 0,    loot: "passive", altar: false, desc: "贴脸输出只管打，不捡东西不碰雕像，血线再低也不退" },
-    balanced: { name: "平衡", engageMul: 0.75, dodgeBullets: true,  dodgeTelegraph: true, dodgeMargin: 1.5,  reactDelay: 0.2, lowHpFlee: 0.4, loot: "near",    altar: true,  desc: "中距离风筝，躲弹幕与预警；战斗间隙顺路捡近处掉落、激活雕像，血量 40% 以下拉开" },
-    cautious: { name: "冷静", engageMul: 1.05, dodgeBullets: true,  dodgeTelegraph: true, dodgeMargin: 1.9,  reactDelay: 0.1, lowHpFlee: 0.6, loot: "far",     altar: true,  desc: "最远距离风筝，见弹就躲；战后主动清扫大范围掉落与地上宝箱、激活雕像，血量过半即拉开" },
+    berserk:  { name: "疯狂", engageMul: 0.35, dodgeBullets: false, dodgeTelegraph: true, dodgeMargin: 1.15, reactDelay: 0.4, lowHpFlee: 0,
+      loot: { range: 100, chests: true, gate: "path" },
+      altar: { war: true, chest: true, evil: true, goddessHp: 0.30, artisan: false },
+      desc: "贴脸输出；顺路捡 100px 内掉落与宝箱，主动踩战争/宝箱/邪神雕像，残血 30% 以下才踩女神" },
+    balanced: { name: "平衡", engageMul: 0.75, dodgeBullets: true,  dodgeTelegraph: true, dodgeMargin: 1.5,  reactDelay: 0.2, lowHpFlee: 0.4,
+      loot: { range: 220, chests: true, gate: "gap" },
+      altar: { war: true, chest: true, evil: false, goddessHp: 0.60, artisan: false },
+      desc: "中距离风筝躲弹幕；战斗间隙捡 220px 内掉落与宝箱、激活战争/宝箱雕像，残血 60% 以下踩女神" },
+    cautious: { name: "冷静", engageMul: 1.05, dodgeBullets: true,  dodgeTelegraph: true, dodgeMargin: 1.9,  reactDelay: 0.1, lowHpFlee: 0.6,
+      loot: { range: 520, chests: true, gate: "clear" },
+      altar: { war: true, chest: true, evil: false, goddessHp: 0.60, artisan: false },
+      desc: "最远距离风筝见弹就躲；战后清扫 520px 内掉落与宝箱、激活战争/宝箱雕像，残血 60% 以下踩女神" },
   },
 };
 
