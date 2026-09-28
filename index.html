@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>弹幕射击 Roguelike × 背包肉鸽 — HTML 原型</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -62,8 +62,6 @@
   <!-- ====== 局内 HUD ====== -->
   <div id="hud" class="hidden">
     <div id="hud-tl">
-      <div class="bar hp"><div class="fill" id="bar-hp"></div><span id="txt-hp">100/100</span></div>
-      <div class="bar en"><div class="fill" id="bar-en"></div><span id="txt-en">100/100</span></div>
       <div id="buff-area"></div>
     </div>
     <div id="hud-top">
@@ -87,6 +85,18 @@
     </div>
     <div id="channel-wrap" class="hidden">
       <div id="channel-circle"><svg viewBox="0 0 80 80"><circle id="channel-arc" cx="40" cy="40" r="34"/></svg><span id="channel-txt"></span></div>
+    </div>
+    <!-- 移动端虚拟控件（触屏设备自动显示；CFG.mobile 配置） -->
+    <div id="touch-controls" class="hidden">
+      <div id="joy-zone">
+        <div id="joy-base"><div id="joy-stick"></div></div>
+        <span id="joy-hint">移动</span>
+      </div>
+      <div id="touch-btns">
+        <button id="btn-touch-bag" class="tbtn tbtn-small">背包</button>
+        <button id="btn-touch-act" class="tbtn tbtn-small">交互</button>
+        <button id="btn-touch-skill" class="tbtn tbtn-big">技能</button>
+      </div>
     </div>
     <div id="toast-area"></div>
     <div id="hint-center"></div>
@@ -119,31 +129,48 @@
     </div>
   </div>
 
-  <!-- ====== 工匠世界：合并界面（开箱 + 卡牌 + 背包/武器栏） ====== -->
+  <!-- ====== 工匠世界：三页签（开宝箱 / 抽卡牌 / 购买·服务）+ 背包/武器栏 ====== -->
   <div id="panel-artisan" class="overlay hidden">
     <div class="panel art-panel">
       <div class="bp-head">
-        <h2>工匠 · 工坊（开箱 / 卡牌 / 背包）</h2>
+        <h2>工匠 · 工坊</h2>
         <button id="btn-artisan-close" class="btn ghost small">关闭 (E)</button>
+      </div>
+      <div class="art-tabs" id="art-tabs">
+        <button class="art-tab active" id="art-tab-chest">开宝箱</button>
+        <button class="art-tab" id="art-tab-cards">抽卡牌</button>
+        <button class="art-tab" id="art-tab-shop">购买·服务</button>
       </div>
       <div class="art-layout">
         <div class="art-side">
-          <h3>未开封货物</h3>
-          <div id="chest-list"></div>
-          <h3>开箱结果（拖入网格）</h3>
-          <div id="pending-area"></div>
-          <div class="card-sec">
-            <div class="card-sec-head">
-              <h3>属性卡牌 <span id="card-assets" class="card-assets">×0</span></h3>
-              <button id="btn-card-refresh" class="btn ghost small">刷新候选（剩 2）</button>
+          <!-- 页签①：开宝箱 -->
+          <div id="art-page-chest">
+            <h3>未开封货物</h3>
+            <div id="chest-list"></div>
+            <h3>开箱结果（拖入网格）</h3>
+            <div id="pending-area"></div>
+          </div>
+          <!-- 页签②：抽卡牌 -->
+          <div id="art-page-cards" class="hidden">
+            <div class="card-sec">
+              <div class="card-sec-head">
+                <h3>属性卡牌 <span id="card-assets" class="card-assets">×0</span></h3>
+                <button id="btn-card-refresh" class="btn ghost small">刷新候选（剩 2）</button>
+              </div>
+              <div id="card-candidates"></div>
+              <div id="card-applied" class="card-applied"></div>
             </div>
-            <div id="card-candidates"></div>
-            <div id="card-applied" class="card-applied"></div>
+            <p class="tip" style="margin-top:10px">升级获得属性卡牌资产，仅可在工匠世界使用；生效后<b>对小队全体成员</b>生效；同一属性使用后本局不再出现。</p>
+          </div>
+          <!-- 页签③：购买·服务 -->
+          <div id="art-page-shop" class="hidden">
+            <h3>工匠商店（局内金币）</h3>
+            <div id="shop-list"></div>
+            <p class="tip" style="margin-top:10px">「强化品质 / 洗词缀」需先在右侧背包中<b>点击选中</b>装备或武器模块。</p>
           </div>
         </div>
         <div id="art-grids" class="art-grids"><!-- 背包/武器栏单元在此处与背包面板间移动 --></div>
       </div>
-      <div class="tip">升级获得属性卡牌资产，仅可在工匠世界使用；生效后<b>对小队全体成员</b>（队长 + 队友）生效；同一属性使用后本局不再出现。</div>
     </div>
   </div>
 

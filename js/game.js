@@ -13,6 +13,7 @@ const G = {
   mainWorld: null, subWorld: null, activeWorld: null,
   inArtisan: false,
   keys: {}, mouse: { x: 0, y: 0 },
+  joy: { active: false, dx: 0, dy: 0 },   // 移动端虚拟摇杆向量（归一化 + 死区；active=手指按住）
   time: 0,
   sprites: {},            // 处理后的精灵图
 };
@@ -668,9 +669,14 @@ class Player {
     const st = computeStats();
     // 同步等级 / 装备带来的上限与吸血（hpMax 随等级成长）
     G.run.hpMax = st.hpMax; G.run.energyMax = st.energyMax; G.run.lifesteal = st.lifesteal;
-    // 移动
+    // 移动（键盘 WASD/方向键；移动端虚拟摇杆优先——摇杆激活时用摇杆归一化向量，死区内视为静止）
     let dx = (G.keys["d"] || G.keys["arrowright"] ? 1 : 0) - (G.keys["a"] || G.keys["arrowleft"] ? 1 : 0);
     let dy = (G.keys["s"] || G.keys["arrowdown"] ? 1 : 0) - (G.keys["w"] || G.keys["arrowup"] ? 1 : 0);
+    const joy = G.joy;
+    if (joy && joy.active) {
+      const dead = (CFG.mobile && CFG.mobile.joystick && CFG.mobile.joystick.deadZone) || 0.18;
+      if (Math.hypot(joy.dx, joy.dy) >= dead) { dx = joy.dx; dy = joy.dy; }
+    }
     const moving = dx !== 0 || dy !== 0;
     if (moving) {
       const l = Math.hypot(dx, dy); dx /= l; dy /= l;
@@ -2372,6 +2378,15 @@ function render() {
     ctx.restore();
   } else {
     ctx.fillStyle = "#7ec8ff"; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+  }
+  // 队长头顶血条 + 能量条（与队友同款样式；左上角大血条已移除，队伍信息统一在角色头顶）
+  if (G.run) {
+    ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(p.x - 20, p.y - 40, 40, 4);
+    ctx.fillStyle = "#7de08a";
+    ctx.fillRect(p.x - 20, p.y - 40, 40 * Math.max(0, G.run.hp / G.run.hpMax), 4);
+    ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(p.x - 20, p.y - 34, 40, 3);
+    ctx.fillStyle = "#6cb2ff";
+    ctx.fillRect(p.x - 20, p.y - 34, 40 * Math.max(0, Math.min(1, G.run.energy / (G.run.energyMax || 1))), 3);
   }
   // AI 队友（组队）
   if (G.run && G.run.companions) {

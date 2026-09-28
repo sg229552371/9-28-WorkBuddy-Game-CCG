@@ -194,10 +194,7 @@ const UI = {
   updateHUD() {
     const r = G.run;
     if (!r || G.state !== "playing") return;
-    document.getElementById("bar-hp").style.width = (r.hp / r.hpMax * 100) + "%";
-    document.getElementById("txt-hp").textContent = `${Math.ceil(r.hp)}/${r.hpMax}`;
-    document.getElementById("bar-en").style.width = (r.energy / r.energyMax * 100) + "%";
-    document.getElementById("txt-en").textContent = `${Math.floor(r.energy)}/${r.energyMax}`;
+    // 队长血/能量条已移到角色头顶（与队友同款），左上角只保留 Buff 图标区
     document.getElementById("lv-num").textContent = r.lv;
     document.getElementById("bar-exp").style.width = (r.exp / r.expNext * 100) + "%";
     document.getElementById("coin-num").textContent = r.coin;
@@ -393,7 +390,25 @@ const UI = {
     }
   },
 
-  /* ---------- 工匠合并界面（开箱 + 卡牌 + 背包/武器栏 同面板） ---------- */
+  /* ---------- 工匠合并界面：三页签（开宝箱 / 抽卡牌 / 购买·服务）+ 背包/武器栏 ----------
+   * 页签切换只换左侧功能区，背包/武器栏网格常驻右侧；功能入口清晰、手机端也可单手操作。 */
+  ART_TABS: [
+    { id: "chest", btn: "art-tab-chest", page: "art-page-chest" },
+    { id: "cards", btn: "art-tab-cards", page: "art-page-cards" },
+    { id: "shop",  btn: "art-tab-shop",  page: "art-page-shop"  },
+  ],
+  artTab: "chest",
+  setArtisanTab(t) {
+    if (!this.ART_TABS.some(x => x.id === t)) return;
+    this.artTab = t;
+    for (const tab of this.ART_TABS) {
+      const btn = document.getElementById(tab.btn);
+      const page = document.getElementById(tab.page);
+      if (btn) btn.classList.toggle("active", tab.id === t);
+      if (page) page.classList.toggle("hidden", tab.id !== t);
+    }
+    this.renderArtisan();
+  },
   toggleArtisan(force) {
     const p = document.getElementById("panel-artisan");
     const unit = document.getElementById("bp-grid-unit");       // 背包/武器栏单元（含网格/信息/丢弃区）
@@ -404,7 +419,7 @@ const UI = {
     if (show && G.inArtisan) {
       artGrids.appendChild(unit);            // 整体移入工匠面板（DOM 移动保留渲染/拖拽逻辑）
       p.classList.remove("hidden");
-      this.renderArtisan();                  // 内部会调用 renderBackpack 刷新网格
+      this.setArtisanTab(this.artTab || "chest");   // 回到上次页签（内部会调用 renderArtisan）
     } else {
       p.classList.add("hidden");
       home.appendChild(unit);                // 移回背包面板
@@ -412,17 +427,49 @@ const UI = {
   },
   renderArtisan() {
     const r = G.run;
-    // 背包中宝箱按品质分组（覆盖全部品质，新增品质自动出现在列表）
+    if (!r) return;
+    // 开宝箱页（待分配区 / 背包网格渲染与页签无关，始终刷新保证数据同步）
+    if (this.artTab === "chest") this._renderChestList();
+    else if (this.artTab === "cards") this.renderCards();
+    else if (this.artTab === "shop") this._renderShopList();
+    this._renderPendingArea();
+    this.renderBackpack();   // 同步网格显示
+  },
+  /* 开箱结果（待分配区）：开宝箱页独占，任何页签下数据变化都同步 */
+  _renderPendingArea() {
+    const r = G.run;
+    const pa = document.getElementById("pending-area");
+    if (!pa) return;
+    pa.innerHTML = "";
+    for (const it of r.pendingItems) {
+      const el = document.createElement("div");
+      el.className = `pending-item q${it.itemQ}`;
+      el.style.width = it.shape[0] * 32 + 30 + "px"; el.style.height = it.shape[1] * 32 + 30 + "px";
+      el.innerHTML = `${it.name}<span class="giveup" title="放弃">✕</span>`;
+      el.querySelector(".giveup").onclick = (e) => {
+        e.stopPropagation();
+        r.pendingItems.splice(r.pendingItems.indexOf(it), 1);
+        this.toast("已放弃，物品作废", "bad");
+        this.renderArtisan();
+      };
+      el.onpointerdown = (e) => this.startDrag(e, { item: it, fromPending: true });
+      pa.appendChild(el);
+    }
+  },
+  /* 页签①：开宝箱（宝箱列表 + 开启按钮 + 武器等级只读展示） */
+  _renderChestList() {
+    const r = G.run;
     const counts = {};
     for (const it of r.backpack.items) if (it.kind === "chest") counts[it.chestQ] = (counts[it.chestQ] || 0) + it.count;
     const list = document.getElementById("chest-list");
+    if (!list) return;
     list.innerHTML = "";
     for (const q of Object.keys(CFG.chestQualities)) {
       const c = CFG.chestQualities[q];
       const row = document.createElement("div");
       row.className = "chest-row" + (this.selectedChestQ === q ? " selected" : "");
       row.innerHTML = `<div class="sw" style="background:${c.color}"></div>
-        <b>${c.name}</b><small>持有 ${counts[q] || 0} · 占格1×1 重${c.weight} · 价值 ${c.value}</small>`;
+        <b>${c.name}</b><small>持有 ${counts[q] || 0} · 价值 ${c.value}</small>`;
       row.onclick = () => { this.selectedChestQ = q; this.renderArtisan(); };
       list.appendChild(row);
     }
@@ -439,11 +486,14 @@ const UI = {
     wro.style.marginTop = "8px";
     wro.innerHTML = `<div class="sw" style="background:#ffd76a"></div>
       <b>⚔ 武器 / 技能 LV${wlv}${wlv >= CFG.weaponLevel.maxLv ? "（满级）" : ""}</b>
-      <small>局外成长界面消耗进化结晶升级（局内金币不用于升级）</small>`;
+      <small>局外成长界面消耗进化结晶升级</small>`;
     list.appendChild(wro);
-    // 金币服务（待细化 28：强化物品/购买；作用于"悬停选中"的物品）
-    const svc = document.createElement("div");
-    svc.style.marginTop = "10px";
+  },
+  /* 页签③：购买·服务（局内金币消费 + 选中物品强化/洗词缀） */
+  _renderShopList() {
+    const r = G.run;
+    const list = document.getElementById("shop-list");
+    if (!list) return;
     const hoverIt = this.hoverItem;
     const qName = (q) => CFG.itemQualities[q].name;
     let rows = [
@@ -452,7 +502,7 @@ const UI = {
       { key: "chest:epic", html: `<div class="sw" style="background:${CFG.chestQualities.epic.color}"></div><b>▣ 购买史诗宝箱</b><small>¥${CFG.artisanServices.buyChest.epic}</small>` },
       { key: "chest:divine", html: `<div class="sw" style="background:${CFG.chestQualities.divine.color}"></div><b>▣ 购买神圣宝箱</b><small>¥${CFG.artisanServices.buyChest.divine}</small>` },
     ];
-    // 金币服务：购买武器武器模块 / 消耗品道具（战斗侧 shopBuyModule / shopBuyItem 内部判金币、扣款、生成物品、处理背包满）
+    // 购买武器模块 / 消耗品道具：消费 CFG.artisanServices，战斗侧 shopBuyModule / shopBuyItem 内部判金币、扣款、生成物品、处理背包满
     // 契约：返回 {ok, msg}；配置或全局函数缺失时该行不渲染（根目录 DOM 桩测试不含这些全局函数）
     const buyCfg = CFG.artisanServices;
     if (buyCfg.buyModule && typeof shopBuyModule === "function") {
@@ -478,8 +528,9 @@ const UI = {
           <b>🜲 洗词缀：${it.name}（当前 ${affixText(it)}）</b><small>¥${CFG.artisanServices.rerollModule.cost} · 重掷主词缀档位</small>` });
       }
     } else {
-      rows.push({ key: null, html: `<div class="sw" style="background:#5a6572"></div><b>✦ 强化品质 / 🜲 洗词缀</b><small>先把鼠标悬停到背包中的装备/武器模块上选中</small>` });
+      rows.push({ key: null, html: `<div class="sw" style="background:#5a6572"></div><b>✦ 强化品质 / 🜲 洗词缀</b><small>先在背包中点击选中装备/武器模块</small>` });
     }
+    list.innerHTML = "";
     for (const row of rows) {
       const el = document.createElement("div");
       el.className = "chest-row" + (row.dim ? " readonly" : "");
@@ -490,28 +541,8 @@ const UI = {
         if (row.dim) el.style.opacity = "0.55";
         el.onclick = () => (row.shop ? this.shopService(row.key) : this.artisanService(row.key));
       }
-      svc.appendChild(el);
+      list.appendChild(el);
     }
-    list.appendChild(svc);
-    // 待分配区
-    const pa = document.getElementById("pending-area");
-    pa.innerHTML = "";
-    for (const it of r.pendingItems) {
-      const el = document.createElement("div");
-      el.className = `pending-item q${it.itemQ}`;
-      el.style.width = it.shape[0] * 32 + 30 + "px"; el.style.height = it.shape[1] * 32 + 30 + "px";
-      el.innerHTML = `${it.name}<span class="giveup" title="放弃">✕</span>`;
-      el.querySelector(".giveup").onclick = (e) => {
-        e.stopPropagation();
-        r.pendingItems.splice(r.pendingItems.indexOf(it), 1);
-        this.toast("已放弃，物品作废", "bad");
-        this.renderArtisan();
-      };
-      el.onpointerdown = (e) => this.startDrag(e, { item: it, fromPending: true });
-      pa.appendChild(el);
-    }
-    this.renderBackpack();   // 同步网格显示
-    this.renderCards();
   },
   /* ---------- 属性卡牌（8.3：仅工匠世界可用） ---------- */
   _cardEffectText(c) {

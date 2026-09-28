@@ -94,6 +94,15 @@ CFG.team = { maxSize: 3,
 // lateralBase 横向错开基数(px)（第 i 位错开 = ±(⌊i/2⌋+1)×lateralBase，左右交替，支持任意人数），
 // seedDir 开局/进图时尾迹的预铺方向（[0,1]=队友在下方；工匠世界用 seedDirArtisan=[0,-1] 在上方，远离出口圈）
 
+/* ---------- 移动端虚拟控件（手机端测试用） ----------
+ * autoShow=true：检测到触屏（ontouchstart / maxTouchPoints）自动显示；桌面端不遮挡。
+ * 摇杆参数：size 底盘直径(px)、knob 摇杆头直径(px)、deadZone 死区比例（归一化向量，低于此值视为静止）。 */
+CFG.mobile = {
+  autoShow: true,
+  joystick: { size: 132, knob: 56, deadZone: 0.18, maxVec: 1.0 },
+  buttons: { skill: true, interact: true, backpack: true },
+};
+
 /* ---------- 怪物解锁进度（击杀进度百分比） ---------- */
 CFG.monsterUnlock = { NM0010: 0, NM0011: 0.25, NM0012: 0.55, NM0013: 0.15, NM0014: 0.5 };
 

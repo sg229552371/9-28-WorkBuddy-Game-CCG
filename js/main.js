@@ -110,6 +110,10 @@ const Game = {
     });
     on("btn-bp-close", () => UI.toggleBackpack(false));
     on("btn-artisan-close", () => UI.toggleArtisan(false));
+    // 工匠面板页签：开宝箱 / 抽卡牌 / 购买·服务
+    on("art-tab-chest", () => UI.setArtisanTab("chest"));
+    on("art-tab-cards", () => UI.setArtisanTab("cards"));
+    on("art-tab-shop", () => UI.setArtisanTab("shop"));
     on("btn-card-refresh", () => {
       refreshCards();          // 免费次数优先，用完后扣金币；失败（金币不足）时内部已 toast
       UI.renderCards();
@@ -205,6 +209,8 @@ const Game = {
     const kick = () => { SFX.init(); SFX.resume(); };
     window.addEventListener("pointerdown", kick);
     window.addEventListener("keydown", kick);
+    // 移动端虚拟控件（手机端测试）：触屏设备自动显示，参数在 CFG.mobile
+    this.bindTouch();
     window.addEventListener("keydown", (e) => {
       const k = e.key.toLowerCase();
       G.keys[k] = true;
@@ -212,17 +218,7 @@ const Game = {
       if (k === "b" && G.state === "playing") UI.toggleBackpack();
       if (k === "e" && G.inArtisan && G.state === "playing") UI.toggleArtisan();
       // 撤离点雕像（5.2）：**站进雕像圈内自动读条**（8 秒，受击归零）；E 仅用于查看进度 / 节流提示
-      if (k === "e" && G.state === "playing" && !G.inArtisan && !G.inRift && G.run && G.run.exitStatue) {
-        const st = G.run.exitStatue;
-        // 判定圈规则（5.2）：**任一存活英雄在圈内即自动读条**，E 不再是开关，只用于查看进度/提示
-        if (heroInCircle(st.x, st.y, CFG.extract.radius)) {
-          const sec = Math.max(0, CFG.extract.channel - (G.run.extractProgress || 0));
-          UI.toast(`撤离读条中：剩余 ${sec.toFixed(1)} 秒（站进圈内自动读条，无需按键）`, "gold");
-        } else if (G.time - (this._extractHintT || 0) > 3) {
-          this._extractHintT = G.time;
-          UI.toast("撤离点：让任一小队成员站进雕像圈内即自动读条 8 秒（受击归零）", "bad");
-        }
-      }
+      if (k === "e") this.actionE();
     });
     window.addEventListener("keyup", (e) => { G.keys[e.key.toLowerCase()] = false; });
     // 网格物品拖拽起点（事件委托）
@@ -244,6 +240,93 @@ const Game = {
         const it = [...G.run.backpack.items, ...G.run.weaponInv.items].find(i => i.uid === uid);
         if (it) { UI.hoverItem = it; UI.renderItemInfo(); }
       }
+    });
+  },
+
+  /* ---------- 撤离点 E 键逻辑（键盘与触屏「交互」按钮共用） ---------- */
+  actionE() {
+    if (!(G.state === "playing" && !G.inArtisan && !G.inRift && G.run && G.run.exitStatue)) return;
+    const st = G.run.exitStatue;
+    // 判定圈规则（5.2）：**任一存活英雄在圈内即自动读条**，E 不再是开关，只用于查看进度/提示
+    if (heroInCircle(st.x, st.y, CFG.extract.radius)) {
+      const sec = Math.max(0, CFG.extract.channel - (G.run.extractProgress || 0));
+      UI.toast(`撤离读条中：剩余 ${sec.toFixed(1)} 秒（站进圈内自动读条，无需按键）`, "gold");
+    } else if (G.time - (this._extractHintT || 0) > 3) {
+      this._extractHintT = G.time;
+      UI.toast("撤离点：让任一小队成员站进雕像圈内即自动读条 8 秒（受击归零）", "bad");
+    }
+  },
+
+  /* ---------- 移动端虚拟控件（触屏摇杆 + 按钮；参数 CFG.mobile） ----------
+   * 摇杆：G.joy = {active, dx, dy}，归一化向量带死区，Player.update 优先于键盘。
+   * 按钮：技能 = 按住等价 Space；交互 = actionE()（主地图撤离提示）/ 工匠面板开关；
+   *       背包 = toggleBackpack()。桌面端无触屏不显示，不遮挡键鼠操作。 */
+  bindTouch() {
+    const mob = CFG.mobile || {};
+    if (!mob.autoShow) return;
+    // 触屏检测（桩测试环境下无 navigator/ontouchstart，取值前先判能力）
+    const isTouch = (typeof window.ontouchstart !== "undefined") ||
+      (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
+    if (!isTouch) return;
+    const tc = document.getElementById("touch-controls");
+    if (tc) tc.classList.remove("hidden");
+    if (document.body) document.body.classList.add("touch-mode");
+
+    // --- 虚拟摇杆 ---
+    const base = document.getElementById("joy-base");
+    const stick = document.getElementById("joy-stick");
+    if (base && stick) {
+      const jc = mob.joystick || {};
+      const size = jc.size || 132, knob = jc.knob || 56;
+      const dead = jc.deadZone || 0.18, maxR = size / 2 - knob / 2;
+      let pid = null;
+      const setKnob = (vx, vy) => {
+        stick.style.left = (size / 2 - knob / 2 + vx * maxR) + "px";
+        stick.style.top = (size / 2 - knob / 2 + vy * maxR) + "px";
+      };
+      const apply = (e) => {
+        const rect = base.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+        let vx = (e.clientX - cx) / maxR, vy = (e.clientY - cy) / maxR;
+        const l = Math.hypot(vx, vy);
+        if (l > 1) { vx /= l; vy /= l; }   // 钳制在底盘内
+        setKnob(vx, vy);
+        const mag = Math.hypot(vx, vy);
+        if (mag < dead) { G.joy.dx = 0; G.joy.dy = 0; }   // 死区：视为静止
+        else { G.joy.dx = vx; G.joy.dy = vy; }
+      };
+      base.addEventListener("pointerdown", (e) => {
+        pid = e.pointerId;
+        try { base.setPointerCapture(pid); } catch (err) { /* 桩/旧浏览器忽略 */ }
+        G.joy.active = true;
+        apply(e);
+        e.preventDefault();
+      });
+      base.addEventListener("pointermove", (e) => { if (G.joy.active && e.pointerId === pid) apply(e); });
+      const release = (e) => {
+        if (e.pointerId !== pid) return;
+        pid = null; G.joy.active = false; G.joy.dx = 0; G.joy.dy = 0;
+        setKnob(0, 0);
+      };
+      base.addEventListener("pointerup", release);
+      base.addEventListener("pointercancel", release);
+    }
+
+    // --- 动作按钮 ---
+    const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener("pointerdown", fn); };
+    const btn = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+    const skill = document.getElementById("btn-touch-skill");
+    if (skill) {
+      skill.addEventListener("pointerdown", (e) => { G.keys[" "] = true; e.preventDefault(); });
+      skill.addEventListener("pointerup", () => { G.keys[" "] = false; });
+      skill.addEventListener("pointercancel", () => { G.keys[" "] = false; });
+      skill.addEventListener("pointerleave", () => { G.keys[" "] = false; });
+    }
+    btn("btn-touch-bag", () => { if (G.state === "playing") UI.toggleBackpack(); });
+    btn("btn-touch-act", () => {
+      if (G.state !== "playing") return;
+      if (G.inArtisan) UI.toggleArtisan();   // 工匠世界内：开/关工坊面板
+      else this.actionE();                    // 主地图：撤离点提示（圈内自动读条）
     });
   },
 
