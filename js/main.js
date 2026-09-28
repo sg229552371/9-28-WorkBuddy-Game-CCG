@@ -52,6 +52,7 @@ const Game = {
     G.state = "city";
     G.cityAvatar = createCityAvatar();
     G.cityNpcOpen = null;
+    G.cityNpcNear = null;
     G.mainWorld = null; G.subWorld = null; G.riftWorld = null;
     G.activeWorld = new World(CFG.city.mapW, CFG.city.mapH, false, "city");
     UI.showHudOnly();
@@ -308,8 +309,18 @@ const Game = {
     });
   },
 
-  /* ---------- 撤离点 E 键逻辑（键盘与触屏「交互」按钮共用） ---------- */
+  /* ---------- E 键逻辑（键盘与触屏「交互」按钮共用） ----------
+   * 主城：圈内 NPC 按 E 弹面板（再按同一 NPC 或 Esc 关闭）；战斗地图：撤离点读条提示。 */
   actionE() {
+    if (G.state === "city") {
+      const near = G.cityNpcNear;
+      if (!near) return;                                  // 圈外无交互目标
+      if (G.cityNpcOpen && G.cityNpcOpen.id === near.id) { UI.closeNpcPanels(); return; }   // 再按 = 关闭
+      G.cityNpcOpen = near;
+      SFX.play("altar");
+      EventBus.emit("cityNpcPanel", near);
+      return;
+    }
     if (!(G.state === "playing" && !G.inArtisan && !G.inRift && G.run && G.run.exitStatue)) return;
     const st = G.run.exitStatue;
     // 判定圈规则（5.2）：**任一存活英雄在圈内即自动读条**，E 不再是开关，只用于查看进度/提示
@@ -389,6 +400,7 @@ const Game = {
     }
     btn("btn-touch-bag", () => { if (G.state === "playing") UI.toggleBackpack(); });
     btn("btn-touch-act", () => {
+      if (G.state === "city") { this.actionE(); return; }   // 主城：与 NPC 互动
       if (G.state !== "playing") return;
       if (G.inArtisan) UI.toggleArtisan();   // 工匠世界内：开/关工坊面板
       else this.actionE();                    // 主地图：撤离点提示（圈内自动读条）

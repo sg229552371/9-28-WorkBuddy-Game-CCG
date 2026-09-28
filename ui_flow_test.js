@@ -142,6 +142,18 @@ vm.runInContext(`
   EventBus.emit("cityNpcClose");
   check("离圈自动关闭面板", !shown("panel-npc-outlevel"));
 
+  // --- 主城 NPC E 键互动：进圈只标亮，按 E 弹面板，再按 E 关闭 ---
+  G.cityAvatar.x = npc0.x; G.cityAvatar.y = npc0.y;
+  updateCityWorld(0.016);
+  check("进圈后标记 near 目标", G.cityNpcNear && G.cityNpcNear.id === npc0.id && !shown("panel-npc-outlevel"));
+  Game.actionE();
+  check("按 E 弹出 NPC 面板", shown("panel-npc-outlevel") && G.cityNpcOpen && G.cityNpcOpen.id === npc0.id);
+  Game.actionE();
+  check("再按 E 关闭 NPC 面板", !shown("panel-npc-outlevel"));
+  G.cityAvatar.x = G.activeWorld.w / 2; G.cityAvatar.y = G.activeWorld.h * 0.6;   // 移到广场空地（远离所有 NPC 圈）
+  updateCityWorld(0.016);
+  check("离圈清除 near 标记", !G.cityNpcNear);
+
   // --- 传送门读条：进圈积累 → 完成 → 选关 ---
   G.cityAvatar.x = G.activeWorld.portal.x; G.cityAvatar.y = G.activeWorld.portal.y;
   let portalDone = false;

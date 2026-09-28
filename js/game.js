@@ -2262,16 +2262,13 @@ function updateCityWorld(dt) {
       UI.toast("赛季传送门尚未开启（通关后赛季玩法上线）", "bad");
     }
   }
-  // NPC 交互：进圈即弹对应面板，离圈自动关闭（不读条，快速交互）
+  // NPC 交互：进圈只标亮（G.cityNpcNear），按 E / 触屏「交互」才弹面板（Game.actionE）；离圈自动关闭
   let near = null;
   for (const n of w.cityNpcs) {
     if (U.dist(a.x, a.y, n.x, n.y) < CFG.city.npcRadius * CFG.altarJudgeMul) { near = n; break; }
   }
-  if (near && (!G.cityNpcOpen || G.cityNpcOpen.id !== near.id)) {
-    G.cityNpcOpen = near;
-    SFX.play("altar");
-    EventBus.emit("cityNpcPanel", near);
-  } else if (!near && G.cityNpcOpen) {
+  G.cityNpcNear = near || null;
+  if (!near && G.cityNpcOpen) {
     G.cityNpcOpen = null;
     EventBus.emit("cityNpcClose");
   }
@@ -2300,7 +2297,9 @@ function renderCity() {
   }
   // NPC：交互虚线圈（判定 = 绘制 × altarJudgeMul，与祭坛同源契约）+ 头顶功能名
   for (const n of w.cityNpcs) {
-    ctx.setLineDash([6, 6]); ctx.strokeStyle = n.color + (G.cityNpcOpen && G.cityNpcOpen.id === n.id ? "aa" : "44");
+    const isNear = G.cityNpcNear && G.cityNpcNear.id === n.id;
+    const isOpen = G.cityNpcOpen && G.cityNpcOpen.id === n.id;
+    ctx.setLineDash([6, 6]); ctx.strokeStyle = n.color + (isOpen ? "aa" : isNear ? "88" : "44");
     ctx.beginPath(); ctx.arc(n.x, n.y, CFG.city.npcRadius, 0, Math.PI * 2); ctx.stroke();
     ctx.setLineDash([]);
     drawActor(ctx, n.x, n.y, 40, n.color, n.icon);
@@ -2308,6 +2307,10 @@ function renderCity() {
     ctx.fillStyle = n.color; ctx.fillText(n.name, n.x, n.y - 52);
     ctx.font = "11px sans-serif"; ctx.fillStyle = "#9fb4d4";
     ctx.fillText(n.desc, n.x, n.y + 58);
+    if (isNear && !isOpen) {   // 圈内提示按键
+      ctx.font = "bold 13px sans-serif"; ctx.fillStyle = "#ffd76a";
+      ctx.fillText("按 E 互动", n.x, n.y + 74);
+    }
   }
   // 出征传送门：读条环 + 涟漪动画
   const pt = w.portal;

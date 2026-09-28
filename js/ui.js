@@ -417,6 +417,21 @@ const UI = {
     this.renderCodex();
     this.showScreen("screen-codex");
   },
+  /* 图鉴（首页入口 / 图鉴学者 NPC 共用）。未激活条目：名字 ??? + 纯黑剪影；激活后恢复原色。 */
+  drawCodexFace(cv, img, locked) {
+    if (!cv || !cv.getContext || !img) return;
+    try {
+      const c2 = cv.getContext("2d");
+      c2.clearRect(0, 0, cv.width, cv.height);
+      c2.drawImage(img, 0, 0, cv.width, cv.height);
+      if (locked) {   // 剪影：保留 alpha 通道整体染黑（source-in 合成）
+        c2.globalCompositeOperation = "source-in";
+        c2.fillStyle = "#000";
+        c2.fillRect(0, 0, cv.width, cv.height);
+        c2.globalCompositeOperation = "source-over";
+      }
+    } catch (e) { /* 画布被污染（file://）降级：保持已画内容 */ }
+  },
   renderCodex() {
     const heroBox = document.getElementById("codex-heroes");
     if (heroBox) {
@@ -428,10 +443,7 @@ const UI = {
         const img = Assets.images[h.sprite];
         card.innerHTML = `${img ? `<canvas class="codex-face" width="56" height="56"></canvas>` : ""}
           <b>${unlocked ? h.name : "???"}</b><small>${unlocked ? h.desc : "使用该英雄出征后激活"}</small>`;
-        if (unlocked && img) {
-          const cv = card.querySelector(".codex-face");
-          if (cv && cv.getContext) cv.getContext("2d").drawImage(img, 0, 0, 56, 56);
-        }
+        this.drawCodexFace(card.querySelector(".codex-face"), img, !unlocked);
         heroBox.appendChild(card);
       }
     }
@@ -444,12 +456,9 @@ const UI = {
         const card = document.createElement("div");
         card.className = "codex-card small" + (unlocked ? "" : " locked");
         const img = Assets.images[m.sprite];
-        card.innerHTML = `${img && unlocked ? `<canvas class="codex-face" width="44" height="44"></canvas>` : `<div class="codex-face" style="color:#5a6a80;text-align:center;line-height:44px">?</div>`}
+        card.innerHTML = `${img ? `<canvas class="codex-face" width="44" height="44"></canvas>` : `<div class="codex-face" style="color:#5a6a80;text-align:center;line-height:44px">?</div>`}
           <b>${unlocked ? m.name : "???"}</b><small>${unlocked ? `${m.type === "boss" ? "BOSS" : "怪物"} · HP ${m.hp} · 攻 ${m.atk}` : "击杀后收录"}</small>`;
-        if (unlocked && img) {
-          const cv = card.querySelector(".codex-face");
-          if (cv && cv.getContext) cv.getContext("2d").drawImage(img, 0, 0, 44, 44);
-        }
+        this.drawCodexFace(card.querySelector(".codex-face"), img, !unlocked);
         monBox.appendChild(card);
       }
     }

@@ -113,7 +113,7 @@ CFG.city = {
   spawn: { x: 0.5, y: 0.78 },   // 出生点（比例坐标，城内下方居中）
   portal: { name: "出征传送门", radius: 90, channel: 2.0, desc: "进圈读条 2 秒 → 选择关卡出征" },
   seasonPortal: null,       // 预留：{ name:"赛季传送门", radius:90, channel:2.0 }，赛季玩法上线后填入
-  npcRadius: 76,            // NPC 交互判定半径（进圈即弹面板，离圈自动关闭）
+  npcRadius: 76,            // NPC 交互判定半径（进圈标亮，按 E / 触屏「交互」弹面板，离圈或 Esc 关闭）
   // NPC 扇形环绕中央广场分布（坐标为比例，加载时换算成像素）
   npcs: [
     { id: "NPC_TRAINER", name: "强化导师", icon: "✦", color: "#c79bff", fx: 0.20, fy: 0.32, func: "outlevel", desc: "局外等级升级" },

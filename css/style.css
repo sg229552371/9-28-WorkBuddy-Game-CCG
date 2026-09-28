@@ -413,7 +413,7 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .set-row > span { width:150px; }
 .set-row input[type=range] { flex:1; accent-color:#ffd76a; }
 #set-touch.on { border-color:#7de08a; color:#7de08a; }
-.codex-panel { width:min(880px,94vw); text-align:left; }
+.codex-panel { width:min(880px,94vw); max-height:82vh; overflow-y:auto; text-align:left; }
 .codex-panel h3 { color:#9fb4d4; font-size:13px; margin:12px 0 8px; }
 .codex-grid { display:flex; flex-wrap:wrap; gap:8px; }
 .codex-card {
@@ -425,5 +425,6 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .codex-card small { color:#8ba0bd; font-size:10px; line-height:1.4; display:block; }
 .codex-card .codex-face { width:56px; height:56px; }
 .codex-card.small .codex-face { width:44px; height:44px; }
-.codex-card.locked { opacity:.55; }
+.codex-card.locked { border-style:dashed; border-color:#2e3d55; }
+.codex-card.locked b { color:#6d7c94; }
 .goodbye-panel { width:min(460px,94vw); }
