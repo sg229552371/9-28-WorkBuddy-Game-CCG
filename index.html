@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>弹幕射击 Roguelike × 背包肉鸽 — HTML 原型</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <!-- 游戏画布（局内） -->
+  <canvas id="game-canvas" width="1920" height="1080"></canvas>
+
+  <!-- ====== 界面层：关卡选择 ====== -->
+  <div id="screen-level" class="screen">
+    <h1 class="title">弹幕射击 Roguelike × 背包肉鸽</h1>
+    <p class="subtitle">HTML 原型 · 首版基准（第十六章）</p>
+    <div class="panel level-panel">
+      <h2>关卡选择</h2>
+      <div id="level-list"></div>
+      <div class="tip">完成目标击杀数或坚持到时限 → 触发 Boss；击败 Boss 生成撤离点；工匠雕像按击杀进度刷新。</div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：角色选择 ====== -->
+  <div id="screen-character" class="screen hidden">
+    <div class="panel char-panel">
+      <h2>角色选择</h2>
+      <div id="meta-line" class="meta-line"></div>
+      <div id="char-list"></div>
+      <div class="btn-row">
+        <button id="btn-char-back" class="btn ghost">返回</button>
+        <button id="btn-char-start" class="btn primary" disabled>开始游戏</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 局内 HUD ====== -->
+  <div id="hud" class="hidden">
+    <div id="hud-tl">
+      <div class="bar hp"><div class="fill" id="bar-hp"></div><span id="txt-hp">100/100</span></div>
+      <div class="bar en"><div class="fill" id="bar-en"></div><span id="txt-en">100/100</span></div>
+      <div id="buff-area"></div>
+    </div>
+    <div id="hud-top">
+      <div id="progress-wrap">
+        <div id="progress-fill"></div>
+        <span id="progress-txt">击杀进度 0/60</span>
+      </div>
+      <div id="boss-name" class="hidden">⚠ BOSS 出现！</div>
+    </div>
+    <div id="hud-tr">
+      <div id="lv-line">LV <b id="lv-num">1</b></div>
+      <div class="bar exp"><div class="fill" id="bar-exp"></div></div>
+      <div id="coin-line">◈ 货币 <b id="coin-num">0</b>　◆ 经验 <b id="exp-num">0</b></div>
+    </div>
+    <div id="hud-bl">
+      <div id="weight-line">负重 <b id="weight-num">0</b> / 100</div>
+      <div id="weight-pen"></div>
+    </div>
+    <div id="hud-br">
+      <button id="btn-backpack" class="btn">背包 (B)</button>
+    </div>
+    <div id="channel-wrap" class="hidden">
+      <div id="channel-circle"><svg viewBox="0 0 80 80"><circle id="channel-arc" cx="40" cy="40" r="34"/></svg><span id="channel-txt"></span></div>
+    </div>
+    <div id="toast-area"></div>
+    <div id="hint-center"></div>
+  </div>
+
+  <!-- ====== 背包 / 武器栏面板（工匠模式下 bp-grid-unit 整体移入工匠面板） ====== -->
+  <div id="panel-backpack" class="overlay hidden">
+    <div class="panel bp-panel" id="bp-panel-main">
+      <div class="bp-head">
+        <h2>背包与武器栏</h2>
+        <span id="bp-lock-hint" class="warn hidden">⚔ 战斗进行中，仅可查看（工匠世界内可操作）</span>
+        <button id="btn-bp-close" class="btn ghost small">关闭 (B)</button>
+      </div>
+      <div class="bp-body" id="bp-grid-unit">
+        <div class="grid-zone">
+          <h3>武器栏（放这里才生效）4×3</h3>
+          <div id="grid-weapon" class="grid w43"></div>
+          <div id="weapon-tags" class="tags"></div>
+        </div>
+        <div class="grid-zone">
+          <h3>背包（仓储 / 战利品）6×4</h3>
+          <div id="grid-backpack" class="grid w64"></div>
+          <div id="drop-zone">拖到此处丢弃</div>
+        </div>
+        <div class="grid-zone side">
+          <h3>物品信息</h3>
+          <div id="item-info" class="item-info">选中或悬停物品查看详情</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 工匠世界：合并界面（开箱 + 卡牌 + 背包/武器栏） ====== -->
+  <div id="panel-artisan" class="overlay hidden">
+    <div class="panel art-panel">
+      <div class="bp-head">
+        <h2>工匠 · 工坊（开箱 / 卡牌 / 背包）</h2>
+        <button id="btn-artisan-close" class="btn ghost small">关闭 (E)</button>
+      </div>
+      <div class="art-layout">
+        <div class="art-side">
+          <h3>未开封货物</h3>
+          <div id="chest-list"></div>
+          <h3>开箱结果（拖入网格）</h3>
+          <div id="pending-area"></div>
+          <div class="card-sec">
+            <div class="card-sec-head">
+              <h3>属性卡牌 <span id="card-assets" class="card-assets">×0</span></h3>
+              <button id="btn-card-refresh" class="btn ghost small">刷新候选（剩 2）</button>
+            </div>
+            <div id="card-candidates"></div>
+            <div id="card-applied" class="card-applied"></div>
+          </div>
+        </div>
+        <div id="art-grids" class="art-grids"><!-- 背包/武器栏单元在此处与背包面板间移动 --></div>
+      </div>
+      <div class="tip">升级获得属性卡牌资产，仅可在工匠世界使用；同一属性使用后本局不再出现。</div>
+    </div>
+  </div>
+
+  <!-- ====== 结算界面 ====== -->
+  <div id="screen-settle" class="screen hidden">
+    <div class="panel settle-panel">
+      <h2>撤离成功 · 结算</h2>
+      <div id="settle-stats" class="stats"></div>
+      <h3>带出的宝箱战利品</h3>
+      <div id="settle-chests"></div>
+      <h3>最终背包</h3>
+      <div id="settle-items" class="items-list"></div>
+      <div class="btn-row"><button id="btn-settle-ok" class="btn primary">确认返回选关</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 死亡界面 ====== -->
+  <div id="screen-death" class="screen hidden">
+    <div class="panel death-panel">
+      <h2>你死了</h2>
+      <div id="death-stats" class="stats"></div>
+      <h3>损失报告</h3>
+      <div id="death-lost" class="items-list lost"></div>
+      <h3>保留（原型中死亡物品不入库，仅展示判定）</h3>
+      <div id="death-kept" class="items-list"></div>
+      <div class="btn-row"><button id="btn-death-ok" class="btn primary">返回选关</button></div>
+    </div>
+  </div>
+
+  <!-- 拖拽幽灵 -->
+  <div id="drag-ghost" class="hidden"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
