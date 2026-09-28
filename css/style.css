@@ -421,6 +421,16 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .set-row > span { width:150px; }
 .set-row input[type=range] { flex:1; accent-color:#ffd76a; }
 #set-touch.on { border-color:#7de08a; color:#7de08a; }
+
+/* ===== 自动战斗风格选择器（开启自动战斗后在按钮上方展开） ===== */
+#autofight-styles { display:flex; gap:6px; justify-content:flex-end; margin-bottom:6px; }
+#autofight-styles.hidden { display:none; }
+.af-style {
+  padding:4px 12px; border-radius:14px; font-size:11px; cursor:pointer;
+  background:#1d2a3d; border:1px solid #33486b; color:#9fb4d4;
+}
+.af-style:hover { border-color:#ffd76a; color:#cfe0ff; }
+.af-style.selected { background:#25344c; border-color:#ffd76a; color:#ffd76a; font-weight:bold; }
 #btn-autofight.on { border-color:#7de08a; color:#7de08a; }
 .codex-panel { width:min(880px,94vw); max-height:82vh; overflow-y:auto; text-align:left; }
 .codex-panel h3 { color:#9fb4d4; font-size:13px; margin:12px 0 8px; }

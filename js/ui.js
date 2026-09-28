@@ -199,6 +199,13 @@ const UI = {
     const on = !!(G.run && G.run.autoFight);
     btn.textContent = on ? "自动战斗：开" : "自动战斗：关";
     btn.classList.toggle("on", on);
+    // 风格选择器：开启时展开三档（疯狂/平衡/冷静），高亮当前风格
+    const row = document.getElementById("autofight-styles");
+    if (row) {
+      row.classList.toggle("hidden", !on);
+      const cur = G.run ? G.run.autoStyle : (CFG.autoFight ? CFG.autoFight.defaultStyle : "balanced");
+      for (const b of row.children) if (b.classList) b.classList.toggle("selected", b.dataset && b.dataset.style === cur);
+    }
   },
   updateHUD() {
     const r = G.run;

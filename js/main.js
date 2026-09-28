@@ -148,13 +148,28 @@ const Game = {
     /* ---- 背包 / 工匠 / 卡牌 ---- */
     on("btn-bp-close", () => UI.toggleBackpack(false));
     on("btn-artisan-close", () => UI.toggleArtisan(false));
-    // 自动战斗开关（默认关）：开启后队长技能能量够即自动施放（普攻本来就自动索敌）
+    // 自动战斗开关（默认关）：开启后队长移动+技能全托管（玩家手动操作即让权）
     on("btn-autofight", () => {
       if (!G.run) return;
       G.run.autoFight = !G.run.autoFight;
+      if (G.run.autoFight) G.run.aiHoldT = 0;   // 开启瞬间立即接管（不等手动延迟）
       UI.updateAutoFightBtn();
-      UI.toast(G.run.autoFight ? "自动战斗开启：技能能量够即自动施放（移动仍由你控制）" : "自动战斗关闭", "");
+      UI.toast(G.run.autoFight ? "自动战斗开启：AI 接管走位与技能（手动操作会临时让权）" : "自动战斗关闭", "");
     });
+    // 自动战斗风格（疯狂/平衡/冷静）：打包索敌激进度/躲避范围/反应速度/低血量行为
+    const afStyles = document.getElementById("autofight-styles");
+    if (afStyles) {
+      for (const b of afStyles.children) {
+        b.onclick = () => {
+          if (!G.run) return;
+          G.run.autoStyle = b.dataset.style;
+          G.run.aiThreatSeen = null;   // 风格切换清空威胁反应计时（立即按新延迟重新评估）
+          UI.updateAutoFightBtn();
+          const s = CFG.autoFight.styles[G.run.autoStyle];
+          UI.toast(`AI 风格 → ${s.name}：${s.desc}`, "gold");
+        };
+      }
+    }
     // 工匠面板页签：开宝箱 / 抽卡牌 / 购买·服务
     on("art-tab-chest", () => UI.setArtisanTab("chest"));
     on("art-tab-cards", () => UI.setArtisanTab("cards"));

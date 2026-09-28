@@ -85,6 +85,28 @@ CFG.skills2 = {
   autoCast: false,          // 主动技能自动施放：**默认关闭**，由局内 HUD「自动战斗」按钮控制（G.run.autoFight）；Space 保留手动触发
 };
 
+/* ---------- 自动战斗（托管 AI：转向力叠加模型，优先级 躲避威胁 > 保持攻击距离 > 索敌） ----------
+ * 三种风格打包「索敌激进度 / 躲避范围 / 反应速度 / 低血量行为」：
+ *   engageMul      期望攻击距离 = engageBase × engageMul（疯狂贴脸、冷静拉满风筝）
+ *   dodgeBullets   是否躲避敌方子弹（预判弹道最近逼近点）
+ *   dodgeMargin    预警圈/冲锋线躲避半径放大系数（冷静档提前更多离开危险区）
+ *   reactDelay     威胁反应延迟秒（疯狂档反应慢 → 偶尔吃刀，保留游戏张力）
+ *   lowHpFlee      血量低于该比例时转入拉开距离风筝（0 = 莽到底不退） */
+CFG.autoFight = {
+  defaultStyle: "balanced",
+  manualResumeDelay: 0.5,   // 玩家手动操作松手后，AI 恢复接管前的延迟（无缝切换）
+  smoothing: 10,            // 移动向量平滑系数（转向惯性，防抖动）
+  bulletScan: 220,          // 子弹威胁扫描半径(px)
+  engageBase: 240,          // 期望攻击距离基准(px)
+  threatWeight: 2.6,        // 躲避力权重（相对走位/索敌的 1.0）
+  strafeT: 1.6,             // 风筝环绕方向的切换周期(秒)
+  styles: {
+    berserk:  { name: "疯狂", engageMul: 0.35, dodgeBullets: false, dodgeTelegraph: true, dodgeMargin: 1.15, reactDelay: 0.4, lowHpFlee: 0,    desc: "贴脸输出，只预判冲锋与 Boss 大招，血线再低也不退" },
+    balanced: { name: "平衡", engageMul: 0.75, dodgeBullets: true,  dodgeTelegraph: true, dodgeMargin: 1.5,  reactDelay: 0.2, lowHpFlee: 0.4, desc: "中距离风筝，躲密集弹幕与预警技能，血量 40% 以下拉开" },
+    cautious: { name: "冷静", engageMul: 1.05, dodgeBullets: true,  dodgeTelegraph: true, dodgeMargin: 1.9,  reactDelay: 0.1, lowHpFlee: 0.6, desc: "最远距离风筝，见弹就躲，血量过半即拉开距离" },
+  },
+};
+
 /* ---------- 多角色组队（3 英雄上限） ---------- */
 CFG.team = { maxSize: 3,
   follow: { trailStep: 5, depth: 58, lateralBase: 18, seedDir: [0, 1], seedDirArtisan: [0, -1] },

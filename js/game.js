@@ -272,6 +272,9 @@ function createRun(heroDef) {
     exitStatue: null,
     extractChanneling: false, extractProgress: 0,
     extractHolder: null,     // 撤离判定的持有者：同一判定同时只有一个持有者（多英雄同圈不会各自触发）
+    // 自动战斗托管 AI（转向力叠加模型）：autoStyle 为风格键（CFG.autoFight.styles）
+    autoFight: false, autoStyle: CFG.autoFight ? CFG.autoFight.defaultStyle : "balanced",
+    aiHoldT: 0, aiMvX: 0, aiMvY: 0, aiClock: 0, aiThreatSeen: null,
     runTime: 0,
     stats: {                        // 本局统计（数值收敛用）
       dmgDealt: 0, dmgTaken: 0,
@@ -703,6 +706,113 @@ const SkillSystem = {
 };
 
 /* ============ 实体 ============ */
+/* ---------- 自动战斗 AI（托管队长的移动；转向力叠加模型） ----------
+ * 优先级：躲避威胁(×threatWeight) > 保持攻击距离/风筝 > 索敌
+ * 威胁源：① 敌方子弹（预判弹道最近逼近点，垂直/径向闪避）
+ *         ② 精英冲锋 telegraph 状态（沿冲锋线垂直侧闪 + 稍远离）
+ *         ③ Boss 爆炸预警 warnT（径向逃离预警圈）
+ * 反应延迟 reactDelay：威胁首次被看见后须存在该时长才触发躲避（疯狂档反应慢，保留张力）。
+ * 撤离读条期间停止走位（站桩输出，不打断读条）；玩家手动操作时 AI 让权。 */
+function autoFightMove(p, w, dt) {
+  const r = G.run, af = CFG.autoFight;
+  const style = af.styles[r.autoStyle] || af.styles[af.defaultStyle];
+  if (r.aiHoldT > 0) { r.aiHoldT -= dt; return { dx: 0, dy: 0 }; }   // 手动让权倒计时
+  if (r.extractChanneling) return { dx: 0, dy: 0 };                  // 撤离读条：圈内暂停走位
+  r.aiClock += dt;
+  const now = r.aiClock;
+  const seen = r.aiThreatSeen || (r.aiThreatSeen = new Map());
+
+  let tx = 0, ty = 0, threat = 0;   // 威胁躲避向量
+  // ① 敌方子弹
+  if (style.dodgeBullets) {
+    for (const b of w.enemyBullets) {
+      if (b.dead) continue;
+      const rx = b.x - p.x, ry = b.y - p.y;
+      if (Math.hypot(rx, ry) > af.bulletScan) continue;
+      if (!seen.has(b)) seen.set(b, now);
+      if (now - seen.get(b) < style.reactDelay) continue;
+      const vv = b.vx * b.vx + b.vy * b.vy || 1;
+      const tCa = -(rx * b.vx + ry * b.vy) / vv;           // 最近逼近时刻
+      if (tCa < 0 || tCa > 1.2) continue;                  // 只关心 1.2s 内会逼近的弹
+      const cx = rx + b.vx * tCa, cy = ry + b.vy * tCa;    // 最近逼近点（相对玩家）
+      const miss = Math.hypot(cx, cy);
+      if (miss > p.r + 34) continue;                       // 打不中则忽略
+      const wgt = (1 - miss / (p.r + 34)) * (1.2 - tCa);
+      if (miss > 1) { tx -= cx / miss * wgt; ty -= cy / miss * wgt; }
+      else if (Math.hypot(rx, ry) > 0.5) { const l = Math.hypot(rx, ry); tx -= rx / l * wgt; ty -= ry / l * wgt; }
+      threat += wgt;
+    }
+  }
+  // ②③ 预警型威胁（冲锋 / Boss 爆炸圈）
+  if (style.dodgeTelegraph) {
+    for (const m of w.monsters) {
+      if (m.dead) continue;
+      const isBossWarn = m.d.type === "boss" && m.warnT > 0;
+      const isCharging = m.d.type === "charger" && m.state === "telegraph";
+      if (!isBossWarn && !isCharging) continue;
+      const dx0 = p.x - m.x, dy0 = p.y - m.y;
+      const dist = Math.hypot(dx0, dy0) || 1;
+      const R = (isBossWarn ? (m.ak.boomRadius || 0) : (m.ak.chargeRange || 300)) * style.dodgeMargin;
+      if (dist > R) continue;
+      if (!seen.has(m)) seen.set(m, now);
+      if (now - seen.get(m) < style.reactDelay) continue;
+      // 方向兜底：威胁体正好压在身上（向量退化）时按固定角度逃离
+      let ux = dx0 / dist, uy = dy0 / dist;
+      if (Math.abs(dx0) < 1 && Math.abs(dy0) < 1) {
+        const a0 = p.aiEscA || (p.aiEscA = U.rand(0, Math.PI * 2));
+        ux = Math.cos(a0); uy = Math.sin(a0);
+      }
+      if (isBossWarn) {
+        const wgt = (1 - dist / R) * 3;                    // 径向逃离预警圈
+        tx += ux * wgt; ty += uy * wgt; threat += wgt;
+      } else {
+        const side = p.aiStrafeSide || (p.aiStrafeSide = Math.random() < 0.5 ? 1 : -1);
+        const wgt = 2.5 * (1 - dist / R);                  // 垂直冲锋线侧闪 + 稍远离
+        tx += -uy * side * wgt + ux * wgt * 0.4;
+        ty += ux * side * wgt + uy * wgt * 0.4;
+        threat += wgt;
+      }
+    }
+  }
+  // 清理已失效威胁的时间戳（子弹/怪物死亡）
+  for (const k of seen.keys()) if (k.dead) seen.delete(k);
+
+  // 走位/索敌向量：目标 = 最近怪；期望距离 = engageBase × 风格系数（低血量 ×1.8 拉开）
+  let sx = 0, sy = 0;
+  const target = nearestMonster(w, p.x, p.y);
+  if (target) {
+    const dx0 = target.x - p.x, dy0 = target.y - p.y;
+    const dist = Math.hypot(dx0, dy0) || 1;
+    const ux = dx0 / dist, uy = dy0 / dist;
+    const hpFrac = r.hp / r.hpMax;
+    if (style.lowHpFlee > 0 && hpFrac < style.lowHpFlee) {
+      sx = -ux; sy = -uy;                                  // 低血量：转身拉开距离风筝
+    } else {
+      const want = af.engageBase * style.engageMul * (style.lowHpFlee > 0 && hpFrac < style.lowHpFlee + 0.15 ? 1.4 : 1);
+      if (dist > want + 50) { sx = ux; sy = uy; }          // 太远：逼近
+      else if (dist < want - 50) { sx = -ux; sy = -uy; }   // 太近：后撤
+      else {                                               // 合适距离：环绕风筝
+        p.aiStrafeT = (p.aiStrafeT || 0) - dt;
+        if (p.aiStrafeT <= 0) { p.aiStrafeT = af.strafeT; p.aiStrafeSide = Math.random() < 0.5 ? 1 : -1; }
+        const side = p.aiStrafeSide || 1;
+        sx = -uy * side * 0.5; sy = ux * side * 0.5;
+      }
+    }
+  }
+
+  // 合成 + 平滑（转向惯性）
+  let mx = tx * af.threatWeight + sx, my = ty * af.threatWeight + sy;
+  const l = Math.hypot(mx, my);
+  if (l < 0.05) return { dx: 0, dy: 0 };
+  mx /= l; my /= l;
+  const a = Math.min(1, af.smoothing * dt);
+  r.aiMvX += (mx - r.aiMvX) * a;
+  r.aiMvY += (my - r.aiMvY) * a;
+  const ll = Math.hypot(r.aiMvX, r.aiMvY);
+  if (ll < 0.08) return { dx: 0, dy: 0 };
+  return { dx: r.aiMvX / ll, dy: r.aiMvY / ll };
+}
+
 class Player {
   constructor(x, y) {
     this.x = x; this.y = y; this.r = G.heroDef.radius;
@@ -721,6 +831,13 @@ class Player {
     if (joy && joy.active) {
       const dead = (CFG.mobile && CFG.mobile.joystick && CFG.mobile.joystick.deadZone) || 0.18;
       if (Math.hypot(joy.dx, joy.dy) >= dead) { dx = joy.dx; dy = joy.dy; }
+    }
+    let manual = dx !== 0 || dy !== 0;
+    // 自动战斗托管：开启后由 AI 计算移动向量（玩家手动操作即让权，松手后延迟回归）
+    if (manual) G.run.aiHoldT = CFG.autoFight ? CFG.autoFight.manualResumeDelay : 0.5;
+    else if (G.run.autoFight && (w.isMain || w.kind === "rift")) {
+      const ai = autoFightMove(this, w, dt);
+      if (ai.dx || ai.dy) { dx = ai.dx; dy = ai.dy; }
     }
     const moving = dx !== 0 || dy !== 0;
     if (moving) {
