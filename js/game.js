@@ -300,10 +300,10 @@ function computeWeaponDefaults() {
   return { basic: { ...CFG.skills[sk.basic] }, skill: { ...CFG.skills[sk.skill] } };   // 每帧由词条重算副本
 }
 
-/* ---------- 局外元进度（localStorage 持久化：结晶 / 各角色局外等级 / 关卡解锁） ---------- */
+/* ---------- 局外元进度（localStorage 持久化：结晶 / 各角色局外等级 / 关卡解锁 / 玩家档案 / 图鉴） ---------- */
 const SAVE_KEY = "bagrogue_save_v1";
 const Meta = {
-  data: { crystals: 0, heroes: {}, unlockedLevels: 1 },
+  data: { crystals: 0, heroes: {}, unlockedLevels: 1, profile: null, codex: null },
   load() {
     try { const raw = localStorage.getItem(SAVE_KEY); if (raw) Object.assign(this.data, JSON.parse(raw)); } catch (e) { /* 无 localStorage（测试环境）则用默认值 */ }
     // 迁移：旧的"结晶技能升级"并入武器等级（技能等级 = 武器等级，局外结晶升级）——老存档字段保留兼容
@@ -311,8 +311,52 @@ const Meta = {
       const rec = this.data.heroes[id];
       if (rec.skillLevel && !rec.weaponLv) rec.weaponLv = rec.skillLevel;
     }
+    // 迁移：主城档案 + 图鉴（老存档补默认值；皮肤 = 英雄外貌，图鉴激活解锁）
+    if (!this.data.profile) this.data.profile = { name: CFG.profile.defaultName, skinId: CFG.profile.defaultSkin, titleId: CFG.profile.titles[0].id };
+    if (!this.data.codex) this.data.codex = { heroes: {}, monsters: {}, flags: {} };
+    if (!this.data.codex.flags) this.data.codex.flags = {};
+    // 初始皮肤永久解锁
+    this.data.codex.heroes[CFG.profile.defaultSkin] = true;
   },
   commit() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.data)); } catch (e) { } },
+  /* ---- 玩家档案（主城头像栏 / 形象师 NPC） ---- */
+  profileName() { return (this.data.profile && this.data.profile.name) || CFG.profile.defaultName; },
+  rename(name) {
+    const n = String(name || "").trim();
+    if (n.length < CFG.profile.nameMin || n.length > CFG.profile.nameMax) return false;
+    this.data.profile.name = n;
+    this.commit();
+    return true;
+  },
+  skinId() { return (this.data.profile && this.data.profile.skinId) || CFG.profile.defaultSkin; },
+  // 皮肤 = 英雄外貌：图鉴激活（用过该英雄出征）才可选用；默认皮肤永久解锁
+  skinUnlocked(id) { return id === CFG.profile.defaultSkin || !!(this.data.codex.heroes[id]); },
+  setSkin(id) {
+    if (!this.skinUnlocked(id)) return false;
+    this.data.profile.skinId = id;
+    this.commit();
+    return true;
+  },
+  titleId() { return (this.data.profile && this.data.profile.titleId) || CFG.profile.titles[0].id; },
+  titleUnlocked(t) { return !t.flag || !!this.data.codex.flags[t.flag]; },
+  setTitle(id) {
+    const t = CFG.profile.titles.find(x => x.id === id);
+    if (!t || !this.titleUnlocked(t)) return false;
+    this.data.profile.titleId = id;
+    this.commit();
+    return true;
+  },
+  titleName() { const t = CFG.profile.titles.find(x => x.id === this.titleId()); return t ? t.name : ""; },
+  /* ---- 图鉴（英雄用过即激活 → 解锁同名皮肤；怪物击杀即收录） ---- */
+  activateHero(id) {
+    if (!this.data.codex.heroes[id]) { this.data.codex.heroes[id] = true; this.commit(); }
+  },
+  recordMonster(defId) {
+    if (defId && !this.data.codex.monsters[defId]) { this.data.codex.monsters[defId] = true; this.commit(); }
+  },
+  setFlag(flag) {
+    if (flag && !this.data.codex.flags[flag]) { this.data.codex.flags[flag] = true; this.commit(); }
+  },
   heroLevel(id) { return (this.data.heroes[id] && this.data.heroes[id].level) || 1; },
   levelUpCost(id) { return CFG.outLevel.costBase + (this.heroLevel(id) - 1) * CFG.outLevel.costStep; },
   levelUp(id) {
@@ -1312,6 +1356,7 @@ function onMonsterKilled(w, m) {
   const r = G.run, lv = G.levelCfg;
   const rm = r.curse ? r.curse.rewardMul : 1;   // 诅咒风险回报：掉落倍率（待细化36）
   r.kills++;
+  Meta.recordMonster(m.defId);   // 图鉴收录：击杀过的怪物永久激活
   SFX.play("kill");
   if (w.isMain) {
     // 金币与经验宝石掉落（地上拾取物，走过自动拾取；Boss 分裂成多枚）
@@ -1451,6 +1496,7 @@ function spawnBoss(w) {
 function onBossDefeated(w) {
   const r = G.run;
   r.bossDefeated = true;
+  Meta.setFlag("bossKill");   // 称号成就：击败一次 BOSS
   if (r.stats) {
     // 注意不能用 `||`：timeToBoss 为 0 时是合法值，会被误判为缺失导致耗时恒为 0
     const t0 = r.stats.timeToBoss === undefined ? r.runTime : r.stats.timeToBoss;
@@ -1667,6 +1713,7 @@ class World {
     this.returnProgress = 0; this.npcProgress = 0; this.exitProgress = 0;
     if (isMain) this.setupMain();
     else if (this.kind === "rift") this.setupRift();
+    else if (this.kind === "city") this.setupCity();
     else this.setupArtisan();
   }
   setupMain() {
@@ -1707,6 +1754,18 @@ class World {
     this.obstacles = [];
     this.npc = { x: this.w / 2, y: this.h / 2 - 60 };
     this.exitBeacon = { x: this.w / 2, y: this.h - 130 };
+  }
+  setupCity() {
+    // 游戏主城（Hub）：玩家形象行走的安全区；NPC 环绕中央广场 + 顶部出征传送门
+    // 装饰性建筑（不挡路的小花坛，避开 NPC 与传送门）
+    this.obstacles = [
+      { x: this.w * 0.5 - 90, y: this.h * 0.5 - 26, w: 180, h: 52 },   // 中央广场喷泉台
+    ];
+    const c = CFG.city;
+    this.cityNpcs = c.npcs.map(n => ({ ...n, x: n.fx * this.w, y: n.fy * this.h }));
+    this.portal = { name: c.portal.name, x: this.w / 2, y: 90, radius: c.portal.radius, channel: c.portal.channel };
+    this.seasonPortal = c.seasonPortal ? { name: c.seasonPortal.name, x: this.w * 0.82, y: 90, radius: c.seasonPortal.radius, channel: c.seasonPortal.channel } : null;
+    this.portalProgress = 0;
   }
   setupRift() {
     // 空间裂缝子地图（5.1）：一次性投放战斗场景
@@ -2155,6 +2214,136 @@ function updateFX(dt) {
   for (const f of FX.floats) { f.y -= 34 * dt; f.life -= dt; }
   FX.floats = FX.floats.filter(f => f.life > 0);
   if (G.shakeT > 0) G.shakeT = Math.max(0, G.shakeT - dt);
+}
+
+/* ============ 游戏主城（Hub 流程：首页 → 主城 → 传送门 → 选角） ============
+ * 玩家操控「自己的形象」（非英雄单位）在主城行走：无战斗系统加载，NPC 进圈即弹面板，
+ * 传送门进圈读条出征。皮肤 = 英雄外貌（图鉴激活解锁），渲染用对应英雄素材。 */
+function createCityAvatar() {
+  const sp = CFG.city.spawn;
+  return { x: sp.x * CFG.city.mapW, y: sp.y * CFG.city.mapH, r: 16,
+    faceDir: 1, mvx: 0, mvy: 0, skin: Meta.skinId() };
+}
+function updateCityWorld(dt) {
+  const w = G.activeWorld, a = G.cityAvatar;
+  if (!w || w.kind !== "city" || !a) return;
+  // 移动：键盘 / 虚拟摇杆（与局内同一优先级与死区规则）
+  let dx = (G.keys["d"] || G.keys["arrowright"] ? 1 : 0) - (G.keys["a"] || G.keys["arrowleft"] ? 1 : 0);
+  let dy = (G.keys["s"] || G.keys["arrowdown"] ? 1 : 0) - (G.keys["w"] || G.keys["arrowup"] ? 1 : 0);
+  const joy = G.joy;
+  if (joy && joy.active) {
+    const dead = (CFG.mobile && CFG.mobile.joystick && CFG.mobile.joystick.deadZone) || 0.18;
+    if (Math.hypot(joy.dx, joy.dy) >= dead) { dx = joy.dx; dy = joy.dy; }
+  }
+  const moving = dx !== 0 || dy !== 0;
+  if (moving) {
+    const l = Math.hypot(dx, dy); dx /= l; dy /= l;
+    if (dx !== 0) a.faceDir = dx > 0 ? 1 : -1;
+    a.mvx = dx; a.mvy = dy;
+    a.x = U.clamp(a.x + dx * CFG.city.moveSpd * dt, a.r, w.w - a.r);
+    a.y = U.clamp(a.y + dy * CFG.city.moveSpd * dt, a.r, w.h - a.r);
+    resolveObstacles(a, w);
+  } else { a.mvx = 0; a.mvy = 0; }
+  // 传送门：进圈读条（圈内积累/离开衰退，与撤离读条同一契约）；完成 → 出征（选关）
+  const inPortal = U.dist(a.x, a.y, w.portal.x, w.portal.y) < w.portal.radius * CFG.altarJudgeMul;
+  if (inPortal) {
+    w.portalProgress += dt;
+    if (w.portalProgress >= w.portal.channel) {
+      w.portalProgress = 0;
+      EventBus.emit("cityPortalEnter");
+      return;
+    }
+  } else w.portalProgress = Math.max(0, w.portalProgress - dt * 1.2);   // 离开缓慢衰退
+  // 赛季传送门（预留）：赛季玩法上线后生效，暂只读条提示未开放
+  if (w.seasonPortal) {
+    const inS = U.dist(a.x, a.y, w.seasonPortal.x, w.seasonPortal.y) < w.seasonPortal.radius * CFG.altarJudgeMul;
+    if (inS && G.time - (G._seasonHintT || 0) > 4) {
+      G._seasonHintT = G.time;
+      UI.toast("赛季传送门尚未开启（通关后赛季玩法上线）", "bad");
+    }
+  }
+  // NPC 交互：进圈即弹对应面板，离圈自动关闭（不读条，快速交互）
+  let near = null;
+  for (const n of w.cityNpcs) {
+    if (U.dist(a.x, a.y, n.x, n.y) < CFG.city.npcRadius * CFG.altarJudgeMul) { near = n; break; }
+  }
+  if (near && (!G.cityNpcOpen || G.cityNpcOpen.id !== near.id)) {
+    G.cityNpcOpen = near;
+    SFX.play("altar");
+    EventBus.emit("cityNpcPanel", near);
+  } else if (!near && G.cityNpcOpen) {
+    G.cityNpcOpen = null;
+    EventBus.emit("cityNpcClose");
+  }
+}
+function renderCity() {
+  const ctx = G.ctx, w = G.activeWorld, a = G.cityAvatar;
+  if (!w || w.kind !== "city" || !a) return;
+  ctx.fillStyle = "#101822";   // 主城地面主题（比战场更沉稳的夜色调）
+  ctx.fillRect(0, 0, G.W, G.H);
+  ctx.save();
+  // 摄像机：跟随形象 + 边缘钳制（地图小于视口则居中）
+  const zoom = (CFG.camera && CFG.camera.zoom) || 1;
+  const viewW = G.W / zoom, viewH = G.H / zoom;
+  let camX = w.w <= viewW ? (w.w - viewW) / 2 : U.clamp(a.x - viewW / 2, 0, w.w - viewW);
+  let camY = w.h <= viewH ? (w.h - viewH) / 2 : U.clamp(a.y - viewH / 2, 0, w.h - viewH);
+  ctx.scale(zoom, zoom); ctx.translate(-camX, -camY);
+  // 地面网格 + 城墙
+  ctx.strokeStyle = "rgba(255,255,255,0.03)"; ctx.lineWidth = 1;
+  for (let x = 0; x < w.w; x += 96) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, w.h); ctx.stroke(); }
+  for (let y = 0; y < w.h; y += 96) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w.w, y); ctx.stroke(); }
+  ctx.strokeStyle = "#3f5170"; ctx.lineWidth = 8; ctx.strokeRect(4, 4, w.w - 8, w.h - 8);
+  // 障碍物（装饰建筑）
+  for (const o of w.obstacles) {
+    ctx.fillStyle = "#243048"; ctx.fillRect(o.x, o.y, o.w, o.h);
+    ctx.strokeStyle = "#44587a"; ctx.lineWidth = 2; ctx.strokeRect(o.x, o.y, o.w, o.h);
+  }
+  // NPC：交互虚线圈（判定 = 绘制 × altarJudgeMul，与祭坛同源契约）+ 头顶功能名
+  for (const n of w.cityNpcs) {
+    ctx.setLineDash([6, 6]); ctx.strokeStyle = n.color + (G.cityNpcOpen && G.cityNpcOpen.id === n.id ? "aa" : "44");
+    ctx.beginPath(); ctx.arc(n.x, n.y, CFG.city.npcRadius, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    drawActor(ctx, n.x, n.y, 40, n.color, n.icon);
+    ctx.font = "bold 13px sans-serif"; ctx.textAlign = "center";
+    ctx.fillStyle = n.color; ctx.fillText(n.name, n.x, n.y - 52);
+    ctx.font = "11px sans-serif"; ctx.fillStyle = "#9fb4d4";
+    ctx.fillText(n.desc, n.x, n.y + 58);
+  }
+  // 出征传送门：读条环 + 涟漪动画
+  const pt = w.portal;
+  ctx.beginPath(); ctx.arc(pt.x, pt.y, 34 + 3 * Math.sin(G.time * 3), 0, Math.PI * 2);
+  ctx.fillStyle = "#7de08a22"; ctx.fill();
+  ctx.strokeStyle = "#7de08a"; ctx.lineWidth = 3; ctx.stroke();
+  ctx.setLineDash([6, 6]); ctx.strokeStyle = "#7de08a55";
+  ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = "#7de08a";
+  ctx.fillText(pt.name, pt.x, pt.y - 58);
+  ctx.font = "11px sans-serif"; ctx.fillStyle = "#9fb4d4";
+  ctx.fillText(CFG.city.portal.desc, pt.x, pt.y + 56);
+  if (w.portalProgress > 0) {
+    const frac = Math.min(1, w.portalProgress / pt.channel);
+    ctx.strokeStyle = "#ffd76a"; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, 42, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = "#ffd76a"; ctx.font = "bold 13px sans-serif";
+    ctx.fillText(Math.floor(frac * 100) + "%", pt.x, pt.y - 74);
+  }
+  // 玩家形象（皮肤 = 英雄素材；当前素材未分化时全部英雄共用 hero 图，分化后走 heroDef.sprite）
+  const skinKey = CFG.heroes.find(h => h.id === a.skin) ? a.skin : CFG.profile.defaultSkin;
+  const heroDef0 = CFG.heroes.find(h => h.id === skinKey);
+  const img = G.sprites[(heroDef0 && heroDef0.sprite) || "hero"] || G.sprites.hero;
+  if (img) {
+    ctx.save(); ctx.translate(a.x, a.y); ctx.scale(a.faceDir, 1);
+    ctx.drawImage(img, -30, -34, 60, 60);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = "#7ec8ff"; ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.fillStyle = "#cfe0ff"; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center";
+  ctx.fillText(Meta.profileName(), a.x, a.y - 46);
+  ctx.font = "10px sans-serif"; ctx.fillStyle = "#ffd76a";
+  ctx.fillText("「" + Meta.titleName() + "」", a.x, a.y - 33);
+  ctx.restore();
 }
 
 /* ============ 渲染 ============ */

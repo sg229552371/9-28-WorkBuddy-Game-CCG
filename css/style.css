@@ -339,3 +339,91 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .meta-card .meta-lv span { font-size:12px; color:#cfe0ff; }
 .meta-card .meta-lv .lvnum { color:#c79bff; font-size:14px; }
 .meta-card .meta-lv .btn { width:100%; }
+
+/* ===== 游戏首页（流程：首页→主城→传送门） ===== */
+.main-panel { display:flex; flex-direction:column; gap:12px; width:300px; margin:0 auto; }
+.home-user-line { margin-top:18px; font-size:14px; color:#cfe0ff; display:flex; gap:14px; justify-content:center; }
+.home-user-line .hu-name { font-weight:bold; }
+.home-user-line .hu-title { color:#ffd76a; }
+.home-user-line .hu-crystal { color:#c79bff; }
+
+/* ===== 主城 HUD：左上角头像栏（city-mode 下隐藏战斗 HUD） ===== */
+#city-avatar-bar {
+  position:absolute; left:16px; top:12px; display:flex; align-items:center; gap:10px;
+  background:rgba(20,30,50,.85); border:1px solid #3a4a66; border-radius:12px; padding:8px 14px 8px 8px;
+  cursor:pointer; pointer-events:auto;
+}
+#city-avatar-bar:hover { border-color:#ffd76a; }
+#city-avatar-bar canvas { width:44px; height:44px; border-radius:8px; background:#0d1420; }
+#city-avatar-bar .ab-info b { display:block; font-size:14px; color:#cfe0ff; }
+#city-avatar-bar .ab-info small { color:#ffd76a; font-size:11px; }
+#city-avatar-bar .ab-crystal { color:#c79bff; font-size:14px; font-weight:bold; margin-left:6px; }
+#hud.city-mode #hud-tl, #hud.city-mode #hud-top, #hud.city-mode #hud-tr,
+#hud.city-mode #hud-bl, #hud.city-mode #hud-br { display:none; }
+#hud.city-mode #hint-center { bottom:110px; }
+
+/* ===== 物品 TIPS 浮窗 ===== */
+#tooltip {
+  position:fixed; z-index:200; max-width:320px; pointer-events:none;
+  background:rgba(13,19,30,.96); border:1.5px solid #3a4a66; border-radius:10px;
+  padding:10px 13px; font-size:12px; line-height:1.7; color:#cfe0ff;
+  box-shadow:0 6px 24px rgba(0,0,0,.55);
+}
+#tooltip.hidden { display:none; }
+#tooltip .tip-head { margin-bottom:4px; padding-bottom:5px; border-bottom:1px solid #2e3d55; }
+#tooltip .tip-head b { display:block; font-size:14px; }
+#tooltip .tip-head span { font-size:10px; opacity:.85; }
+#tooltip .tip-line { display:block; }
+#tooltip .tip-line.dim { color:#7d90ad; }
+#tooltip .tip-line.bad { color:#ff9a9a; }
+
+/* ===== 主城 NPC 面板（更名 / 皮肤 / 称号） ===== */
+.profile-rename { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.profile-rename input {
+  flex:1; background:#131b29; border:1px solid #33486b; border-radius:8px;
+  color:#cfe0ff; padding:8px 12px; font-size:14px;
+}
+.skin-grid { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.skin-tile {
+  padding:8px 14px; border-radius:8px; background:#1d2a3d; border:1px solid #33486b;
+  cursor:pointer; text-align:center; min-width:86px;
+}
+.skin-tile b { display:block; font-size:13px; color:#cfe0ff; }
+.skin-tile small { font-size:10px; color:#8ba0bd; }
+.skin-tile.selected { border-color:#ffd76a; background:#25344c; }
+.skin-tile.locked { opacity:.5; cursor:default; }
+.title-row {
+  display:flex; align-items:center; gap:12px; padding:8px 12px; border-radius:8px;
+  background:#1d2a3d; border:1px solid #33486b; margin-bottom:6px; cursor:pointer;
+}
+.title-row b { color:#ffd76a; font-size:13px; }
+.title-row small { color:#8ba0bd; }
+.title-row.selected { border-color:#ffd76a; background:#25344c; }
+.title-row.locked { opacity:.5; cursor:default; }
+
+/* ===== 帮助 / 设置 / 图鉴 / 告别 ===== */
+.help-panel { width:min(880px,94vw); }
+.help-cols { display:flex; gap:26px; text-align:left; }
+.help-cols > div { flex:1; }
+.help-cols h3 { color:#ffd76a; font-size:14px; margin:10px 0 6px; }
+.help-cols p { font-size:12px; color:#9fb4d4; margin:6px 0; }
+.help-cols b { color:#cfe0ff; }
+.settings-panel { width:min(520px,94vw); text-align:left; }
+.set-row { display:flex; align-items:center; gap:14px; margin:16px 0; font-size:14px; color:#cfe0ff; }
+.set-row > span { width:150px; }
+.set-row input[type=range] { flex:1; accent-color:#ffd76a; }
+#set-touch.on { border-color:#7de08a; color:#7de08a; }
+.codex-panel { width:min(880px,94vw); text-align:left; }
+.codex-panel h3 { color:#9fb4d4; font-size:13px; margin:12px 0 8px; }
+.codex-grid { display:flex; flex-wrap:wrap; gap:8px; }
+.codex-card {
+  width:120px; padding:8px; border-radius:8px; background:#1d2a3d;
+  border:1px solid #33486b; text-align:center; font-size:11px; color:#cfe0ff;
+}
+.codex-card.small { width:104px; }
+.codex-card b { display:block; font-size:12px; margin-top:4px; }
+.codex-card small { color:#8ba0bd; font-size:10px; line-height:1.4; display:block; }
+.codex-card .codex-face { width:56px; height:56px; }
+.codex-card.small .codex-face { width:44px; height:44px; }
+.codex-card.locked { opacity:.55; }
+.goodbye-panel { width:min(460px,94vw); }

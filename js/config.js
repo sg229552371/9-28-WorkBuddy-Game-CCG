@@ -103,6 +103,55 @@ CFG.mobile = {
   buttons: { skill: true, interact: true, backpack: true },
 };
 
+/* ---------- 游戏主城（Hub，流程：首页 → 主城 → 传送门 → 选角 → 关卡） ----------
+ * 主城是可操控「玩家形象」行走的安全区：无敌人、不加载战斗系统（队友/弹道/撤离全部不进主城）。
+ * NPC = 交互块（进圈即弹面板）；传送门 = 进圈读条出征（复用撤离读条的圈内积累/离开衰退契约）。
+ * seasonPortal：赛季玩法上线后再单独开一个门（配置预留，为 null 时不渲染不判定）。 */
+CFG.city = {
+  mapW: 1280, mapH: 960,
+  moveSpd: 210,             // 主城行走速度（无负重无增益，固定值）
+  spawn: { x: 0.5, y: 0.78 },   // 出生点（比例坐标，城内下方居中）
+  portal: { name: "出征传送门", radius: 90, channel: 2.0, desc: "进圈读条 2 秒 → 选择关卡出征" },
+  seasonPortal: null,       // 预留：{ name:"赛季传送门", radius:90, channel:2.0 }，赛季玩法上线后填入
+  npcRadius: 76,            // NPC 交互判定半径（进圈即弹面板，离圈自动关闭）
+  // NPC 扇形环绕中央广场分布（坐标为比例，加载时换算成像素）
+  npcs: [
+    { id: "NPC_TRAINER", name: "强化导师", icon: "✦", color: "#c79bff", fx: 0.20, fy: 0.32, func: "outlevel", desc: "局外等级升级" },
+    { id: "NPC_SMITH",   name: "武器匠",   icon: "⚔", color: "#ffd76a", fx: 0.38, fy: 0.24, func: "weapon",   desc: "武器 / 技能等级" },
+    { id: "NPC_MIRROR",  name: "形象师",   icon: "☺", color: "#7de08a", fx: 0.62, fy: 0.24, func: "profile",  desc: "头像 · 更名 · 称号 · 皮肤" },
+    { id: "NPC_CODEX",   name: "图鉴学者", icon: "❖", color: "#6cb2ff", fx: 0.80, fy: 0.32, func: "codex",    desc: "英雄 / 怪物图鉴" },
+    { id: "NPC_SHOP",    name: "神秘商人", icon: "◈", color: "#e5a04b", fx: 0.50, fy: 0.14, func: "shop",     desc: "敬请期待" },
+  ],
+};
+
+/* ---------- 玩家档案（主城形象：更名 / 头像皮肤 / 称号） ----------
+ * 皮肤 = 各英雄的外貌，解锁条件 = 该英雄已在图鉴激活（本局用过该英雄出征，见 Meta.activateHero）。
+ * 称号由成就标记解锁（Meta.data.codex.flags）。 */
+CFG.profile = {
+  defaultName: "无名旅者",
+  nameMin: 2, nameMax: 8,
+  defaultSkin: "H001",      // 初始形象（H001 永久解锁）
+  titles: [
+    { id: "t_rookie",   name: "初出茅庐", flag: null,             desc: "默认称号" },
+    { id: "t_extractor", name: "撤离者",  flag: "firstExtract",  desc: "完成一次撤离" },
+    { id: "t_godslayer", name: "弑神者",  flag: "bossKill",      desc: "击败一次 BOSS" },
+  ],
+};
+
+/* ---------- 设置（首页入口；独立 localStorage 键持久化） ---------- */
+CFG.settings = {
+  saveKey: "bagrogue_settings_v1",
+  sfxVolume: { default: 0.8, min: 0, max: 1, step: 0.1 },   // 音效音量（SFX 主增益）
+  joyScale: { default: 1.0, min: 0.7, max: 1.5, step: 0.1 }, // 触屏控件整体缩放
+  showTouchOnDesktop: { default: false },                    // 桌面端强制显示触屏控件（调试用）
+};
+
+/* ---------- 物品 TIPS 浮窗（悬停/长按出提示；全场景复用一个渲染函数） ---------- */
+CFG.tooltip = {
+  hoverDelay: 0.28,        // 桌面悬停延迟（秒）：快速划过背包不闪烁
+  pressDelay: 0.38,        // 移动端长按延迟（秒）
+};
+
 /* ---------- 怪物解锁进度（击杀进度百分比） ---------- */
 CFG.monsterUnlock = { NM0010: 0, NM0011: 0.25, NM0012: 0.55, NM0013: 0.15, NM0014: 0.5 };
 

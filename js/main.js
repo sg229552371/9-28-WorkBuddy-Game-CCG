@@ -17,14 +17,16 @@ const Game = {
     G.sprites.enemy08 = Assets.fit("enemy08", 48 * szMul);
     G.sprites.enemy16 = Assets.fit("enemy16", 48 * szMul);
     G.sprites.enemy22 = Assets.fit("enemy22", 130 * szMul);
+    this.loadSettings();
     this.bindInput();
     this.bindEvents();
-    UI.buildLevelList();
+    this.bindTooltip();
+    UI.updateHomeUser();
     if (location.protocol === "file:") {
       UI.toast("本地文件模式：素材抠图被浏览器安全策略禁用（角色/怪物带底色）。建议通过助手预览打开", "", 5000);
     }
     G.state = "menu";
-    UI.showScreen("screen-main");   // 启动落到主菜单（→ 关卡选择 → 角色选择）
+    UI.showScreen("screen-main");   // 启动落到游戏首页（→ 主城 → 传送门 → 选关）
     requestAnimationFrame((t) => this.loop(t));
   },
   fitCanvas() {
@@ -33,7 +35,7 @@ const Game = {
     G.canvas.style.height = G.H * scale + "px";
   },
 
-  /* ---------- 界面流程 ---------- */
+  /* ---------- 界面流程（首页 → 主城 → 传送门 → 选关 → 选角 → 战斗） ---------- */
   enterCharSelect() {
     G.state = "charSel";
     UI.selectedChars = [];   // 每次进入选角重新组队
@@ -44,6 +46,19 @@ const Game = {
       startBtn.textContent = `开始游戏（0/${CFG.team.maxSize}）`;
     }
     UI.showScreen("screen-character");
+  },
+  /* 进入主城（Hub）：创建主城世界与玩家形象；无战斗系统加载（队友/弹道/撤离不进主城） */
+  enterCity() {
+    G.state = "city";
+    G.cityAvatar = createCityAvatar();
+    G.cityNpcOpen = null;
+    G.mainWorld = null; G.subWorld = null; G.riftWorld = null;
+    G.activeWorld = new World(CFG.city.mapW, CFG.city.mapH, false, "city");
+    UI.showHudOnly();
+    const hud = document.getElementById("hud");
+    if (hud) hud.classList.add("city-mode");
+    if (typeof UI.updateCityHUD === "function") UI.updateCityHUD();
+    UI.toast(`欢迎回到主城，${Meta.profileName()}：找 NPC 强化，中央上方传送门出征`, "gold");
   },
   startRun(chars) {
     // 多角色组队：1~3 名英雄，第一名是队长（玩家操控），其余为 AI 队友
@@ -59,9 +74,13 @@ const Game = {
     G.subWorld = null;
     G.inArtisan = false;
     G.activeWorld = G.mainWorld;
+    // 图鉴：本局出战英雄全部激活（解锁同名皮肤）
+    for (const h of list) Meta.activateHero(h.id);
     recomputeWeapon();   // 开局即解析全队技能（含队友），避免首帧前 c.skills 为空
     G.state = "playing";
     UI.showHudOnly();
+    const hud = document.getElementById("hud");
+    if (hud) hud.classList.remove("city-mode");
     UI.toast(`进入 ${G.levelCfg.name} · 局外 LV${G.heroDef.outLevel} · WASD 移动 · Space 技能 · B 背包`, "gold");
   },
   /* 清理局内状态（返回任一界面层前的统一收尾，不动 settings/config） */
@@ -71,43 +90,52 @@ const Game = {
     G.inArtisan = false; G.inRift = false;
     UI.toggleBackpack(false); UI.toggleArtisan(false);
   },
+  /* 战斗结束（撤离/死亡）→ 回主城（Hub 是家，出征从主城出发也回到主城） */
   backToMenu() {
-    // 语义保持：回到【关卡选择页】（结算/死亡界面的「确认返回选关」依赖此落点）
     this._clearRunState();
-    UI.buildLevelList();
-    UI.showScreen("screen-level");
+    UI.closeNpcPanels && UI.closeNpcPanels();
+    this.enterCity();
   },
+  /* 首页（游戏启动页） */
   toMainMenu() {
-    // 回到【主菜单】（清理逻辑与 backToMenu 一致，仅落点不同）
     this._clearRunState();
-    UI.buildLevelList();
+    UI.updateHomeUser();
     UI.showScreen("screen-main");
   },
+  /* 主城传送门 → 关卡选择（选完关进角色选择，后面流程不变） */
   openLevelSelect() {
-    // 主菜单「开始游戏」→ 关卡选择页
     G.state = "menu";
     UI.buildLevelList();
     UI.showScreen("screen-level");
   },
-  openMeta() {
-    // 主菜单「局外成长」→ 局外成长界面
-    G.state = "menu";
-    UI.renderMeta();
-    UI.showScreen("screen-meta");
+  /* 返回主城（关卡选择「返回」按钮；出征中途反悔不算撤离） */
+  returnToCity() {
+    this.enterCity();
   },
 
   /* ---------- 事件（事件总线 13.14） ---------- */
   bindEvents() {
     // 空值保护的事件绑定：测试 DOM 桩下元素可能缺失，不应抛异常
     const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
-    on("btn-main-start", () => this.openLevelSelect());        // 主菜单 → 关卡选择
-    on("btn-main-meta", () => this.openMeta());                // 主菜单 → 局外成长
-    on("btn-level-back", () => this.toMainMenu());             // 关卡选择 → 主菜单
-    on("btn-meta-back", () => this.toMainMenu());              // 局外成长 → 主菜单
-    on("btn-char-back", () => this.openLevelSelect());         // 角色选择 → 关卡选择
+    /* ---- 首页（开始/操作说明/设置/图鉴/退出） ---- */
+    on("btn-main-start", () => this.enterCity());               // 首页「开始游戏」→ 主城
+    on("btn-home-help", () => { UI.showScreen("screen-help"); });
+    on("btn-home-settings", () => { UI.renderSettings(); UI.showScreen("screen-settings"); });
+    on("btn-home-codex", () => UI.showCodex());
+    on("btn-home-exit", () => UI.showScreen("screen-goodbye")); // 网页端伪退出：告别遮罩（打包后为真退出预留）
+    on("btn-help-back", () => UI.showScreen("screen-main"));
+    on("btn-settings-back", () => { UI.updateHomeUser(); UI.showScreen("screen-main"); });
+    on("btn-codex-back", () => { UI.updateHomeUser(); UI.showScreen("screen-main"); });
+    on("btn-goodbye-back", () => UI.showScreen("screen-main"));
+    /* ---- 流程：选关 / 选角 / 结算 / 死亡 ---- */
+    on("btn-level-back", () => this.returnToCity());            // 选关「返回」→ 回主城
+    on("btn-char-back", () => this.openLevelSelect());          // 角色选择 → 关卡选择
     on("btn-char-start", () => {
       if (UI.selectedChars && UI.selectedChars.length) this.startRun(UI.selectedChars);
     });
+    on("btn-settle-ok", () => this.backToMenu());
+    on("btn-death-ok", () => this.backToMenu());
+    /* ---- 背包 / 工匠 / 卡牌 ---- */
     on("btn-bp-close", () => UI.toggleBackpack(false));
     on("btn-artisan-close", () => UI.toggleArtisan(false));
     // 工匠面板页签：开宝箱 / 抽卡牌 / 购买·服务
@@ -118,9 +146,44 @@ const Game = {
       refreshCards();          // 免费次数优先，用完后扣金币；失败（金币不足）时内部已 toast
       UI.renderCards();
     });
-    on("btn-settle-ok", () => this.backToMenu());
-    on("btn-death-ok", () => this.backToMenu());
-
+    /* ---- 主城 NPC 面板（进圈弹窗 / 离圈自动关闭）+ 角色档案 ---- */
+    on("btn-npc-outlevel-close", () => UI.closeNpcPanels());
+    on("btn-npc-weapon-close", () => UI.closeNpcPanels());
+    on("btn-profile-close", () => UI.closeNpcPanels());
+    on("btn-profile-rename", () => {
+      const input = document.getElementById("profile-name-input");
+      if (!input) return;
+      if (!Meta.rename(input.value)) { UI.toast(`名字需 ${CFG.profile.nameMin}~${CFG.profile.nameMax} 个字符`, "bad"); return; }
+      UI.toast(`已更名：${Meta.profileName()}`, "gold");
+      UI.renderProfile();
+      if (typeof UI.updateCityHUD === "function") { UI._cityHudSig = ""; UI.updateCityHUD(); }
+    });
+    /* ---- 设置（音效音量 / 触屏控件缩放 / 桌面显示触屏控件） ---- */
+    const sfxSlider = document.getElementById("set-sfx");
+    if (sfxSlider) sfxSlider.oninput = () => { G.settings.sfxVolume = Number(sfxSlider.value); this.applySettings(); };
+    const joySlider = document.getElementById("set-joy");
+    if (joySlider) joySlider.oninput = () => { G.settings.joyScale = Number(joySlider.value); this.applySettings(); };
+    const touchToggle = document.getElementById("set-touch");
+    if (touchToggle) touchToggle.onclick = () => {
+      G.settings.showTouchOnDesktop = !G.settings.showTouchOnDesktop;
+      this.applySettings();
+    };
+    on("btn-set-sfx-mute", () => {
+      G.settings.sfxVolume = G.settings.sfxVolume > 0 ? 0 : CFG.settings.sfxVolume.default;
+      const sfxSlider2 = document.getElementById("set-sfx");
+      if (sfxSlider2) sfxSlider2.value = G.settings.sfxVolume;
+      this.applySettings();
+    });
+    /* ---- 主城事件：传送门读条完成 → 选关；NPC 进圈弹面板 / 离圈关闭 ---- */
+    EventBus.on("cityPortalEnter", () => {
+      if (G.state !== "city") return;
+      G.state = "menu";
+      const hud = document.getElementById("hud");
+      if (hud) hud.classList.remove("city-mode");
+      this.openLevelSelect();
+    });
+    EventBus.on("cityNpcPanel", (npc) => { if (G.state === "city") UI.openNpcPanel(npc); });
+    EventBus.on("cityNpcClose", () => UI.closeNpcPanels());
     EventBus.on("openArtisanUI", () => UI.toggleArtisan(true));
     EventBus.on("enterArtisan", () => {
       G.subWorld = new World(1920, 1920, false);   // 工匠世界：固定 1920×1920（与关卡地图统一）
@@ -191,6 +254,7 @@ const Game = {
         Meta.commit();
         UI.toast(`🔓 解锁 ${CFG.levels[idx + 1].name}`, "gold");
       }
+      Meta.setFlag("firstExtract");   // 称号成就：完成一次撤离
       SFX.play("extract");
       UI.toggleArtisan(false); UI.toggleBackpack(false);
       UI.showSettlement(crystals);
@@ -217,6 +281,7 @@ const Game = {
       if (k === " ") e.preventDefault();
       if (k === "b" && G.state === "playing") UI.toggleBackpack();
       if (k === "e" && G.inArtisan && G.state === "playing") UI.toggleArtisan();
+      if (k === "escape" && G.state === "city") UI.closeNpcPanels();   // 主城：Esc 关闭 NPC 面板
       // 撤离点雕像（5.2）：**站进雕像圈内自动读条**（8 秒，受击归零）；E 仅用于查看进度 / 节流提示
       if (k === "e") this.actionE();
     });
@@ -330,6 +395,72 @@ const Game = {
     });
   },
 
+  /* ---------- 设置（独立 localStorage 持久化；CFG.settings 定义默认值与范围） ---------- */
+  loadSettings() {
+    G.settings = {
+      sfxVolume: CFG.settings.sfxVolume.default,
+      joyScale: CFG.settings.joyScale.default,
+      showTouchOnDesktop: CFG.settings.showTouchOnDesktop.default,
+    };
+    try {
+      const raw = localStorage.getItem(CFG.settings.saveKey);
+      if (raw) Object.assign(G.settings, JSON.parse(raw));
+    } catch (e) { /* 测试环境无 localStorage */ }
+    this.applySettings();
+  },
+  applySettings() {
+    const s = G.settings;
+    // 音效音量：直接驱动 SFX 主增益（未初始化时记下，init 时用）
+    if (SFX.master) SFX.master.gain.value = s.sfxVolume;
+    else if (CFG.audio) CFG.audio.master = s.sfxVolume;
+    // 触屏控件整体缩放（zoom 对绝对定位子元素整体生效；不支持 zoom 的浏览器忽略）
+    const tc = document.getElementById("touch-controls");
+    if (tc) { try { tc.style.zoom = s.joyScale; } catch (e) { /* 忽略 */ } }
+    // 桌面端强制显示触屏控件（调试用）：仅当未处于隐藏的全屏界面时
+    if (tc && s.showTouchOnDesktop) tc.classList.remove("hidden");
+    else if (tc && !s.showTouchOnDesktop && !("ontouchstart" in window)) tc.classList.add("hidden");
+    try { localStorage.setItem(CFG.settings.saveKey, JSON.stringify(s)); } catch (e) { }
+  },
+
+  /* ---------- 物品 TIPS 事件（桌面悬停延迟 / 移动端长按；一个浮窗全场景复用） ---------- */
+  bindTooltip() {
+    const delay = (CFG.tooltip && CFG.tooltip.hoverDelay * 1000) || 280;
+    const press = (CFG.tooltip && CFG.tooltip.pressDelay * 1000) || 380;
+    const findItem = (el) => {
+      const target = el.closest && el.closest(".itm, .pending-item");
+      if (!target || !G.run) return null;
+      const uid = Number(target.dataset.uid);
+      if (!uid) return null;
+      return [...G.run.backpack.items, ...G.run.weaponInv.items, ...G.run.pendingItems].find(i => i.uid === uid) || null;
+    };
+    document.addEventListener("pointerover", (e) => {
+      const it = findItem(e.target);
+      clearTimeout(this._tipTimer);
+      if (!it) { UI.hideTooltip(); return; }
+      this._tipTimer = setTimeout(() => UI.showTooltip(it, e.clientX, e.clientY), delay);   // 延迟出现：快速划过不闪烁
+    });
+    document.addEventListener("pointerout", (e) => {
+      if (e.target.closest && e.target.closest(".itm, .pending-item")) {
+        clearTimeout(this._tipTimer);
+        UI.hideTooltip();
+      }
+    });
+    document.addEventListener("pointermove", (e) => {
+      if (UI.drag) { clearTimeout(this._tipTimer); UI.hideTooltip(); return; }   // 拖拽中不弹提示
+      UI.moveTooltip(e.clientX, e.clientY);
+    });
+    // 移动端长按：按下后 380ms 无拖拽则弹出（松手即收起）
+    document.addEventListener("pointerdown", (e) => {
+      const it = findItem(e.target);
+      if (!it || e.pointerType === "mouse") return;
+      clearTimeout(this._pressTimer);
+      this._pressTimer = setTimeout(() => { if (!UI.drag) UI.showTooltip(it, e.clientX, e.clientY); }, press);
+    });
+    const pressEnd = () => { clearTimeout(this._pressTimer); UI.hideTooltip(); };
+    document.addEventListener("pointerup", pressEnd);
+    document.addEventListener("pointercancel", pressEnd);
+  },
+
   /* ---------- 主循环 ---------- */
   lastT: 0,
   loop(t) {
@@ -356,11 +487,18 @@ const Game = {
       if (!frozen && G.activeWorld && G.activeWorld.isMain) updateExtractJudge(dt);
       updateFX(dt);
       UI.updateHUD();
+    } else if (G.state === "city") {
+      // 主城：玩家形象行走 + NPC/传送门交互（无战斗系统）
+      updateCityWorld(dt);
+      updateFX(dt);
+      if (typeof UI.updateCityHUD === "function") UI.updateCityHUD();
     } else {
       updateFX(dt);
     }
-    if (G.activeWorld && (G.state === "playing")) render();
+    if (G.state === "playing" && G.activeWorld) render();
+    else if (G.state === "city" && G.activeWorld) renderCity();
   },
 };
 
 window.addEventListener("DOMContentLoaded", () => Game.boot());
+Game.loadSettings();   // 脚本加载即恢复设置（boot 前也要有默认值，防止测试/早期调用读不到）

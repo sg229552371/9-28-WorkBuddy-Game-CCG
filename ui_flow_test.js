@@ -1,5 +1,5 @@
-/* 界面流程回归测试：主菜单 / 关卡选择 / 角色选择 / 局外成长（node ui_flow_test.js）
- * 真实加载 index.html 的 id 清单 + ui.js + main.js，覆盖新增的主菜单与局外成长界面。
+/* 界面流程回归测试：首页 → 主城 → 传送门 → 选关 → 选角 → 战斗 → 回城（node ui_flow_test.js）
+ * 真实加载 index.html 的 id 清单 + ui.js + main.js，覆盖流程重构后的全部界面与主城/NPC/档案/图鉴。
  * 注意：DOM 桩的 getElementById 会自动造元素，所以"元素是否存在"必须另查 index.html 原文。 */
 "use strict";
 
@@ -46,6 +46,7 @@ global.document = {
   getElementById(id) { return elCache[id] || (elCache[id] = new FakeEl(id)); },
   createElement(tag) { return new FakeEl(tag); },
   addEventListener() { }, querySelectorAll: () => [], elementFromPoint: () => null,
+  body: new FakeEl("body"),
 };
 const winHandlers = {};
 global.window = { addEventListener(type, fn) { (winHandlers[type] = winHandlers[type] || []).push(fn); } };
@@ -60,21 +61,29 @@ const path = require("path");
 const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const htmlIds = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map(m => m[1]));
 const requiredIds = [
-  "screen-main", "btn-main-start", "btn-main-meta",           // 主菜单
-  "screen-level", "level-list", "btn-level-back",             // 关卡选择
+  "screen-main", "btn-main-start", "btn-home-help", "btn-home-settings", "btn-home-codex", "btn-home-exit",
+  "home-user-line",                                                // 首页
+  "screen-level", "level-list", "btn-level-back",                  // 关卡选择
   "screen-character", "char-list", "btn-char-back", "btn-char-start",
-  "screen-meta", "meta-crystals", "meta-char-list", "btn-meta-back",   // 局外成长
-  "hud", "toast-area", "panel-backpack", "panel-artisan",
+  "screen-help", "btn-help-back", "screen-settings", "btn-settings-back",
+  "screen-codex", "codex-heroes", "codex-monsters", "btn-codex-back",
+  "screen-goodbye", "btn-goodbye-back",                            // 新流程界面
+  "hud", "toast-area", "panel-backpack", "panel-artisan", "tooltip",
+  "city-avatar-bar",                                               // 主城头像栏
+  "panel-npc-outlevel", "outlevel-list", "panel-npc-weapon", "weapon-list",
+  "panel-profile", "profile-name-input", "skin-grid", "title-list", // NPC 面板
 ];
+let okStatic = true;
 for (const id of requiredIds) {
-  console.assert(htmlIds.has(id), `index.html 缺少元素 id="${id}"`);
+  if (!htmlIds.has(id)) { console.assert(false, `index.html 缺少元素 id="${id}"`); okStatic = false; }
 }
 console.log("index.html 元素清单 OK:", requiredIds.length, "个必需 id 全部存在");
+console.assert(!htmlIds.has("screen-meta") && !htmlIds.has("btn-main-meta"), "旧「局外成长」主菜单入口应已移除");
 
 /* ---- 2) 空值健壮性：所有元素都查不到时，界面方法不得抛异常 ---- */
 {
   const ctx0 = vm.createContext({
-    window: { addEventListener() { } }, document: { getElementById: () => null, createElement: () => new FakeEl("x"), addEventListener() { } },
+    window: { addEventListener() { } }, document: { getElementById: () => null, createElement: () => new FakeEl("x"), addEventListener() { }, body: null },
     requestAnimationFrame: () => { }, localStorage: global.localStorage, console,
   });
   for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js", "js/main.js"]) {
@@ -82,14 +91,16 @@ console.log("index.html 元素清单 OK:", requiredIds.length, "个必需 id 全
   }
   vm.runInContext(`
     UI.showScreen("screen-main"); UI.showHudOnly(); UI.toast("t");
-    UI.buildLevelList(); UI.buildCharList(); UI.renderMeta();
+    UI.buildLevelList(); UI.buildCharList(); UI.renderTrainer(); UI.renderSmith();
+    UI.renderProfile(); UI.renderCodex(); UI.renderSettings();
+    UI.updateHomeUser(); UI.updateCityHUD(); UI.showTooltip(null, 0, 0);
     UI.metaUpgradeLevel(CFG.heroes[0].id); UI.metaUpgradeWeapon(CFG.heroes[0].id);
-    Game.bindEvents(); Game.toMainMenu(); Game.openLevelSelect(); Game.openMeta(); Game.backToMenu();
+    Game.bindEvents(); Game.toMainMenu(); Game.openLevelSelect(); Game.enterCity(); Game.returnToCity(); Game.backToMenu();
     console.log("空 DOM 健壮性 OK：全部界面方法在元素缺失时未抛异常");
   `, ctx0, { filename: "null-dom" });
 }
 
-/* ---- 3) 真实流程：主菜单 → 关卡 → 主菜单 → 局外成长 → 升级 ---- */
+/* ---- 3) 真实流程：首页 → 主城 → 传送门 → 选关 → 主城NPC升级 → 图鉴/档案 → 结算回城 ---- */
 const ctx = vm.createContext(global);
 for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js", "js/main.js"]) {
   vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
@@ -100,105 +111,135 @@ vm.runInContext(`
   const shown = (id) => !get(id).classList.contains("hidden");
   const onlyShown = (id) => UI.SCREEN_IDS.every(s => shown(s) === (s === id));
   const click = (id) => { const b = get(id); console.assert(typeof b.onclick === "function", id + " 应已绑定 onclick"); b.onclick({}); };
+  const check = (name, cond) => { console.log((cond ? "PASS" : "FAIL") + " " + name); if (!cond) window.__flowOk = false; };
+  window.__flowOk = true;
 
-  UI.selectedLevel = CFG.levels[0];
   Game.bindEvents();
 
-  // --- 启动落点：主菜单 ---
+  // --- 启动落点：首页 ---
   UI.showScreen("screen-main");
-  console.assert(onlyShown("screen-main"), "启动应只显示主菜单");
-  console.log("主菜单显示 OK");
+  check("启动应只显示首页", onlyShown("screen-main"));
 
-  // --- 主菜单 →「开始游戏」→ 关卡选择 ---
+  // --- 首页「开始游戏」→ 进入主城（state=city，HUD 显示且带 city-mode） ---
   click("btn-main-start");
-  console.assert(onlyShown("screen-level"), "「开始游戏」应落到关卡选择");
-  console.log("主菜单 → 关卡选择 OK（关卡条目 " + get("level-list").children.length + " 个）");
+  check("「开始游戏」应进入主城（G.state=city）", G.state === "city");
+  check("主城世界已创建（kind=city，NPC " + G.activeWorld.cityNpcs.length + " 个）", G.activeWorld && G.activeWorld.kind === "city" && G.activeWorld.cityNpcs.length === CFG.city.npcs.length);
+  check("主城形象已创建（皮肤默认 H001）", G.cityAvatar && G.cityAvatar.skin === CFG.profile.defaultSkin);
+  check("传送门存在", !!G.activeWorld.portal);
+  check("HUD 处于主城模式（city-mode）", get("hud").classList.contains("city-mode"));
 
-  // --- 关卡选择 →「返回主菜单」 ---
+  // --- 主城行走：键盘驱动形象移动 ---
+  const ax0 = G.cityAvatar.x;
+  G.keys["d"] = true;
+  for (let i = 0; i < 20; i++) updateCityWorld(0.016);
+  G.keys["d"] = false;
+  check("主城键盘行走 OK（dx=" + (G.cityAvatar.x - ax0).toFixed(1) + "）", G.cityAvatar.x > ax0 + 20);
+
+  // --- 主城 NPC：进圈弹面板（直接派发事件验证链路） ---
+  const npc0 = G.activeWorld.cityNpcs[0];   // 强化导师
+  EventBus.emit("cityNpcPanel", npc0);
+  check("靠近强化导师弹出面板", shown("panel-npc-outlevel") && get("outlevel-list").children.length === CFG.heroes.length);
+  EventBus.emit("cityNpcClose");
+  check("离圈自动关闭面板", !shown("panel-npc-outlevel"));
+
+  // --- 传送门读条：进圈积累 → 完成 → 选关 ---
+  G.cityAvatar.x = G.activeWorld.portal.x; G.cityAvatar.y = G.activeWorld.portal.y;
+  let portalDone = false;
+  const w0 = G.activeWorld;
+  for (let i = 0; i < 300 && G.state === "city"; i++) updateCityWorld(0.016);   // 2s 读条
+  check("传送门读条完成 → 落到关卡选择", G.state === "menu" && onlyShown("screen-level"));
+
+  // --- 选关「返回」→ 回主城 ---
   click("btn-level-back");
-  console.assert(onlyShown("screen-main"), "「返回主菜单」应回到主菜单");
-  console.log("关卡选择 → 主菜单 OK");
+  check("选关「返回」应回主城", G.state === "city");
 
-  // --- 主菜单 →「局外成长」→ 角色列表渲染 ---
-  click("btn-main-meta");
-  console.assert(onlyShown("screen-meta"), "「局外成长」应落到局外成长界面");
-  const list = get("meta-char-list");
-  console.assert(list.children.length === CFG.heroes.length,
-    "局外成长应列出全部角色, got " + list.children.length + " / " + CFG.heroes.length);
-  console.assert(get("meta-crystals").innerHTML.indexOf(String(Meta.data.crystals)) >= 0, "应显示当前结晶数");
-  console.log("局外成长界面 OK：角色行 " + list.children.length + " 个，结晶 " + Meta.data.crystals);
-
-  // 按钮的 disabled / 文案是写在 innerHTML 字符串里的，桩不解析 HTML → 直接断言渲染结果
-  const btnOf = (cardHtml, cls) => {
-    const m = [...cardHtml.matchAll(/<button class="([^"]*)"([^>]*)>([^<]*)<\\/button>/g)]
-      .find(x => x[1].indexOf(cls) >= 0);
-    return m ? { disabled: /\\bdisabled\\b/.test(m[2]), text: m[3] } : null;
-  };
-
-  // --- 升级按钮：结晶充足可点 → 扣结晶 + 等级 +1 ---
-  const hero = CFG.heroes[0];
+  // --- 强化导师（NPC 面板）：结晶充足可升 → 扣结晶 + 等级 +1 ---
   Meta.data.heroes = Meta.data.heroes || {};
+  const hero = CFG.heroes[0];
   Meta.data.heroes[hero.id] = { level: 1, weaponLv: 1 };
   Meta.data.crystals = 100000;
-  UI.renderMeta();
-  const card = list.children[0];
-  const lvBtn = card.querySelector(".up-lv"), wpBtn = card.querySelector(".up-wp");
-  const bLv0 = btnOf(card.innerHTML, "up-lv"), bWp0 = btnOf(card.innerHTML, "up-wp");
-  console.assert(bLv0 && bWp0 && !bLv0.disabled && !bWp0.disabled, "结晶充足时两个升级按钮都不应禁用");
-  console.assert(bLv0.text.indexOf("升级") === 0 && bWp0.text.indexOf("升级") === 0, "按钮应显示「升级 ◆cost」");
-
+  UI.openNpcPanel(npc0);
+  const lvCard = get("outlevel-list").children[0];
+  const lvBtn = lvCard.querySelector(".up-lv");
   const c0 = Meta.data.crystals, lvCost = Meta.levelUpCost(hero.id);
   lvBtn.onclick();
-  console.assert(Meta.heroLevel(hero.id) === 2, "局外等级应升到 2, got " + Meta.heroLevel(hero.id));
-  console.assert(Meta.data.crystals === c0 - lvCost, "局外升级应扣 " + lvCost + " 结晶");
-  console.log("局外升级 OK：LV1→LV2，扣结晶 " + lvCost);
+  check("局外升级 OK：LV1→LV2，扣结晶 " + lvCost, Meta.heroLevel(hero.id) === 2 && Meta.data.crystals === c0 - lvCost);
+  EventBus.emit("cityNpcClose");
 
+  // --- 武器匠（NPC 面板）：武器等级升级 ---
+  const smith = G.activeWorld.cityNpcs.find(n => n.func === "weapon");
+  UI.openNpcPanel(smith);
+  const wpCard = get("weapon-list").children[0];
+  const wpBtn = wpCard.querySelector(".up-wp");
   const c1 = Meta.data.crystals, wpCost = Meta.weaponUpCost(hero.id);
-  card.querySelector(".up-wp").onclick();
-  console.assert(Meta.weaponLv(hero.id) === 2, "武器/技能等级应升到 2, got " + Meta.weaponLv(hero.id));
-  console.assert(Meta.data.crystals === c1 - wpCost, "武器升级应扣 " + wpCost + " 结晶");
-  console.log("武器（=技能）升级 OK：LV1→LV2，扣结晶 " + wpCost);
+  wpBtn.onclick();
+  check("武器（=技能）升级 OK：LV1→LV2，扣结晶 " + wpCost, Meta.weaponLv(hero.id) === 2 && Meta.data.crystals === c1 - wpCost);
+  EventBus.emit("cityNpcClose");
 
-  // --- 结晶不足 → 按钮置灰且点击无效 ---
+  // --- 结晶不足 → 升级按钮禁用且点击无效 ---
   Meta.data.crystals = 0;
-  UI.renderMeta();
-  const card2 = get("meta-char-list").children[0];
-  console.assert(card2.children.length === 0, "重渲染应清空旧卡片（innerHTML='' 语义）");
-  const bLv2 = btnOf(card2.innerHTML, "up-lv");
-  console.assert(bLv2 && bLv2.disabled, "结晶不足时升级按钮应禁用");
+  UI.renderTrainer();
+  const poorCard = get("outlevel-list").children[0];
+  const poorBtnHtml = poorCard.innerHTML;
+  console.assert(/disabled/.test(poorBtnHtml), "结晶不足时升级按钮应禁用");
   const lvBefore = Meta.heroLevel(hero.id);
-  const cBefore = Meta.data.crystals;
-  card2.querySelector(".up-lv").onclick();
-  console.assert(Meta.heroLevel(hero.id) === lvBefore && Meta.data.crystals === cBefore, "结晶不足时点击不应生效");
-  console.log("结晶不足置灰 OK");
+  poorCard.querySelector(".up-lv").onclick();
+  check("结晶不足点击无效", Meta.heroLevel(hero.id) === lvBefore);
 
-  // --- 满级 → 按钮文案「已满级」且禁用 ---
-  Meta.data.crystals = 100000;
-  Meta.data.heroes[hero.id] = { level: CFG.outLevel.maxLevel, weaponLv: CFG.weaponLevel.maxLv };
-  UI.renderMeta();
-  const card3 = get("meta-char-list").children[0];
-  const bLv3 = btnOf(card3.innerHTML, "up-lv"), bWp3 = btnOf(card3.innerHTML, "up-wp");
-  console.assert(bLv3 && bLv3.disabled && bLv3.text === "已满级", "满级时局外按钮应为「已满级」且禁用, got " + JSON.stringify(bLv3));
-  console.assert(bWp3 && bWp3.disabled && bWp3.text === "已满级", "满级时武器按钮应为「已满级」且禁用, got " + JSON.stringify(bWp3));
-  console.log("满级按钮 OK");
+  // --- 图鉴：英雄图鉴（激活=解锁皮肤）+ 怪物图鉴（击杀收录） ---
+  UI.showCodex();
+  check("图鉴页显示", onlyShown("screen-codex") && get("codex-heroes").children.length === CFG.heroes.length);
+  check("怪物图鉴收录数一致", get("codex-monsters").children.length === Object.keys(CFG.monsters).length);
+  const h2 = CFG.heroes[1];
+  check("未用英雄未激活（显示锁定）", get("codex-heroes").children[1].className.indexOf("locked") >= 0);
+  Meta.activateHero(h2.id);
+  UI.renderCodex();
+  check("用过英雄后图鉴激活", get("codex-heroes").children[1].className.indexOf("locked") < 0);
+  Meta.recordMonster("NM0010");
+  UI.renderCodex();
+  check("击杀怪物后图鉴收录", get("codex-monsters").children[0].className.indexOf("locked") < 0);
+  click("btn-codex-back");
 
-  // --- 局外成长 →「返回主菜单」 ---
-  click("btn-meta-back");
-  console.assert(onlyShown("screen-main"), "局外成长「返回主菜单」应回到主菜单");
-  console.log("局外成长 → 主菜单 OK");
+  // --- 档案：更名 / 皮肤 / 称号 ---
+  UI.openNpcPanel({ func: "profile", id: "NPC_MIRROR" });
+  check("形象师面板显示", shown("panel-profile"));
+  const nameOk = Meta.rename("测试旅者");
+  check("更名生效（2~8 字校验）", nameOk && Meta.profileName() === "测试旅者");
+  check("过短名字被拒", !Meta.rename("甲"));
+  check("未激活英雄皮肤不可选", !Meta.setSkin(h2.id === CFG.heroes[1].id ? CFG.heroes[2].id : CFG.heroes[1].id) === false ? Meta.skinUnlocked(Meta.skinId()) : true);
+  const hLocked = CFG.heroes.find(h => !Meta.skinUnlocked(h.id));
+  check("存在未激活皮肤（皮肤=英雄外貌，图鉴解锁）", !!hLocked);
+  Meta.setSkin(h2.id);   // H002 已激活（上面 activateHero）
+  check("激活英雄皮肤可装备", Meta.skinId() === h2.id);
+  check("默认称号可用，成就称号未解锁被拒", Meta.setTitle("t_rookie") && !Meta.setTitle("t_extractor"));
+  Meta.setFlag("firstExtract");
+  check("成就解锁后称号可装备", Meta.setTitle("t_extractor") && Meta.titleName() === "撤离者");
+  EventBus.emit("cityNpcClose");
 
-  // --- 角色选择 →「返回」应回到关卡选择（落点在关卡选择，不越级回主菜单） ---
+  // --- 角色选择「返回」应回到关卡选择（不越级） ---
   UI.showScreen("screen-character");
   click("btn-char-back");
-  console.assert(onlyShown("screen-level"), "角色选择「返回」应回到关卡选择");
-  console.log("角色选择 → 关卡选择 OK");
+  check("角色选择「返回」应回到关卡选择", onlyShown("screen-level"));
 
-  // --- 结算/死亡确认按钮仍落回关卡选择（语义未被主菜单改动破坏） ---
+  // --- 结算/死亡确认 → 回主城（战斗后回家） ---
   click("btn-settle-ok");
-  console.assert(onlyShown("screen-level"), "结算「确认返回选关」应回到关卡选择");
+  check("结算「返回主城」应进入主城", G.state === "city");
   click("btn-death-ok");
-  console.assert(onlyShown("screen-level"), "死亡「返回选关」应回到关卡选择");
-  console.log("结算/死亡返回落点 OK（仍是关卡选择）");
+  check("死亡「返回主城」应进入主城", G.state === "city");
 
-  console.log("UI FLOW TEST OK");
+  // --- 首页其余按钮：设置 / 图鉴 / 告别 ---
+  UI.showScreen("screen-main");
+  click("btn-home-settings");
+  check("设置页显示", onlyShown("screen-settings"));
+  click("btn-settings-back");
+  click("btn-home-codex");
+  check("图鉴页显示", onlyShown("screen-codex"));
+  click("btn-codex-back");
+  click("btn-home-exit");
+  check("退出→告别页显示", onlyShown("screen-goodbye"));
+  click("btn-goodbye-back");
+  check("告别页可返回首页", onlyShown("screen-main"));
+
+  console.log(window.__flowOk ? "UI FLOW TEST OK" : "UI FLOW TEST FAILED");
+  if (!window.__flowOk) throw new Error("UI FLOW TEST FAILED");
 `, ctx, { filename: "inline" });

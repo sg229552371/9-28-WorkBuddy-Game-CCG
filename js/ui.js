@@ -20,8 +20,9 @@ const UI = {
   hoverItem: null,
 
   /* ---------- 界面切换 ---------- */
-  // 全部全屏界面（主菜单 / 关卡选择 / 角色选择 / 局外成长 / 结算 / 死亡）
-  SCREEN_IDS: ["screen-main", "screen-level", "screen-character", "screen-meta", "screen-settle", "screen-death"],
+  // 全部全屏界面（首页 / 关卡选择 / 角色选择 / 结算 / 死亡 / 帮助 / 设置 / 图鉴 / 告别）
+  SCREEN_IDS: ["screen-main", "screen-level", "screen-character", "screen-settle", "screen-death",
+    "screen-help", "screen-settings", "screen-codex", "screen-goodbye"],
   showScreen(name) {
     for (const id of this.SCREEN_IDS) {
       const el = document.getElementById(id);
@@ -286,6 +287,212 @@ const UI = {
     } else hint.textContent = "";
   },
 
+  /* ---------- 首页（游戏主菜单） ---------- */
+  updateHomeUser() {
+    const el = document.getElementById("home-user-line");
+    if (!el || !Meta.data.profile) return;
+    el.innerHTML = `<span class="hu-name">${Meta.profileName()}</span><span class="hu-title">「${Meta.titleName()}」</span><span class="hu-crystal">◆ ${Meta.data.crystals}</span>`;
+  },
+
+  /* ---------- 主城 HUD（左上角头像栏：点击打开角色档案） ---------- */
+  _cityHudSig: "",
+  updateCityHUD() {
+    const bar = document.getElementById("city-avatar-bar");
+    if (!bar || !Meta.data.profile) return;
+    // 签名比对：数据没变不重写 DOM（每帧调用也零开销）
+    const sig = [Meta.profileName(), Meta.skinId(), Meta.titleId(), Meta.data.crystals].join("|");
+    if (sig === this._cityHudSig) return;
+    this._cityHudSig = sig;
+    const h = CFG.heroes.find(x => x.id === Meta.skinId()) || CFG.heroes[0];
+    const img = Assets.images[h.sprite];
+    bar.innerHTML = `<canvas id="avatar-face" width="44" height="44"></canvas>
+      <div class="ab-info"><b>${Meta.profileName()}</b><small>「${Meta.titleName()}」</small></div>
+      <div class="ab-crystal">◆ ${Meta.data.crystals}</div>`;
+    const cv = bar.querySelector("#avatar-face");
+    if (cv && cv.getContext && img) cv.getContext("2d").drawImage(img, 0, 0, 44, 44);
+  },
+
+  /* ---------- 主城 NPC 面板（进圈弹窗，离圈自动关闭） ---------- */
+  NPC_PANELS: { outlevel: "panel-npc-outlevel", weapon: "panel-npc-weapon", profile: "panel-profile", codex: null, shop: null },
+  openNpcPanel(npc) {
+    if (npc.func === "shop") { this.toast("神秘商人：敬请期待（赛季玩法上线后开放）", "gold"); G.cityNpcOpen = null; return; }
+    if (npc.func === "codex") { this.toast("图鉴也可从首页进入；这里打开英雄图鉴", ""); this.showCodex(); return; }
+    const id = this.NPC_PANELS[npc.func];
+    if (!id) return;
+    const p = document.getElementById(id);
+    if (!p) return;
+    p.classList.remove("hidden");
+    if (npc.func === "outlevel") this.renderTrainer();
+    else if (npc.func === "weapon") this.renderSmith();
+    else if (npc.func === "profile") this.renderProfile();
+  },
+  closeNpcPanels() {
+    for (const id of Object.values(this.NPC_PANELS)) {
+      if (!id) continue;
+      const p = document.getElementById(id);
+      if (p) p.classList.add("hidden");
+    }
+  },
+  /* 强化导师：局外等级升级（局外成长从首页/主菜单收敛至此） */
+  renderTrainer() {
+    const box = document.getElementById("outlevel-list");
+    if (!box) return;
+    const cry = document.getElementById("npc-crystals");
+    if (cry) cry.innerHTML = `◆ 进化结晶 <b>${Meta.data.crystals}</b>`;
+    box.innerHTML = "";
+    for (const h of CFG.heroes) {
+      const lv = Meta.heroLevel(h.id);
+      const lvMax = lv >= CFG.outLevel.maxLevel;
+      const cost = Meta.levelUpCost(h.id);
+      const can = !lvMax && Meta.data.crystals >= cost;
+      const card = document.createElement("div");
+      card.className = "meta-card";
+      card.innerHTML = `
+        <div class="meta-info"><b>${h.name}</b><p class="meta-desc">${h.desc}</p></div>
+        <div class="meta-lv">
+          <span>局外等级 <b class="lvnum">LV ${lv}</b> / ${CFG.outLevel.maxLevel}${lvMax ? " · 已满级" : ""}</span>
+          <button class="btn small up-lv" ${can ? "" : "disabled"}>${lvMax ? "已满级" : `升级 ◆${cost}`}</button>
+        </div>`;
+      const btn = card.querySelector(".up-lv");
+      if (btn) btn.onclick = () => { this.metaUpgradeLevel(h.id); this.renderTrainer(); this._cityHudSig = ""; this.updateCityHUD(); };
+      box.appendChild(card);
+    }
+  },
+  /* 武器匠：武器 / 技能等级升级 */
+  renderSmith() {
+    const box = document.getElementById("weapon-list");
+    if (!box) return;
+    const cry = document.getElementById("npc-crystals");
+    if (cry) cry.innerHTML = `◆ 进化结晶 <b>${Meta.data.crystals}</b>`;
+    box.innerHTML = "";
+    for (const h of CFG.heroes) {
+      const wlv = Meta.weaponLv(h.id);
+      const wMax = wlv >= CFG.weaponLevel.maxLv;
+      const cost = Meta.weaponUpCost(h.id);
+      const can = !wMax && Meta.data.crystals >= cost;
+      const card = document.createElement("div");
+      card.className = "meta-card";
+      card.innerHTML = `
+        <div class="meta-info"><b>${h.name}</b><p class="meta-desc">武器等级 = 技能等级（撤离后永久保留）</p></div>
+        <div class="meta-lv">
+          <span>武器 / 技能 <b class="lvnum">LV ${wlv}</b> / ${CFG.weaponLevel.maxLv}${wMax ? " · 已满级" : ""}</span>
+          <button class="btn small up-wp" ${can ? "" : "disabled"}>${wMax ? "已满级" : `升级 ◆${cost}`}</button>
+        </div>`;
+      const btn = card.querySelector(".up-wp");
+      if (btn) btn.onclick = () => { this.metaUpgradeWeapon(h.id); this.renderSmith(); this._cityHudSig = ""; this.updateCityHUD(); };
+      box.appendChild(card);
+    }
+  },
+  /* 形象师：更名 / 皮肤（图鉴激活解锁）/ 称号 */
+  renderProfile() {
+    const box = document.getElementById("profile-body");
+    if (!box) return;
+    const nameEl = document.getElementById("profile-name-input");
+    if (nameEl && document.activeElement !== nameEl) nameEl.value = Meta.profileName();
+    // 皮肤网格：解锁的可选用，未解锁显示解锁条件
+    const skinBox = document.getElementById("skin-grid");
+    skinBox.innerHTML = "";
+    for (const h of CFG.heroes) {
+      const unlocked = Meta.skinUnlocked(h.id);
+      const tile = document.createElement("div");
+      tile.className = "skin-tile" + (Meta.skinId() === h.id ? " selected" : "") + (unlocked ? "" : " locked");
+      tile.innerHTML = `<b>${h.name}</b><small>${unlocked ? "已激活" : "图鉴未激活"}</small>`;
+      if (unlocked) tile.onclick = () => { Meta.setSkin(h.id); this.renderProfile(); this._cityHudSig = ""; this.updateCityHUD(); };
+      skinBox.appendChild(tile);
+    }
+    // 称号列表：成就解锁
+    const titleBox = document.getElementById("title-list");
+    titleBox.innerHTML = "";
+    for (const t of CFG.profile.titles) {
+      const ok = Meta.titleUnlocked(t);
+      const row = document.createElement("div");
+      row.className = "title-row" + (Meta.titleId() === t.id ? " selected" : "") + (ok ? "" : " locked");
+      row.innerHTML = `<b>「${t.name}」</b><small>${ok ? t.desc : `🔒 ${t.desc}`}</small>`;
+      if (ok) row.onclick = () => { Meta.setTitle(t.id); this.renderProfile(); this._cityHudSig = ""; this.updateCityHUD(); };
+      titleBox.appendChild(row);
+    }
+  },
+  /* 图鉴（首页入口 / 图鉴学者 NPC 共用） */
+  showCodex() {
+    this.renderCodex();
+    this.showScreen("screen-codex");
+  },
+  renderCodex() {
+    const heroBox = document.getElementById("codex-heroes");
+    if (heroBox) {
+      heroBox.innerHTML = "";
+      for (const h of CFG.heroes) {
+        const unlocked = Meta.skinUnlocked(h.id);
+        const card = document.createElement("div");
+        card.className = "codex-card" + (unlocked ? "" : " locked");
+        const img = Assets.images[h.sprite];
+        card.innerHTML = `${img ? `<canvas class="codex-face" width="56" height="56"></canvas>` : ""}
+          <b>${unlocked ? h.name : "???"}</b><small>${unlocked ? h.desc : "使用该英雄出征后激活"}</small>`;
+        if (unlocked && img) {
+          const cv = card.querySelector(".codex-face");
+          if (cv && cv.getContext) cv.getContext("2d").drawImage(img, 0, 0, 56, 56);
+        }
+        heroBox.appendChild(card);
+      }
+    }
+    const monBox = document.getElementById("codex-monsters");
+    if (monBox) {
+      monBox.innerHTML = "";
+      for (const id in CFG.monsters) {
+        const m = CFG.monsters[id];
+        const unlocked = !!Meta.data.codex.monsters[id];
+        const card = document.createElement("div");
+        card.className = "codex-card small" + (unlocked ? "" : " locked");
+        const img = Assets.images[m.sprite];
+        card.innerHTML = `${img && unlocked ? `<canvas class="codex-face" width="44" height="44"></canvas>` : `<div class="codex-face" style="color:#5a6a80;text-align:center;line-height:44px">?</div>`}
+          <b>${unlocked ? m.name : "???"}</b><small>${unlocked ? `${m.type === "boss" ? "BOSS" : "怪物"} · HP ${m.hp} · 攻 ${m.atk}` : "击杀后收录"}</small>`;
+        if (unlocked && img) {
+          const cv = card.querySelector(".codex-face");
+          if (cv && cv.getContext) cv.getContext("2d").drawImage(img, 0, 0, 44, 44);
+        }
+        monBox.appendChild(card);
+      }
+    }
+    const cnt = document.getElementById("codex-count");
+    if (cnt) {
+      const hm = Object.keys(Meta.data.codex.heroes).length, mm = Object.keys(Meta.data.codex.monsters).length;
+      cnt.textContent = `英雄 ${hm}/${CFG.heroes.length} · 怪物 ${mm}/${Object.keys(CFG.monsters).length}`;
+    }
+  },
+  /* 设置（音效音量 / 触屏控件缩放 / 桌面显示触屏控件） */
+  renderSettings() {
+    const s = G.settings, cfg = CFG.settings;
+    const sfx = document.getElementById("set-sfx");
+    if (sfx) sfx.value = s.sfxVolume;
+    const joy = document.getElementById("set-joy");
+    if (joy) joy.value = s.joyScale;
+    const tgl = document.getElementById("set-touch");
+    if (tgl) tgl.classList.toggle("on", !!s.showTouchOnDesktop);
+  },
+
+  /* ---------- 物品 TIPS 浮窗（悬停/长按；一个渲染函数全场景复用） ---------- */
+  showTooltip(item, cx, cy) {
+    const tp = document.getElementById("tooltip");
+    if (!tp || !item) return;
+    tp.innerHTML = itemTipHTML(item);
+    tp.classList.remove("hidden");
+    this.moveTooltip(cx, cy);
+  },
+  moveTooltip(cx, cy) {
+    const tp = document.getElementById("tooltip");
+    if (!tp || tp.classList.contains("hidden")) return;
+    const pad = 12, w = tp.offsetWidth || 260, h = tp.offsetHeight || 200;
+    let x = cx + pad, y = cy + pad;
+    if (x + w > window.innerWidth - 8) x = cx - w - pad;     // 右缘翻转
+    if (y + h > window.innerHeight - 8) y = cy - h - pad;    // 下缘翻转
+    tp.style.left = Math.max(8, x) + "px";
+    tp.style.top = Math.max(8, y) + "px";
+  },
+  hideTooltip() {
+    const tp = document.getElementById("tooltip");
+    if (tp) tp.classList.add("hidden");
+  },
+
   /* ---------- 背包 / 武器栏面板 ---------- */
   managementLocked() {
     // 9.1.1：局内战斗进行中无法管理背包（工匠世界例外）
@@ -346,40 +553,7 @@ const UI = {
     const box = document.getElementById("item-info");
     const it = this.hoverItem;
     if (!it) { box.innerHTML = "选中或悬停物品查看详情"; return; }
-    let lines = [`<b>${it.name}</b>`, `品质：${it.kind === "chest" ? CFG.chestQualities[it.chestQ].name : CFG.itemQualities[it.itemQ].name}`,
-      `形状：${it.shape[0]}×${it.shape[1]} · 重量：${it.kind === "chest" ? CFG.chestQualities[it.chestQ].weight + "×" + it.count : it.weight}`];
-    if (it.kind === "chest") lines.push("未开封货物：仅可在工匠世界开启");
-    if (it.kind === "insurance") lines.push(`保险契约：死亡时每份保护 1 件价值最高的物品`,
-      `撤离时按固定价值统一折算 ◆${Math.floor(it.value * CFG.settleConvert.valueRate)} 结晶（价值 ${it.value}）`, "契约本身不参与死亡损失");
-    if (it.kind === "curse") {
-      lines.push("☠ 诅咒道具：主地图战斗中使用（点击下方按钮）",
-        "效果：向局内敌人动态附加属性修改器（待细化36）",
-        ...CFG.curseItems.list.map(c => `· ${c.name}：${c.desc}（掉落 ×${c.rewardMul}）`),
-        `持续 ${CFG.curseItems.duration} 秒 · 风险回报：敌人更强但掉落翻倍`);
-    }
-    if (it.kind === "gear") {
-      lines.push("属性：" + Object.entries(it.stats).map(([k, v]) => `${statName(k)} +${v}`).join("，"));
-      lines.push("放入武器栏才生效");
-    }
-    if (it.kind === "module") {
-      const ml = CFG.moduleLevel, stage = moduleStage(it);
-      lines.push(`等级：LV${it.lv || 1}/${ml.maxLv}（阶段 ${stage}/3）`);
-      lines.push(`主词缀：${affixText(it)}（匹配武器标签才生效）`);
-      for (let i = 0; i < ml.stageAffixes.length; i++) {
-        const sa = ml.stageAffixes[i];
-        const txt = sa.mode === "flat" ? `${sa.tag} +${sa.value}` : `${sa.tag} ${sa.value > 0 ? "+" : ""}${Math.round(sa.value * 100)}%`;
-        lines.push(`${i < stage ? "✔" : "🔒"} ${sa.name}：${txt}${i < stage ? "" : `（LV${(i + 1) * ml.perStage - ml.perStage + 1} 起）`}`);
-      }
-      lines.push("放入武器栏才生效 · 对小队全体成员生效（按各成员武器标签过滤）· 相同武器模块拖拽合并升级");
-      // 武器模块深度（16.7）：连接/套装一览（缓存自 recomputeWeapon）
-      const syn = G.run && G.run.moduleSyn;
-      if (syn) {
-        if (syn.links > 0) lines.push(`🔗 连接效果：${syn.links} 对相邻同品质武器模块（技能伤害 +${Math.round(syn.links * (CFG.moduleLevel.linkBonus || 0) * 100)}%）`);
-        else lines.push("🔗 连接效果：无（相邻摆放同品质武器模块可触发）");
-        lines.push(syn.sets.length ? `套装：${syn.sets.join("、")}` : "套装：未触发（集齐同系列武器模块，见套装表）");
-      }
-    }
-    box.innerHTML = lines.join("<br>");
+    box.innerHTML = itemTipHTML(it);
     // 诅咒道具：使用按钮（仅主地图战斗中）
     if (it.kind === "curse") {
       const btn = document.createElement("button");
@@ -904,4 +1078,45 @@ const UI = {
 
 function statName(k) {
   return { hp: "生命", atk: "攻击", def: "防御", spd: "移速", regen: "能量恢复", energyMax: "能量上限" }[k] || k;
+}
+
+/* ---------- 物品 TIPS 渲染（唯一数据源：背包面板 / TIPS 浮窗共用；信息分层渐进展示） ---------- */
+function itemTipHTML(it) {
+  const q = it.kind === "chest" ? CFG.chestQualities[it.chestQ] : CFG.itemQualities[it.itemQ];
+  const lines = [];
+  // 头部：品质色名称 + 品类
+  const kindName = { chest: "未开封宝箱", insurance: "契约", curse: "诅咒道具", gear: "装备", module: "武器模块" }[it.kind] || "物品";
+  lines.push(`<div class="tip-head" style="color:${q.color}"><b>${it.name}</b><span>${q.name} · ${kindName}</span></div>`);
+  lines.push(`<div class="tip-line dim">形状 ${it.shape[0]}×${it.shape[1]} · 重量 ${it.kind === "chest" ? CFG.chestQualities[it.chestQ].weight + "×" + it.count : it.weight} · 价值 ${it.value}</div>`);
+  if (it.kind === "chest") lines.push(`<div class="tip-line">仅可在工匠世界开启（背包内按品质叠加）</div>`);
+  if (it.kind === "insurance") lines.push(
+    `<div class="tip-line">死亡时每份保护 1 件价值最高的物品</div>`,
+    `<div class="tip-line">撤离时按固定价值统一折算 ◆${Math.floor(it.value * CFG.settleConvert.valueRate)} 结晶</div>`,
+    `<div class="tip-line dim">契约本身不参与死亡损失</div>`);
+  if (it.kind === "curse") {
+    lines.push(`<div class="tip-line bad">☠ 主地图战斗中使用：强化敌人换取掉落翻倍</div>`);
+    for (const c of CFG.curseItems.list) lines.push(`<div class="tip-line dim">· ${c.name}：${c.desc}（掉落 ×${c.rewardMul}）</div>`);
+    lines.push(`<div class="tip-line dim">持续 ${CFG.curseItems.duration} 秒</div>`);
+  }
+  if (it.kind === "gear") {
+    lines.push(`<div class="tip-line">` + Object.entries(it.stats).map(([k, v]) => `${statName(k)} +${v}`).join("，") + `</div>`);
+    lines.push(`<div class="tip-line dim">放入武器栏才生效 · 对小队全体生效</div>`);
+  }
+  if (it.kind === "module") {
+    const ml = CFG.moduleLevel, stage = moduleStage(it);
+    lines.push(`<div class="tip-line">等级 LV${it.lv || 1}/${ml.maxLv}（阶段 ${stage}/3）</div>`);
+    lines.push(`<div class="tip-line">主词缀：${affixText(it)}（匹配武器标签才生效）</div>`);
+    for (let i = 0; i < ml.stageAffixes.length; i++) {
+      const sa = ml.stageAffixes[i];
+      const txt = sa.mode === "flat" ? `${sa.tag} +${sa.value}` : `${sa.tag} ${sa.value > 0 ? "+" : ""}${Math.round(sa.value * 100)}%`;
+      lines.push(`<div class="tip-line ${i < stage ? "" : "dim"}">${i < stage ? "✔" : "🔒"} ${sa.name}：${txt}${i < stage ? "" : `（LV${(i + 1) * ml.perStage - ml.perStage + 1} 起）`}</div>`);
+    }
+    lines.push(`<div class="tip-line dim">对小队全体生效（按各成员武器标签过滤）· 相同模块拖拽合并升级</div>`);
+    const syn = G.run && G.run.moduleSyn;
+    if (syn) {
+      if (syn.links > 0) lines.push(`<div class="tip-line">🔗 连接：${syn.links} 对相邻同品质（技能伤害 +${Math.round(syn.links * (CFG.moduleLevel.linkBonus || 0) * 100)}%）</div>`);
+      lines.push(`<div class="tip-line ${syn.sets.length ? "" : "dim"}">套装：${syn.sets.length ? syn.sets.join("、") : "未触发（集齐同系列模块）"}</div>`);
+    }
+  }
+  return lines.join("");
 }
