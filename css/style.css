@@ -421,6 +421,7 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .set-row > span { width:150px; }
 .set-row input[type=range] { flex:1; accent-color:#ffd76a; }
 #set-touch.on { border-color:#7de08a; color:#7de08a; }
+#btn-autofight.on { border-color:#7de08a; color:#7de08a; }
 .codex-panel { width:min(880px,94vw); max-height:82vh; overflow-y:auto; text-align:left; }
 .codex-panel h3 { color:#9fb4d4; font-size:13px; margin:12px 0 8px; }
 .codex-grid { display:flex; flex-wrap:wrap; gap:8px; }

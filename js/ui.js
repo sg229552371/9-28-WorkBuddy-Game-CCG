@@ -192,6 +192,14 @@ const UI = {
   },
 
   /* ---------- HUD 每帧刷新 ---------- */
+  /* 自动战斗按钮（HUD 右下）：开关态文案 + 高亮；每局 startRun 重置为关 */
+  updateAutoFightBtn() {
+    const btn = document.getElementById("btn-autofight");
+    if (!btn) return;
+    const on = !!(G.run && G.run.autoFight);
+    btn.textContent = on ? "自动战斗：开" : "自动战斗：关";
+    btn.classList.toggle("on", on);
+  },
   updateHUD() {
     const r = G.run;
     if (!r || G.state !== "playing") return;

@@ -82,7 +82,7 @@ CFG.monsterSizeMul = 1.5;
 /* ---------- 技能系统（现阶段：普攻 + 主动技能自动施法；终极技局外解锁后续开发） ----------
  * 注：技能局外等级已并入武器等级（Meta.weaponUp/weaponUpCost），此处仅保留自动施法开关。 */
 CFG.skills2 = {
-  autoCast: true,           // 主动技能能量够即自动释放（Space 保留手动触发）
+  autoCast: false,          // 主动技能自动施放：**默认关闭**，由局内 HUD「自动战斗」按钮控制（G.run.autoFight）；Space 保留手动触发
 };
 
 /* ---------- 多角色组队（3 英雄上限） ---------- */

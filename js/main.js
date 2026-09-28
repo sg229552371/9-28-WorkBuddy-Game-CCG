@@ -80,6 +80,7 @@ const Game = {
     recomputeWeapon();   // 开局即解析全队技能（含队友），避免首帧前 c.skills 为空
     G.state = "playing";
     UI.showHudOnly();
+    if (typeof UI.updateAutoFightBtn === "function") UI.updateAutoFightBtn();   // 每局按钮重置为关（run.autoFight 默认 false；测试 UI 桩缺该方法时跳过）
     const hud = document.getElementById("hud");
     if (hud) hud.classList.remove("city-mode");
     UI.toast(`进入 ${G.levelCfg.name} · 局外 LV${G.heroDef.outLevel} · WASD 移动 · Space 技能 · B 背包`, "gold");
@@ -147,6 +148,13 @@ const Game = {
     /* ---- 背包 / 工匠 / 卡牌 ---- */
     on("btn-bp-close", () => UI.toggleBackpack(false));
     on("btn-artisan-close", () => UI.toggleArtisan(false));
+    // 自动战斗开关（默认关）：开启后队长技能能量够即自动施放（普攻本来就自动索敌）
+    on("btn-autofight", () => {
+      if (!G.run) return;
+      G.run.autoFight = !G.run.autoFight;
+      UI.updateAutoFightBtn();
+      UI.toast(G.run.autoFight ? "自动战斗开启：技能能量够即自动施放（移动仍由你控制）" : "自动战斗关闭", "");
+    });
     // 工匠面板页签：开宝箱 / 抽卡牌 / 购买·服务
     on("art-tab-chest", () => UI.setArtisanTab("chest"));
     on("art-tab-cards", () => UI.setArtisanTab("cards"));

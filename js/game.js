@@ -242,6 +242,7 @@ function affixText(it) {
 function createRun(heroDef) {
   return {
     heroDef,
+    autoFight: false,               // 自动战斗（HUD 按钮）：关闭=技能手动（Space），开启=技能能量够即自动放；普攻始终自动索敌
     hp: heroDef.hp, hpMax: heroDef.hp,
     energy: heroDef.energyMax, energyMax: heroDef.energyMax,
     lv: 1, exp: 0, expNext: 14, coin: 0, kills: 0, eliteKills: 0,
@@ -739,9 +740,9 @@ class Player {
     const target = nearestMonster(w, this.x, this.y);
     if (target) {
       if (this.fireTimer <= 0) { this.fireBasic(w, target, st); this.fireTimer = G.run.weapon.basic.cd * st.cdMul; }
-      // 主动技能自动施法：能量够 + 冷却好 + 场上有目标即释放（Space 保留手动触发）
+      // 主动技能：Space 手动触发；或开启「自动战斗」(G.run.autoFight) 后能量够即自动释放
       if (this.skillTimer <= 0 && G.run.energy >= G.run.weapon.skill.energy &&
-          (CFG.skills2.autoCast || G.keys[" "])) {
+          (G.run.autoFight || G.keys[" "])) {
         this.fireSkill(w, target, st); this.skillTimer = G.run.weapon.skill.cd * st.cdMul;
       }
     }
