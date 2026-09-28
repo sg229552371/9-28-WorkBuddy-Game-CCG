@@ -126,7 +126,15 @@ const Game = {
     on("btn-home-exit", () => UI.showScreen("screen-goodbye")); // 网页端伪退出：告别遮罩（打包后为真退出预留）
     on("btn-help-back", () => UI.showScreen("screen-main"));
     on("btn-settings-back", () => { UI.updateHomeUser(); UI.showScreen("screen-main"); });
-    on("btn-codex-back", () => { UI.updateHomeUser(); UI.showScreen("screen-main"); });
+    on("btn-codex-back", () => {
+      if (G.state === "city") {   // 从主城图鉴学者进入：关闭图鉴页恢复主城 HUD（世界/位置不动）
+        UI.showHudOnly();
+        if (typeof UI.updateCityHUD === "function") { UI._cityHudSig = ""; UI.updateCityHUD(); }
+      } else {
+        UI.updateHomeUser();
+        UI.showScreen("screen-main");
+      }
+    });
     on("btn-goodbye-back", () => UI.showScreen("screen-main"));
     /* ---- 流程：选关 / 选角 / 结算 / 死亡 ---- */
     on("btn-level-back", () => this.returnToCity());            // 选关「返回」→ 回主城

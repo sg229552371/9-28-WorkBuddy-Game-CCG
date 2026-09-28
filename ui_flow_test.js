@@ -154,6 +154,17 @@ vm.runInContext(`
   updateCityWorld(0.016);
   check("离圈清除 near 标记", !G.cityNpcNear);
 
+  // --- 主城图鉴学者：E 打开图鉴 → 返回按钮显示「返回主城」→ 点击恢复主城 ---
+  const scholar = G.activeWorld.cityNpcs.find(n => n.func === "codex");
+  G.cityAvatar.x = scholar.x; G.cityAvatar.y = scholar.y;
+  updateCityWorld(0.016);
+  Game.actionE();
+  check("主城图鉴返回按钮文案=返回主城", get("btn-codex-back").textContent === "返回主城");
+  click("btn-codex-back");
+  check("图鉴返回后恢复主城 HUD（city-mode）", !get("hud").classList.contains("hidden") && get("hud").classList.contains("city-mode"));
+  G.cityAvatar.x = G.activeWorld.w / 2; G.cityAvatar.y = G.activeWorld.h * 0.6;
+  updateCityWorld(0.016);
+
   // --- 传送门读条：进圈积累 → 完成 → 选关 ---
   G.cityAvatar.x = G.activeWorld.portal.x; G.cityAvatar.y = G.activeWorld.portal.y;
   let portalDone = false;

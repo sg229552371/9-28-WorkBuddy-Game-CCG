@@ -174,18 +174,23 @@
   <!-- ====== 主城 NPC 面板：强化导师（局外等级） ====== -->
   <div id="panel-npc-outlevel" class="overlay hidden">
     <div class="panel meta-panel" style="width:min(760px,94vw)">
-      <div class="bp-head"><h2>✦ 强化导师 · 局外等级</h2><button id="btn-npc-outlevel-close" class="btn ghost small">关闭</button></div>
-      <div id="npc-crystals" class="meta-crystals">◆ 进化结晶 <b>0</b></div>
-      <div id="outlevel-list"></div>
-      <div class="tip">升级消耗进化结晶（撤离/击杀获得，死亡仅保留 30%）；也可从形象师旁的武器匠升级武器。</div>
+      <div class="bp-head">
+        <h2>✦ 强化导师 · 局外等级</h2>
+        <div class="bp-head-right"><span id="npc-crystals" class="meta-crystals">◆ 进化结晶 <b>0</b></span><button id="btn-npc-outlevel-close" class="btn ghost small">关闭</button></div>
+      </div>
+      <div id="outlevel-list" class="npc-list"></div>
+      <div class="tip">升级消耗进化结晶（撤离/击杀获得，死亡仅保留 30%）；也可找武器匠升级武器。</div>
     </div>
   </div>
 
   <!-- ====== 主城 NPC 面板：武器匠（武器/技能等级） ====== -->
   <div id="panel-npc-weapon" class="overlay hidden">
     <div class="panel meta-panel" style="width:min(760px,94vw)">
-      <div class="bp-head"><h2>⚔ 武器匠 · 武器 / 技能等级</h2><button id="btn-npc-weapon-close" class="btn ghost small">关闭</button></div>
-      <div id="weapon-list"></div>
+      <div class="bp-head">
+        <h2>⚔ 武器匠 · 武器 / 技能等级</h2>
+        <div class="bp-head-right"><span id="npc-crystals-weapon" class="meta-crystals">◆ 进化结晶 <b>0</b></span><button id="btn-npc-weapon-close" class="btn ghost small">关闭</button></div>
+      </div>
+      <div id="weapon-list" class="npc-list"></div>
       <div class="tip">武器等级 = 技能等级（同步强化普攻与主动技能），永久保留。</div>
     </div>
   </div>

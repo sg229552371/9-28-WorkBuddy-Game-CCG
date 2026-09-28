@@ -362,7 +362,7 @@ const UI = {
   renderSmith() {
     const box = document.getElementById("weapon-list");
     if (!box) return;
-    const cry = document.getElementById("npc-crystals");
+    const cry = document.getElementById("npc-crystals-weapon") || document.getElementById("npc-crystals");
     if (cry) cry.innerHTML = `◆ 进化结晶 <b>${Meta.data.crystals}</b>`;
     box.innerHTML = "";
     for (const h of CFG.heroes) {
@@ -415,6 +415,9 @@ const UI = {
   /* 图鉴（首页入口 / 图鉴学者 NPC 共用） */
   showCodex() {
     this.renderCodex();
+    // 返回按钮按打开来源动态化：主城进来 → 返回主城；首页进来 → 返回首页
+    const back = document.getElementById("btn-codex-back");
+    if (back) back.textContent = G.state === "city" ? "返回主城" : "返回首页";
     this.showScreen("screen-codex");
   },
   /* 图鉴（首页入口 / 图鉴学者 NPC 共用）。未激活条目：名字 ??? + 纯黑剪影；激活后恢复原色。 */
