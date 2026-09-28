@@ -125,8 +125,8 @@ vm.runInContext(`
   styleBtns[2].onclick();
   check("点击「冷静」→ autoStyle = cautious", G.run.autoStyle === "cautious");
 
-  // 7. 索敌：远处怪物 → AI 自动逼近
-  w.monsters.length = 0;
+  // 7. 索敌：远处怪物 → AI 自动逼近（先清空场景自带雕像/掉落，避免资源目标干扰）
+  w.monsters.length = 0; w.altars.length = 0; w.groundChests.length = 0; w.pickups.length = 0;
   const far = new Monster("NM0010", p.x + 500, p.y, 1);
   w.monsters.push(far);
   const d0 = distTo(far.x, far.y);
@@ -157,8 +157,8 @@ vm.runInContext(`
   step(30);
   check("预判：精英冲锋预警期侧闪/拉开", distTo(charger.x, charger.y) > d3 + 20);
 
-  // 11. 躲子弹：场上无怪 + 一发敌方子弹直射 → AI 移动避开弹道
-  w.monsters.length = 0; w.enemyBullets.length = 0;
+  // 11. 躲子弹：场上无怪 + 一发敌方子弹直射 → AI 移动避开弹道（清空资源目标避免干扰）
+  w.monsters.length = 0; w.enemyBullets.length = 0; w.altars.length = 0; w.groundChests.length = 0; w.pickups.length = 0;
   p.aiStrafeSide = 1;
   const bx = p.x + 150, by = p.y;   // 从右侧直射玩家
   w.enemyBullets.push(new Bullet(bx, by, Math.PI, 200, 5, "enemy"));
@@ -179,6 +179,55 @@ vm.runInContext(`
   step(3);
   check("手动操作时 AI 让权（aiHoldT 刷新）", G.run.aiHoldT > 0);
   G.keys["d"] = false;
+
+  // ============ 边界保命 + 资源目标（拾取/雕像激活） ============
+  check("三风格 loot/altar 字段齐备", CFG.autoFight.styles.berserk.loot === "passive" && CFG.autoFight.styles.berserk.altar === false &&
+    CFG.autoFight.styles.balanced.loot === "near" && CFG.autoFight.styles.balanced.altar === true &&
+    CFG.autoFight.styles.cautious.loot === "far" && CFG.autoFight.styles.cautious.altar === true);
+
+  // 14. 角落自救：玩家贴左上角 + 近距离怪 → 风筝想往角落退，边界力把队长推离角落
+  G.run.autoStyle = "cautious";
+  w.monsters.length = 0; w.pickups.length = 0; w.altars.length = 0; w.groundChests.length = 0;
+  w.enemyBullets.length = 0;
+  p.x = 25; p.y = 25; p.aiMvX = 0; p.aiMvY = 0; G.run.aiHoldT = 0;
+  const cornerMob = new Monster("NM0010", 150, 150, 1);
+  w.monsters.push(cornerMob);
+  step(40);
+  check("角落自救：贴角风筝不再深入角落（离角落更远）", p.x + p.y > 50);
+  check("角落自救：坐标始终在地图内", p.x >= 0 && p.y >= 0 && p.x <= w.w && p.y <= w.h);
+
+  // 15. 拾取：冷静档战后清扫——远处金币主动去捡；疯狂档无视
+  w.monsters.length = 0;
+  p.x = 480; p.y = 480; p.aiMvX = 0; p.aiMvY = 0;
+  w.pickups.push({ type: "coin", value: 10, x: 800, y: 480, vx: 0, vy: 0, life: 30 });
+  const pd0 = Math.hypot(p.x - 800, p.y - 480);
+  step(40);
+  check("冷静档：主动走向远处掉落", Math.hypot(p.x - 800, p.y - 480) < pd0 - 60);
+  w.pickups.length = 0;
+  w.pickups.push({ type: "coin", value: 10, x: 800, y: 480, vx: 0, vy: 0, life: 30 });
+  G.run.autoStyle = "berserk";
+  p.x = 480; p.y = 480; p.aiMvX = 0; p.aiMvY = 0;
+  step(30);
+  check("疯狂档：无视掉落（战斗优先不捡东西）", Math.abs(p.x - 480) < 3 && Math.abs(p.y - 480) < 3);
+
+  // 16. 雕像激活：冷静档走向雕像圈并进圈站桩读条
+  G.run.autoStyle = "cautious";
+  p.x = 480; p.y = 480; p.aiMvX = 0; p.aiMvY = 0; G.run.aiAltar = null; G.run.aiAltarT = 0;
+  const altar = { cfg: { name: "T", radius: 80, channel: 1.2 }, x: 800, y: 480, id: "T1", progress: 0, holder: null };
+  w.altars.push(altar);
+  step(60);   // ~0.96s，320px 路程足够进圈（圈内判定半径 80×1.2=96）
+  check("雕像：走进交互圈（进圈判定）", !!heroInCircle(altar.x, altar.y, altar.cfg.radius));
+  const ax0 = p.x, ay0 = p.y;
+  step(10);
+  check("雕像：圈内站桩读条不移动", Math.hypot(p.x - ax0, p.y - ay0) < 1);
+
+  // 17. 危险时让位：站桩读条中出现 Boss 预警圈 → 继续躲避（进度保留可回来续读）
+  const boss2 = { dead: false, d: { type: "boss" }, ak: { boomRadius: 150, boomWarn: 1 }, warnT: 1, x: p.x, y: p.y, r: 40 };
+  w.monsters.push(boss2);
+  step(30);
+  check("雕像：危险时中断站桩躲避预警", distTo(boss2.x, boss2.y) > 60);
+  w.monsters.length = 0; w.altars.length = 0; w.pickups.length = 0;
+  G.run.aiAltar = null; G.run.aiAltarT = 0;
 
   afBtn.onclick();   // 收尾关闭
   check("收尾：按钮翻回「关」", afBtn.textContent.includes("关") && G.run.autoFight === false);

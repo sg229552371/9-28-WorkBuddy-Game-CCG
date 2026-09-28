@@ -275,6 +275,7 @@ function createRun(heroDef) {
     // 自动战斗托管 AI（转向力叠加模型）：autoStyle 为风格键（CFG.autoFight.styles）
     autoFight: false, autoStyle: CFG.autoFight ? CFG.autoFight.defaultStyle : "balanced",
     aiHoldT: 0, aiMvX: 0, aiMvY: 0, aiClock: 0, aiThreatSeen: null,
+    aiAltar: null, aiAltarT: 0, aiChestCool: 0,   // 资源目标：锁定的雕像 / 走向雕像的计时 / 宝箱拾取失败冷却
     runTime: 0,
     stats: {                        // 本局统计（数值收敛用）
       dmgDealt: 0, dmgTaken: 0,
@@ -777,10 +778,53 @@ function autoFightMove(p, w, dt) {
   // 清理已失效威胁的时间戳（子弹/怪物死亡）
   for (const k of seen.keys()) if (k.dead) seen.delete(k);
 
-  // 走位/索敌向量：目标 = 最近怪；期望距离 = engageBase × 风格系数（低血量 ×1.8 拉开）
-  let sx = 0, sy = 0;
+  // ---- 资源目标（雕像激活 / 掉落拾取）：风格驱动；仅在无近战威胁时行动（战斗优先） ----
+  let goal = null;   // {x, y}
   const target = nearestMonster(w, p.x, p.y);
-  if (target) {
+  const tDist = target ? U.dist(p.x, p.y, target.x, target.y) : Infinity;
+  // ① 雕像/祭坛激活：锁定目标 → 走进交互圈 → 圈内站桩读条（读条由 World.update 的 judgeChannel 推进）
+  if (style.altar) {
+    if (r.aiAltar && w.altars.indexOf(r.aiAltar) < 0) { r.aiAltar = null; r.aiAltarT = 0; }   // 已触发被移除
+    if (!r.aiAltar) {
+      let bd = af.altarRange;
+      for (const a of w.altars) {
+        const d = U.dist(p.x, p.y, a.x, a.y);
+        if (d < bd) { bd = d; r.aiAltar = a; r.aiAltarT = 0; }
+      }
+    }
+    if (r.aiAltar) {
+      r.aiAltarT += dt;
+      if (r.aiAltarT > af.altarTimeout) { r.aiAltar = null; r.aiAltarT = 0; }   // 超时放弃，防卡死
+      else if (heroInCircle(r.aiAltar.x, r.aiAltar.y, r.aiAltar.cfg.radius)) {
+        if (threat < 0.8) return { dx: 0, dy: 0 };   // 圈内站桩读条（有预警威胁时仍走躲避，进度保留可回来续读）
+        goal = null;                                  // 危险中：先躲避
+      } else goal = { x: r.aiAltar.x, y: r.aiAltar.y };
+    }
+  }
+  // ② 掉落拾取（金币/经验宝石/地上宝箱）：战斗目标较远或已清场时才主动去捡；就近选一个
+  if (!goal && style.loot !== "passive" && threat < 1.2 && (!target || tDist > af.engageBase * style.engageMul + 50)) {
+    const R = af.lootRange[style.loot] || 0;
+    let bd = R;
+    for (const pk of w.pickups) {
+      const d = U.dist(p.x, p.y, pk.x, pk.y);
+      if (d < bd) { bd = d; goal = { x: pk.x, y: pk.y }; }
+    }
+    if ((r.aiChestCool || 0) <= 0) {
+      for (const c of w.groundChests) {
+        const d = U.dist(p.x, p.y, c.x, c.y);
+        if (d < bd) { bd = d; goal = { x: c.x, y: c.y }; }
+      }
+    }
+  }
+  if (r.aiChestCool > 0) r.aiChestCool -= dt;
+
+  // 走位/索敌向量：有资源目标直奔目标；否则按期望距离风筝/逼近
+  let sx = 0, sy = 0;
+  if (goal) {
+    const dx0 = goal.x - p.x, dy0 = goal.y - p.y;
+    const dist = Math.hypot(dx0, dy0) || 1;
+    sx = dx0 / dist; sy = dy0 / dist;
+  } else if (target) {
     const dx0 = target.x - p.x, dy0 = target.y - p.y;
     const dist = Math.hypot(dx0, dy0) || 1;
     const ux = dx0 / dist, uy = dy0 / dist;
@@ -800,10 +844,28 @@ function autoFightMove(p, w, dt) {
     }
   }
 
-  // 合成 + 平滑（转向惯性）
-  let mx = tx * af.threatWeight + sx, my = ty * af.threatWeight + sy;
-  const l = Math.hypot(mx, my);
-  if (l < 0.05) return { dx: 0, dy: 0 };
+  // 合成：威胁躲避(×threatWeight) + 边界保命(×wallWeight) + 走位/索敌/资源(×1)
+  const M = af.wallMargin;
+  let bx = 0, by = 0;
+  if (p.x < M) bx += 1 - p.x / M;                          // 软推力：越贴墙推力越大
+  if (p.x > w.w - M) bx -= 1 - (w.w - p.x) / M;
+  if (p.y < M) by += 1 - p.y / M;
+  if (p.y > w.h - M) by -= 1 - (w.h - p.y) / M;
+  let mx = tx * af.threatWeight + sx + bx * af.wallWeight;
+  let my = ty * af.threatWeight + sy + by * af.wallWeight;
+  // 硬投影：靠墙时压平朝墙外的分量（沿墙切线滑动，绝不主动出界）
+  const hard = M * 0.45;
+  if (mx < 0 && p.x < hard) mx = 0;
+  if (mx > 0 && p.x > w.w - hard) mx = 0;
+  if (my < 0 && p.y < hard) my = 0;
+  if (my > 0 && p.y > w.h - hard) my = 0;
+  let l = Math.hypot(mx, my);
+  if (l < 0.05) {
+    if (!bx && !by) return { dx: 0, dy: 0 };               // 无任何意图
+    const cx0 = w.w / 2 - p.x, cy0 = w.h / 2 - p.y;        // 角落兜底：被完全压平 → 向地图中心逃逸
+    const cl = Math.hypot(cx0, cy0) || 1;
+    mx = cx0 / cl; my = cy0 / cl; l = 1;
+  }
   mx /= l; my /= l;
   const a = Math.min(1, af.smoothing * dt);
   r.aiMvX += (mx - r.aiMvX) * a;
@@ -2171,7 +2233,7 @@ class World {
         else {
           const spot = r.backpack.findSpot(item);
           if (spot) { r.backpack.place(item, spot.x, spot.y); this.groundChests.splice(this.groundChests.indexOf(c), 1); UI.toast(`拾取 ${item.name}`, ""); }
-          else UI.toast("背包已满且无可叠加同品质宝箱，无法拾取", "bad");
+          else { if (r.aiChestCool !== undefined) r.aiChestCool = (CFG.autoFight ? CFG.autoFight.chestFailCooldown : 3); UI.toast("背包已满且无可叠加同品质宝箱，无法拾取", "bad"); }
         }
       }
     }

@@ -85,13 +85,15 @@ CFG.skills2 = {
   autoCast: false,          // 主动技能自动施放：**默认关闭**，由局内 HUD「自动战斗」按钮控制（G.run.autoFight）；Space 保留手动触发
 };
 
-/* ---------- 自动战斗（托管 AI：转向力叠加模型，优先级 躲避威胁 > 保持攻击距离 > 索敌） ----------
- * 三种风格打包「索敌激进度 / 躲避范围 / 反应速度 / 低血量行为」：
+/* ---------- 自动战斗（托管 AI：转向力叠加模型，优先级 躲避威胁 > 边界保命 > 资源目标 > 保持攻击距离 > 索敌） ----------
+ * 三种风格打包「索敌激进度 / 躲避范围 / 反应速度 / 低血量行为 / 资源习惯」：
  *   engageMul      期望攻击距离 = engageBase × engageMul（疯狂贴脸、冷静拉满风筝）
  *   dodgeBullets   是否躲避敌方子弹（预判弹道最近逼近点）
  *   dodgeMargin    预警圈/冲锋线躲避半径放大系数（冷静档提前更多离开危险区）
  *   reactDelay     威胁反应延迟秒（疯狂档反应慢 → 偶尔吃刀，保留游戏张力）
- *   lowHpFlee      血量低于该比例时转入拉开距离风筝（0 = 莽到底不退） */
+ *   lowHpFlee      血量低于该比例时转入拉开距离风筝（0 = 莽到底不退）
+ *   loot           拾取习惯：passive=不主动捡 / near=战斗目标较远时顺路捡近处 / far=战后主动清扫大范围掉落与地上宝箱
+ *   altar          是否主动去踩雕像/祭坛交互圈读条（进圈后原地站桩至读条完成） */
 CFG.autoFight = {
   defaultStyle: "balanced",
   manualResumeDelay: 0.5,   // 玩家手动操作松手后，AI 恢复接管前的延迟（无缝切换）
@@ -100,10 +102,16 @@ CFG.autoFight = {
   engageBase: 240,          // 期望攻击距离基准(px)
   threatWeight: 2.6,        // 躲避力权重（相对走位/索敌的 1.0）
   strafeT: 1.6,             // 风筝环绕方向的切换周期(秒)
+  wallMargin: 110,          // 边界回避：距墙该范围内受向内软推力（角落自救）
+  wallWeight: 3.0,          // 边界力权重（高于威胁躲避：贴墙保命优先，风筝不会把队长顶进墙角）
+  lootRange: { near: 220, far: 520 },   // 拾取扫描半径（按风格档位）
+  altarRange: 640,          // 雕像/祭坛激活扫描半径
+  altarTimeout: 8,          // 走向雕像超时放弃（秒），防止目标失效后卡死
+  chestFailCooldown: 3,     // 地上宝箱拾取失败（背包满）后的跳过时长（秒），防止 AI 反复撞击刷 toast
   styles: {
-    berserk:  { name: "疯狂", engageMul: 0.35, dodgeBullets: false, dodgeTelegraph: true, dodgeMargin: 1.15, reactDelay: 0.4, lowHpFlee: 0,    desc: "贴脸输出，只预判冲锋与 Boss 大招，血线再低也不退" },
-    balanced: { name: "平衡", engageMul: 0.75, dodgeBullets: true,  dodgeTelegraph: true, dodgeMargin: 1.5,  reactDelay: 0.2, lowHpFlee: 0.4, desc: "中距离风筝，躲密集弹幕与预警技能，血量 40% 以下拉开" },
-    cautious: { name: "冷静", engageMul: 1.05, dodgeBullets: true,  dodgeTelegraph: true, dodgeMargin: 1.9,  reactDelay: 0.1, lowHpFlee: 0.6, desc: "最远距离风筝，见弹就躲，血量过半即拉开距离" },
+    berserk:  { name: "疯狂", engageMul: 0.35, dodgeBullets: false, dodgeTelegraph: true, dodgeMargin: 1.15, reactDelay: 0.4, lowHpFlee: 0,    loot: "passive", altar: false, desc: "贴脸输出只管打，不捡东西不碰雕像，血线再低也不退" },
+    balanced: { name: "平衡", engageMul: 0.75, dodgeBullets: true,  dodgeTelegraph: true, dodgeMargin: 1.5,  reactDelay: 0.2, lowHpFlee: 0.4, loot: "near",    altar: true,  desc: "中距离风筝，躲弹幕与预警；战斗间隙顺路捡近处掉落、激活雕像，血量 40% 以下拉开" },
+    cautious: { name: "冷静", engageMul: 1.05, dodgeBullets: true,  dodgeTelegraph: true, dodgeMargin: 1.9,  reactDelay: 0.1, lowHpFlee: 0.6, loot: "far",     altar: true,  desc: "最远距离风筝，见弹就躲；战后主动清扫大范围掉落与地上宝箱、激活雕像，血量过半即拉开" },
   },
 };
 
