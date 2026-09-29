@@ -211,11 +211,23 @@ const numIdx = ctxCalls.findIndex((c, i) => i > redIdx && c[0] === "fillText" &&
 **改这些交互时别再各写一套判定**。
 
 ### 5.4 货币职责边界（已定）
-局外 = **进化结晶**（角色等级 + 武器等级，且**武器等级 = 技能等级**，入口在 `#screen-meta` 局外成长界面）；
+局外 = **进化结晶**（角色等级 + 武器等级，且**武器等级 = 技能等级**）；
 局内 = **金币**（刷新属性卡牌 / 购买武器模块 / 购买道具 / 工匠服务）。**工匠世界不提供武器升级**。
 卡牌刷新 = 每局免费 2 次（`CFG.cardPool.refreshPerRun`）→ 之后每次 `CFG.cardPool.refreshCost` 120 金币；
 刷新按钮点击绑定**唯一在 `js/main.js`**（`refreshCards()` 内部判款+toast），
 `ui.js` 只负责文案三态，**别在 ui.js 再绑 onclick（会双 toast）**。
+
+⚠️ **升级入口在「首页→主城 Hub→传送门出征」重构后已收敛到主城 NPC 面板，
+不要写成「主菜单 → 局外成长」**（该独立界面 `#screen-meta` 已**有意移除**，
+`ui_flow_test.js:81` 有断言 `!htmlIds.has("screen-meta") && !htmlIds.has("btn-main-meta")` 守这条）：
+
+- **局外角色等级** → 主城**强化导师**（`UI.renderTrainer()`，DOM `#npc-crystals`），升级调 `Meta.levelUp`
+- **武器 / 技能等级** → 主城**武器匠**（`UI.renderSmith()`，DOM `#npc-crystals-weapon`），升级调 `Meta.weaponUp`
+
+两者都以进化结晶支付。
+⚠️ `UI.renderMeta()`（`js/ui.js`，含 `#meta-char-list` / `#meta-crystals`）是**重构遗留的死函数**
+—— 那些 DOM 已不存在，函数里 `if (!box) return` 直接返回；
+但 `metaUpgradeLevel` / `metaUpgradeWeapon` **仍被上述两个 NPC 面板调用，不能删**。
 
 ### 5.5 技能/武器等级上限 = 100，曲线公式驱动
 `CFG.weaponLevel`（`maxLv:100`、`basicMulPerLv:0.04`、`skillMulPerLv:0.06`、`costBase:120`、

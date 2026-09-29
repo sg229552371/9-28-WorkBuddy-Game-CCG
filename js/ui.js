@@ -68,7 +68,7 @@ const UI = {
     });
   },
 
-  /* ---------- 角色选择（只读展示；等级升级统一收敛到主菜单的局外成长界面） ---------- */
+  /* ---------- 角色选择（只读展示；等级升级统一收敛到主城的强化导师 / 武器匠 NPC 面板） ---------- */
   buildCharList() {
     this.selectedChars = this.selectedChars || [];
     const box = document.getElementById("char-list");
@@ -94,7 +94,7 @@ const UI = {
           : " · 已满级"} <small>（武器等级 = 技能等级，撤离后永久保留）</small></p>
         <p>${h.desc}</p>
         <p>HP ${h.hp} · 攻击 ${h.atk} · 防御 ${h.def} · 移速 ${h.spd} · 武器：${wpn.name}</p>
-        <p class="hint"><small>升级请前往主菜单 →「局外成长」</small></p></div>`;
+        <p class="hint"><small>升级请前往主城 →「强化导师」</small></p></div>`;
       if (img) {
         const cv = card.querySelector(".char-face");
         if (cv && cv.getContext) cv.getContext("2d").drawImage(img, 0, 0, 64, 64);
@@ -117,7 +117,7 @@ const UI = {
       box.appendChild(card);
     }
     const metaLine = document.getElementById("meta-line");
-    if (metaLine) metaLine.innerHTML = `◆ 进化结晶 <b>${Meta.data.crystals}</b><small>　撤离/击杀获得 · 死亡仅保留 ${CFG.outLevel.deathRatio * 100}% · 升级请前往主菜单「局外成长」</small>`;
+    if (metaLine) metaLine.innerHTML = `◆ 进化结晶 <b>${Meta.data.crystals}</b><small>　撤离/击杀获得 · 死亡仅保留 ${CFG.outLevel.deathRatio * 100}% · 升级请前往主城「强化导师」</small>`;
   },
 
   /* ---------- 局外成长界面（主菜单入口：消耗进化结晶升级局外等级 / 武器·技能等级） ---------- */
@@ -680,14 +680,14 @@ const UI = {
     btn.disabled = !this.selectedChestQ || !(counts[this.selectedChestQ] > 0);
     btn.onclick = () => this.openChest();
     list.appendChild(btn);
-    // 武器 / 技能等级：只读展示（升级入口已收敛到主菜单「局外成长」→ 消耗进化结晶）
+    // 武器 / 技能等级：只读展示（升级入口已收敛到主城「武器匠」→ 消耗进化结晶）
     const wlv = Meta.weaponLv(G.heroDef.id);
     const wro = document.createElement("div");
     wro.className = "chest-row readonly";
     wro.style.marginTop = "8px";
     wro.innerHTML = `<div class="sw" style="background:#ffd76a"></div>
       <b>⚔ 武器 / 技能 LV${wlv}${wlv >= CFG.weaponLevel.maxLv ? "（满级）" : ""}</b>
-      <small>局外成长界面消耗进化结晶升级</small>`;
+      <small>主城「武器匠」消耗进化结晶升级</small>`;
     list.appendChild(wro);
   },
   /* 页签③：购买·服务（局内金币消费 + 选中物品强化/洗词缀） */

@@ -375,7 +375,7 @@ const Meta = {
     this.commit();
     return true;
   },
-  // 武器等级（永久资产，按英雄存档；主菜单「局外成长」花结晶升级；技能等级 = 武器等级同步）
+  // 武器等级（永久资产，按英雄存档；主城「武器匠」花结晶升级；技能等级 = 武器等级同步）
   weaponLv(id) { return (this.data.heroes[id] && this.data.heroes[id].weaponLv) || 1; },
   weaponUpCost(id) {
     return weaponLevelEntry(this.weaponLv(id)).cost;
