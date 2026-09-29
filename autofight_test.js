@@ -283,12 +283,20 @@ vm.runInContext(`
 
   // 22. 平衡档战斗间隙才捡：近战怪在旁时不去捡远处掉落（风筝优先，gate=gap 拦截）
   G.run.autoStyle = "balanced";
+  G.run.aiAltar = null; G.run.aiAltarT = 0;
+  // 固定环境：清掉前序用例残留的怪 / 弹幕 / 掉落，避免 AI 走位被无关目标干扰
+  w.monsters.length = 0; w.enemyBullets.length = 0; w.pickups.length = 0;
   p.x = 480; p.y = 480; p.aiMvX = 0; p.aiMvY = 0;
-  const nearMob = new Monster("NM0010", p.x + 120, p.y, 1);   // 120px < 期望距离 230 → 战斗中
+  const nearMob = new Monster("NM0010", p.x + 120, p.y, 1);   // 120px < 期望距离 180（engageBase 240 × 0.75）→ 战斗中
   w.monsters.push(nearMob);
   w.pickups.push({ type: "coin", value: 10, x: 480, y: 260, vx: 0, vy: 0, life: 30 });   // 正上方 220px
   const pd1 = Math.hypot(p.x - 480, p.y - 260);
+  // ⚠️ 环绕风筝方向由 Math.random 决定（js/game.js 的 aiStrafeSide）：随机向上时恰好朝向正上方的掉落，
+  //    会在「后撤距离完全相同」的情况下偶尔贴近掉落 → 用例抖动。此处固定随机值（side=+1 向下走）使结果可复现。
+  const _rnd = Math.random; Math.random = () => 0.1;
   step(30);
+  Math.random = _rnd;
+  // 核心断言：掉落没被当作目标（gate=gap 已拦）→ 不会朝它靠近
   check("平衡档：战斗中不为远处掉落分心（距离不缩小）", Math.hypot(p.x - 480, p.y - 260) > pd1);
   w.monsters.length = 0; w.pickups.length = 0;
 
