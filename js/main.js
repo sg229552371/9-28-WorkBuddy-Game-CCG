@@ -9,6 +9,7 @@ const Game = {
     G.ctx = G.canvas.getContext("2d");
     this.fitCanvas();
     window.addEventListener("resize", () => this.fitCanvas());
+    window.addEventListener("orientationchange", () => setTimeout(() => this.fitCanvas(), 120));   // 旋转后布局稳定再重算
     // 素材加载（含抠图）
     await Assets.load(ASSET_MANIFEST);
     const szMul = CFG.monsterSizeMul || 1;   // 怪物体积倍数：精灵按放大后尺寸裁剪，保持清晰
@@ -29,8 +30,20 @@ const Game = {
     UI.showScreen("screen-main");   // 启动落到游戏首页（→ 主城 → 传送门 → 选关）
     requestAnimationFrame((t) => this.loop(t));
   },
+  /* 画布自适应（跨端口径修正）：旧版画布固定 1920×1080 再整体缩进窗口——手机竖屏时
+   * 游戏只是屏幕中间一条小横带，角色物理尺寸与 PC 全屏差数倍（「视野/角色大小不一致」的根因）。
+   * 现在：画布**分辨率跟随窗口**，垂直视野固定（CFG.camera.viewH）→ 角色大小只由 zoom 决定，
+   * PC 与手机一致；宽度随屏幕比例伸缩（过窄的竖屏按 minAspect 钳到 4:3，左右留边）。 */
   fitCanvas() {
-    const scale = Math.min(window.innerWidth / G.W, window.innerHeight / G.H);
+    const cam = CFG.camera || {};
+    const zoom = cam.zoom || 1.5;
+    const viewH = cam.viewH || 720;
+    const vw = window.innerWidth || 1920, vh = window.innerHeight || 1080;   // 桩环境兜底，防 NaN
+    const aspect = vw / Math.max(1, vh);
+    G.H = Math.round(viewH * zoom);                                   // 画布高固定（1080）
+    G.W = Math.max(Math.round(G.H * (cam.minAspect || 0.75)), Math.round(G.H * aspect));
+    G.canvas.width = G.W; G.canvas.height = G.H;
+    const scale = Math.min(vw / G.W, vh / G.H);
     G.canvas.style.width = G.W * scale + "px";
     G.canvas.style.height = G.H * scale + "px";
   },

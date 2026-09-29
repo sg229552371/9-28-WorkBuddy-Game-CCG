@@ -668,14 +668,17 @@ const SkillSystem = {
     const row = sk.row || {};
     const want = unitCap(caster, "summon", row.count || 3);
     const orbit = row.orbit || 70;
-    const mine = () => (G.run.drones || []).filter(d => d.hp > 0 && d.owner === caster);
+    // 名下计数只统计**本世界**的召唤物：别的水 map 的编队不占这里的上限，也不会被这里的施放顶掉
+    const mine = () => (G.run.drones || []).filter(d => d.hp > 0 && d.owner === caster && (!d.world || d.world === G.activeWorld));
     while (mine().length > want) G.run.drones.splice(G.run.drones.indexOf(mine()[0]), 1);   // 超上限只回收自己最旧的
     for (let i = mine().length; i < want; i++) {
       const a = (i / Math.max(1, want)) * Math.PI * 2;
-      G.run.drones.push(new Drone(
+      const dr = new Drone(
         caster.x + Math.cos(a) * orbit, caster.y + Math.sin(a) * orbit,
         a, row.hp || 40, Math.max(1, Math.round((row.atk || 6) * (sk.summonMul || 1))),
-        row.fireCd || 0.8, orbit, caster));
+        row.fireCd || 0.8, orbit, caster);
+      dr.world = G.activeWorld;   // 世界归属：召唤物只存在于施放时的那张地图，不跨世界跟随（传送后留在原地）
+      G.run.drones.push(dr);
     }
     return { n: mine().length, cap: want };
   },
@@ -685,7 +688,8 @@ const SkillSystem = {
   castTrap(w, caster, sk, atk) {
     const row = sk.row || {};
     const cap = unitCap(caster, "trap", row.count || 1);
-    const mine = () => (G.run.traps || []).filter(t => t.owner === caster);
+    // 名下计数只统计**本世界**的陷阱：主地图的陷阱不占这里的上限，也不会被这里的施放回收
+    const mine = () => (G.run.traps || []).filter(t => t.owner === caster && (!t.world || t.world === G.activeWorld));
     if (cap <= 0) return { n: mine().length, cap: 0 };            // 上限为 0：该技能不产出（防死循环）
     while (mine().length >= cap) G.run.traps.splice(G.run.traps.indexOf(mine()[0]), 1);   // 只回收自己的
     G.run.traps.push({
@@ -693,6 +697,7 @@ const SkillSystem = {
       radius: sk.radius || row.radius || 110,     // 触发范围 = 伤害范围（同源）
       armDelay: sk.armDelay != null ? sk.armDelay : 0.5,
       armed: false, fuse: 0, owner: caster,       // 归属：产物池按成员独立
+      world: G.activeWorld,                       // 世界归属：陷阱**留在布设时的那张地图**（传送去子地图它不跟过去）
       dmg: Math.max(1, Math.round(atk * (sk.dmgMul || 1) * (sk.trapMul || 1))),
     });
     return { n: mine().length, cap };
@@ -703,6 +708,100 @@ const SkillSystem = {
     if (sk.type === "summon") return { kind: "summon", ...this.castSummon(w, caster, sk, opts.atk) };
     if (sk.type === "trap") return { kind: "trap", ...this.castTrap(w, caster, sk, opts.atk) };
     return { kind: "bullet", n: this.castBullet(w, caster, sk, ang, opts) };
+  },
+};
+
+/* ============ 弹幕发射器（第十七章 17.4 / 17.6：Boss 弹幕范式） ============
+ * 分工：SkillSystem 管**伤害与词条**（谁打的、吃哪些标签、吸血归属），
+ *       PatternSystem 只管**敌方弹幕的几何形状**（画什么花色）——招式参数来自技能表 AT21x 条目。
+ * 六种发射器：radial 放射 ｜ spiral 螺旋 ｜ fan 扇形 ｜ wave 波幕 ｜ ring 同心环 ｜ grid 网格/花形。
+ * 通用规律（17.2 调研）：同一种发射器只调「**弹数 / 角度 / 速度**」三旋钮，就能覆盖很大的难度区间。
+ * 所有发射都先过 bossBudget 护栏（CFG.boss：单只 Boss 每秒发射量 + 同屏存量）。 */
+const PatternSystem = {
+  /** 形状展开：把「招式」摊成 [{ ang, spdMul, dx, dy }] 纯几何描述，不碰实体（可单测）。
+   *  ang = 发射角；spdMul = 速度倍率（ring 分层扩散用）；dx/dy = 出生点相对 Boss 的偏移。 */
+  shape(p, aimAng, spinAng) {
+    const out = [];
+    const kind = p.pattern || "radial";
+    const n = Math.max(1, Math.round(p.count || 8));
+    const off = p.offset || 0;
+    const push = (ang, spdMul, dx, dy) => out.push({ ang, spdMul: spdMul || 1, dx: dx || 0, dy: dy || 0 });
+    switch (kind) {
+      case "radial":                     // 放射：360° 均匀铺开（教学招 / 底噪）
+        for (let i = 0; i < n; i++) push(off + i * Math.PI * 2 / n);
+        break;
+      case "spiral": {                   // 螺旋：arms 条臂，每次发射整体旋转 spin（调用方累积角度）
+        const arms = Math.max(1, Math.round(p.arms || 2));
+        for (let i = 0; i < arms; i++) push(spinAng + i * Math.PI * 2 / arms);
+        break;
+      }
+      case "fan": {                      // 扇形：以瞄准角为中心 ±arc/2 均分（逼走位）
+        const arc = p.arc != null ? p.arc : Math.PI / 3;
+        if (n === 1) push(aimAng);
+        else for (let i = 0; i < n; i++) push(aimAng - arc / 2 + arc * i / (n - 1));
+        break;
+      }
+      case "wave": {                     // 波/幕：一排**平行**推进的弹（法向等距错开），速度微差 → 整体略呈弧
+        const lat = p.lateral != null ? p.lateral : 24;
+        const nx = -Math.sin(aimAng), ny = Math.cos(aimAng);       // 法向单位向量
+        for (let i = 0; i < n; i++) {
+          const t = (i - (n - 1) / 2) * lat;
+          push(aimAng, 1 + (i - (n - 1) / 2) * 0.015, nx * t, ny * t);
+        }
+        break;
+      }
+      case "ring": {                     // 同心环：layers 层同角分布，层间角错半格 + 速度递增 → 飞行中自然分层
+        const layers = Math.max(1, Math.round(p.layers || 2));
+        const lm = p.layerMul != null ? p.layerMul : 0.15;
+        for (let k = 0; k < layers; k++)
+          for (let i = 0; i < n; i++)
+            push(off + i * Math.PI * 2 / n + k * Math.PI / n, 1 + k * lm);
+        break;
+      }
+      case "grid": {                     // 网格/花形：极坐标规则网格，层间角错半格 → 花瓣感（视觉高潮技）
+        const layers = Math.max(1, Math.round(p.layers || 2));
+        const gap = p.gap != null ? p.gap : 90;
+        for (let k = 0; k < layers; k++) {
+          const r = (k + 1) * gap;
+          for (let i = 0; i < n; i++) {
+            const a = off + i * Math.PI * 2 / n + k * Math.PI / n;
+            push(a, 1, Math.cos(a) * r, Math.sin(a) * r);
+          }
+        }
+        break;
+      }
+    }
+    return out;
+  },
+  /** 发射：形状 → 实体；返回**实际发射数**（经护栏裁剪，可能少于形状弹数）。
+   *  裁剪时按**等间隔抽取**而非砍尾巴——保证降密度后形状依然对称（护栏的"低密度而非偏瘫"）。 */
+  emit(w, m, p, aimAng, spinAng) {
+    let desc = this.shape(p, aimAng, spinAng);
+    // 护栏①：同屏存量（只统计本 Boss 名下、尚未消亡的弹幕）
+    let live = 0;
+    for (const b of w.enemyBullets) if (b.owner === m && !b.dead) live++;
+    // 护栏②：每秒发射量（以 Boss 自身时钟做滑动窗口，不依赖全局时间）
+    const bw = CFG.boss.bulletWindow, now = m.bossClock || 0;
+    if (m.budgetT == null || now - m.budgetT >= bw) { m.budgetT = now; m.budgetUsed = 0; }
+    const quota = Math.max(0, Math.min(CFG.boss.bulletBudget * bw - (m.budgetUsed || 0), CFG.boss.bulletCap - live));
+    const n = Math.max(0, Math.min(desc.length, Math.floor(quota)));
+    if (n < desc.length && n > 0) {
+      const step = desc.length / n, pick = [];
+      for (let i = 0; i < n; i++) pick.push(desc[Math.floor(i * step)]);
+      desc = pick;
+    }
+    const spd = p.bulletSpd || 180;
+    const dmg = Math.max(1, Math.round(m.atk * (p.dmgMul != null ? p.dmgMul : 1)));
+    const life = p.life != null ? p.life : CFG.boss.bulletLife;
+    for (let i = 0; i < n; i++) {
+      const d = desc[i];
+      const b = new Bullet(m.x + d.dx, m.y + d.dy, d.ang, spd * d.spdMul, dmg, "enemy", 0, 0, 0, false, m);
+      b.boss = true;              // 渲染区分（Boss 弹幕更亮）+ 存量统计归属
+      b.life = life;              // 慢弹幕需要足够滞空时间（Bullet 默认 2.2s 会在半途消失）
+      w.enemyBullets.push(b);
+    }
+    m.budgetUsed = (m.budgetUsed || 0) + n;
+    return n;
   },
 };
 
@@ -939,9 +1038,10 @@ class Player {
       this.mvx = dx; this.mvy = dy;   // 记录移动方向，队友据此排到身后
       const wf = weightFactor();
       const spd = st.spd * st.spdMul * wf.f;
+      this._mdx = dx * spd * dt; this._mdy = dy * spd * dt;   // 本帧位移（障碍物切向滑动用）
       this.x = U.clamp(this.x + dx * spd * dt, this.r, w.w - this.r);
       this.y = U.clamp(this.y + dy * spd * dt, this.r, w.h - this.r);
-      resolveObstacles(this, w);
+      resolveObstacles(this, w, { x: this.x + dx * 100, y: this.y + dy * 100 });   // 偏置 = 行进方向前方
     } else { this.mvx = 0; this.mvy = 0; }   // 停止移动即清零
     // 能量恢复
     G.run.energy = Math.min(G.run.energyMax, G.run.energy + st.regen * dt);
@@ -1129,9 +1229,10 @@ function updateCompanions(w, dt) {
     const d = U.dist(c.x, c.y, tx, ty);
     if (d > 6) {
       const spd = st.spd * 1.15;
+      c._mdx = (tx - c.x) / d * spd * dt; c._mdy = (ty - c.y) / d * spd * dt;   // 本帧位移（切向滑动用）
       c.x += (tx - c.x) / d * spd * dt; c.y += (ty - c.y) / d * spd * dt;
       if (Math.abs(tx - c.x) > 4) c.faceDir = tx > c.x ? 1 : -1;
-      resolveObstacles(c, w);
+      resolveObstacles(c, w, { x: tx, y: ty });   // 偏置 = 跟随目标点（被挡时沿墙绕向队尾点位）
     }
     // 自动普攻（武器栏内的武器模块对全队生效：技能值取 recomputeWeapon 解析出的 c.skills）
     c.fireTimer -= dt;
@@ -1202,13 +1303,15 @@ function droneTakeDamage(w, d, dmg) {
   if (d.hp <= 0) { d.hp = 0; SFX.play("death"); UI.toast("无人机被击毁！", "bad"); }
 }
 
-/* ---------- 敌方目标（英雄 + 存活无人机）：怪物索敌与伤害统一入口 ---------- */
-function enemyTargets() {
-  return [...aliveHeroes(), ...((G.run && G.run.drones) || []).filter(d => d.hp > 0)];
+/* ---------- 敌方目标（英雄 + 存活无人机）：怪物索敌与伤害统一入口 ----------
+ * w 参数（可省略，省略时不筛世界）：无人机带 world 归属，只作为**同世界**怪物的目标——
+ * 否则主地图的无人机会被裂缝/工匠世界的怪物当作目标去打（坐标都不在同一张图上）。 */
+function enemyTargets(w) {
+  return [...aliveHeroes(), ...((G.run && G.run.drones) || []).filter(d => d.hp > 0 && (!w || !d.world || d.world === w))];
 }
-function nearestTarget(x, y) {
+function nearestTarget(w, x, y) {
   let best = null, bd = Infinity;
-  for (const t of enemyTargets()) {
+  for (const t of enemyTargets(w)) {
     const d = U.dist(x, y, t.x, t.y);
     if (d < bd) { bd = d; best = t; }
   }
@@ -1286,10 +1389,10 @@ class Bullet {
           break;
         }
       }
-      // 敌方子弹也会击中召唤物（无人机可被远程攻击）
+      // 敌方子弹也会击中召唤物（无人机可被远程攻击；只打本世界的无人机）
       if (!this.dead && G.run && G.run.drones) {
         for (const d of G.run.drones) {
-          if (d.hp > 0 && U.dist(this.x, this.y, d.x, d.y) < d.r + 6) {
+          if (d.hp > 0 && (!d.world || d.world === w) && U.dist(this.x, this.y, d.x, d.y) < d.r + 6) {
             droneTakeDamage(w, d, this.dmg);
             spawnBurst(this.x, this.y, "#c79bff", 6);
             this.dead = true;
@@ -1351,17 +1454,74 @@ class Monster {
     this.touchTimer = 0; this.fireTimer = U.rand(0.5, this.ak.fireCd);
     this.state = "chase"; this.stateT = 0; this.dashVx = 0; this.dashVy = 0;
     this.boomTimer = this.ak.boomCd || 0; this.warnT = 0; this.minionTimer = this.ak.minionCd || 0;
+    // ---- Boss 阶段机 + 弹幕循环（第十七章；非 Boss 时 phases=null，不影响其它 AI）----
+    this.lv = lv || 1;                                  // 怪物等级（弹幕技能条目按等级结算）
+    this.phases = (d.type === "boss" && d.phases) ? d.phases : null;
+    this.phaseIdx = 0; this.phaseInvulnT = 0; this.bossClock = 0;
+    this.patternTimer = 1.5;                            // 开场稍候再放第一招（给玩家反应时间）
+    this.patternWarnT = 0; this.patternIdx = 0; this.warnP = null;
+    this.spiralAng = 0; this.aimAng = 0;
     this.sprite = G.sprites[d.sprite];
     this.flashT = 0;
   }
+  /** Boss 当前阶段：phases 按血量比例降序，取**最后一个满足**的档位（1.0 = 满血即生效）。 */
+  bossPhase() {
+    const ps = this.phases;
+    if (!ps || !ps.length) return null;
+    const ratio = this.hpMax > 0 ? this.hp / this.hpMax : 0;
+    let idx = 0;
+    for (let i = 0; i < ps.length; i++) if (ratio <= ps[i].hp) idx = i;
+    return { idx, skills: ps[idx].skills || [] };
+  }
+  /** 阶段推进（17.3）：**加机制**（换招式池）而不是加血加攻；转换时 Boss 无敌 + 停手，
+   *  **不清屏**（玩家已打出的弹幕/召唤物照常存在），给双方一个呼吸窗口。 */
+  bossPhaseTick() {
+    const cur = this.bossPhase();
+    if (!cur || cur.idx <= this.phaseIdx) return;
+    this.phaseIdx = cur.idx;
+    this.phaseInvulnT = CFG.boss.phaseInvuln;
+    this.patternWarnT = 0; this.warnP = null;
+    this.boomTimer = Math.max(this.boomTimer, 2.2);      // 阶段衔接期先不接爆炸/召唤，避免"无敌期间被罚站"
+    this.minionTimer = Math.max(this.minionTimer, 3.0);
+    UI.toast(`${this.d.name} 进入第 ${this.phaseIdx + 1} 阶段！`, "bad");
+    SFX.play("boom");
+  }
+  /** 弹幕循环：电报（白圈）→ 发射 → 冷却。warnTime = 0 的招式（螺旋）不逐发电报，直接连发。 */
+  bossPatternTick(w, dt) {
+    const cur = this.bossPhase();
+    if (!cur || !cur.skills.length) return;
+    if (this.patternWarnT > 0) {                          // 电报中：到点才真正发射
+      this.patternWarnT -= dt;
+      if (this.patternWarnT <= 0) { this.patternWarnT = 0; this.bossFire(w, this.warnP); }
+      return;
+    }
+    if (this.patternTimer > 0) { this.patternTimer -= dt; return; }
+    const id = cur.skills[this.patternIdx % cur.skills.length];   // 阶段内招式轮转
+    const p = skillEntry(id, this.lv) || {};
+    const warn = p.warnTime != null ? p.warnTime : CFG.boss.warnTime;
+    if (warn > 0) { this.warnP = p; this.patternWarnT = warn; }   // 白圈亮起 → 下一帧起倒计时
+    else this.bossFire(w, p);
+  }
+  /** 真正发射：更新瞄准角与螺旋相位 → 展开形状 → 交护栏裁剪 → 重置冷却。 */
+  bossFire(w, p) {
+    if (!p || !p.pattern) { this.patternTimer = CFG.boss.patternCd; return 0; }
+    const tgt = nearestTarget(w, this.x, this.y);
+    this.aimAng = Math.atan2(tgt.y - this.y, tgt.x - this.x);
+    this.spiralAng += (p.spin || 0);                      // 螺旋每次发射整体旋转（正反由 spin 符号决定）
+    const n = PatternSystem.emit(w, this, p, this.aimAng, this.spiralAng);
+    this.patternIdx++;
+    this.patternTimer = p.cd != null ? p.cd : CFG.boss.patternCd;
+    return n;
+  }
   update(w, dt) {
     this.flashT -= dt;
+    const px0 = this.x, py0 = this.y;   // 帧初位置（供 resolveObstacles 计算切向滑动，防卡障碍）
     const p = G.player;
     const distP = U.dist(this.x, this.y, p.x, p.y);
     const ak = this.ak;   // 攻击技能参数（来自技能表 4e 视图，见 monsterAttackSkill）
     switch (this.d.type) {
       case "melee": {
-        const h = nearestTarget(this.x, this.y);
+        const h = nearestTarget(w, this.x, this.y);
         const ang = Math.atan2(h.y - this.y, h.x - this.x);
         this.x += Math.cos(ang) * this.effSpd * dt;
         this.y += Math.sin(ang) * this.effSpd * dt;
@@ -1372,23 +1532,29 @@ class Monster {
         break;
       }
       case "ranged": {
-        const h = nearestTarget(this.x, this.y);
+        const h = nearestTarget(w, this.x, this.y);
         const ang = Math.atan2(h.y - this.y, h.x - this.x);
         const distH = U.dist(this.x, this.y, h.x, h.y);
+        const los = losClear(w, this.x, this.y, h.x, h.y);   // 视线：障碍物挡弹道，没视线不开火
         if (distH > ak.keepDist + 40) {
           this.x += Math.cos(ang) * this.effSpd * dt; this.y += Math.sin(ang) * this.effSpd * dt;
         } else if (distH < ak.keepDist - 60) {
           this.x -= Math.cos(ang) * this.effSpd * 0.7 * dt; this.y -= Math.sin(ang) * this.effSpd * 0.7 * dt;
+        } else if (!los) {
+          // 距离合适但被障碍挡住：沿切向绕行抢视线（而不是站桩朝障碍物倾泻弹药）
+          if (this.strafeSide == null) this.strafeSide = Math.random() < 0.5 ? 1 : -1;
+          this.x += -Math.sin(ang) * this.strafeSide * this.effSpd * 0.6 * dt;
+          this.y += Math.cos(ang) * this.strafeSide * this.effSpd * 0.6 * dt;
         }
         this.fireTimer -= dt;
-        if (this.fireTimer <= 0 && distH < 620) {
+        if (this.fireTimer <= 0 && distH < 620 && los) {
           this.fireTimer = ak.fireCd;
           w.enemyBullets.push(new Bullet(this.x, this.y, ang, ak.bulletSpd, this.atk * ak.atkMul, "enemy"));
         }
         break;
       }
       case "charger": {
-        const h = nearestTarget(this.x, this.y);
+        const h = nearestTarget(w, this.x, this.y);
         const distH = U.dist(this.x, this.y, h.x, h.y);
         this.stateT -= dt;
         if (this.state === "chase") {
@@ -1409,15 +1575,20 @@ class Monster {
         break;
       }
       case "boss": {
+        this.bossClock += dt;                               // Boss 自身时钟（弹幕预算窗口用，不依赖全局时间）
+        this.bossPhaseTick();                               // 阶段机：血量分段 → 换招式池 + 无敌停手
+        if (this.phaseInvulnT > 0) { this.phaseInvulnT -= dt; break; }   // 无敌期：不走位、不出招、不吃伤害
         const ang = Math.atan2(p.y - this.y, p.x - this.x);
         this.x += Math.cos(ang) * this.effSpd * dt;
         this.y += Math.sin(ang) * this.effSpd * dt;
+        // 弹幕招式（第十七章 17.4）：电报 → 发射 → 冷却，招式池由当前阶段决定
+        this.bossPatternTick(w, dt);
         // 圆形范围爆炸（预警 → 爆炸，命中范围内所有英雄）
         this.boomTimer -= dt;
         if (this.warnT > 0) {
           this.warnT -= dt;
           if (this.warnT <= 0) {
-            for (const h of enemyTargets()) {
+            for (const h of enemyTargets(w)) {
               if (U.dist(this.x, this.y, h.x, h.y) <= ak.boomRadius) targetTakeDamage(w, h, this.atk * ak.atkMul);
             }
             spawnBurst(this.x, this.y, "#e5484d", 40, ak.boomRadius);
@@ -1438,15 +1609,16 @@ class Monster {
           }
         }
         this.touchTimer -= dt;
-        const hb = nearestTarget(this.x, this.y);
+        const hb = nearestTarget(w, this.x, this.y);
         if (U.dist(this.x, this.y, hb.x, hb.y) < this.r + hb.r && this.touchTimer <= 0) {
           targetTakeDamage(w, hb, this.atk * ak.touchMul); this.touchTimer = ak.touchCd;
         }
         break;
       }
     }
-    // 障碍物推挤
-    resolveObstacles(this, w);
+    // 障碍物推挤（带目标偏置：被挡时沿墙向目标侧绕行，防卡死）
+    this._mdx = this.x - px0; this._mdy = this.y - py0;
+    resolveObstacles(this, w, nearestTarget(w, this.x, this.y));
     this.x = U.clamp(this.x, this.r, w.w - this.r);
     this.y = U.clamp(this.y, this.r, w.h - this.r);
   }
@@ -1455,16 +1627,20 @@ class Monster {
 const _tmpArr = [];
 
 function nearestMonster(w, x, y, exclude) {
-  let best = null, bd = Infinity;
+  let best = null, bd = Infinity, bestLos = null, bdLos = Infinity;
   for (const m of w.monsters) {
     if (m.dead || m === exclude) continue;
     const d = U.dist(x, y, m.x, m.y);
     if (d < bd) { bd = d; best = m; }
+    if (d < bdLos && losClear(w, x, y, m.x, m.y)) { bdLos = d; bestLos = m; }
   }
-  return best;
+  // 优先返回**视线可达**的最近怪：障碍物挡弹道，锁住障碍后的怪只会让子弹打在障碍上
+  return bestLos || best;
 }
 
 function damageMonster(w, m, dmg) {
+  // Boss 阶段转换无敌（17.3）：转换窗口内不吃伤害（子弹照常被消耗，但 Boss 不掉血）
+  if (m.phaseInvulnT > 0) { spawnBurst(m.x + U.rand(-m.r, m.r), m.y + U.rand(-m.r, m.r), "#ffffff", 2); return; }
   const cuDef = (G.run && G.run.curse) ? G.run.curse.defMul : 1;   // 诅咒附加的"防御 ×N"被动
   const real = Math.max(1, Math.round(dmg - m.d.def * cuDef - (m.eliteDef || 0)));
   // 精英「护盾」词缀：先扣盾，盾破前本体不受损
@@ -2231,12 +2407,14 @@ class World {
     this.monsters = this.monsters.filter(m => !m.dead);
     if (this.isMain && this.boss && this.boss.dead && !r.bossDefeated) onBossDefeated(this);
     // 召唤物（无人机）：随召唤者 + 自动攻击；仅「被击毁」时移除（召唤者倒下不回收）
-    for (const d of (r.drones || [])) if (d.hp > 0) d.update(this, dt);
+    // ⚠️ 世界归属：无人机只在本世界更新（G.run.drones 是全队共用容器，别的地图的无人机冻结不更新）
+    for (const d of (r.drones || [])) if (d.hp > 0 && (!d.world || d.world === this)) d.update(this, dt);
     r.drones = (r.drones || []).filter(d => d.hp > 0);
     // 陷阱（大地雷）：**留在原地**，与布设者脱钩（布设者走开/倒下都不影响）；不被敌人攻击；
-    // 敌人进入范围 → 引信延迟 → 爆炸 → 消失
+    // 敌人进入范围 → 引信延迟 → 爆炸 → 消失。⚠️ 只处理本世界的陷阱（跨世界的不更新不引爆）
     for (let i = (r.traps || []).length - 1; i >= 0; i--) {
       const t = r.traps[i];
+      if (t.world && t.world !== this) continue;
       if (!t.armed) {
         const cands = this.monsterHash.query(t.x, t.y, t.radius + 40, _tmpArr);
         if (cands.some(m => !m.dead && U.dist(t.x, t.y, m.x, m.y) < t.radius + m.r)) {
@@ -2390,7 +2568,7 @@ class World {
 }
 
 /* ---------- 障碍物碰撞 ---------- */
-function resolveObstacles(e, w) {
+function resolveObstacles(e, w, bias) {
   for (const o of w.obstacles) {
     const cx = U.clamp(e.x, o.x, o.x + o.w), cy = U.clamp(e.y, o.y, o.y + o.h);
     const dx = e.x - cx, dy = e.y - cy;
@@ -2398,6 +2576,22 @@ function resolveObstacles(e, w) {
     if (d < e.r && d > 0.001) {
       const push = (e.r - d);
       e.x += dx / d * push; e.y += dy / d * push;
+      // 沿墙绕行（防卡死）：push 只恢复法向间隙、不产生切向运动——正对顶墙（本帧位移几乎
+      // 纯法向）时会永远顶在墙上。此时沿墙面向 bias（目标点）一侧滑动。
+      // 方向带**粘性**（_slideDir）：目标恰在墙延长线上时切向符号每帧抖动（实测会原地振荡），
+      // 记住绕行侧；只有目标明显在另一侧（切向距离 > 60px）才翻转。
+      const nx = dx / d, ny = dy / d;              // 指离障碍物的法向
+      const tx = -ny, ty = nx;                     // 切向
+      const mdx = e._mdx || 0, mdy = e._mdy || 0;
+      const mag = Math.hypot(mdx, mdy);
+      const tangent = mdx * tx + mdy * ty;         // 本帧位移的切向分量
+      if (mag > 0.001 && Math.abs(tangent) < mag * 0.3 && bias) {
+        const bt = (bias.x - e.x) * tx + (bias.y - e.y) * ty;
+        let s = e._slideDir || 0;
+        if (!s) s = e._slideDir = bt >= 0 ? 1 : -1;
+        else if (Math.abs(bt) > 60 && bt * s < 0) s = e._slideDir = -s;
+        e.x += tx * s * mag; e.y += ty * s * mag;
+      }
     } else if (d === 0) { e.y = o.y - e.r; }
   }
 }
@@ -2406,6 +2600,25 @@ function blockedByObstacle(w, x, y) {
     if (x > o.x - 6 && x < o.x + o.w + 6 && y > o.y - 6 && y < o.y + o.h + 6) return true;
   }
   return false;
+}
+/** 视线判定：两点间是否无障碍（线段 vs AABB，slab 法）。
+ *  用于索敌偏好与远程开火——障碍物挡弹道，没视线就不该开火（否则子弹打在障碍上 = 「对障碍物攻击」）。 */
+function losClear(w, x0, y0, x1, y1) {
+  for (const o of w.obstacles) {
+    let t0 = 0, t1 = 1;
+    const d = [x1 - x0, y1 - y0], p0 = [x0, y0];
+    const bmin = [o.x, o.y], bmax = [o.x + o.w, o.y + o.h];
+    let hit = true;
+    for (let i = 0; i < 2; i++) {
+      if (Math.abs(d[i]) < 1e-9) { if (p0[i] < bmin[i] || p0[i] > bmax[i]) { hit = false; break; } continue; }
+      let ta = (bmin[i] - p0[i]) / d[i], tb = (bmax[i] - p0[i]) / d[i];
+      if (ta > tb) { const t = ta; ta = tb; tb = t; }
+      t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
+      if (t0 > t1) { hit = false; break; }
+    }
+    if (hit) return false;
+  }
+  return true;
 }
 
 /* ============ 特效 ============ */
@@ -2451,9 +2664,10 @@ function updateCityWorld(dt) {
     const l = Math.hypot(dx, dy); dx /= l; dy /= l;
     if (dx !== 0) a.faceDir = dx > 0 ? 1 : -1;
     a.mvx = dx; a.mvy = dy;
+    a._mdx = dx * CFG.city.moveSpd * dt; a._mdy = dy * CFG.city.moveSpd * dt;   // 切向滑动用
     a.x = U.clamp(a.x + dx * CFG.city.moveSpd * dt, a.r, w.w - a.r);
     a.y = U.clamp(a.y + dy * CFG.city.moveSpd * dt, a.r, w.h - a.r);
-    resolveObstacles(a, w);
+    resolveObstacles(a, w, { x: a.x + dx * 100, y: a.y + dy * 100 });   // 偏置 = 行进方向前方
   } else { a.mvx = 0; a.mvy = 0; }
   // 传送门：进圈读条（圈内积累/离开衰退，与撤离读条同一契约）；完成 → 出征（选关）
   const inPortal = U.dist(a.x, a.y, w.portal.x, w.portal.y) < w.portal.radius * CFG.altarJudgeMul;
@@ -2750,13 +2964,45 @@ function render() {
       ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x + Math.cos(ang) * m.ak.chargeRange, m.y + Math.sin(ang) * m.ak.chargeRange); ctx.stroke();
       ctx.setLineDash([]);
     }
-    // Boss 爆炸预警圈
+    // Boss 爆炸预警圈（17.3 颜色语言：红 = 范围爆炸）
     if (m.d.type === "boss" && m.warnT > 0) {
       const t = m.warnT / m.ak.boomWarn;
       ctx.strokeStyle = `rgba(229,72,77,${0.4 + 0.4 * Math.sin(G.time * 14)})`;
       ctx.lineWidth = 4;
       ctx.beginPath(); ctx.arc(m.x, m.y, m.ak.boomRadius * (1 - t * 0.15), 0, Math.PI * 2); ctx.stroke();
       ctx.fillStyle = "rgba(229,72,77,0.08)"; ctx.fill();
+    }
+    // Boss 弹幕电报（17.3 颜色语言：白 = 弹幕预警）——充能圈/扇面，到点才真正发射
+    if (m.d.type === "boss" && m.patternWarnT > 0 && m.warnP) {
+      const P = m.warnP;
+      const dur = P.warnTime != null ? P.warnTime : CFG.boss.warnTime;
+      const k = dur > 0 ? 1 - m.patternWarnT / dur : 1;          // 0 → 1 的充能进度
+      const R = (P.warnRadius || CFG.boss.warnRadius) * (0.35 + 0.65 * k);
+      const white = CFG.boss.color.bullet;
+      ctx.save();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = white;
+      ctx.fillStyle = "rgba(255,255,255,0.07)";
+      ctx.globalAlpha = 0.55 + 0.45 * Math.abs(Math.sin(G.time * 10));
+      ctx.beginPath();
+      if (P.pattern === "fan" || P.pattern === "wave") {          // 扇形/波幕：画扇面（含瞄准方向）
+        const half = (P.arc != null ? P.arc / 2 : 0.3) + (P.pattern === "wave" ? 0.14 : 0);
+        ctx.moveTo(m.x, m.y);
+        ctx.arc(m.x, m.y, R, m.aimAng - half, m.aimAng + half);
+        ctx.closePath();
+      } else {                                                    // 放射/同心环/网格：画满圈
+        ctx.arc(m.x, m.y, R, 0, Math.PI * 2);
+      }
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+    // Boss 阶段转换无敌护盾（转换窗口内的可见反馈，避免"打了没反应"的困惑）
+    if (m.d.type === "boss" && m.phaseInvulnT > 0) {
+      const a = 0.3 + 0.3 * Math.abs(Math.sin(G.time * 12));
+      ctx.strokeStyle = `rgba(255,255,255,${a})`;
+      ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(m.x, m.y, m.r + 12, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = `rgba(255,255,255,${a * 0.3})`; ctx.fill();
     }
   }
   // 弹道
@@ -2769,8 +3015,14 @@ function render() {
     if (b.isSkill) { ctx.strokeStyle = "#6cb2ff66"; ctx.beginPath(); ctx.arc(b.x, b.y, b.aoe * 0.4, 0, Math.PI * 2); ctx.stroke(); }
   }
   for (const b of w.enemyBullets) {
-    ctx.fillStyle = "#c79bff";
-    ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); ctx.fill();
+    if (b.boss) {          // Boss 弹幕：更亮更大（"读得清才躲得开"），与小怪弹一眼可分
+      ctx.fillStyle = "#e6f4ff";
+      ctx.beginPath(); ctx.arc(b.x, b.y, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "rgba(160,220,255,.75)"; ctx.lineWidth = 1.5; ctx.stroke();
+    } else {
+      ctx.fillStyle = "#c79bff";
+      ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); ctx.fill();
+    }
   }
   // 玩家
   const p = G.player;
@@ -2819,9 +3071,10 @@ function render() {
       ctx.fillRect(c.x - 20, c.y - 34, 40 * Math.max(0, Math.min(1, (c.energy || 0) / (c.energyMax || 1))), 3);
     }
   }
-  // 陷阱（大地雷）：触发圈虚线 = 触发范围（与伤害范围同源）；引信期闪烁
+  // 陷阱（大地雷）：触发圈虚线 = 触发范围（与伤害范围同源）；引信期闪烁。只画本世界的
   if (G.run && G.run.traps) {
     for (const t of G.run.traps) {
+      if (t.world && t.world !== G.activeWorld) continue;
       ctx.setLineDash([5, 5]);
       ctx.strokeStyle = t.armed ? "rgba(255,91,91," + (0.5 + 0.4 * Math.sin(G.time * 18)) + ")" : "#e5a04b66";
       ctx.lineWidth = 2;
@@ -2834,10 +3087,10 @@ function render() {
       ctx.beginPath(); ctx.arc(t.x, t.y - 3, 2.5, 0, Math.PI * 2); ctx.fill();
     }
   }
-  // 召唤物（无人机）：青色机体 + 头顶血条
+  // 召唤物（无人机）：青色机体 + 头顶血条。只画本世界的
   if (G.run && G.run.drones) {
     for (const d of G.run.drones) {
-      if (d.hp <= 0) continue;
+      if (d.hp <= 0 || (d.world && d.world !== G.activeWorld)) continue;
       ctx.save();
       ctx.translate(d.x, d.y);
       ctx.rotate(G.time * 6);   // 旋翼旋转感

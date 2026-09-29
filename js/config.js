@@ -70,9 +70,13 @@ CFG.eliteSpawn = {
   interval: 14,             // 补投检查间隔（秒）
 };
 
-/* ---------- 摄像机（跟随玩家，边缘钳制在地图内） ---------- */
+/* ---------- 摄像机（跟随玩家，边缘钳制在地图内） ----------
+ * 跨端口径：**垂直视野固定 viewH 世界单位**（画布高 = viewH × zoom）——
+ * 角色在屏幕上的大小只由 zoom 决定，PC / 手机一致；画布**宽度**跟随屏幕比例伸缩（宽屏看更多、竖屏看更窄）。 */
 CFG.camera = {
   zoom: 1.5,                // 变焦倍数：>1 拉近（可视世界宽 = 画布宽 / zoom）
+  viewH: 720,               // 垂直视野（世界单位，固定）：跨端角色大小一致的锚
+  minAspect: 0.75,          // 最小宽高比：比 4:3 更窄的竖屏按 4:3 钳制画布宽（避免视野过窄），多余部分左右留边
   smooth: 8,                // 相机平滑跟随系数（越大越跟手）
 };
 
@@ -162,7 +166,8 @@ CFG.city = {
     { id: "NPC_SMITH",   name: "武器匠",   icon: "⚔", color: "#ffd76a", fx: 0.38, fy: 0.24, func: "weapon",   desc: "武器 / 技能等级" },
     { id: "NPC_MIRROR",  name: "形象师",   icon: "☺", color: "#7de08a", fx: 0.62, fy: 0.24, func: "profile",  desc: "头像 · 更名 · 称号 · 皮肤" },
     { id: "NPC_CODEX",   name: "图鉴学者", icon: "❖", color: "#6cb2ff", fx: 0.80, fy: 0.32, func: "codex",    desc: "英雄 / 怪物图鉴" },
-    { id: "NPC_SHOP",    name: "神秘商人", icon: "◈", color: "#e5a04b", fx: 0.50, fy: 0.14, func: "shop",     desc: "敬请期待" },
+    { id: "NPC_SHOP",    name: "神秘商人", icon: "◈", color: "#e5a04b", fx: 0.14, fy: 0.62, func: "shop",     desc: "敬请期待" },
+    // ⚠️ 商人原在 (0.50, 0.14) 顶部中央——与出征传送门 (w/2, 90) 判定圈完全重叠（中心仅差 44px），已移到西翼空位
   ],
 };
 
@@ -224,11 +229,32 @@ CFG.monsters = {
   ED0003: { name: "裂颅追猎者", type: "melee", sprite: "enemy00", skillList: ["AT206"],
     hp: 130, atk: 18, def: 3, spd: 135, radius: 28, exp: 34, coin: 24 },
 
-  BS0001: { name: "触手邪神", type: "boss", sprite: "enemy22", skillList: ["AT207"],
+  /* ---------- BOSS（第十七章：弹幕化 + 阶段化）----------
+   * skillList[0] 仍是**基础行为技能**（圆形 AOE + 召唤小怪，AT207~209）；
+   * skillList[1..] 是**弹幕招式**，由 phases 编成阶段招式池（见 17.4 / 17.6）：
+   *   phases[].hp    = 该阶段开始的**血量比例**（1.0 = 满血即进入，0.5 = 半血进入下一阶段）
+   *   phases[].skills = 该阶段轮转发射的弹幕技能 ID（技能表 AT21x）
+   * 阶段推进 = **加机制**（换招式池），不是单纯加血加攻；转换时 Boss 无敌停手 CFG.boss.phaseInvuln 秒。 */
+  BS0001: { name: "触手邪神", type: "boss", sprite: "enemy22",
+    skillList: ["AT207", "AT211", "AT212", "AT217", "AT220"],
+    phases: [
+      { hp: 1.0, skills: ["AT211", "AT212"] },        // 放射炮台：触手放射 / 触手追瞄
+      { hp: 0.5, skills: ["AT217", "AT220"] },        // 变奏：邪神花形 / 触手狂潮
+    ], patternCd: 3.2,
     hp: 600, atk: 15, def: 3, spd: 72, radius: 46, exp: 60, coin: 80 },
-  BS0002: { name: "腐化树母", type: "boss", sprite: "enemy22", skillList: ["AT208"],
+  BS0002: { name: "腐化树母", type: "boss", sprite: "enemy22",
+    skillList: ["AT208", "AT213", "AT214", "AT219"],
+    phases: [
+      { hp: 1.0, skills: ["AT213", "AT214"] },        // 扇形压制：藤蔓扇射 / 根系翻涌
+      { hp: 0.5, skills: ["AT219", "AT213"] },        // 变奏：藤蔓绞杀（双螺旋）
+    ], patternCd: 3.4,
     hp: 950, atk: 18, def: 4, spd: 64, radius: 54, exp: 90, coin: 130 },
-  BS0003: { name: "深渊吞噬者", type: "boss", sprite: "enemy22", skillList: ["AT209"],
+  BS0003: { name: "深渊吞噬者", type: "boss", sprite: "enemy22",
+    skillList: ["AT209", "AT215", "AT218", "AT216"],
+    phases: [
+      { hp: 1.0, skills: ["AT215", "AT218"] },        // 冲锋践踏：落地冲击环 / 深渊波幕
+      { hp: 0.5, skills: ["AT216", "AT218"] },        // 变奏：深渊漩涡（三臂螺旋）
+    ], patternCd: 3.0,
     hp: 1400, atk: 22, def: 5, spd: 80, radius: 60, exp: 130, coin: 200 },
 };
 
@@ -242,6 +268,22 @@ CFG.monsters = {
 CFG.unitLimit = {
   summonMax: 2,     // 召唤物上限缺省值（英雄行未填时取此值）
   trapMax: 1,       // 陷阱数量上限缺省值
+};
+
+/* ---------- Boss 弹幕护栏（第十七章 17.3「先定死再填表」） ----------
+ * 弹幕发射前统一查预算：① 每只 Boss 的**每秒发射量**（滑动窗口）；② **同屏存量**上限。
+ * 超出时按剩余额度**裁剪本次发射**（降密度），而不是让整招落空——保证"看得懂但打不死人"。
+ * 颜色语言（17.3）：红=范围爆炸 ｜ 橙=冲锋/践踏 ｜ 青=激光 ｜ 紫=召唤 ｜ 白=弹幕电报。 */
+CFG.boss = {
+  bulletBudget: 40,      // 每只 Boss 每秒发射上限（弹道性能红线 100/秒，Boss 占 40）
+  bulletWindow: 1.0,     // 预算滑动窗口长度（秒）
+  bulletCap: 260,        // Boss 弹幕同屏存量上限（超出时新招式降密度）
+  bulletLife: 6.0,       // 弹幕存活上限（秒）：慢弹幕需要足够滞空时间（1920 地图 ≈ 6 秒穿场）
+  patternCd: 3.2,        // 招式间隔缺省值（技能条目 cd 未填时取此值）
+  warnTime: 0.8,         // 电报时长缺省值（0 = 无电报，用于螺旋这类持续型）
+  warnRadius: 150,       // 电报圈/扇面尺寸缺省值
+  phaseInvuln: 1.2,      // 阶段转换：Boss **无敌 + 停手**时长（不清屏，见 17.3）
+  color: { boom: "#e5484d", charge: "#ff9f43", laser: "#4dd6e5", summon: "#c79bff", bullet: "#ffffff" },
 };
 
 /* ---------- 英雄配置表（8.5 表 1，首发 6 角） ---------- */
@@ -404,6 +446,53 @@ CFG.skills = {
   AT209: { name: "深渊范围爆炸", cat: "active", ai: "boss", tags: ["伤害","范围"],
     cd: 3.6, warnTime: 1.4, radius: 290, dmgMul: 2.6, touchMul: 0.6, touchCd: 1.0,
     minionId: "NM0010", minionWave: 3, minionCd: 6.0 },
+
+  /* ===== 表 4e-2：Boss 弹幕招式（第十七章 17.4 六种原型库） =====
+   * 与 AT207~209（基础行为：圆形 AOE + 召唤）不同，本组条目走**弹幕发射器**，
+   * 由 `PatternSystem` 展开成弹道（见 js/game.js）。**通用字段沿用技能表口径**：
+   *   cd        = 招式间隔（秒）；0.3 左右 = 持续型（螺旋），3~4.5 = 单发大招
+   *   warnTime  = 电报时长（秒）；**0 = 无电报**（持续型招式不逐发提示，避免糊屏）
+   *   warnRadius= 电报圈 / 扇面尺寸（px，纯视觉提示，不参与伤害判定）
+   *   dmgMul    = 单发伤害倍率（× 怪物 atk）；Boss 弹幕走**低伤害高密度**，压力来自"躲"不是"扛"
+   *   bulletSpd = 弹速（px/s）。**刻意压低（150~300）**：Boss 弹幕是"读得懂的墙"，不是"看不清的雨"
+   *   life      = 滞空上限（秒），缺省取 CFG.boss.bulletLife
+   * **发射器专属字段**：
+   *   pattern  = radial 放射 ｜ spiral 螺旋 ｜ fan 扇形 ｜ wave 波幕 ｜ ring 同心环 ｜ grid 网格/花形
+   *   count    = 每层/每臂弹数 ｜ arc = 扇形张角（弧度）｜ arms = 螺旋臂数 ｜ spin = 每次发射的旋转量（弧度）
+   *   layers   = 层数（ring / grid）｜ gap = 层间距（px，grid）｜ lateral = 法向间距（px，wave）
+   *   layerMul = 层间速度倍率增量（ring：第 k 层速度 ×(1+k×layerMul)）
+   *   offset   = 起始角（弧度，radial / ring / grid 的整体旋转）
+   * ⚠️ 数值必须服从 CFG.boss 护栏：单只 Boss 每秒发射量 ≤ bulletBudget，同屏 ≤ bulletCap。 */
+  AT211: { name: "触手放射", cat: "active", ai: "boss", tags: ["伤害"],
+    pattern: "radial", count: 10, offset: 0, bulletSpd: 190, dmgMul: 0.7,
+    cd: 3.2, warnTime: 0.9, warnRadius: 170, life: 6.5 },
+  AT212: { name: "触手追瞄", cat: "active", ai: "boss", tags: ["伤害"],
+    pattern: "fan", count: 3, arc: 0.16, bulletSpd: 300, dmgMul: 0.5,
+    cd: 1.7, warnTime: 0.35, warnRadius: 220, life: 6.0 },
+  AT213: { name: "藤蔓扇射", cat: "active", ai: "boss", tags: ["伤害"],
+    pattern: "fan", count: 7, arc: 1.15, bulletSpd: 210, dmgMul: 0.65,
+    cd: 3.4, warnTime: 0.85, warnRadius: 240, life: 6.0 },
+  AT214: { name: "根系翻涌", cat: "active", ai: "boss", tags: ["伤害"],
+    pattern: "ring", count: 7, layers: 2, layerMul: 0.18, offset: 0, bulletSpd: 175, dmgMul: 0.6,
+    cd: 4.0, warnTime: 1.0, warnRadius: 190, life: 6.5 },
+  AT215: { name: "落地冲击环", cat: "active", ai: "boss", tags: ["伤害"],
+    pattern: "radial", count: 14, offset: 0, bulletSpd: 150, dmgMul: 0.75,
+    cd: 4.2, warnTime: 1.1, warnRadius: 210, life: 7.0 },
+  AT216: { name: "深渊漩涡", cat: "active", ai: "boss", tags: ["伤害"],
+    pattern: "spiral", arms: 3, spin: 0.42, bulletSpd: 170, dmgMul: 0.45,
+    cd: 0.30, warnTime: 0, warnRadius: 0, life: 5.0 },
+  AT217: { name: "邪神花形", cat: "active", ai: "boss", tags: ["伤害"],
+    pattern: "grid", count: 7, layers: 3, gap: 95, offset: 0, bulletSpd: 165, dmgMul: 0.55,
+    cd: 4.5, warnTime: 1.0, warnRadius: 300, life: 7.0 },
+  AT218: { name: "深渊波幕", cat: "active", ai: "boss", tags: ["伤害"],
+    pattern: "wave", count: 9, lateral: 26, bulletSpd: 200, dmgMul: 0.6,
+    cd: 2.6, warnTime: 0.7, warnRadius: 260, life: 6.0 },
+  AT219: { name: "藤蔓绞杀", cat: "active", ai: "boss", tags: ["伤害"],
+    pattern: "spiral", arms: 2, spin: -0.5, bulletSpd: 185, dmgMul: 0.5,
+    cd: 0.34, warnTime: 0, warnRadius: 0, life: 5.5 },
+  AT220: { name: "触手狂潮", cat: "active", ai: "boss", tags: ["伤害"],
+    pattern: "ring", count: 9, layers: 3, layerMul: 0.14, offset: 0, bulletSpd: 160, dmgMul: 0.6,
+    cd: 4.0, warnTime: 1.0, warnRadius: 230, life: 7.0 },
 
   /* ===== 表 4c 视图：增益状态技能（Buff）——战争雕像增益池也走此表 =====
    * stat/mul 对应 13.7 属性修改器；pool 用于筛选具体增益池（如 "war" = 战争雕像）。

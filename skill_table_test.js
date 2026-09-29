@@ -150,7 +150,10 @@ const driver = `
     check("每条技能都有合法 cat（无缺失/无非法值）: " + (badCat.length ? badCat.join(",") : "全部合法"),
       badCat.length === 0);
     const byCat = (c) => ids.filter((id) => CFG.skills[id].cat === c);
-    check("cat=active（表 4a + 4e 视图）共 " + byCat("active").length + " 条", byCat("active").length === 25);
+    // 25 条玩家主动（表 4a）+ 10 条 Boss 弹幕招式（表 4e-2，AT211~AT220，第十七章）
+    const bossPatterns = ids.filter((id) => CFG.skills[id].pattern);
+    check("cat=active（表 4a + 4e 视图）共 " + byCat("active").length + " 条", byCat("active").length === 35);
+    check("其中 Boss 弹幕招式（带 pattern 字段）共 " + bossPatterns.length + " 条", bossPatterns.length === 10);
     check("cat=buff（表 4c 视图）4 条", byCat("buff").length === 4);
     check("cat=debuff（表 4d 视图）3 条", byCat("debuff").length === 3);
     check("cat=passive（表 4b 视图）结构就绪（当前 0 条，不预置死数据）", byCat("passive").length === 0);
