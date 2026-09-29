@@ -5,6 +5,8 @@
 > 本机技能目录 `~/.workbuddy/skills/` 与 `.workbuddy/`（记忆）**都不在仓库里**，
 > 换设备不会同步 —— 所以关键知识一律沉淀到本文件与 `G_docs/` 内。
 
+**线上试玩（手机浏览器直接打开）：** https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
+
 ---
 
 ## 0. 手机端远程开发（电脑关机场景）
@@ -61,16 +63,19 @@ node boss_test.js; echo "exit=$?"
    `github.dev`）进入网页 VS Code，登录即有写权限，改完直接 Commit。
    适合小改动、改设计文档。
 
-### 0.5 手机端试玩（GitHub Pages）
-
-仓库若已开启 Pages，手机浏览器直接打开：
+### 0.5 手机端试玩（GitHub Pages，**已开启**）
 
 ```
 https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
 ```
 
-纯静态（`index.html` + `js/` + `css/` + `assets/`，无构建步骤），推送到 `main` 后自动重新部署。
-**这是验证「移动端表现」的唯一实用手段**（本机 `agent-browser` 起不来，见第 7 节）。
+- **已开启并验证**（源 = `main` 分支根目录 `/`，`https_enforced`）。推到 `main` 后自动重新部署，
+  首次生效约 1~2 分钟。
+- 纯静态（`index.html` + `js/` + `css/` + `assets/`，无构建步骤），
+  **代码里无绝对路径引用（无 `src="/…"`）**，所以部署在仓库名子路径下也正常 ——
+  **新增资源必须继续用相对路径**，否则线上会 404。
+- **这是验证「移动端表现」的唯一实用手段**（本机 `agent-browser` 起不来，见第 7 节）。
+- 用 `gh api repos/sg229552371/9-28-WorkBuddy-Game-CCG/pages` 可查状态。
 
 ### 0.6 手机端开发的三条纪律
 
