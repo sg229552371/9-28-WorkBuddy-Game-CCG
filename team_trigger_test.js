@@ -57,6 +57,7 @@ const driverSrc = `
   UI.selectedLevel = CFG.levels[0];
   // 3 人队伍
   Game.startRun([CFG.heroes[0], CFG.heroes[1], CFG.heroes[2]]);
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
   const w = G.activeWorld, r = G.run, p = G.player;
 
   let ok = true;

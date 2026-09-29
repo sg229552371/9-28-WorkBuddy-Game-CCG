@@ -69,6 +69,7 @@ vm.runInContext(`
   Game.bindInput();
   UI.selectedLevel = CFG.levels[0];
   Game.startRun([CFG.heroes[0]]);
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
 
   check("CFG.mobile 配置表就绪（joystick 参数齐备）", !!CFG.mobile && !!CFG.mobile.joystick
     && CFG.mobile.joystick.deadZone > 0 && CFG.mobile.joystick.deadZone < 1);

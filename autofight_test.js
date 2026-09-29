@@ -63,6 +63,7 @@ vm.runInContext(`
   Game.bindInput(); Game.bindEvents();
   UI.selectedLevel = CFG.levels[0];
   Game.startRun([CFG.heroes[0]]);
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
 
   // ---- 默认状态 ----
   check("开局 run.autoFight = false（默认关闭）", G.run.autoFight === false);

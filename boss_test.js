@@ -62,6 +62,7 @@ const driver = `
   Game.bindInput(); Game.bindEvents();
   UI.selectedLevel = CFG.levels[0];
   Game.startRun([CFG.heroes[0]]);            // 造一个 run（aliveHeroes / G.levelCfg 依赖它）
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
   let t = 0;
   const step = (n) => { for (let i = 0; i < n; i++) { t += 16.7; global.__raf(t); } };
 
@@ -350,6 +351,7 @@ const driver = `
   /* ============ 七、渲染：电报与无敌护盾确实被画出来 ============ */
   {
     Game.startRun([CFG.heroes[0]]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     Game.loop(t);                                     // 手动踢一次主循环（内部续接 __raf）
     const w = G.mainWorld;
     w.monsters.length = 0;

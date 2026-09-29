@@ -69,6 +69,7 @@ vm.runInContext(`
   Game.bindInput(); Game.bindEvents();
   UI.selectedLevel = CFG.levels[0];
   Game.startRun(CFG.heroes[0]);
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
   Game.loop(0);
   let T = 0;
   function step(n) { for (let i = 0; i < n; i++) { T += 16.7; global.__raf(T); } }

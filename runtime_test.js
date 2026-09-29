@@ -57,6 +57,7 @@ vm.runInContext(`
   Game.bindInput(); Game.bindEvents();
   UI.selectedLevel = CFG.levels[0];
   Game.startRun(CFG.heroes[0]);
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
   G.run.hp = 100000;   // 测试注入高血量（AI 直行撞怪群，聚焦验证流程）
   console.log("进入关卡:", G.levelCfg.name, "状态:", G.state);
 
@@ -161,6 +162,7 @@ vm.runInContext(`
   Game.backToMenu();
   UI.selectedLevel = CFG.levels[0];
   Game.startRun(CFG.heroes[0]);
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
   frames(30);
   // 塞点战利品
   const it = makeChestItem("epic"); const sp = G.run.backpack.findSpot(it);
@@ -195,6 +197,7 @@ vm.runInContext(`
   Meta.data.unlockedLevels = 3;                       // 测试解锁
   UI.selectedLevel = CFG.levels[1];
   Game.startRun(CFG.heroes[1]);                       // 散弹手 W002
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
   G.run.hp = 100000;                                  // 测试无敌注入，聚焦流程验证
   frames(10);
   if (G.mainWorld.w !== 1920 || G.mainWorld.h !== 1920) throw new Error("地图应为固定 1920×1920: " + G.mainWorld.w + "x" + G.mainWorld.h);
@@ -231,6 +234,7 @@ vm.runInContext(`
   Game.backToMenu();
   UI.selectedLevel = CFG.levels[0];
   Game.startRun(CFG.heroes[0]);
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
   G.run.hp = 100000;
   frames(10);
   const mainMonsters = G.mainWorld.monsters.length;

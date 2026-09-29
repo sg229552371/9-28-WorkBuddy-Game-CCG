@@ -98,6 +98,13 @@ const Game = {
     if (hud) hud.classList.remove("city-mode");
     UI.toast(`进入 ${G.levelCfg.name} · 局外 LV${G.heroDef.outLevel} · WASD 移动 · Space 技能 · B 背包`, "gold");
   },
+  /* 跳过当前世界的开场冻结（仅测试/调试用）。
+   * 主关卡与裂缝进场都有 3 秒冻结（CFG.levelFreeze / CFG.rift.freezeTime），
+   * 会吃掉「startRun 后立刻 step(N)」这类测试的前 N 帧进度 —— 相关测试在 startRun 后调用本函数即可复位。 */
+  skipIntroFreeze() {
+    if (G.mainWorld) G.mainWorld.freezeTimer = 0;
+    if (G.activeWorld) G.activeWorld.freezeTimer = 0;
+  },
   /* 清理局内状态（返回任一界面层前的统一收尾，不动 settings/config） */
   _clearRunState() {
     G.state = "menu"; G.run = null; G.player = null; G.team = null;

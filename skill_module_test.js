@@ -75,6 +75,7 @@ const driver = `
   // 2. 阶段词缀仅技能向：tagCalc(tag, true) 计入、tagCalc(tag) 不计入
   {
     Game.startRun([CFG.heroes[0]]);        // W001 速射炮
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r = G.run;
     const mCd = makeModule("M002", 0);     // 冷却线圈 -8%
     mCd.lv = 7;                            // 阶段3 → 解锁 伤害+6% 与 冷却-5% 两条阶段词缀
@@ -94,6 +95,7 @@ const driver = `
   /* ============ 二、召唤物：AT113 无人机 ============ */
   {
     Game.startRun([CFG.heroes[6]]);        // H007 召唤师 W007/AT113
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r = G.run, w = G.activeWorld, p = G.player;
     check("召唤师技能类型 summon", r.weapon.skill.type === "summon");
     r.energy = r.energyMax;
@@ -127,6 +129,7 @@ const driver = `
   /* ============ 三、陷阱：AT114 大地雷 ============ */
   {
     Game.startRun([CFG.heroes[7]]);        // H008 陷阱师 W008/AT114
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r = G.run, w = G.activeWorld, p = G.player;
     check("陷阱师技能类型 trap", r.weapon.skill.type === "trap");
     r.energy = r.energyMax;

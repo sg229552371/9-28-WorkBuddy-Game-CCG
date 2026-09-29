@@ -1775,7 +1775,7 @@ function onMonsterKilled(w, m) {
   // 精英怪（独立 ED 或词缀转化）：必掉宝箱（按权重自动入包）+ 额外经验
   if (m.isElite) {
     const item = makeChestItem(U.weightedPick(CFG.elites.dropChest));
-    if (r.backpack.tryStackChest(item) || (() => { const s = r.backpack.findSpot(item); return s ? (r.backpack.place(item, s.x, s.y), true) : false; })()) {
+    if (grantItemToRun(r, item, { full: "discard" })) {
       UI.toast(`★ 精英「${(m.eliteAffixes || []).join("·")}」掉落 ${item.name}`, "gold");
     } else UI.toast("背包已满，精英宝箱作废", "bad");
     for (let i = 0; i < CFG.elites.extraExp; i++) spawnPickup(w, m.x, m.y, "exp", Math.max(2, Math.round(m.d.exp)));
@@ -1987,9 +1987,14 @@ function refreshCards() {
  * 背包放不下 → 物品放入 r.pendingItems（工匠待分配区，与开箱/商店同机制）。
  * 仅工匠世界内可用（G.inArtisan），否则拒绝。 */
 const QUAL_KEY_INDEX = { normal: 0, advanced: 1, epic: 2, divine: 3 };   // 品质名 → itemQualities 下标
-/* 物品入包：复用既有入包路径（保险先叠加未满堆叠；宝箱按品质叠加；否则找空位；再不行进待分配区）。
- * 返回 true = 已入背包；false = 已放入待分配区。 */
-function grantItemToRun(r, item) {
+/* 物品入包（唯一入口）：保险先叠加未满堆叠 → 宝箱按品质叠加 → 找空位放置。
+ * 两种「放不下」语义由 opts.full 决定（默认 pending）：
+ *   - "pending"（默认）：放入 r.pendingItems（工匠待分配区，与开箱/商店同机制）——用于工匠世界与宝箱开箱；
+ *   - "discard"：直接丢弃不保留（主地图精英掉落 / 战争雕像宝箱：一张地图无待分配区，满即作废）。
+ * 返回 true = 已入背包；false = 未入背包（pending 时已进待分配区 / discard 时已丢弃）。
+ * 六处入包调用统一走此函数，勿再内联手抄（详见 G_docs/dev_guide.md 第 5 节）。 */
+function grantItemToRun(r, item, opts) {
+  const mode = (opts && opts.full) || "pending";
   if (item.kind === "insurance") {
     const exist = r.backpack.items.find(x => x.kind === "insurance" && x.count < CFG.insurance.maxStack);
     if (exist) { exist.count++; exist.value = CFG.insurance.value * exist.count; return true; }
@@ -1997,7 +2002,7 @@ function grantItemToRun(r, item) {
   if (r.backpack.tryStackChest(item)) return true;
   const s = r.backpack.findSpot(item);
   if (s) { r.backpack.place(item, s.x, s.y); return true; }
-  r.pendingItems.push(item);
+  if (mode === "pending") r.pendingItems.push(item);
   return false;
 }
 function shopBuyModule() {
@@ -2135,6 +2140,9 @@ class World {
     }
     // 初始一波怪
     for (const c of this.circles) this.spawnWave(c);
+    // 开场冻结（仅主关卡，规则同裂缝 5.1）：全员静止 + 全员无敌，红字 3/2/1 倒计时
+    // 首波怪已投放完毕，冻结期间 World.update 提前 return → 怪物/子弹/祭坛/拾取全部暂停，不会被打
+    this.freezeTimer = CFG.levelFreeze.freezeTime;
   }
   setupArtisan() {
     // 工匠世界：无敌人安全区；NPC + 固定返回出口
@@ -2331,8 +2339,9 @@ class World {
   }
   update(dt) {
     const r = G.run;
-    // 子地图开场冻结（5.1）：全员静止 + 全员无敌 —— 只推进倒计时，其余战斗逻辑（怪物/子弹/祭坛/
-    // 拾取/任务限时/伤害结算）全部暂停；玩家与同伴的更新由 main.js 主循环同步跳过
+    // 开场冻结（主关卡 CFG.levelFreeze / 裂缝 CFG.rift.freezeTime，5.1）：全员静止 + 全员无敌
+    // —— 只推进倒计时，其余战斗逻辑（怪物/子弹/祭坛/拾取/任务限时/伤害结算）全部暂停；
+    // 玩家与同伴的更新由 main.js 主循环同步跳过
     if (this.freezeTimer > 0) {
       this.freezeTimer = Math.max(0, this.freezeTimer - dt);
       if (this.freezeTimer === 0) {
@@ -2530,7 +2539,7 @@ class World {
       case "giveChest": {
         const q = U.weightedPick(ef.weights);
         const item = makeChestItem(q);
-        if (r.backpack.tryStackChest(item) || (() => { const s = r.backpack.findSpot(item); return s ? (r.backpack.place(item, s.x, s.y), true) : false; })()) {
+        if (grantItemToRun(r, item, { full: "discard" })) {
           UI.toast(`获得 ${item.name}`, "gold");
         } else UI.toast("背包已满，宝箱作废", "bad");
         break;

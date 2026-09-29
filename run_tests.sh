@@ -13,7 +13,7 @@ set -u
 
 TESTS="smoke_test runtime_test backpack_test econ_test skill_module_test \
 team_trigger_test artisan_test ui_flow_test rift_test extract_test shop_test \
-skill_table_test autofight_test mobile_test boss_test bugfix_test"
+skill_table_test autofight_test mobile_test boss_test bugfix_test grant_test freeze_test"
 
 # --- 选 node：优先 PATH 里的 node，其次本机 WorkBuddy 托管运行时 ---
 NODE="${NODE:-}"

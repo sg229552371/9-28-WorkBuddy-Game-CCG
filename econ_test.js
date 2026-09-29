@@ -59,6 +59,7 @@ const driver = `
 
   /* ============ 一、局内→局外资源转化（待细化5） ============ */
   Game.startRun([CFG.heroes[0]]);
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
   {
     const r = G.run;
     const R = CFG.settleConvert.valueRate;          // 统一折算率（0.5：2 价值 = 1 结晶）
@@ -121,6 +122,7 @@ const driver = `
   /* ============ 三、模组连接 + 套装（16.7） ============ */
   {
     Game.startRun([CFG.heroes[0]]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r = G.run;
     const a = makeModule("M001", 2);   // 弹头扩容 1×1
     const b = makeModule("M005", 2);   // 穿甲弹头 2×1（同品质相邻 → 连接1对 + 套装2件）
@@ -146,6 +148,7 @@ const driver = `
   /* ============ 四、卡牌刷新（待细化37 定稿：每局免费 2 次 + 之后扣金币） ============ */
   {
     Game.startRun([CFG.heroes[0]]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r = G.run;
     G.inArtisan = true;
     r.cardCandidates = null;
@@ -173,6 +176,7 @@ const driver = `
   /* ============ 五、裂缝任务变体（待细化20） ============ */
   {
     Game.startRun([CFG.heroes[0]]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r = G.run;
     const rw = new World(CFG.rift.worldSize, CFG.rift.worldSize, false, "rift");
     G.riftWorld = rw; G.activeWorld = rw; G.inRift = true;

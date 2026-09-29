@@ -120,49 +120,16 @@ const UI = {
     if (metaLine) metaLine.innerHTML = `◆ 进化结晶 <b>${Meta.data.crystals}</b><small>　撤离/击杀获得 · 死亡仅保留 ${CFG.outLevel.deathRatio * 100}% · 升级请前往主城「强化导师」</small>`;
   },
 
-  /* ---------- 局外成长界面（主菜单入口：消耗进化结晶升级局外等级 / 武器·技能等级） ---------- */
-  renderMeta() {
-    const crystalsEl = document.getElementById("meta-crystals");
-    if (crystalsEl) crystalsEl.innerHTML = `◆ 进化结晶 <b>${Meta.data.crystals}</b>`;
-    const box = document.getElementById("meta-char-list");
-    if (!box) return;
-    box.innerHTML = "";
-    for (const h of CFG.heroes) {
-      const lv = Meta.heroLevel(h.id);
-      const lvMax = lv >= CFG.outLevel.maxLevel;
-      const lvCost = Meta.levelUpCost(h.id);
-      const canLv = !lvMax && Meta.data.crystals >= lvCost;
-      const wlv = Meta.weaponLv(h.id);
-      const wMax = wlv >= CFG.weaponLevel.maxLv;
-      const wCost = Meta.weaponUpCost(h.id);
-      const canW = !wMax && Meta.data.crystals >= wCost;
-      const card = document.createElement("div");
-      card.className = "meta-card";
-      card.innerHTML = `
-        <div class="meta-info"><b>${h.name}</b>
-          <p class="meta-desc">${h.desc}</p></div>
-        <div class="meta-lv">
-          <span>局外等级 <b class="lvnum">LV ${lv}</b> / ${CFG.outLevel.maxLevel}${lvMax ? " · 已满级" : ""}</span>
-          <button class="btn small up-lv" ${canLv ? "" : "disabled"}>${lvMax ? "已满级" : `升级 ◆${lvCost}`}</button>
-        </div>
-        <div class="meta-lv">
-          <span>武器 / 技能等级 <b class="lvnum">LV ${wlv}</b> / ${CFG.weaponLevel.maxLv}${wMax ? " · 已满级" : ""}</span>
-          <button class="btn small up-wp" ${canW ? "" : "disabled"}>${wMax ? "已满级" : `升级 ◆${wCost}`}</button>
-        </div>`;
-      const lvBtn = card.querySelector(".up-lv");
-      if (lvBtn) lvBtn.onclick = () => this.metaUpgradeLevel(h.id);
-      const wpBtn = card.querySelector(".up-wp");
-      if (wpBtn) wpBtn.onclick = () => this.metaUpgradeWeapon(h.id);
-      box.appendChild(card);
-    }
-  },
+  /* 局外成长界面已收敛到主城 NPC 面板（#screen-meta 已移除）：
+   * 局外等级 → renderTrainer()（强化导师）/ 武器·技能等级 → renderSmith()（武器匠）。
+   * 原 renderMeta() 为重构遗留死函数（其 DOM #meta-char-list / #meta-crystals 已不存在），已删除。 */
+
   // 局外等级升级：复用 Meta.levelUp（内部校验上限与结晶）
   metaUpgradeLevel(id) {
     const h = CFG.heroes.find(x => x.id === id) || { name: id };
     if (Meta.heroLevel(id) >= CFG.outLevel.maxLevel) { this.toast("已达局外等级上限", "bad"); return; }
     if (!Meta.levelUp(id)) { this.toast("结晶不足", "bad"); return; }
     this.toast(`${h.name} 局外等级提升至 LV${Meta.heroLevel(id)}！`, "gold");
-    this.renderMeta();
   },
   // 武器 / 技能等级升级：复用 Meta.weaponUp（武器等级 = 技能等级），此处以进化结晶支付
   metaUpgradeWeapon(id) {
@@ -174,7 +141,6 @@ const UI = {
     Meta.data.crystals -= cost;
     Meta.weaponUp(id);   // 内部已 commit（存档写入）
     this.toast(`⚔ ${h.name} 武器 / 技能提升至 LV${Meta.weaponLv(id)}！`, "gold");
-    this.renderMeta();
   },
   /* 技能摘要：按 skillEntry(统一等级曲线) 展示该等级的实际效果（弹道 / 召唤物 / 陷阱三类） */
   _skillSummary(skId, skLv) {
@@ -812,14 +778,8 @@ const UI = {
     let item;
     if (Math.random() < CFG.insurance.chance) {
       item = makeInsurance();
-      // 直接叠加入包（满则进待分配区）
-      const exist = r.backpack.items.find(it => it.kind === "insurance" && it.count < CFG.insurance.maxStack);
-      if (exist) { exist.count++; exist.value = CFG.insurance.value * exist.count; }
-      else if (!r.backpack.tryStackChest(item)) {
-        const s = r.backpack.findSpot(item);
-        if (s) r.backpack.place(item, s.x, s.y);
-        else r.pendingItems.push(item);
-      }
+      // 入包（保险先叠加未满堆叠；放不下进待分配区）
+      grantItemToRun(r, item);
       SFX.play("chest");
       this.toast(`开出【${CFG.insurance.name}】×1（死亡时保护 1 件高价值物品）`, "gold");
       this.renderArtisan();
@@ -857,24 +817,14 @@ const UI = {
     if (key === "ins") {
       if (!pay(S.buyInsurance.cost)) return;
       const item = makeInsurance();
-      const exist = r.backpack.items.find(x => x.kind === "insurance" && x.count < CFG.insurance.maxStack);
-      if (exist) { exist.count++; exist.value = CFG.insurance.value * exist.count; }
-      else if (!r.backpack.tryStackChest(item)) {
-        const s = r.backpack.findSpot(item);
-        if (s) r.backpack.place(item, s.x, s.y);
-        else r.pendingItems.push(item);
-      }
+      grantItemToRun(r, item);   // 保险先叠加未满堆叠；放不下进待分配区
       SFX.play("chest");
       this.toast(`购买【${CFG.insurance.name}】×1`, "gold");
     } else if (key.startsWith("chest:")) {
       const q = key.split(":")[1];
       if (!pay(S.buyChest[q])) return;
       const item = makeChestItem(q);
-      if (!r.backpack.tryStackChest(item)) {
-        const s = r.backpack.findSpot(item);
-        if (s) r.backpack.place(item, s.x, s.y);
-        else r.pendingItems.push(item);
-      }
+      grantItemToRun(r, item);   // 宝箱按品质叠加；放不下进待分配区
       SFX.play("chest");
       this.toast(`购买 ${item.name} ×1`, "gold");
     } else if (key === "qup") {

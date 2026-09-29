@@ -27,7 +27,7 @@ class FakeEl {
   get firstChild() { return this.children[0]; }
   addEventListener() { }
   getContext() { return ctxProxy; }
-  // 按实例缓存：renderMeta 里 card.querySelector(".up-lv").onclick = ... 需要拿到稳定对象
+  // 按实例缓存：renderTrainer / renderSmith 里 card.querySelector(".up-lv").onclick = ... 需要拿到稳定对象
   querySelector(sel) { this._q = this._q || {}; return this._q[sel] || (this._q[sel] = new FakeEl(sel)); }
   querySelectorAll() { return []; }
   closest() { return null; }

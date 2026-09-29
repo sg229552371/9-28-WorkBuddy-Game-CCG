@@ -175,7 +175,7 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
 
 ## 3. 验证流程（必做）
 
-**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 472**。
+**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 530**。
 
 核心要求：
 
@@ -289,9 +289,9 @@ const numIdx = ctxCalls.findIndex((c, i) => i > redIdx && c[0] === "fillText" &&
 - **武器 / 技能等级** → 主城**武器匠**（`UI.renderSmith()`，DOM `#npc-crystals-weapon`），升级调 `Meta.weaponUp`
 
 两者都以进化结晶支付。
-⚠️ `UI.renderMeta()`（`js/ui.js`，含 `#meta-char-list` / `#meta-crystals`）是**重构遗留的死函数**
-—— 那些 DOM 已不存在，函数里 `if (!box) return` 直接返回；
-但 `metaUpgradeLevel` / `metaUpgradeWeapon` **仍被上述两个 NPC 面板调用，不能删**。
+⚠️ `metaUpgradeLevel` / `metaUpgradeWeapon` **仍被上述两个 NPC 面板调用，不能删**。
+（原 `UI.renderMeta()` 死函数及其 DOM `#meta-char-list` / `#meta-crystals` 已在重构中删除，
+相关 CSS 一并清理；详见 5.31。）
 
 ### 5.5 技能/武器等级上限 = 100，曲线公式驱动
 `CFG.weaponLevel`（`maxLv:100`、`basicMulPerLv:0.04`、`skillMulPerLv:0.06`、`costBase:120`、
@@ -525,13 +525,57 @@ Boss 从「血多的精英怪」变成**会发弹幕的 2 阶段 Boss**。
 已完成使命、**废弃移除**（可从 git 历史取回）。**别再往 `G_docs/ui/` 找界面布局稿** ——
 布局现状以 `index.html` + `css/style.css` 的实际实现为准。
 
-### 5.30 画布跨端（`fitCanvas`，`js/main.js`）
+### 5.32 物品入包 = 唯一入口 `grantItemToRun()`（别再内联手抄）
+**所有「把一件物品放进背包」的路径统一走 `grantItemToRun(r, item, opts)`**（`js/game.js`）：
+保险先叠加未满堆叠 → 宝箱按品质叠堆（`tryStackChest`）→ 找空位放置（`findSpot`+`place`）→ 放不下时按 `opts.full` 决定去向。
+
+`opts.full` 两种语义（**别搞混，这是两个不同规则**）：
+- **`"pending"`（默认）**：放进 `r.pendingItems`（工匠待分配区）——**工匠世界 / 开箱 / 商店购买**用；
+- **`"discard"`**：**直接丢弃不保留**——**主地图**用（精英掉落 `onMonsterKilled`、战争雕像 `giveChest`：
+  主地图没有待分配区，满背包只能作废并 toast）。
+
+返回值：`true` = 已入背包（含叠加）；`false` = 未入背包（pending 时已进待分配区 / discard 时已丢弃）。
+**六处历史内联重复已全部收敛**（原 `game.js` 两处用了
+`tryStackChest(item) || (() => {…})()` 的 IIFE 绕过既有函数）。新增入包场景直接调用本函数，
+**不要再去 `r.backpack.tryStackChest(...) || findSpot(...)` 手抄一遍**。
+回归测试见 `grant_test.js`（30 条，覆盖 A 保险叠加 / B 宝箱叠堆 / C 入包 / D 待分配 / E 满包优先级 / G 商店）。
+
+### 5.33 画布跨端（`fitCanvas`，`js/main.js`）
 画布分辨率**跟随窗口比例**，**垂直视野固定 `CFG.camera.viewH=720`**
 （画布高 = viewH × zoom = 1080）→ 角色物理大小跨端只由 zoom 决定；
 宽随屏幕伸缩，竖屏按 `minAspect 0.75`（4:3）钳制。
 旧版固定 1920×1080 再整体缩进窗口（手机竖屏只是屏幕中间一条小横带）是
 「PC/手机视野与角色大小不一致」的根因，**别改回去**。
 桩环境 `innerWidth` 可能缺失 → `|| 1920/1080` 兜底防 NaN。
+
+### 5.34 主关卡开场冻结（出征「停留 3 秒」）
+`World.setupMain()` 末尾设 `this.freezeTimer = CFG.levelFreeze.freezeTime`（**3.0 秒**），
+规则与裂缝开场冻结**完全一致**（复用同一套闸门，见 5.1）：`World.update()` 见 `freezeTimer > 0`
+即 **提前 `return`**（怪物/子弹/祭坛/拾取/伤害结算全停），`main.js` 主循环同步跳过玩家与同伴更新
+（且清零移动意图防解冻滑行）→ **"全员无敌"是结构性保证，不是 invuln 标记**；
+倒计时红字 3/2/1 + 压暗遮罩由 `render()` 绘制（与裂缝共用同一段，判据 `fw.freezeTimer > 0`）。
+
+- **作用域：仅主关卡**。工匠世界是无敌人安全区**不冻结**；裂缝走自己的 `CFG.rift.freezeTime`。
+- 首波怪在 `setupMain` 里**照常投放**（冻结期间场上有敌人但静止不动）。
+- ⚠️ **改动「持续型机制」的时间假设是高频坑（§4.6）**：本机制落地时一次性弄红 7 个测试文件 30 条断言
+  —— 根因是测试「`startRun` 后立刻 `step(N)`」期待 N 帧进度，而前 3 秒被冻结吃掉。
+  **修法（三件套）**：① `freezeTimer` 在 `World` 构造函数显式初始化（已做）；
+  ② 旧测试在 `startRun` 后调用 **`Game.skipIntroFreeze()`** 显式跳过（新加的测试辅助方法，
+  放在 `js/main.js`，同时清 `G.mainWorld` 与 `G.activeWorld` 的冻结）；
+  ③ **新增专项测试 `freeze_test.js`（28 条）** 覆盖冻结机制本身 —— **不是把旧断言放松**。
+- ⚠️ **`rift_test.js` 不要加 `skipIntroFreeze()`** —— 它专门验证裂缝冻结，需真实等待 3 秒走完。
+
+### 5.35 左上角 HUD 三块内容别叠在一起（头像栏 / 自动战斗 / Buff）
+`#city-avatar-bar`（`left:16px; top:12px`）与 `#hud-tl`（`left:20px; top:16px`）**都锚定左上角**，
+`#hud-tl` 内含「自动战斗按钮 + 风格选择器 + 状态 Buff 图标」。
+若不处理，三者会在战斗时叠成一团。
+- **修法**：`#hud:not(.city-mode) .hidden-in-battle { display:none; }` ——
+  `index.html` 里 `#city-avatar-bar` 一直带 `class="hidden-in-battle"`，但**此前 CSS 里没有这条规则**
+  （死类名），导致战斗时头像栏没被真正隐藏。**主城模式（`.city-mode`）下才显示头像栏**，
+  同时 `#hud.city-mode` 会隐藏 `#hud-tl`，二者互斥、不共存。
+- `#hud-tl` 改为 `flex-direction:column; gap:8px`（纵向排布，避免依赖 margin 撑开）。
+- `#buff-area` 加 `flex-wrap:wrap; max-width:420px`（Buff 多了换行，不横向溢出）。
+- 回归：`freeze_test` / `ui_flow_test` / 全量 530 条断言。
 
 ## 6. 并行开发切分（已验证可用）
 
@@ -565,7 +609,7 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 
 ## 8. 当前基线
 
-测试 **16/16 全绿**，**PASS 合计 472**：
+测试 **18/18 全绿**，**PASS 合计 530**：
 
 `smoke_test` / `runtime_test` / `backpack_test` / `econ_test` / `skill_module_test` /
 `team_trigger_test` / `artisan_test` / `ui_flow_test` / `rift_test` / `extract_test` /
@@ -574,11 +618,15 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 英雄召唤物/陷阱上限 + 判定圈统一规则 + Boss 弹幕招式计数，**178 条**）/
 **`autofight_test`**（托管 AI 三风格，41 条）/ **`mobile_test`**（移动端摇杆，14 条）/
 **`boss_test`**（Boss 弹幕化 + 阶段机 + 护栏，**85 条**）/
-**`bugfix_test`**（世界归属 + 视线判定 + 沿墙绕行 + 主城布局 + 画布跨端，**17 条**）。
+**`bugfix_test`**（世界归属 + 视线判定 + 沿墙绕行 + 主城布局 + 画布跨端，**17 条**）/
+**`grant_test`**（物品入包四分支行为锁定，**30 条**）/ **`freeze_test`**（主关卡开场冻结，**28 条**）。
 
 跑测试前先确认这个基线，改完必须仍然全绿且 `bad=0`，改完建议连跑 3 轮看抖动。
 ⚠️ 改动队友施法/产物相关逻辑会连带撞到 `skill_table_test` 第十节（队友技能与能量）与产物池断言
 —— **别放松断言**，按新规则改期望值。
+⚠️ **给「持续型机制」加开场所冻结/暂停语义会一次性弄红大量测试**（§4.6 / §5.34）：
+主关卡开场冻结落地时弄红 7 个文件 30 条断言。新增此类机制时，同步给受影响的 `startRun` 后加
+`Game.skipIntroFreeze()`，并**补专项测试**而不是放松旧断言。
 
 ### 组队类改动的端到端验证套路
 

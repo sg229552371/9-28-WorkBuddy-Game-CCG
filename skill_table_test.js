@@ -241,6 +241,7 @@ const driver = `
   /* ============ 七、统一执行器 SkillSystem ============ */
   {
     Game.startRun([CFG.heroes[0]]);   // W001 速射炮
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const w = { playerBullets: [], enemyBullets: [] };
     const caster = { x: 0, y: 0, atk: 10 };
     const b = resolveSkill(CFG.skills.AT101, 1, { dmgMul: 1, bullets: 0, cdMul: 1 });
@@ -256,6 +257,7 @@ const driver = `
 
     // 召唤 / 陷阱分发
     Game.startRun([CFG.heroes.find((h) => h.id === "H007")]);   // W007 无人机母舰
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     recomputeWeapon();
     const r = G.run;
     const sk = r.weapon.skill;
@@ -265,6 +267,7 @@ const driver = `
     check("召唤物攻击力由技能表 atk × summonMul 决定", r.drones[0].atk >= 1 && r.drones[0].hpMax === sk.row.hp);
 
     Game.startRun([CFG.heroes.find((h) => h.id === "H008")]);   // W008 布雷器
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     recomputeWeapon();
     const r2 = G.run, sk2 = r2.weapon.skill;
     const rt = SkillSystem.cast({ playerBullets: [] }, { x: 500, y: 500 }, sk2, null, { atk: 10 });
@@ -275,6 +278,7 @@ const driver = `
   /* ============ 八、resolveSkill 词条标签规则不回退 ============ */
   {
     Game.startRun([CFG.heroes[0]]);   // W001
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     recomputeWeapon();
     const r = G.run;
     check("普攻不吃「伤害」词条（dmgMul = 基础 × 等级曲线）",
@@ -297,6 +301,7 @@ const driver = `
     const H4 = ["H001", "H004"];   // 队长 W001（AT101 普攻 / AT102 技能）；队友 W004（AT107 普攻 / AT108 8 发）
     const team = H4.map(id => CFG.heroes.find(h => h.id === id));
     Game.startRun(team);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r = G.run, c = r.companions[0];
     check("全队-队友实体已创建（H004）", !!c && c.heroDef.id === "H004");
     check("全队-队友持有解析后的技能集 c.skills", !!(c.skills && c.skills.basic && c.skills.skill));
@@ -346,6 +351,7 @@ const driver = `
     {
       const team3 = ["H001", "H004"].map(id => CFG.heroes.find(h => h.id === id));
       Game.startRun(team3);
+      Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
       const r3 = G.run, c3 = r3.companions[0];
       G.heroDef.weaponLv = 11; c3.heroDef.weaponLv = 51;
       recomputeWeapon();
@@ -385,6 +391,7 @@ const driver = `
   {
     const team = ["H001", "H004"].map(id => CFG.heroes.find(h => h.id === id));
     Game.startRun(team);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const w = G.mainWorld, r = G.run, c = r.companions[0];
 
     /* ---- 装备（属性件）对全队生效 ---- */
@@ -459,6 +466,7 @@ const driver = `
 
     /* ---- 产物池：**每个成员各自独立**（召唤物 / 陷阱按 owner 隔离，互不顶替） ---- */
     Game.startRun(team);   // H001 队长（速射）+ H004 队友，两人武器都非召唤/陷阱 → 手工构造技能验证隔离
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const w2 = G.mainWorld, r2 = G.run, c2 = r2.companions[0];
     r2.drones.length = 0; r2.traps.length = 0;
     const skSummon = resolveSkill(CFG.skills.AT113, 1, { dmgMul: 1, cdMul: 1, bullets: 0 });
@@ -499,6 +507,7 @@ const driver = `
   {
     const team = ["H001", "H004"].map(id => CFG.heroes.find(h => h.id === id));
     Game.startRun(team);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const w = G.mainWorld, r = G.run, c = r.companions[0];
 
     // 基线：无卡无 Buff → 加算全 0、乘算全 1
@@ -654,6 +663,7 @@ const driver = `
 
     // 召唤师 H007：锚点数量 3 ≤ 上限 6 → 不被钳制
     Game.startRun([CFG.heroes.find(h => h.id === "H007")]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r1 = G.run, w1 = G.mainWorld, p1 = G.player;
     r1.drones.length = 0;
     const sk1 = resolveSkill(CFG.skills.AT113, 1, { dmgMul: 1, cdMul: 1, bullets: 0 });
@@ -661,6 +671,7 @@ const driver = `
     check("上限-召唤师不被钳制（" + u1.n + "/" + u1.cap + "）", u1.n === 3 && u1.cap === 3);
     // 队友（H007 以外）上限低 → 同样的技能只召得出上限内数量
     Game.startRun([CFG.heroes.find(h => h.id === "H007"), CFG.heroes.find(h => h.id === "H006")]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r2b = G.run, w2b = G.mainWorld, c2b = r2b.companions[0];
     r2b.drones.length = 0;
     const u2 = SkillSystem.cast(w2b, c2b, sk1, null, { atk: 10 });
@@ -669,6 +680,7 @@ const driver = `
 
     // 走属性管线：武器栏装备 / 局内增益可抬高上限（同能量上限口径）
     Game.startRun([CFG.heroes.find(h => h.id === "H008")]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r3 = G.run, w3 = G.mainWorld, p3 = G.player;
     r3.traps.length = 0;
     check("上限-基线（H008 陷阱上限 3）", unitLimitOf(p3, "trap") === 3);
@@ -685,6 +697,7 @@ const driver = `
 
     // 上限为 0 → 该类型技能不产出（且不能死循环）
     Game.startRun([CFG.heroes.find(h => h.id === "H008")]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r4 = G.run, w4 = G.mainWorld, p4 = G.player;
     r4.traps.length = 0;
     r4.heroDef.trapMax = 0;                       // heroDef 是 applyOutLevel 的副本，改它不污染 CFG
@@ -694,6 +707,7 @@ const driver = `
 
     // 归属规则：无人机随召唤者；召唤者倒下**不回收**（继续留在场上）
     Game.startRun([CFG.heroes.find(h => h.id === "H007"), CFG.heroes.find(h => h.id === "H001")]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r5 = G.run, w5 = G.mainWorld, c5 = r5.companions[0];
     r5.drones.length = 0;
     w5.monsters.length = 0; w5.circles.length = 0; r5.bossDefeated = true;   // 静场：不让刷怪/弹幕干扰归属断言
@@ -709,6 +723,7 @@ const driver = `
 
     // 陷阱留原地：布设后移动，陷阱坐标不变、且与布设者脱钩
     Game.startRun([CFG.heroes.find(h => h.id === "H008")]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r6 = G.run, w6 = G.mainWorld, p6 = G.player;
     r6.traps.length = 0;
     SkillSystem.cast(w6, p6, resolveSkill(CFG.skills.AT114, 1, { dmgMul: 1, cdMul: 1, bullets: 0 }), null, { atk: 10 });
@@ -726,6 +741,7 @@ const driver = `
    *       ④圈内英雄全部离开 → 进度缓慢衰退（裂缝返回信标 decay=0 例外）。 */
   {
     Game.startRun([CFG.heroes[0], CFG.heroes[1]]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const w = G.mainWorld, r = G.run, c = r.companions[0];
     // 静场：清怪 + 停刷怪（bossDefeated 为 true 后主地图不再补投），只验证判定圈本身
     w.monsters.length = 0; w.circles.length = 0; r.bossDefeated = true;

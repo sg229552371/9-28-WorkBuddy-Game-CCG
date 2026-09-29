@@ -65,6 +65,7 @@ vm.runInContext(`
   Game.bindInput(); Game.bindEvents();
   UI.selectedLevel = CFG.levels[0];
   Game.startRun(CFG.heroes[0]);
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
   G.inArtisan = true;   // 工匠世界（解锁管理）
 
   // 指针模拟：_dropTarget 依赖 elementFromPoint + getBoundingClientRect + client 坐标

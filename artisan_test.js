@@ -61,6 +61,7 @@ vm.runInContext(`
   Game.bindInput(); Game.bindEvents();
   UI.selectedLevel = CFG.levels[0];
   Game.startRun(CFG.heroes[0]);
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
 
   // 模拟进入工匠世界（真实事件路径）
   G.subWorld = new World(1920, 1080, false);

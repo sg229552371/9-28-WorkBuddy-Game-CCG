@@ -65,6 +65,7 @@ vm.runInContext(`
   Game.bindInput(); Game.bindEvents();
   UI.selectedLevel = CFG.levels[0];
   Game.startRun(CFG.heroes[0]);
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
   G.run.hp = 100000;                       // 测试无敌注入，聚焦撤离流程
 
   function keyDown(k) { winHandlers.keydown.forEach(fn => fn({ key: k, preventDefault() { } })); }
@@ -155,6 +156,7 @@ vm.runInContext(`
    * ②同一判定是单一实例（单一进度 + 单一持有者）→ 多人同圈不加速、也不会各触发一次。
    * 这里直接对生产函数 updateExtractJudge / heroInCircle 断言，避免队友 AI 走位干扰。 */
   Game.startRun([CFG.heroes[0], CFG.heroes[1]]);
+  Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
   G.run.hp = 100000;
   G.run.kills = CFG.levels[0].progressGoal;
   onMonsterKilled(G.mainWorld, { x: 500, y: 500, d: CFG.monsters.NM0010, dead: true });

@@ -63,6 +63,7 @@ const driver = `
   /* ============ 一、卡牌刷新（免费优先 → 金币 → 金币不足失败） ============ */
   {
     Game.startRun([CFG.heroes[0]]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r = G.run;
     // 非工匠世界：禁止刷新，免费次数与金币都不动
     G.inArtisan = false;
@@ -87,6 +88,7 @@ const driver = `
   /* ============ 二、shopBuyModule 契约 ============ */
   {
     Game.startRun([CFG.heroes[0]]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r = G.run, S = CFG.artisanServices.buyModule;
     // 非工匠世界 → 拒绝，不扣钱
     G.inArtisan = false; r.coin = 1000;
@@ -115,6 +117,7 @@ const driver = `
   /* ============ 三、shopBuyItem 契约 ============ */
   {
     Game.startRun([CFG.heroes[0]]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r = G.run, S = CFG.artisanServices.buyItem;
     // 非工匠世界 → 拒绝
     G.inArtisan = false; r.coin = 1000;
@@ -144,6 +147,7 @@ const driver = `
   /* ============ 四、背包满 → 进入待分配区（两种购买均适用） ============ */
   {
     Game.startRun([CFG.heroes[0]]);
+    Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r = G.run;
     G.inArtisan = true;
     // 用 1×1 装备铺满 6×4 背包
