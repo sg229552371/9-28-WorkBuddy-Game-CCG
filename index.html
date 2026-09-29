@@ -128,6 +128,13 @@
   <div id="hud" class="hidden">
     <div id="city-avatar-bar" class="hidden-in-battle"></div>
     <div id="hud-tl">
+      <!-- 自动战斗开关固定在左上角首位：位置不被 Buff 图标增减挤动，且避开移动端右下虚拟按钮 -->
+      <button id="btn-autofight" class="btn ghost">自动战斗：关</button>
+      <div id="autofight-styles" class="hidden">
+        <button class="af-style" data-style="berserk" title="贴脸输出，只预判冲锋与Boss大招，血线再低也不退">疯狂</button>
+        <button class="af-style" data-style="balanced" title="中距离风筝，躲密集弹幕与预警技能，血量40%以下拉开">平衡</button>
+        <button class="af-style" data-style="cautious" title="最远距离风筝，见弹就躲，血量过半即拉开距离">冷静</button>
+      </div>
       <div id="buff-area"></div>
     </div>
     <div id="hud-top">
@@ -147,12 +154,6 @@
       <div id="weight-pen"></div>
     </div>
     <div id="hud-br">
-      <div id="autofight-styles" class="hidden">
-        <button class="af-style" data-style="berserk" title="贴脸输出，只预判冲锋与Boss大招，血线再低也不退">疯狂</button>
-        <button class="af-style" data-style="balanced" title="中距离风筝，躲密集弹幕与预警技能，血量40%以下拉开">平衡</button>
-        <button class="af-style" data-style="cautious" title="最远距离风筝，见弹就躲，血量过半即拉开距离">冷静</button>
-      </div>
-      <button id="btn-autofight" class="btn ghost">自动战斗：关</button>
       <button id="btn-backpack" class="btn">背包 (B)</button>
     </div>
     <div id="channel-wrap" class="hidden">

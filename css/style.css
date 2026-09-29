@@ -422,8 +422,8 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .set-row input[type=range] { flex:1; accent-color:#ffd76a; }
 #set-touch.on { border-color:#7de08a; color:#7de08a; }
 
-/* ===== 自动战斗风格选择器（开启自动战斗后在按钮上方展开） ===== */
-#autofight-styles { display:flex; gap:6px; justify-content:flex-end; margin-bottom:6px; }
+/* ===== 自动战斗风格选择器（开启后在左上按钮下方展开；左对齐贴合 HUD 左上角） ===== */
+#autofight-styles { display:flex; gap:6px; justify-content:flex-start; margin-top:6px; }
 #autofight-styles.hidden { display:none; }
 .af-style {
   padding:4px 12px; border-radius:14px; font-size:11px; cursor:pointer;

@@ -449,6 +449,18 @@ Boss 从「血多的精英怪」变成**会发弹幕的 2 阶段 Boss**。
 无记忆会原地 ±1.9px 振荡（实测）；只有 `|切向距离| > 60px` 且反向才翻转。
 位移记 `e._mdx/_mdy`（帧初→帧末），Player / 队友 / 怪物 / 主城形象四处都要记。
 
+### 5.30 HUD 布局：自动战斗按钮在**左上**，不在右下
+`#btn-autofight`（+ 展开的风格选择器 `#autofight-styles`）挂在 **`#hud-tl`**，
+且**置于该容器首位** —— 这样它的位置不会被上方 Buff 图标（`#buff-area`）的增减挤动。
+**别再挪回 `#hud-br`（右下）**：移动端右下是虚拟按钮 `#touch-btns`（背包/交互/技能，
+`right:24px; bottom:56px`，大按钮 86px），会与 `#hud-br`（`right:20px; bottom:18px`）重叠遮挡。
+现在 `#hud-br` 只剩「背包 (B)」。风格选择器因此改为 `justify-content:flex-start`（左对齐）。
+
+### 5.31 `G_docs/ui/`（UI 布局线框 v1.0）已**有意移除**
+原 4 个文件（`index.html` / `wireframe.css` / `wireframe.js` / `layout_plan.md`）是「阶段一 灰阶布局线框」的一次性交付，
+已完成使命、**废弃移除**（可从 git 历史取回）。**别再往 `G_docs/ui/` 找界面布局稿** ——
+布局现状以 `index.html` + `css/style.css` 的实际实现为准。
+
 ### 5.30 画布跨端（`fitCanvas`，`js/main.js`）
 画布分辨率**跟随窗口比例**，**垂直视野固定 `CFG.camera.viewH=720`**
 （画布高 = viewH × zoom = 1080）→ 角色物理大小跨端只由 zoom 决定；
