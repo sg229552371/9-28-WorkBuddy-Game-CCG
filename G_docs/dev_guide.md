@@ -46,22 +46,85 @@ node boss_test.js; echo "exit=$?"
 
 **云端会话里不要写死 Windows 绝对路径**，一律用 `node`，或让 `run_tests.sh` 自己探测。
 
-### 0.4 推送改动（三选一）
+### 0.4 推送到 GitHub（手机端照抄）
+
+> 仓库：**`sg229552371/9-28-WorkBuddy-Game-CCG`**（PUBLIC，分支 `main`）
+> 账号：**`sg229552371`** ｜ 提交邮箱：**`55120967+sg229552371@users.noreply.github.com`**
+
+#### A. 最省事：一键脚本（推荐）
+
+```bash
+bash push.sh "这次改了什么"
+```
+
+它依次做四件事：**跑 `run_tests.sh` → 不全绿就中止（什么都不提交）→ 全绿才 commit → push 并回读确认**。
+推送被拒时它会直接打印修复命令，不用猜。
+
+#### B. 手工三步（脚本不可用时）
+
+```bash
+bash run_tests.sh        # 1. 必须 bad=0，否则别推
+git add -A
+git commit -m "这次改了什么"
+git push origin main     # 2. 推送
+git log --oneline -1 origin/main   # 3. 回读确认远程就是刚提交的那条
+```
+
+#### C. 全新设备 / 新云端会话的首次准备（每个新会话做一次）
+
+云端会话是**非交互**的，`git` 不会弹密码框，所以**必须把令牌写进远程地址**：
+
+```bash
+TOKEN="粘贴你的细粒度令牌"          # 见下方「建令牌」
+git config --global user.name  "sg229552371"
+git config --global user.email "55120967+sg229552371@users.noreply.github.com"
+
+git clone https://$TOKEN@github.com/sg229552371/9-28-WorkBuddy-Game-CCG.git
+cd 9-28-WorkBuddy-Game-CCG
+git remote get-url origin           # 校验：必须含 9-28-WorkBuddy-Game-CCG.git
+```
+
+**建令牌**：GitHub → Settings → Developer settings → Fine-grained tokens →
+`Repository access` 只勾 **`9-28-WorkBuddy-Game-CCG`** 这一个仓库 →
+`Permissions` 只给 **Contents: Read and write** → 有效期设短。
+**不要用全权限的经典 token**（泄漏影响面太大）。
+
+#### D. 常见故障
+
+**推送被拒（`rejected / non-fast-forward`）** —— 电脑端推过新提交了：
+
+```bash
+git pull --rebase origin main
+bash run_tests.sh
+git push origin main
+```
+
+**remote 指向了别的仓库 / 令牌过期**：
+
+```bash
+git remote set-url origin https://$TOKEN@github.com/sg229552371/9-28-WorkBuddy-Game-CCG.git
+git remote -v
+```
+
+**确认自己改的是哪个分支**：
+
+```bash
+git branch --show-current   # 必须是 main
+```
+
+#### E. 另外两条路（不想用令牌时）
 
 1. **GitHub Codespaces**（推荐做重活）：仓库页 → Code → Codespaces → 新建。
-   得到完整 Linux 环境 + 终端 + node，**登录即有写权限、可直接 push、可跑测试**。
-   手机浏览器可用。
-2. **WorkBuddy 云端工作 + 细粒度 PAT**：在 GitHub → Settings → Developer settings →
-   Fine-grained tokens 建一个**只授权本仓库 Contents 读写**、有效期短的 token，
-   手机端会话里用它推送：
-   ```bash
-   git remote set-url origin https://<用户名>:<TOKEN>@github.com/sg229552371/9-28-WorkBuddy-Game-CCG.git
-   git push origin main
-   ```
-   用完随时在 GitHub 撤销。**不要用全权限经典 token。**
-3. **github.dev / GitHub App 手动提交**：手机浏览器打开仓库页，按 `.` 键（或把域名换成
-   `github.dev`）进入网页 VS Code，登录即有写权限，改完直接 Commit。
-   适合小改动、改设计文档。
+   得到完整 Linux 环境 + 终端 + node，**登录即有写权限、可直接 push、可跑测试**，手机浏览器可用。
+2. **github.dev**：手机浏览器打开仓库页，把域名换成 `github.dev` 进入网页 VS Code，
+   登录即有写权限，改完直接 Commit。适合改文档 / 调数值。
+
+#### F. 两条注意
+
+- 令牌写进 URL 只落在**那个沙箱的 `.git/config`** 里，`.git/` 从不被推送，**不会泄漏到仓库**。
+  但用完建议在 GitHub 上撤销该令牌。
+- `.workbuddy/`（项目记忆）与 `.agent_tmp/` 已在 `.gitignore` 中，**不会被推上去** ——
+  所以手机端新写的记忆留在本地，长期知识要落到 `G_docs/`。
 
 ### 0.5 手机端试玩（GitHub Pages，**已开启**）
 
@@ -107,6 +170,7 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
 | `index.html` + `css/style.css` | DOM 界面层 + 样式 |
 | `G_docs/game_design_proposal.md` | 策划设计文档（第十六章为基准，第十七章为 Boss 设计） |
 | `run_tests.sh` | 全量测试运行器（跨平台；**加/删测试时同步改这里的 TESTS 清单**） |
+| `push.sh` | 手机端一键推送：跑测试 → 全绿才 commit → push（用法 `bash push.sh "改了什么"`） |
 | `G_docs/dev_guide.md` | 本文件（随身上下文；**改本文件时本机技能 `bagrogue-prototype-dev` 也要同步**） |
 
 ## 3. 验证流程（必做）
