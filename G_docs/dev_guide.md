@@ -101,17 +101,25 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
 | `js/main.js` | 启动 / 输入 / 主循环 / 界面流程状态机（全局 `Game`） |
 | `index.html` + `css/style.css` | DOM 界面层 + 样式 |
 | `G_docs/game_design_proposal.md` | 策划设计文档（第十六章为基准，第十七章为 Boss 设计） |
+| `run_tests.sh` | 全量测试运行器（跨平台；**加/删测试时同步改这里的 TESTS 清单**） |
+| `G_docs/dev_guide.md` | 本文件（随身上下文；**改本文件时本机技能 `bagrogue-prototype-dev` 也要同步**） |
 
 ## 3. 验证流程（必做）
 
-见 `run_tests.sh`。核心要求：
+**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 472**。
+
+核心要求：
 
 - **必须同时看退出码与文本**：一部分测试用 `console.assert`（失败只写 stderr、**不改退出码**），
   另一部分用 `check()` 打 `PASS/FAIL` 并在收尾 `throw new Error("... FAILED")`。
   所以必须 `grep -ci "Assertion failed\|FAIL\|Error"` **并**检查退出码。
+- ⚠️ **`pass=0` 不代表没有断言** —— `smoke_test` / `runtime_test` / `backpack_test` /
+  `artisan_test` / `rift_test` / `extract_test` 走的是 `console.assert`（只打 `SMOKE OK` 之类），
+  只能靠退出码 + `bad` 判定。**断言条数要数「以 `PASS ` 开头的行」**（`grep -c "^PASS "`），
+  不是数 `PASS <数字>`。
 - 改完**建议连跑 3 轮**看抖动（本项目踩过随机性导致的偶发失败）。
 
-## 4. 必踩的坑（9 条，逐条都真踩过）
+## 4. 必踩的坑（10 条，逐条都真踩过）
 
 1. **`console.assert` 失败只写 stderr，不改退出码。** 只看「退出码 0」会漏掉真失败 ——
    必须 grep `Assertion failed`，stdout 和 stderr 都要看。
@@ -139,6 +147,11 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
    若只接受 ID 而调用方传了对象，`CFG.skills[对象]` 静默变 `undefined`，
    报错点会跑到几百行外。新增这类「查表 + 结算」入口时，直接在入口做
    `typeof x === "string" ? TABLE[x] : x`。
+10. **本机沙箱禁止删除「带盘符前缀的临时路径」。** 测试脚本里用 `mktemp` 造临时文件再 `rm -f` 收尾，
+   会打印 `[safe-delete][SAFE_DELETE_INVALID_PATH] embedded drive prefix is not allowed`，
+   **累积几个测试后整个脚本卡死、被 SIGTERM 掐断**（症状：脚本无输出、退出码 1、signal SIGTERM，
+   但日志文件里已有前几个测试的结果）。修法：**不要落临时文件**，用 `out=$(cmd 2>&1)` 命令替换捕获
+   （`run_tests.sh` 已按此实现）。
 
 ### 渲染行为的确定性验证（node 里能验证画面）
 
