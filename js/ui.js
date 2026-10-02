@@ -40,6 +40,26 @@ const UI = {
     if (hud) hud.classList.remove("hidden");
   },
 
+  /* ---------- 竖屏优先：方向状态（20.x） ----------
+   * 在 body 与 #app 上挂 portrait / landscape 类名，作为 CSS 竖屏主分支与测试判定的稳定钩子。
+   * 判定口径：innerHeight > innerWidth → 竖屏（与 fitCanvas 的 aspect<1 一致）。
+   * 幂等：每次切换只是 classList.add/remove，可被 resize / orientationchange 反复调用。 */
+  applyOrientation() {
+    const vw = (typeof window !== "undefined" && window.innerWidth) || 1920;
+    const vh = (typeof window !== "undefined" && window.innerHeight) || 1080;
+    const portrait = vh > vw;
+    const targets = [typeof document !== "undefined" && document.body,
+      typeof document !== "undefined" && document.getElementById("app")];
+    for (const el of targets) {
+      if (!el) continue;
+      el.classList.toggle("portrait", portrait);
+      el.classList.toggle("landscape", !portrait);
+    }
+    const cards = typeof document !== "undefined" && document.getElementById("levelup-cards");
+    if (cards) cards.classList.toggle("grid-portrait", portrait);   // 升级弹窗 2×2 网格：竖屏启用
+    return portrait;
+  },
+
   /* ---------- 升级 4 选 1 暂停弹窗（19.4 方案 7） ----------
    * 契约：UI.onLevelUpChoice(candidates, onPick, meta?)
    *   candidates 元素形态：{kind:"module", defId, name, desc, lv?, locked?} 或 {kind:"statPack", attr/stat, name, value}

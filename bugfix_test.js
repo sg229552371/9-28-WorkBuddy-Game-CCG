@@ -196,7 +196,8 @@ vm.runInContext(`
     Game.fitCanvas();
     const hPhone = G.H, wPhone = G.W;
     check("画布-竖屏：画布高固定（" + hPhone + " = viewH×zoom）", hPhone === Math.round((CFG.camera.viewH || 720) * (CFG.camera.zoom || 1.5)));
-    check("画布-竖屏：宽按 minAspect 钳制（" + wPhone + "）", wPhone === Math.round(hPhone * (CFG.camera.minAspect || 0.75)));
+    // 20.x 竖屏优先：竖屏填满屏幕 —— 按真实 aspect 走，不再被 minAspect 钳成 4:3
+    check("画布-竖屏：宽按真实比例填满（" + wPhone + "）", wPhone === Math.round(hPhone * 390 / 844));
     window.innerWidth = 1920; window.innerHeight = 1080;  // PC 全屏 16:9
     Game.fitCanvas();
     check("画布-PC 16:9：宽 = 高 × 比例（" + G.W + "）", G.W === Math.round(G.H * 1920 / 1080));

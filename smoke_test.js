@@ -324,8 +324,15 @@ vm.runInContext(`
   const dummyComp = { alive: true, hp: 100, heroDef: CFG.heroes[0], x: 0, y: 0 };
   heroTakeDamage(rw, dummyComp, 1);
   console.assert(rw.returnProgress === 0, "受击读条归零");
+  // 离开圈：信标坐标为随机点位，固定坐标(100,100)可能恰好仍落在圈内 → 反推一个必然在圈外的落点
   rw.returnProgress = 2.5;
-  G.player.x = 100; G.player.y = 100;
+  const beaconR = (CFG.rift && CFG.rift.beaconRadius) || 90;
+  G.player.x = rw.returnBeacon.x + beaconR * 4 + 200;
+  G.player.y = rw.returnBeacon.y + beaconR * 4 + 200;
+  if (G.player.x > rw.w) G.player.x = 20;
+  if (G.player.y > rw.h) G.player.y = 20;
+  console.assert(U.dist(G.player.x, G.player.y, rw.returnBeacon.x, rw.returnBeacon.y) > beaconR,
+    "前置：玩家确定在信标圈外");
   rw.update(0.5);
   console.assert(Math.abs(rw.returnProgress - 2.5) < 1e-6, "离开圈进度保留（不衰退不触发）");
   // 20) 精英怪

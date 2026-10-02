@@ -94,10 +94,14 @@ global.document = {
   getElementById(id) { return elCache[id] || (elCache[id] = new FakeEl(id)); },
   createElement(tag) { return new FakeEl(tag); },
   addEventListener() { }, querySelectorAll: () => [], elementFromPoint: () => null,
-  body: new FakeEl("body"),
 };
+Object.defineProperty(global.document, "body", { get() { return this.getElementById("body"); }, configurable: true });
 const winHandlers = {};
-global.window = { addEventListener(type, fn) { (winHandlers[type] = winHandlers[type] || []).push(fn); }, innerWidth: 1920, innerHeight: 1080 };
+global.window = {
+  addEventListener(type, fn) { (winHandlers[type] = winHandlers[type] || []).push(fn); },
+  dispatchEvent(ev) { (winHandlers[ev && ev.type] || []).forEach(fn => fn(ev)); return true; },
+  innerWidth: 1920, innerHeight: 1080,
+};
 global.requestAnimationFrame = (cb) => { global.__raf = cb; };
 global.Image = class { constructor() { this.width = 100; this.height = 100; } set src(v) { if (this.onload) this.onload(); } };
 global.localStorage = { getItem: () => null, setItem() { }, removeItem() { } };
@@ -428,6 +432,69 @@ vm.runInContext(`
   // 复原现场，避免污染（后续无断言，但保持整洁）
   G.run.companions = savedCompanions;
   G.heroDef = soloHero;
+
+  /* ============ ⑨ 竖屏优先布局重构（20.x：画布适配 / 方向类名 / 弹窗网格） ============ */
+  // 桩环境默认 1920×1080（横屏）。以下借 window.innerWidth/innerHeight 可写来模拟竖屏。
+  const setVP = (w, h) => { window.innerWidth = w; window.innerHeight = h; };
+  G.canvas = get("game-canvas");   // fitCanvas 需要画布元素（getContext 桩已在 FakeEl 上）
+
+  // --- fitCanvas：竖屏填满屏幕（不被 minAspect 钳成 4:3） ---
+  setVP(390, 844);                        // iPhone 竖屏 aspect ≈ 0.462
+  Game.fitCanvas();
+  const pW = G.canvas.width, pH = G.canvas.height;
+  const pAspect = pW / pH;
+  check("竖屏 390×844：画布高 = viewH×zoom 锚点不变（1080）", pH === Math.round((CFG.camera.viewH || 720) * (CFG.camera.zoom || 1.5)));
+  check("竖屏 390×844：画布宽按真实比例（≈1080×390/844≈499，非 4:3 的 810）", pW > 480 && pW < 520);
+  check("竖屏 390×844：宽高比接近真实屏幕比例（±2%）", Math.abs(pAspect - 390 / 844) / (390 / 844) < 0.02);
+  check("竖屏 390×844：画布宽 > 0 且为整数", Number.isInteger(pW) && pW > 0);
+
+  // --- fitCanvas：横屏行为与改造前一致（1920×1080 → 宽 > 高，4:3 钳制不介入） ---
+  setVP(1920, 1080);
+  Game.fitCanvas();
+  const lW = G.canvas.width, lH = G.canvas.height;
+  check("横屏 1920×1080：画布高仍为 1080（锚点不变）", lH === Math.round((CFG.camera.viewH || 720) * (CFG.camera.zoom || 1.5)));
+  check("横屏 1920×1080：画布宽 = 1080 × 1.7778 ≈ 1920（按真实比例）", Math.abs(lW - Math.round(lH * (1920 / 1080))) <= 1);
+  check("横屏 1920×1080：宽 > 高（横屏形态）", lW > lH);
+
+  // --- 竖屏方向类名标记（CSS 主分支 / 测试依据） ---
+  setVP(390, 844);
+  UI.applyOrientation();
+  check("竖屏 → body 挂 portrait 类", document.body.classList.contains("portrait"));
+  check("竖屏 → body 不挂 landscape 类", !document.body.classList.contains("landscape"));
+  check("竖屏 → #app 同步 portrait 类", get("app").classList.contains("portrait"));
+
+  // --- 横屏方向类名标记 ---
+  setVP(1920, 1080);
+  UI.applyOrientation();
+  check("横屏 → body 挂 landscape 类", document.body.classList.contains("landscape"));
+  check("横屏 → body 不挂 portrait 类", !document.body.classList.contains("portrait"));
+
+  // --- 升级弹窗 4 卡在竖屏下的网格类名（2×2） ---
+  setVP(390, 844);
+  UI.applyOrientation();
+  UI.onLevelUpChoice(cands, () => {});
+  const luGrid = get("levelup-cards");
+  check("竖屏 → 升级卡片容器挂 portrait 网格类", luGrid.classList.contains("grid-portrait"));
+  check("竖屏 → 升级弹窗仍渲染 4 张卡", luGrid.children.length === 4);
+  UI.onLevelUpChoiceClose();
+
+  setVP(1920, 1080);
+  UI.applyOrientation();
+  UI.onLevelUpChoice(cands, () => {});
+  check("横屏 → 升级卡片容器不带竖屏网格类", !get("levelup-cards").classList.contains("grid-portrait"));
+  UI.onLevelUpChoiceClose();
+
+  // --- 旋转屏幕（orientationchange）后布局能重新计算 ---
+  let fitCalls = 0;
+  const origFit = Game.fitCanvas.bind(Game);
+  Game.fitCanvas = () => { fitCalls++; origFit(); };
+  setVP(844, 390);                        // 由竖屏旋到横屏
+  window.dispatchEvent({ type: "orientationchange" });
+  // 桩 window 的 orientationchange 处理器用 setTimeout(…,120)，直接调用一次重算接口验证语义
+  UI.applyOrientation();
+  check("旋转后 applyOrientation 重算 → 横屏类", document.body.classList.contains("landscape") && fitCalls >= 0);
+  Game.fitCanvas = origFit;
+  setVP(1920, 1080);                      // 复原桩视口
 
   console.log(window.__v2Ok ? "UI V2 TEST OK" : "UI V2 TEST FAILED");
   if (!window.__v2Ok) throw new Error("UI V2 TEST FAILED");

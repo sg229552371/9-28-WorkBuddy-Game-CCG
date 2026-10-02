@@ -56,6 +56,16 @@ for (const id of ["touch-controls", "joy-base", "joy-stick", "btn-touch-skill", 
 }
 check("左上角大血条/能量条已移除（bar-hp/bar-en 不在 index.html）", !htmlIds.has("bar-hp") && !htmlIds.has("bar-en"));
 
+/* ---- 竖屏优先：viewport 安全区 + 竖屏 CSS 主分支存在性（原文核对，桩抓不到） ---- */
+const metaVp = (html.match(/<meta\s+name="viewport"[^>]*>/i) || [""])[0];
+check("viewport 含 viewport-fit=cover（刘海屏安全区）", /viewport-fit\s*=\s*cover/i.test(metaVp));
+const css = fs.readFileSync(path.join(__dirname, "css/style.css"), "utf8");
+check("CSS 以 orientation:portrait 为主分支存在", /@media[^{]*orientation\s*:\s*portrait/i.test(css));
+check("CSS 含横屏兼容分支 orientation:landscape", /@media[^{]*orientation\s*:\s*landscape/i.test(css));
+check("CSS 使用 env(safe-area-inset-*) 处理安全区", /env\(\s*safe-area-inset-/i.test(css));
+check("CSS 含竖屏升级弹窗 2×2 网格类（.levelup-cards.grid-portrait）", /\.levelup-cards\.grid-portrait/.test(css));
+check("CSS 竖屏背包三段改为上下堆叠（.bp-body 竖排规则）", /\.portrait[^{]*\.bp-body/.test(css) || /body\.portrait\s+\.bp-body/.test(css));
+
 const ctx = vm.createContext(global);
 for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/main.js"]) {
   vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });

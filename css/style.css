@@ -569,3 +569,151 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .codex-card.locked { border-style:dashed; border-color:#2e3d55; }
 .codex-card.locked b { color:#6d7c94; }
 .goodbye-panel { width:min(460px,94vw); }
+
+/* ============================================================
+ * 竖屏优先布局（20.x）——用户拍板：默认按竖屏设计，横屏为兼容分支
+ * ------------------------------------------------------------
+ * 主钩子：JS 由 UI.applyOrientation() 在 body / #app 上挂 .portrait / .landscape
+ *   （判定 innerHeight > innerWidth，与 fitCanvas 的 aspect<1 一致）。
+ * 同时保留 @media (orientation: portrait) 作纯 CSS 兜底（JS 未跑时也不崩）。
+ *
+ * 约定：
+ *   - 竖屏（portrait）：HUD 顶部铺满窄屏宽度；底部技能栏在虚拟摇杆「上方」分区，互不遮挡；
+ *     #hud-tl 下移到顶栏之下，避开 #city-avatar-bar / 状态区；面板类一律上下堆叠 / 单列滚动。
+ *   - 横屏（landscape）：全部沿用改造前布局（本段不生效）。
+ *   - 安全区：env(safe-area-inset-*) 处理刘海屏与底部横条（viewport-fit=cover）。
+ * ============================================================ */
+
+/* ---- 安全区变量：统一注入内边距，刘海屏 / 底部横条不吃内容 ---- */
+:root {
+  --sa-top: env(safe-area-inset-top, 0px);
+  --sa-bottom: env(safe-area-inset-bottom, 0px);
+  --sa-left: env(safe-area-inset-left, 0px);
+  --sa-right: env(safe-area-inset-right, 0px);
+}
+/* 全屏界面层避让安全区（首页 / 选关 / 结算 等） */
+.screen { padding: var(--sa-top) var(--sa-right) var(--sa-bottom) var(--sa-left); }
+.overlay { padding: var(--sa-top) var(--sa-right) var(--sa-bottom) var(--sa-left); }
+
+/* ---- 竖屏公共规则（body.portrait 与媒体查询双写，保证 JS / 纯 CSS 两条路径一致） ---- */
+@media (orientation: portrait) {
+  /* 顶部第一行：击杀进度条铺满窄屏宽度（顶栏） */
+  #hud-top {
+    left: calc(var(--sa-left) + 12px); right: calc(var(--sa-right) + 12px);
+    top: calc(var(--sa-top) + 8px); transform: none; text-align: left;
+  }
+  #progress-wrap { width: 100%; }
+
+  /* 顶部第二行：等级 / 经验 / 货币，铺满并在进度条之下、右对齐 */
+  #hud-tr {
+    left: calc(var(--sa-left) + 12px); right: calc(var(--sa-right) + 12px);
+    top: calc(var(--sa-top) + 40px);
+    text-align: right; display: flex; flex-direction: column; align-items: flex-end;
+  }
+  .bar.exp { width: 100%; max-width: 100%; }
+
+  /* #hud-tl：顶栏两行之下、左对齐，避开顶部状态与头像栏（不再压左上角） */
+  #hud-tl {
+    left: calc(var(--sa-left) + 12px);
+    top: calc(var(--sa-top) + 82px);
+    flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; max-width: 92vw;
+  }
+  #buff-area { max-width: 92vw; }
+
+  /* 底部留给技能栏 + 虚拟摇杆；负重 / 背包按钮并入顶部信息区（避开底部控件） */
+  .party-skillbar {
+    bottom: calc(var(--sa-bottom) + 170px);
+    max-width: 96vw; flex-direction: column; flex-wrap: nowrap;
+    align-items: center; gap: 8px;
+    transform: translateX(-50%);
+  }
+  .ps-row { flex-wrap: nowrap; }             /* 单行排布：窄屏下 [图标][名字][4 槽] ≈ 330px，390px 宽可容纳 */
+  .ps-slot { width: 46px; height: 42px; }
+
+  /* 负重：左上信息列（#hud-tl 之下）；背包按钮：右上（#hud-tr 之下） */
+  #hud-bl { left: calc(var(--sa-left) + 12px); top: calc(var(--sa-top) + 204px); bottom: auto; font-size: 12px; }
+  #hud-br { right: calc(var(--sa-right) + 12px); top: calc(var(--sa-top) + 122px); bottom: auto; }
+
+  /* 虚拟摇杆左下、按钮右下，与技能栏错层 */
+  #joy-zone { left: calc(var(--sa-left) + 16px); bottom: calc(var(--sa-bottom) + 28px); transform: scale(.92); transform-origin: left bottom; }
+  #touch-btns { right: calc(var(--sa-right) + 16px); bottom: calc(var(--sa-bottom) + 40px); transform: scale(.92); transform-origin: right bottom; }
+
+  /* 中央提示 / 读条圈 / Toast：顶部信息区之下居中，避开底部控件带 */
+  #hint-center { top: calc(var(--sa-top) + 328px); bottom: auto; width: 92vw; }
+  #channel-wrap { top: calc(var(--sa-top) + 236px); bottom: auto; }
+  #toast-area { top: calc(var(--sa-top) + 244px); }
+
+  /* ---- 背包面板：三段并排 → 上下堆叠 ---- */
+  .bp-panel { width: 96vw; max-height: 88vh; padding: 16px 14px; }
+  body.portrait .bp-body,
+  .bp-body { flex-direction: column; flex-wrap: nowrap; gap: 16px; align-items: stretch; }
+  .bp-body .grid-zone { width: 100%; }
+  .bp-body .grid { width: max-content; max-width: 100%; overflow-x: auto; }
+  .grid-zone.side { min-width: 0; }
+  #drop-zone { width: 100%; }
+
+  /* ---- 升级 4 选 1：横排 → 2×2 网格（触控目标 ≥64px 高） ---- */
+  .levelup-cards.grid-portrait,
+  body.portrait .levelup-cards {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch;
+  }
+  body.portrait .levelup-card,
+  .levelup-cards.grid-portrait .levelup-card {
+    flex: none; min-width: 0; min-height: 96px; padding: 16px 12px;
+  }
+  .levelup-panel { width: 96vw; padding: 18px 14px; }
+
+  /* ---- 工匠工坊：左右布局 → 单列滚动 ---- */
+  .art-panel { width: 96vw; max-height: 90vh; padding: 16px 14px; }
+  .art-layout { flex-direction: column; gap: 16px; }
+  .art-side { width: 100%; }
+  .art-grids { width: 100%; }
+  #pending-area { min-height: 88px; }
+
+  /* ---- 芯片图鉴 / 图鉴：单列滚动、卡片铺满 ---- */
+  .codex-panel { width: 96vw; max-height: 88vh; }
+  .codex-grid { flex-direction: column; align-items: stretch; }
+  .codex-card, .codex-card.small { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; }
+  .codex-card .codex-face, .codex-card.small .codex-face { flex: none; }
+  .codex-card b { margin-top: 0; }
+
+  /* ---- 主菜单 / 关卡选择 / 角色选择：按钮铺满宽度、不横向溢出 ---- */
+  .main-panel { width: 100%; max-width: 480px; }
+  .btn.big { width: 100%; padding: 16px 18px; }
+  .level-panel { width: 96vw; }
+  .level-card { flex-wrap: wrap; gap: 6px; }
+  #char-list { grid-template-columns: 1fr; }
+  .char-panel { width: 96vw; }
+  .panel { width: 96vw; max-width: 96vw; }
+  .settings-panel, .help-panel, .goodbye-panel, .settle-panel, .death-panel, .meta-panel { width: 96vw; max-width: 96vw; }
+  .btn-row { flex-wrap: wrap; }
+  .btn-row .btn { flex: 1 1 auto; }
+  .help-cols { flex-direction: column; gap: 12px; }
+  .set-row > span { width: 96px; }
+  .set-row { flex-wrap: wrap; }
+
+  /* 自动战斗风格选择器：竖屏下按钮换行不致溢出 */
+  #autofight-styles { flex-wrap: wrap; }
+}
+
+/* body.portrait 同步（JS 钩子；与上面媒体查询等效，作双保险） */
+body.portrait .party-skillbar { bottom: calc(var(--sa-bottom) + 170px); }
+body.portrait #hud-tl { top: calc(var(--sa-top) + 82px); }
+body.portrait .bp-body { flex-direction: column; flex-wrap: nowrap; }
+body.portrait .art-layout { flex-direction: column; }
+body.portrait .codex-grid { flex-direction: column; align-items: stretch; }
+body.portrait #char-list { grid-template-columns: 1fr; }
+
+/* 横屏：显式确认沿用原布局（不改动任何既有规则，仅作可读性声明） */
+body.landscape #hud-tl { flex-direction: column; }
+@media (orientation: landscape) {
+  /* 横屏兼容分支：布局与改造前一致 —— 本媒体查询内不覆写任何几何，仅保留锚点声明。 */
+  body.landscape .party-skillbar { flex-wrap: nowrap; }
+}
+
+
+/* ---------- 20.1b 竖屏主菜单标题微调（截图实测：42px 标题换行顶格且被切） ---------- */
+@media (orientation: portrait) {
+  .title { font-size: 30px; letter-spacing: 2px; }
+  .screen { padding-top: max(28px, env(safe-area-inset-top)); }
+}

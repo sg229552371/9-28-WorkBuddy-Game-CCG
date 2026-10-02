@@ -2142,42 +2142,89 @@ function heroHasEmptySlot(heroId) {
   const slots = (G.run && G.run.heroModules && G.run.heroModules[heroId]) || [];
   return slots.some(s => s === null);
 }
-/** 构造 4 选 1 候选（19.10.6 契约）：
- *  - 模块候选 = { kind:"module", heroId, defId, name, desc, lv, locked }
- *    locked = 槽满且未持有 → UI 置灰（禁止选取，不静默销毁，见 19.10.3）
- *  - 兜底 = 池过滤后可用 ID 为空（全部满级）→ 改出属性小包 4 选 1
- *  @param heroId 英雄 ID；@param poolOverride 可选，显式指定可用 ID 池（测试/降级用） */
+/** 全队成员英雄 ID 列表（队长 G.heroDef + 队友 G.team，去重保序）。
+ *  与 buildHeroModuleSlots / buildModulePoolState 同一口径，见 19.10.1。 */
+function teamHeroIds() {
+  const ids = [];
+  const hd = G.heroDef || (G.team && G.team[0]);
+  if (hd && hd.id) ids.push(hd.id);
+  for (const h of (G.team || [])) if (h && h.id && ids.indexOf(h.id) < 0) ids.push(h.id);
+  return ids;
+}
+/** 全队池汇总（§5.47「全队混抽」）：
+ *  遍历在场英雄（队长 + 队友），对每人跑 offerModuleIds(hid)；
+ *  **该英雄 4 格已满则整体跳过**（不出他的候选，避免选了装不上）；
+ *  汇总为 [{hid, defId}] 候选源（每条带归属英雄，选中后装到该 hid 身上）。
+ *  @param singleHeroId 可选：仅汇总该英雄（poolOverride/单人退化场景，不跨队友） */
+function teamModuleOfferPool(singleHeroId) {
+  const ids = singleHeroId ? [singleHeroId] : teamHeroIds();
+  const src = [];
+  for (const hid of ids) {
+    if (!heroHasEmptySlot(hid)) continue;      // 满格队友整体排除（规则 4）
+    for (const defId of offerModuleIds(hid)) src.push({ hid, defId });
+  }
+  return src;
+}
+/** 构造 4 选 1 候选（19.10.6 契约；§5.47 改为**全队池混抽**）：
+ *  - 模块候选 = { kind:"module", heroId, defId, name, desc, lv, locked, ownerName, ownerRoleColor }
+ *    heroId = 候选**所属队友**（选中后装到他身上，见 applyLevelUpPick）
+ *    ownerName / ownerRoleColor = 归属展示（界面线 B 契约）
+ *    locked = 该英雄槽满且未持有 → UI 置灰（禁止选取，不静默销毁，见 19.10.3）
+ *  - 兜底 = 汇总池为空（全队都满 / 池空）→ 改出属性小包 4 选 1
+ *  @param heroId 升级者英雄 ID（仅用于 poolOverride 回退与兜底归属，不再决定抽取范围）
+ *  @param poolOverride 可选，显式指定可用 ID 池（测试/降级用）→ 仅从升级者本人抽取 */
 function buildLevelUpCandidates(heroId, poolOverride) {
-  const avail = poolOverride || offerModuleIds(heroId);
-  if (!avail.length) return statPackCandidates();
   const n = (CFG.levelUp && CFG.levelUp.choiceCount) || 4;
   const dup = !(CFG.levelUp && CFG.levelUp.allowDuplicateOffer === false);   // 默认允许重复入选
   const weights = (CFG.modulePool && CFG.modulePool.weights) || null;
   const weighted = !!(CFG.levelUp && CFG.levelUp.weighted && weights);
-  const slots = (G.run && G.run.heroModules && G.run.heroModules[heroId]) || [];
-  const hasEmpty = heroHasEmptySlot(heroId);
-  const mk = (defId) => {
-    const d = (CFG.moduleDefs || []).find(m => m.id === defId);
-    const owned = slots.find(s => s && s.defId === defId);
-    const lv = owned ? Math.min(9, owned.lv + 1) : 1;   // 入槽后等级（UI 展示）
-    // 置灰边界（19.10.3）：仅「未持有 + 无空槽」置灰；已持有 lv<9 永不置灰
-    const locked = !owned && !hasEmpty;
-    return { kind: "module", heroId, defId, name: d ? d.name : defId,
-      desc: d ? affixPreview(d) : "", lv, locked };
+  const defs = CFG.moduleDefs || [];
+  const ui = (typeof UI !== "undefined") ? UI : null;
+  // 归属展示快照（ownerName / ownerRoleColor）：界面线 B 契约，缺失容错
+  const ownerOf = (hid) => {
+    const roleDef = (ui && ui.heroRole && hid) ? ui.heroRole(hid) : null;
+    return { ownerName: heroDefNameOf(hid), ownerRoleColor: roleDef ? roleDef.color : null };
   };
-  const out = [];
-  const bag = avail.slice();
-  for (let i = 0; i < n; i++) {
-    if (!bag.length) break;
-    let defId;
-    if (weighted) {
-      const w = {}; for (const id of bag) w[id] = weights[id] != null ? weights[id] : 1;
-      defId = String(U.weightedPick(w));
-    } else defId = bag[U.randInt(0, bag.length - 1)];
-    out.push(mk(defId));
-    if (!dup) { const k = bag.indexOf(defId); if (k >= 0) bag.splice(k, 1); }
+  // 出候选：从给定候选源 [{hid, defId}] 抽 n 个（带归属 + 槽位状态 + 置灰）
+  const buildFrom = (src) => {
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      if (!src.length) break;
+      let pick;
+      if (weighted) {
+        const w = {}; for (const s of src) w[s.defId] = weights[s.defId] != null ? weights[s.defId] : 1;
+        const chosenId = String(U.weightedPick(w));
+        pick = src.find(s => s.defId === chosenId) || src[U.randInt(0, src.length - 1)];
+      } else pick = src[U.randInt(0, src.length - 1)];
+      const hid = pick.hid, defId = pick.defId;
+      const d = defs.find(m => m.id === defId);
+      const slots = (G.run && G.run.heroModules && G.run.heroModules[hid]) || [];
+      const owned = slots.find(s => s && s.defId === defId);
+      const lv = owned ? Math.min(9, owned.lv + 1) : 1;   // 入槽后等级（UI 展示）
+      // 置灰边界（19.10.3）：仅「未持有 + 无空槽」置灰；已持有 lv<9 永不置灰
+      const locked = !owned && !heroHasEmptySlot(hid);
+      const o = ownerOf(hid);
+      out.push({ kind: "module", heroId: hid, defId, name: d ? d.name : defId,
+        desc: d ? affixPreview(d) : "", lv, locked,
+        ownerName: o.ownerName, ownerRoleColor: o.ownerRoleColor });
+      if (!dup) { const k = src.findIndex(s => s.defId === defId && s.hid === hid); if (k >= 0) src.splice(k, 1); }
+    }
+    return out;
+  };
+  // poolOverride：显式池 → 仅从升级者本人抽取（兼容既有测试/降级用法）
+  if (poolOverride) {
+    if (!poolOverride.length) return statPackCandidates();
+    const src = heroHasEmptySlot(heroId) ? poolOverride.map(defId => ({ hid: heroId, defId })) : [];
+    if (!src.length) return statPackCandidates();
+    const out = buildFrom(src);
+    if (out.length && out.every(c => c.locked)) return statPackCandidates();
+    return out;
   }
-  // 极端保险：若候选全部被置灰（理论上池过滤已保证至少 1 个可叠层），降级为属性小包
+  // 全队混抽（§5.47）：汇总各在场英雄可用模块 → 混抽 n 个
+  const src = teamModuleOfferPool();
+  if (!src.length) return statPackCandidates();
+  const out = buildFrom(src);
+  // 极端保险：若候选全部被置灰，降级为属性小包
   if (out.length && out.every(c => c.locked)) return statPackCandidates();
   return out;
 }
@@ -2221,11 +2268,16 @@ function applyStatPack(pack) {
   r.statPackGain[pack.stat] += pack.value || 0;
   return true;
 }
-/** 结算一个 4 选 1（按候选 kind 分发）；返回是否成功。 */
+/** 结算一个 4 选 1（按候选 kind 分发）；返回是否成功。
+ *  ⚠️ 全队混抽（§5.47）后**入槽必须用候选所属英雄 cand.heroId**，而非升级者 heroId——
+ *  否则「给队友补强」会装错人（本次改动的关键正确性约束）。 */
 function applyLevelUpPick(heroId, cand) {
   if (!cand) return false;
   if (cand.kind === "statPack") return applyStatPack(cand);
-  if (cand.kind === "module") return applyHeroModulePick(heroId, cand.defId);
+  if (cand.kind === "module") {
+    const owner = cand.heroId || heroId;   // 候选自带归属；缺失时回退升级者（兼容旧形态）
+    return applyHeroModulePick(owner, cand.defId);
+  }
   return false;
 }
 /** 弹出一次 4 选 1（19.10.6 契约）：调 UI.onLevelUpChoice(candidates, onPick)。

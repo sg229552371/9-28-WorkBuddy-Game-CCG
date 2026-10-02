@@ -30,22 +30,32 @@ const Game = {
     UI.showScreen("screen-main");   // 启动落到游戏首页（→ 主城 → 传送门 → 选关）
     requestAnimationFrame((t) => this.loop(t));
   },
-  /* 画布自适应（跨端口径修正）：旧版画布固定 1920×1080 再整体缩进窗口——手机竖屏时
+  /* 画布自适应（跨端口径修正 + 竖屏优先 20.x）：旧版画布固定 1920×1080 再整体缩进窗口——手机竖屏时
    * 游戏只是屏幕中间一条小横带，角色物理尺寸与 PC 全屏差数倍（「视野/角色大小不一致」的根因）。
    * 现在：画布**分辨率跟随窗口**，垂直视野固定（CFG.camera.viewH）→ 角色大小只由 zoom 决定，
-   * PC 与手机一致；宽度随屏幕比例伸缩（过窄的竖屏按 minAspect 钳到 4:3，左右留边）。 */
+   * PC 与手机一致；宽度随屏幕比例伸缩。
+   * 竖屏优先（用户拍板）：**竖屏填满屏幕**——不再把窄屏钳成 4:3（旧 minAspect=0.75 会左右留黑边），
+   * 而是按真实 aspect 走；横屏行为保持改造前一致（aspect ≥ minAspect，钳制本就不介入）。
+   * 硬编码断点 aspect<1 视为竖屏；若需做成 CFG 字段见汇报（CFG.camera.portraitFill / portraitMinAspect）。 */
   fitCanvas() {
     const cam = CFG.camera || {};
     const zoom = cam.zoom || 1.5;
     const viewH = cam.viewH || 720;
     const vw = window.innerWidth || 1920, vh = window.innerHeight || 1080;   // 桩环境兜底，防 NaN
     const aspect = vw / Math.max(1, vh);
-    G.H = Math.round(viewH * zoom);                                   // 画布高固定（1080）
-    G.W = Math.max(Math.round(G.H * (cam.minAspect || 0.75)), Math.round(G.H * aspect));
+    G.H = Math.round(viewH * zoom);                                   // 画布高固定（1080）：垂直锚点，跨端角色大小一致
+    // 竖屏（aspect<1）：放开 minAspect 钳制 → 画布宽按真实比例，填满整块竖屏（无左右黑边）。
+    // 横屏（aspect≥1）：沿用旧口径（minAspect 对宽屏不生效，行为不变），PC 体验一致。
+    const isPortrait = aspect < (cam.portraitBreakpoint != null ? cam.portraitBreakpoint : 1);
+    const fillPortrait = cam.portraitFill !== false;      // 竖屏填满开关（CFG.camera.portraitFill）
+    const minAspect = (isPortrait && fillPortrait) ? 0 : (cam.minAspect || 0.75);
+    G.W = Math.max(Math.round(G.H * minAspect), Math.round(G.H * aspect));
     G.canvas.width = G.W; G.canvas.height = G.H;
     const scale = Math.min(vw / G.W, vh / G.H);
     G.canvas.style.width = G.W * scale + "px";
     G.canvas.style.height = G.H * scale + "px";
+    // 同步方向类名（portrait/landscape）：CSS 主分支依据，旋转后随之切换
+    if (typeof UI !== "undefined" && UI.applyOrientation) UI.applyOrientation();
   },
 
   /* ---------- 界面流程（首页 → 主城 → 传送门 → 选关 → 选角 → 战斗） ---------- */

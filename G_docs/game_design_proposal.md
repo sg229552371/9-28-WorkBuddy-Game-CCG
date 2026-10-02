@@ -2369,12 +2369,19 @@
 **流程**：
 
 1. **升级结算**（既有）：`r.lv++`、`expNext` 重算、`baseStatGain` 全队属性成长、飘字/toast —— **保持不动**。
-2. **生成候选**：从池 `CFG.modulePool.perHero[heroId]`（未列出回落 `CFG.modulePool.default`）**按 `CFG.modulePool.weights` 加权**抽 `CFG.levelUp.choiceCount`（=4）个。
-   - `CFG.levelUp.allowDuplicateOffer = true` → **允许同一模块重复入选**（便于快速堆层）。
-3. **池过滤（方案 2）**：候选生成前**先剔除该英雄已满级（lv ≥ 9）的模块 ID**；剩余 ID 才参与加权抽取。
-4. **兜底**：过滤后**可用 ID 数 = 0**（该英雄全部模块满级）→ **改出「属性小包 4 选 1」**（见 19.10.4）。
-5. **弹窗**：调 `UI.onLevelUpChoice(candidates, onPick)`（契约见 19.10.6），**游戏暂停**（不加倒计时）。
-6. **入槽**：玩家点选 → 回调 `onPick(idx)` → 按 19.10.3 规则写入 `G.run.heroModules[heroId]` → `recomputeWeapon()` → **恢复**。
+2. **生成候选（🔴 全队混抽，20.0 修订）**：**遍历全队每个英雄**，各自取池 `CFG.modulePool.perHero[hid]`
+   （未列出回落 `CFG.modulePool.default`），各自跑「满级过滤」（该英雄已满 9 级的模块剔除）后，
+   **汇总成一个全队候选池** → 再按 `CFG.modulePool.weights` 加权抽 `CFG.levelUp.choiceCount`（=4）个。
+   - 🔴 **谁升级不重要**：候选来源是**全队池**，不是升级者一个人的池——升级 = 一次「给全队某位置补强」的机会。
+   - 🔴 **4 格已满的队友整体排除**：该英雄 `heroModules[hid]` 无空槽 → **完全不生成他的候选**（避免选了装不上）。
+   - 🔴 **每个候选必须带 `heroId` 归属**，UI 显示「**该模块属于哪个队友**」，玩家据此决策。
+   - `CFG.levelUp.allowDuplicateOffer = true` → 允许同一模块重复入选（便于快速堆层）。
+3. **池过滤（方案 2）**：候选生成前**先剔除各英雄已满级（lv ≥ 9）的模块 ID**；剩余 ID 才参与加权抽取。
+4. **兜底**：**全队**过滤后可用 ID 数 = 0（所有人模块都满级 / 所有人 4 格已满）→
+   **改出「属性小包 4 选 1」**（见 19.10.4）。
+5. **弹窗**：调 `UI.onLevelUpChoice(candidates, onPick, meta)`（契约见 19.10.6），**游戏暂停**（不加倒计时）。
+6. **入槽**：玩家点选 → 回调 `onPick(idx)` → 按 19.10.3 规则写入 **`G.run.heroModules[cand.heroId]`**
+   （🔴 **候选所属英雄**，不是升级者！）→ `recomputeWeapon()` → **恢复**。
 7. **多级连升**：一次 `gainExp` 触发 N 级 → **排队逐个弹**（`modulePoolState.queue`），第 1 个结算完才弹第 2 个，全部完成才恢复。
 
 ### 19.10.3 入槽规则（三选一 + 槽满策略）
@@ -2441,10 +2448,11 @@
 
 | 成员 | 签名 | 语义 |
 | ---- | ---- | ---- |
-| `UI.onLevelUpChoice(candidates, onPick)` | `candidates: Array<Candidate>`，`onPick: (idx:number) => void` | 弹出暂停弹窗；玩家点选第 `idx` 项后回调。**战斗线只负责生成 `candidates` 与消费 `idx`**，不直接操作 DOM。 |
-| `Candidate`（模块） | `{ kind:"module", heroId, defId, name, lv（入槽后等级）, locked:boolean }` | `locked=true`（槽满且未持有）→ UI 置灰不可点。 |
+| `UI.onLevelUpChoice(candidates, onPick, meta)` | `candidates: Array<Candidate>`，`onPick: (idx:number) => void`，`meta?: Object`（**可选**，20.0 新增） | 弹出暂停弹窗；玩家点选第 `idx` 项后回调。**战斗线只负责生成 `candidates`/`meta` 与消费 `idx`**，不直接操作 DOM。⚠️ `meta` 缺失时必须退回旧行为（向后兼容）。 |
+| `Candidate`（模块） | `{ kind:"module", heroId, defId, name, lv（入槽后等级）, locked:boolean, ownerName, ownerRoleColor }` | `heroId` = **该模块所属队友**（全队混抽后不一定等于升级者）；`locked=true`（槽满且未持有）→ UI 置灰不可点；`ownerName`/`ownerRoleColor` = **归属展示**（🔴 20.0 起 UI 必须显示「这个模块是给谁的」）。 |
+| `meta`（归属元信息） | `{ heroId, heroName, roleColor, slotUsed, slotPer }` | 本次升级的**触发者**信息 + 槽位进度（`slotUsed/slotPer` 用于显示 `N/4`）。**可选**，界面线缺失容错。 |
 | `Candidate`（兜底） | `{ kind:"statPack", packId, name, stat, value }` | 属性小包候选。 |
-| `UI.clearLevelUpChoice()` | `()` | 收尾清理（连升队列全部结算后调用）。 |
+| `UI.clearLevelUpChoice()` / `UI.onLevelUpChoiceClose()` | `()` | 收尾清理（连升队列全部结算后调用）。 |
 
 - 🔴 **暂停语义**：弹窗期间 `Game.paused = true`（或等价闸门）→ 主循环 `step` **跳过世界/玩家/同伴更新**，
   但**渲染照常**（弹窗覆盖）。**按 §5.34 三件套**：字段显式初始化、旧测试加 `Game.skipLevelUpChoice()` 类辅助跳过、

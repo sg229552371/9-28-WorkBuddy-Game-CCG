@@ -300,16 +300,22 @@ const driver = `
     check("16. 队友槽数组未被污染（仍全 null）", G.run.heroModules[mateId].every(s => s === null));
   }
 
-  /* ============ 十四、断言 17：队长升级只写队长槽，队友槽不受影响 ============ */
+  /* ============ 十四、断言 17：升级只写入「候选所属英雄」的槽，其余英雄槽不受影响 ============
+   * 注（§5.47 全队混抽）：升级不再必然强化升级者本人，故不再断言「一定写队长槽」；
+   * 改为断言「入槽者 === 被选中候选的 heroId，且仅该英雄槽 +1，另一英雄槽不被污染」。 */
   {
     Game.startRun([CFG.heroes[0], CFG.heroes[1]]);
     Game.skipIntroFreeze();
     const mainId = G.heroDef.id, mateId = G.run.companions[0].heroDef.id;
-    const mateBefore = JSON.stringify(G.run.heroModules[mateId]);
     resetCapture(); autoPick = true;
     gainExp(G.run.expNext + 1);
-    check("17. 队长升级写入队长槽", G.run.heroModules[mainId].filter(s => s !== null).length === 1);
-    check("17. 队友槽数组不受影响", JSON.stringify(G.run.heroModules[mateId]) === mateBefore);
+    const cand = captured[0].cands.find(c => !c.locked) || captured[0].cands[0];
+    const owner = cand.kind === "module" ? cand.heroId : mainId;   // 属性小包无归属
+    const other = (owner === mainId) ? mateId : mainId;
+    check("17. 升级只写入候选所属英雄的槽（该英雄槽 +1）",
+      cand.kind !== "module" || G.run.heroModules[owner].filter(s => s !== null).length === 1);
+    check("17. 候选所属英雄的槽未被写错到另一英雄",
+      cand.kind !== "module" || G.run.heroModules[other].every(s => s === null));
   }
 
   /* ============ 十五、断言 18：两英雄各持同名模块 → 汇总为两份叠加 ============ */
@@ -359,6 +365,179 @@ const driver = `
     resetCapture(); lastMeta = null;
     gainExp(G.run.expNext + 1);
     check("再升一级后 meta.slotUsed 递增（模块已入槽）", lastMeta && lastMeta.slotUsed === usedBefore + 1);
+  }
+
+  /* ============================================================================
+   * 十八、全队混抽（§5.47）：升级候选从「全队所有英雄专属池汇总」抽，
+   *       候选带归属队友（heroId/ownerName/ownerRoleColor），入槽按候选所属英雄。
+   * ============================================================================ */
+
+  /* 断言 19：全队 2 人时，候选来源跨越两人（不是集中在升级者一个人身上）。
+   * 证明方式（确定性 + 统计双保险）：
+   *  ① 汇总池 teamModuleOfferPool() 同时含 {hid:A} 与 {hid:B} 两条来源 → 抽取范围确实跨人；
+   *  ② 反复混抽多次，出现过来自队友 B 与来自队长 A 的候选（旧实现只出 A，必红）。 */
+  {
+    Game.startRun([CFG.heroes[0], CFG.heroes[1]]);
+    Game.skipIntroFreeze();
+    resetCapture(); autoPick = true;
+    const mainId = G.heroDef.id;                       // H001
+    const mateId = G.run.companions[0].heroDef.id;     // H002
+    const src = teamModuleOfferPool();
+    check("19. 汇总池含队长来源", src.some(s => s.hid === mainId));
+    check("19. 汇总池含队友来源（跨两人）", src.some(s => s.hid === mateId));
+    // 统计：混抽 40 次，两侧来源都应出现
+    let sawMain = false, sawMate = false;
+    for (let g = 0; g < 40 && !(sawMain && sawMate); g++) {
+      for (const c of buildLevelUpCandidates(mainId)) {
+        if (c.kind !== "module") continue;
+        if (c.heroId === mainId) sawMain = true;
+        if (c.heroId === mateId) sawMate = true;
+      }
+    }
+    check("19. 混抽多次出现过来自队长的候选", sawMain);
+    check("19. 混抽多次出现过来自队友的候选（不集中在升级者身上）", sawMate);
+    gainExp(G.run.expNext + 1);
+    check("19. 单次升级候选数量恰为 4", captured[0] && captured[0].cands.length === 4);
+  }
+
+  /* 断言 20：每个候选都带 heroId，且属于在场英雄之一 */
+  {
+    Game.startRun([CFG.heroes[0], CFG.heroes[1], CFG.heroes[2]]);
+    Game.skipIntroFreeze();
+    resetCapture(); autoPick = true;
+    const ids = [G.heroDef.id, ...G.run.companions.map(c => c.heroDef.id)];
+    gainExp(G.run.expNext + 1);
+    const cs = captured[0].cands;
+    check("20. 每个候选都带 heroId（非空字符串）",
+      cs.every(c => typeof c.heroId === "string" && c.heroId.length > 0));
+    check("20. 每个候选 heroId 属于在场英雄之一",
+      cs.every(c => ids.indexOf(c.heroId) >= 0));
+  }
+
+  /* 断言 21（最关键）：入槽正确性 —— 选中「队友 B 的模块」→ 装进 B 的槽，不是升级者 A 的槽。
+   * 做法：用确定性 poolOverride 无法指定 heroId（poolOverride 是 ID 数组），
+   * 因此这里直接构造候选对象（模拟 UI 回传 teammate 候选）调用 applyLevelUpPick，
+   * 再验证「B 槽被写入、A 槽不被污染」——这正是本次改动最易错处（旧实现用升级者 heroId 入槽）。 */
+  {
+    Game.startRun([CFG.heroes[0], CFG.heroes[1]]);
+    Game.skipIntroFreeze();
+    const aId = G.heroDef.id;                          // 升级者
+    const bId = G.run.companions[0].heroDef.id;        // 队友
+    const bDefId = (CFG.modulePool.perHero[bId] || CFG.modulePool.default)[0];
+    const aBefore = JSON.stringify(G.run.heroModules[aId]);
+    // 先经 buildLevelUpCandidates 取一个真实归属 B 的候选（保证形态与生产一致）
+    let bCand = null;
+    for (let g = 0; g < 40 && !bCand; g++) {
+      const cs = buildLevelUpCandidates(aId);
+      bCand = cs.find(c => c.kind === "module" && c.heroId === bId);
+    }
+    check("21. 能从全队混抽候选里取到归属队友 B 的候选", !!bCand);
+    const ok21 = applyLevelUpPick(aId, bCand);         // 升级者是 A，候选归属是 B
+    const c1 = G.run.heroModules[bId].filter(s => s !== null);
+    check("21. 选中队友 B 的模块 → 写入 B 的槽（B 槽出现该 defId）",
+      ok21 === true && c1.length === 1 && c1[0].defId === bCand.defId);
+    check("21. 升级者 A 的槽不被污染（仍与升级前一致）",
+      JSON.stringify(G.run.heroModules[aId]) === aBefore);
+    check("21. 候选 heroId 与入槽英雄一致（cand.heroId === 实际入槽者）",
+      c1[0].defId === bCand.defId && bCand.heroId === bId);
+  }
+
+  /* 断言 22：某队友 4 格满 → 完全不出他的候选 */
+  {
+    Game.startRun([CFG.heroes[0], CFG.heroes[1]]);
+    Game.skipIntroFreeze();
+    const aId = G.heroDef.id, bId = G.run.companions[0].heroDef.id;
+    const bPool = (CFG.modulePool.perHero[bId] || CFG.modulePool.default).slice();
+    for (let i = 0; i < 4; i++) G.run.heroModules[bId][i] = { defId: bPool[i], lv: 1 };  // B 4 格满
+    let sawB = false;
+    for (let g = 0; g < 60; g++) {
+      const cs = buildLevelUpCandidates(aId);
+      if (cs.some(c => c.kind === "module" && c.heroId === bId)) { sawB = true; break; }
+    }
+    check("22. 队友 B 4 格满 → 混抽 60 次均不出 B 的候选", sawB === false);
+    check("22. B 4 格满但仍有可叠层模块：B 整体被排除（不因可叠层而保留）",
+      heroHasEmptySlot(bId) === false);
+    // 候选应全部来自 A（唯一未满的成员）
+    const cs = buildLevelUpCandidates(aId);
+    check("22. 候选全部来自未满的队长 A", cs.every(c => c.kind !== "module" || c.heroId === aId));
+  }
+
+  /* 断言 23：专属池不被破坏 —— 每个候选的 defId 必在该候选 heroId 的专属池内 */
+  {
+    Game.startRun([CFG.heroes[0], CFG.heroes[1], CFG.heroes[2]]);
+    Game.skipIntroFreeze();
+    resetCapture(); autoPick = true;
+    gainExp(G.run.expNext + 1);
+    const cs = captured[0].cands;
+    check("23. 每个候选 defId 都在其 heroId 的专属池内（H001 模块不进 H002 池）",
+      cs.filter(c => c.kind === "module").every(c => {
+        const pool = CFG.modulePool.perHero[c.heroId] || CFG.modulePool.default;
+        return pool.indexOf(c.defId) >= 0;
+      }));
+  }
+
+  /* 断言 24：候选带 ownerName 非空 + ownerRoleColor（界面线 B 契约） */
+  {
+    Game.startRun([CFG.heroes[0], CFG.heroes[1]]);
+    Game.skipIntroFreeze();
+    resetCapture(); autoPick = true;
+    gainExp(G.run.expNext + 1);
+    const cs = captured[0].cands.filter(c => c.kind === "module");
+    check("24. 每个模块候选 ownerName 非空字符串",
+      cs.length > 0 && cs.every(c => typeof c.ownerName === "string" && c.ownerName.length > 0));
+    check("24. ownerName 与 heroDefNameOf(heroId) 一致",
+      cs.every(c => c.ownerName === heroDefNameOf(c.heroId)));
+    check("24. ownerRoleColor 存在（有色值或 null，不抛异常）",
+      cs.every(c => c.ownerRoleColor === null || typeof c.ownerRoleColor === "string"));
+  }
+
+  /* 断言 25：小队只有 1 人时行为退化为「自己抽自己」（与旧行为一致） */
+  {
+    Game.startRun([CFG.heroes[0]]);
+    Game.skipIntroFreeze();
+    resetCapture(); autoPick = true;
+    const hid = G.heroDef.id;
+    gainExp(G.run.expNext + 1);
+    const cs = captured[0].cands;
+    check("25. 单人局：全部候选 heroId = 自己",
+      cs.every(c => c.kind !== "module" || c.heroId === hid));
+    check("25. 单人局：ownerName = 自己名字",
+      cs.filter(c => c.kind === "module").every(c => c.ownerName === heroDefNameOf(hid)));
+    check("25. 单人局入槽仍写自己槽（退化一致）",
+      G.run.heroModules[hid].filter(s => s !== null).length === 1);
+  }
+
+  /* 断言 26：poolOverride 兼容（显式池仍生效，不破坏既有测试用法） */
+  {
+    Game.startRun([CFG.heroes[0]]);
+    Game.skipIntroFreeze();
+    const hid = G.heroDef.id;
+    const ov = buildLevelUpCandidates(hid, ["M001", "M002"]);
+    check("26. poolOverride 生效：候选仅来自显式池",
+      ov.length === 4 && ov.every(c => c.defId === "M001" || c.defId === "M002"));
+    check("26. poolOverride 空数组 → 属性小包兜底",
+      buildLevelUpCandidates(hid, []).every(c => c.kind === "statPack"));
+  }
+
+  /* 断言 27：全队都满 / 池空 → 属性小包兜底（混抽路径） */
+  {
+    Game.startRun([CFG.heroes[0], CFG.heroes[1]]);
+    Game.skipIntroFreeze();
+    const ids = [G.heroDef.id, ...G.run.companions.map(c => c.heroDef.id)];
+    for (const id of ids) {
+      const pool = (CFG.modulePool.perHero[id] || CFG.modulePool.default);
+      for (let i = 0; i < 4; i++) G.run.heroModules[id][i] = { defId: pool[i], lv: 9 };
+      // 把池内全部 ID 都塞满级（覆盖 4 槽以外的池项：直接改槽引用不够，逐项补满）
+      for (const pid of pool) {
+        const existing = G.run.heroModules[id].find(s => s && s.defId === pid);
+        if (existing) existing.lv = 9;
+        else { const e = G.run.heroModules[id].find(s => s === null); if (e) { e.defId = pid; e.lv = 9; } }
+      }
+    }
+    // 队长池过滤后为空（全满级）→ 混抽退化为属性小包
+    const cs = buildLevelUpCandidates(G.heroDef.id);
+    check("27. 全队池空 → 属性小包兜底 4 选 1",
+      cs.length === 4 && cs.every(c => c.kind === "statPack"));
   }
 
   UI.onLevelUpChoice = realChoice;
