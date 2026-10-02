@@ -137,6 +137,9 @@ const ctx = vm.createContext(global);
 for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js", "js/main.js"]) {
   vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
 }
+// ⑩ 静态核对需要读源码：在沙箱内 fs/__dirname 不可用，故先读出并以变量形式注入
+ctx.__citySrc = fs.readFileSync(path.join(__dirname, "js", "main.js"), "utf8");
+ctx.__cssSrc = fs.readFileSync(path.join(__dirname, "css", "style.css"), "utf8");
 
 vm.runInContext(`
   const get = (id) => document.getElementById(id);
@@ -495,6 +498,42 @@ vm.runInContext(`
   check("旋转后 applyOrientation 重算 → 横屏类", document.body.classList.contains("landscape") && fitCalls >= 0);
   Game.fitCanvas = origFit;
   setVP(1920, 1080);                      // 复原桩视口
+
+  /* ---------- ⑩ 主城 / 非战斗态：战斗 HUD 必须下线（20.2 修复「通关回城后技能栏残留」） ----------
+   * 缺陷成因：updateHUD 在 G.state !== "playing" 时直接 return，
+   * 全队技能栏最后一次渲染的 DOM 原样留在页面；而 .party-skillbar:empty 只隐藏空容器。
+   * 修复口径：① CSS 在 #hud.city-mode 下隐藏 #party-skillbar；② UI.clearBattleHud() 清空结构。 */
+  const barEl = get("party-skillbar");
+  check("主城：技能栏容器存在（前置）", !!barEl);
+
+  // ① UI 侧：clearBattleHud 清空技能栏内容 + 复位缓存，使 :empty 规则重新生效
+  // 注意：DOM 桩的 innerHTML 赋值不解析 HTML（不生成 children），故用「写入标记串」来判定清空
+  barEl.innerHTML = "<i>stale-battle-dom</i>";
+  check("主城：模拟战斗残留结构（前置）", barEl.innerHTML.length > 0);
+  check("主城：clearBattleHud 是函数", typeof UI.clearBattleHud === "function");
+  if (typeof UI.clearBattleHud === "function") UI.clearBattleHud();
+  check("主城：clearBattleHud 后技能栏清空", barEl.innerHTML === "");
+  check("主城：清空后缓存复位（下次进战斗会重建）", !UI._psCache && !UI._psSig);
+
+  // ② 回城入口确实调用了清空（回归防线：以后改回城流程忘调会被抓）
+  check("主城：main.js 回城流程调用 clearBattleHud", __citySrc.indexOf("clearBattleHud(") >= 0);
+
+  // ③ CSS 侧：city-mode 下隐藏技能栏（结构残留时的兜底，双保险）
+  const cssFlat = __cssSrc.split(String.fromCharCode(10)).join(" ");
+  let cssHide = false;
+  let cur = cssFlat.indexOf("#hud.city-mode");
+  while (cur >= 0) {
+    const open = cssFlat.indexOf("{", cur);
+    const close = cssFlat.indexOf("}", open);
+    if (open < 0 || close < 0) break;
+    const sel = cssFlat.slice(cur, open);
+    const body = cssFlat.slice(open, close);
+    if (sel.indexOf("#party-skillbar") >= 0 && body.indexOf("display:none") >= 0) { cssHide = true; break; }
+    cur = cssFlat.indexOf("#hud.city-mode", cur + 1);
+  }
+  check("主城：CSS 在 #hud.city-mode 下隐藏 #party-skillbar", cssHide);
+  check("主城：CSS 隐藏规则先于竖屏段（不被后者覆盖）",
+    cssFlat.indexOf("#party-skillbar") >= 0 && cssHide);
 
   console.log(window.__v2Ok ? "UI V2 TEST OK" : "UI V2 TEST FAILED");
   if (!window.__v2Ok) throw new Error("UI V2 TEST FAILED");

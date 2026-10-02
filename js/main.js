@@ -79,6 +79,7 @@ const Game = {
     G.mainWorld = null; G.subWorld = null; G.riftWorld = null;
     G.activeWorld = new World(CFG.city.mapW, CFG.city.mapH, false, "city");
     UI.showHudOnly();
+    if (typeof UI.clearBattleHud === "function") UI.clearBattleHud();   // 20.2：下线战斗 HUD（技能栏/模块槽），避免通关回城后残留
     const hud = document.getElementById("hud");
     if (hud) hud.classList.add("city-mode");
     if (typeof UI.updateCityHUD === "function") UI.updateCityHUD();
@@ -144,6 +145,8 @@ const Game = {
     G.mainWorld = null; G.subWorld = null; G.riftWorld = null; G.activeWorld = null;
     G.inArtisan = false; G.inRift = false;
     UI.toggleBackpack(false); UI.toggleArtisan(false);
+    // 20.2：战斗 HUD 下线。统一收尾口 → 撤离/死亡回城 / 回首页 / 其它退出路径全部覆盖
+    if (typeof UI.clearBattleHud === "function") UI.clearBattleHud();
   },
   /* 战斗结束（撤离/死亡）→ 回主城（Hub 是家，出征从主城出发也回到主城） */
   backToMenu() {

@@ -471,6 +471,18 @@ const UI = {
       if (entry.member) this._updatePartySlots(entry, entry.member);
     }
   },
+  /* 战斗 HUD 下线（20.2）：离开战斗（回城 / 结算 / 死亡 / 返回主菜单）时调用。
+   * 成因：updateHUD 在 G.state !== "playing" 时提前 return，全队技能栏最后一次渲染的 DOM
+   *       会原样留在页面；而 .party-skillbar:empty 只隐藏**空**容器 → 回城后技能栏残留。
+   * 处理：清空结构（令 :empty 规则重新生效）+ 复位缓存（下次进战斗按新队伍重建）。
+   * 幂等：可重复调用；元素缺失只跳过，不抛异常。 */
+  clearBattleHud() {
+    const bar = document.getElementById("party-skillbar");
+    if (bar) bar.innerHTML = "";
+    this._psCache = null;
+    this._psSig = null;
+    this._psSlotSig = {};
+  },
 
   updateHUD() {
     const r = G.run;

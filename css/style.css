@@ -490,6 +490,9 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 #city-avatar-bar .ab-crystal { color:#c79bff; font-size:14px; font-weight:bold; margin-left:6px; }
 #hud.city-mode #hud-tl, #hud.city-mode #hud-top, #hud.city-mode #hud-tr,
 #hud.city-mode #hud-bl, #hud.city-mode #hud-br { display:none; }
+/* 20.2：主城不显示全队技能栏（战斗 HUD）。JS 侧 clearBattleHud 已清空结构，
+ * 此处为兜底双保险——即使结构残留也不会漏到主城。 */
+#hud.city-mode #party-skillbar { display:none; }
 #hud.city-mode #hint-center { bottom:110px; }
 
 /* ===== 物品 TIPS 浮窗 ===== */
