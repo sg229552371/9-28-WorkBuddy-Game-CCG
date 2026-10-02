@@ -682,12 +682,15 @@ const SkillSystem = {
     // 名下计数只统计**本世界**的召唤物：别的水 map 的编队不占这里的上限，也不会被这里的施放顶掉
     const mine = () => (G.run.drones || []).filter(d => d.hp > 0 && d.owner === caster && (!d.world || d.world === G.activeWorld));
     while (mine().length > want) G.run.drones.splice(G.run.drones.indexOf(mine()[0]), 1);   // 超上限只回收自己最旧的
+    // 维修型判定（19.2）：技能条目标 repair:true 或技能 ID 在 CFG.skills2.repairDrone.skillIds 里
+    const repairIds = (CFG.skills2 && CFG.skills2.repairDrone && CFG.skills2.repairDrone.skillIds) || [];
+    const isRepair = sk.repair === true || repairIds.indexOf(sk.id) >= 0;
     for (let i = mine().length; i < want; i++) {
       const a = (i / Math.max(1, want)) * Math.PI * 2;
       const dr = new Drone(
         caster.x + Math.cos(a) * orbit, caster.y + Math.sin(a) * orbit,
         a, row.hp || 40, Math.max(1, Math.round((row.atk || 6) * (sk.summonMul || 1))),
-        row.fireCd || 0.8, orbit, caster);
+        row.fireCd || 0.8, orbit, caster, isRepair);
       dr.world = G.activeWorld;   // 世界归属：召唤物只存在于施放时的那张地图，不跨世界跟随（传送后留在原地）
       G.run.drones.push(dr);
     }
@@ -1054,20 +1057,20 @@ class Player {
       this.y = U.clamp(this.y + dy * spd * dt, this.r, w.h - this.r);
       resolveObstacles(this, w, { x: this.x + dx * 100, y: this.y + dy * 100 });   // 偏置 = 行进方向前方
     } else { this.mvx = 0; this.mvy = 0; }   // 停止移动即清零
-    // 能量恢复
-    G.run.energy = Math.min(G.run.energyMax, G.run.energy + st.regen * dt);
-    // 自动攻击（19.1 移除普攻）：英雄**唯一输出 = 主动技能**——冷却好 + 能量够 + 有目标即自动释放，
-    // 不再看 autoFight 开关或 Space（方案 4 已确认：技能全自动，玩家专注走位；autoFight 仅托管移动）
+    // 能量恢复（19.3 能量池退役）：恢复循环停掉——无人消耗能量，条目保留仅为兼容
+    // （G.run.energy / energyMax / regen 字段不删，仅不再参与技能门槛）
+    // 自动攻击（19.1 移除普攻 / 19.3 冷却制）：英雄**唯一输出 = 主动技能**——冷却好 + 有目标即释放，
+    // 不再看能量门槛、autoFight 开关或 Space（技能全自动，玩家专注走位；autoFight 仅托管移动）
     this.skillTimer -= dt;
     const target = nearestMonster(w, this.x, this.y);
-    if (target && this.skillTimer <= 0 && G.run.energy >= G.run.weapon.skill.energy) {
+    if (target && this.skillTimer <= 0) {
       this.fireSkill(w, target, st);
       this.skillTimer = G.run.weapon.skill.cd * st.cdMul;
     }
   }
   fireSkill(w, target, st) {
     const s = G.run.weapon.skill;
-    G.run.energy -= s.energy;
+    // 19.3：冷却制不再扣能量（能量池退役）
     // 释放形态由技能表 type 决定（bullet / summon / trap），统一走 SkillSystem
     const res = SkillSystem.cast(w, this, s, target, { side: "player", isSkill: true, atk: st.atk });
     SFX.play("skill");
@@ -1238,14 +1241,13 @@ function updateCompanions(w, dt) {
     }
     // 自动普攻（武器栏内的武器模块对全队生效：技能值取 recomputeWeapon 解析出的 c.skills）
     // 🔴 19.1 普攻移除：队友与队长一致，唯一输出 = 主动技能（c.fireTimer 已随之退役）
-    // 主动技能（技能石）：与队长同一套 SkillSystem。队友是**独立个体**——
-    // 用**自己的能量池**（各自恢复、各自扣费），不占用队长能量池（CFG.team.aiSkill 可关）。
+    // 主动技能（技能石）：与队长同一套 SkillSystem。19.3 冷却制——队友**不再有独立能量池**，
+    // 释放条件只剩「冷却好 + 有目标」（措峰 skillStagger 逻辑保留，见 createRun）。
+    // 能量字段（c.energy/energyMax/regen）条目保留但不参与门槛、也不再恢复。
     c.skillTimer = (c.skillTimer || 0) - dt;
-    c.energy = Math.min(c.energyMax, (c.energy || 0) + st.regen * dt);
     const cs = c.skills && c.skills.skill;
     const tgt = nearestMonster(w, c.x, c.y);
-    if (CFG.team.aiSkill !== false && tgt && cs && c.skillTimer <= 0 && c.energy >= (cs.energy || 0)) {
-      c.energy -= (cs.energy || 0);
+    if (CFG.team.aiSkill !== false && tgt && cs && c.skillTimer <= 0) {
       SkillSystem.cast(w, c, cs, tgt, { side: "player", isSkill: true, atk: st.atk });
       c.skillTimer = cs.cd * st.cdMul;
       c.faceDir = tgt.x > c.x ? 1 : -1;
@@ -1257,7 +1259,7 @@ function updateCompanions(w, dt) {
  * 归属规则（已定）：**谁的技能就随谁** —— 无人机环绕自己的召唤者（owner），
  * 召唤者倒下也**不做「倒下即回收」**：无人机留在场上继续作战，只是改为跟随队长（保证不乱飘）。 */
 class Drone {
-  constructor(x, y, orbitA, hp, atk, fireCd, orbit, owner = null) {
+  constructor(x, y, orbitA, hp, atk, fireCd, orbit, owner = null, repair = false) {
     this.isDrone = true;
     this.x = x; this.y = y; this.r = 12;
     this.hpMax = hp; this.hp = hp;
@@ -1265,6 +1267,9 @@ class Drone {
     this.orbitA = orbitA; this.orbit = orbit;
     this.owner = owner || G.player;   // 归属：每个成员有**自己的召唤物池**（环绕召唤者）
     this.fireTimer = U.rand(0.2, 0.6);
+    // 🔴 19.2 维修型无人机：照常开火 + 附加持续修理（数值见 CFG.skills2.repairDrone）
+    this.repair = repair === true;
+    this.repairTimer = this.repair ? CFG.skills2.repairDrone.repairInterval : 0;
   }
   update(w, dt) {
     // 环绕**召唤者**缓慢公转（召唤者倒下也不回收，改为跟随队长继续作战），脱离轨道时平滑归位
@@ -1289,7 +1294,36 @@ class Drone {
       w.playerBullets.push(new Bullet(this.x, this.y, ang, 560, this.atk, "player", 0, 0, 0, false, this.owner));
       this.fireTimer = this.fireCd;
     }
+    // 维修型（19.2 恢复定位）：每 repairInterval 秒为 HP 比例最低的己方成员回复 healPerSec 点（不超 hpMax）
+    if (this.repair) {
+      this.repairTimer -= dt;
+      if (this.repairTimer <= 0) {
+        this.repairTimer += CFG.skills2.repairDrone.repairInterval;
+        repairDroneTick();
+      }
+    }
   }
+}
+/* 维修无人机结算：选出**当前 HP 比例最低**的己方成员（队长 + 存活队友），回复 healPerSec（夹紧不超 hpMax）。 */
+function repairDroneTick() {
+  const r = G.run;
+  if (!r || CFG.skills2.repairDrone.healPerSec <= 0) return;
+  const cands = [];
+  const p = G.player;
+  if (p && r.hp < r.hpMax) cands.push({ get hp() { return r.hp; }, hpMax: r.hpMax, add: (v) => { r.hp = Math.min(r.hpMax, r.hp + v); },
+    x: () => p.x, y: () => p.y });
+  for (const c of (r.companions || [])) {
+    if (!c.alive || c.hp >= c.hpMax) continue;
+    cands.push({ get hp() { return c.hp; }, hpMax: c.hpMax, add: (v) => { c.hp = Math.min(c.hpMax, c.hp + v); },
+      x: () => c.x, y: () => c.y });
+  }
+  if (!cands.length) return;   // 全员满血：不治疗
+  let best = cands[0], bestFrac = best.hp / best.hpMax;
+  for (const h of cands) { const f = h.hp / h.hpMax; if (f < bestFrac) { best = h; bestFrac = f; } }
+  const heal = Math.min(CFG.skills2.repairDrone.healPerSec, best.hpMax - best.hp);
+  if (heal <= 0) return;
+  best.add(heal);
+  spawnFloat(best.x(), best.y() - 30, `+${Math.round(heal)}`, "#7de08a");
 }
 function droneTakeDamage(w, d, dmg) {
   d.hp -= Math.max(1, Math.round(dmg));

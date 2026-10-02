@@ -22,7 +22,7 @@ const UI = {
   /* ---------- 界面切换 ---------- */
   // 全部全屏界面（首页 / 关卡选择 / 角色选择 / 结算 / 死亡 / 帮助 / 设置 / 图鉴 / 告别）
   SCREEN_IDS: ["screen-main", "screen-level", "screen-character", "screen-settle", "screen-death",
-    "screen-help", "screen-settings", "screen-codex", "screen-goodbye"],
+    "screen-help", "screen-settings", "screen-codex", "screen-chip-codex", "screen-goodbye"],
   showScreen(name) {
     for (const id of this.SCREEN_IDS) {
       const el = document.getElementById(id);
@@ -38,6 +38,49 @@ const UI = {
     }
     const hud = document.getElementById("hud");
     if (hud) hud.classList.remove("hidden");
+  },
+
+  /* ---------- 升级 4 选 1 暂停弹窗（19.4 方案 7） ----------
+   * 契约：UI.onLevelUpChoice(candidates, onPick)
+   *   candidates 元素形态：{kind:"module", defId, name, desc} 或 {kind:"statPack", attr, name, value}
+   *   用户点第 i 张 → onPick(i)；弹窗不倒计时；暂停语义由战斗线负责（本处只做 UI）。
+   * UI.onLevelUpChoiceClose() 供测试 / 强制关闭。 */
+  levelUpCandidates: null,
+  levelUpOnPick: null,
+  onLevelUpChoice(candidates, onPick) {
+    this.levelUpCandidates = candidates || [];
+    this.levelUpOnPick = onPick;
+    this._renderLevelUp();
+    const ov = document.getElementById("levelup-overlay");
+    if (ov) ov.classList.remove("hidden");
+  },
+  onLevelUpChoiceClose() {
+    const ov = document.getElementById("levelup-overlay");
+    if (ov) ov.classList.add("hidden");
+    this.levelUpCandidates = null;
+    this.levelUpOnPick = null;
+  },
+  _renderLevelUp() {
+    const box = document.getElementById("levelup-cards");
+    if (!box) return;
+    box.innerHTML = "";
+    const list = this.levelUpCandidates || [];
+    list.forEach((c, i) => {
+      const card = document.createElement("div");
+      card.className = "levelup-card";
+      // 卡片内容：按候选类型渲染（module = 武器模块叠加 / statPack = 属性小包）
+      const kindLabel = c.kind === "module" ? "武器模块" : (c.kind === "statPack" ? "属性小包" : (c.kind || ""));
+      const desc = c.kind === "statPack" ? `+${c.value}` : (c.desc || "");
+      card.innerHTML = `<span class="lu-kind">${kindLabel}</span>
+        <span class="lu-name">${c.name || ""}</span>
+        <span class="lu-desc">${desc}</span>`;
+      card.onclick = () => {
+        const cb = this.levelUpOnPick;
+        this.onLevelUpChoiceClose();   // 先关闭（防重复点击）
+        if (typeof cb === "function") cb(i);
+      };
+      box.appendChild(card);
+    });
   },
 
   /* ---------- 提示 ---------- */
@@ -68,6 +111,14 @@ const UI = {
     });
   },
 
+  /* 英雄定位（19.2）：CFG.heroRoles.byHero[id] → 定位定义对象（含 name/color）；缺失返回 null。 */
+  heroRole(heroId) {
+    const HR = CFG.heroRoles;
+    if (!HR || !HR.byHero) return null;
+    const role = HR.byHero[heroId];     // byHero: heroId → 定位 key（output/defense/recovery）
+    return role ? (HR[role] || null) : null;
+  },
+
   /* ---------- 角色选择（只读展示；等级升级统一收敛到主城的强化导师 / 武器匠 NPC 面板） ---------- */
   buildCharList() {
     this.selectedChars = this.selectedChars || [];
@@ -84,9 +135,14 @@ const UI = {
       const skLv = Meta.weaponLv(h.id);   // 技能等级 = 武器等级
       const wpn = CFG.weapons[h.weapon], skId = wpn.skills.skill;
       const skLine = this._skillSummary(skId, skLv);
+      // 定位徽章（19.2）：读 CFG.heroRoles.byHero[hero.id] → 定位定义（名称 + 配色）
+      const role = this.heroRole(h.id);
+      const roleBadge = role
+        ? `<span class="role-badge" style="color:${role.color};border-color:${role.color}">${role.name}</span>`
+        : "";
       card.innerHTML = `
         ${img ? `<canvas class="char-face" width="64" height="64"></canvas>` : ""}
-        <div class="info"><b>${h.name}（${h.id}）</b>
+        <div class="info"><b>${h.name}（${h.id}）${roleBadge}</b>
         <p class="outlv">局外 LV${lv}${lv < CFG.outLevel.maxLevel ? ` · 上限 ${CFG.outLevel.maxLevel}` : " · 已满级"} <small>（当前：HP ${h.hp + g.hp * n} · 攻 ${h.atk + g.atk * n} · 防 ${h.def + g.def * n}）</small></p>
         <p class="outlv">技能 LV${skLv} <small>（${skLine}）</small></p>
         <p class="outlv">武器 LV${skLv}${skLv < CFG.weaponLevel.maxLv
@@ -173,14 +229,40 @@ const UI = {
       for (const b of row.children) if (b.classList) b.classList.toggle("selected", b.dataset && b.dataset.style === cur);
     }
   },
+  /* 技能冷却环（19.3）：读 G.player.skillTimer（剩余秒）与 G.run.weapon.skill.cd（总长）。
+   * 冷却中按「就绪比例 = 1 - 剩余/总长」填充弧长；就绪（skillTimer<=0 或总长<=0）时常亮 + READY。 */
+  updateSkillCd() {
+    const wrap = document.getElementById("hud-skill-cd");
+    if (!wrap) return;
+    const arc = document.getElementById("skill-cd-arc");
+    const txt = document.getElementById("skill-cd-txt");
+    const nameEl = document.getElementById("skill-cd-name");
+    const skill = (G.run && G.run.weapon && G.run.weapon.skill) || null;
+    const cd = (skill && skill.cd) || 0;
+    const remain = (G.player && G.player.skillTimer) || 0;   // 剩余秒（<=0 = 就绪）
+    const ready = remain <= 0 || cd <= 0;
+    if (ready) {
+      wrap.classList.add("ready");
+      if (arc) arc.style.strokeDashoffset = "0";             // 满弧 = 就绪
+      if (txt) txt.textContent = "READY";
+    } else {
+      wrap.classList.remove("ready");
+      const fill = Math.max(0, Math.min(1, 1 - remain / cd));   // 就绪比例
+      if (arc) arc.style.strokeDashoffset = (213.6 * (1 - fill)).toFixed(1);
+      if (txt) txt.textContent = remain.toFixed(1) + "s";
+    }
+    if (nameEl) nameEl.textContent = (skill && skill.name) || "";
+  },
   updateHUD() {
     const r = G.run;
     if (!r || G.state !== "playing") return;
-    // 队长血/能量条已移到角色头顶（与队友同款），左上角只保留 Buff 图标区
+    // 队长血/能量条已移到角色头顶（与队友同款），左上角只保留技能冷却环 + Buff 图标区
     document.getElementById("lv-num").textContent = r.lv;
     document.getElementById("bar-exp").style.width = (r.exp / r.expNext * 100) + "%";
     document.getElementById("coin-num").textContent = r.coin;
     document.getElementById("exp-num").textContent = r.exp;
+    // 技能冷却环（19.3：能量条退役 → 冷却制）：skillTimer 剩余秒 / skill.cd 总长
+    this.updateSkillCd();
     // 进度条
     const lv = G.levelCfg;
     const pf = document.getElementById("progress-fill");
@@ -270,6 +352,7 @@ const UI = {
 
   /* ---------- 首页（游戏主菜单） ---------- */
   updateHomeUser() {
+    this.bindChipCodexEntry();
     const el = document.getElementById("home-user-line");
     if (!el || !Meta.data.profile) return;
     el.innerHTML = `<span class="hu-name">${Meta.profileName()}</span><span class="hu-title">「${Meta.titleName()}」</span><span class="hu-crystal">◆ ${Meta.data.crystals}</span>`;
@@ -452,6 +535,53 @@ const UI = {
       cnt.textContent = `英雄 ${hm}/${CFG.heroes.length} · 怪物 ${mm}/${Object.keys(CFG.monsters).length}`;
     }
   },
+  /* 芯片图鉴（19.7：只读展示）。列出 CFG.chips.valuePool + behaviorPool 全部芯片，按品质染色。
+   * 「已见过」数据源 = G.meta && G.meta.chipSeen（战斗线稍后接入）；判空时全部按未解锁剪影渲染。 */
+  showChipCodex() {
+    this.renderChipCodex();
+    this.showScreen("screen-chip-codex");
+  },
+  renderChipCodex() {
+    const seen = (typeof G !== "undefined" && G.meta && G.meta.chipSeen) ? G.meta.chipSeen : null;
+    const isSeen = (defId) => !!(seen && seen[defId]);
+    const box1 = document.getElementById("chip-codex-value");
+    const box2 = document.getElementById("chip-codex-behavior");
+    const C = CFG.chips || {};
+    const render = (box, pool) => {
+      if (!box) return 0;
+      box.innerHTML = "";
+      let seenCount = 0;
+      for (const def of (pool || [])) {
+        const unlocked = isSeen(def.id);
+        if (unlocked) seenCount++;
+        const card = document.createElement("div");
+        card.className = "codex-card small chip-codex-card" + (unlocked ? "" : " locked");
+        // 品质染色：白/蓝 = 数值；紫/金 = 行为。未解锁用灰剪影。
+        const q = unlocked
+          ? (pool === C.behaviorPool ? CFG.itemQualities[2] : CFG.itemQualities[1])
+          : CFG.itemQualities[0];
+        card.style.borderColor = q.color;
+        card.innerHTML = `<b style="color:${unlocked ? q.color : "#6d7c94"}">${unlocked ? def.name : "？？？"}</b>
+          <small>${unlocked ? (def.desc || chipEffectLine(def, 2)) : "在局内见过后解锁"}</small>`;
+        box.appendChild(card);
+      }
+      return seenCount;
+    };
+    const sv = render(box1, C.valuePool);
+    const sb = render(box2, C.behaviorPool);
+    const cnt = document.getElementById("chip-codex-count");
+    if (cnt) {
+      const total = ((C.valuePool || []).length + (C.behaviorPool || []).length);
+      cnt.textContent = `已见 ${sv + sb}/${total}`;
+    }
+  },
+  /* 首页芯片图鉴入口 + 返回按钮惰性绑定（幂等：已绑过则跳过，避免重复事件）。 */
+  bindChipCodexEntry() {
+    const entry = document.getElementById("btn-home-chip-codex");
+    if (entry && typeof entry.onclick !== "function") entry.onclick = () => this.showChipCodex();
+    const back = document.getElementById("btn-chip-codex-back");
+    if (back && typeof back.onclick !== "function") back.onclick = () => { this.updateHomeUser(); this.showScreen("screen-main"); };
+  },
   /* 设置（音效音量 / 触屏控件缩放 / 桌面显示触屏控件） */
   renderSettings() {
     const s = G.settings, cfg = CFG.settings;
@@ -505,7 +635,10 @@ const UI = {
     const r = G.run;
     document.getElementById("bp-lock-hint").classList.toggle("hidden", !this.managementLocked());
     this._renderGrid("grid-backpack", r.backpack);
-    this._renderGrid("grid-weapon", r.weaponInv);
+    // 芯片背包（6×5）：数据源 G.run.chipInv（战斗线稍后接入）。缺失时渲染空格骨架，不报错。
+    this._renderGrid("grid-chip", this._chipInv());
+    // 武器模块槽（每英雄 4 格）：数据源 G.run.heroModules。缺失时渲染空槽骨架。
+    this._renderModuleSlots();
     // 武器标签（跟随当前英雄武器；召唤物/陷阱类标签仅对声明该标签的技能生效）
     const tags = document.getElementById("weapon-tags");
     const wpnTags = (G.heroDef && CFG.weapons[G.heroDef.weapon]) ? CFG.weapons[G.heroDef.weapon].tags : CFG.weapons.W001.tags;
@@ -517,6 +650,38 @@ const UI = {
     }).join(" · ");
     // 选中物品信息
     this.renderItemInfo();
+  },
+  /* 芯片背包占位：优先 G.run.chipInv（真实 Inventory）；其次回退旧 G.run.weaponInv（战斗线过渡期）；
+   * 两者都缺时按 CFG.chips.grid 造只读骨架（渲染空格不报错）。 */
+  _chipInv() {
+    const r = G.run;
+    if (r && r.chipInv && r.chipInv.cols && r.chipInv.rows) return r.chipInv;
+    if (r && r.weaponInv && r.weaponInv.cols && r.weaponInv.rows) return r.weaponInv;
+    const g = (CFG.chips && CFG.chips.grid) || { cols: 6, rows: 5 };
+    return { cols: g.cols, rows: g.rows, items: [] };
+  },
+  /* 武器模块槽：G.run.heroModules = { [heroId]: [{defId,lv} × 4] }；判空则渲染空槽骨架。 */
+  _renderModuleSlots() {
+    const box = document.getElementById("module-slots");
+    if (!box) return;
+    box.innerHTML = "";
+    const maxLv = (CFG.moduleSlot && CFG.moduleSlot.maxLv) || 9;
+    const perHero = (CFG.moduleSlot && CFG.moduleSlot.perHero) || 4;
+    const heroId = (G.heroDef && G.heroDef.id) || (CFG.heroes[0] && CFG.heroes[0].id);
+    const list = (G.run && G.run.heroModules && G.run.heroModules[heroId]) || [];
+    for (let i = 0; i < perHero; i++) {
+      const slot = list[i] || null;
+      const el = document.createElement("div");
+      el.className = "module-slot" + (slot ? " filled" : "");
+      const name = slot ? (this._moduleName(slot.defId) || slot.defId) : "空槽";
+      el.innerHTML = `<span class="ms-name${slot ? "" : " empty"}">${name}</span>` +
+        (slot ? `<span class="ms-lv">LV ${slot.lv || 1} / ${maxLv}</span>` : "");
+      box.appendChild(el);
+    }
+  },
+  _moduleName(defId) {
+    const d = (CFG.moduleDefs || []).find(m => m.id === defId);
+    return d ? d.name : "";
   },
   _renderGrid(gridId, inv) {
     const g = document.getElementById(gridId);
@@ -563,10 +728,14 @@ const UI = {
     { id: "chest", btn: "art-tab-chest", page: "art-page-chest" },
     { id: "cards", btn: "art-tab-cards", page: "art-page-cards" },
     { id: "shop",  btn: "art-tab-shop",  page: "art-page-shop"  },
+    { id: "forge", btn: "art-tab-forge", page: "art-page-forge" },
   ],
   artTab: "chest",
   setArtisanTab(t) {
     if (!this.ART_TABS.some(x => x.id === t)) return;
+    // 芯片工坊页签（19.7）在 ui.js 侧惰性绑定：main.js 未绑定该按钮时补上（幂等，避免重复 toast）
+    const forgeBtn = document.getElementById("art-tab-forge");
+    if (forgeBtn && typeof forgeBtn.onclick !== "function") forgeBtn.onclick = () => this.setArtisanTab("forge");
     this.artTab = t;
     for (const tab of this.ART_TABS) {
       const btn = document.getElementById(tab.btn);
@@ -599,6 +768,7 @@ const UI = {
     if (this.artTab === "chest") this._renderChestList();
     else if (this.artTab === "cards") this.renderCards();
     else if (this.artTab === "shop") this._renderShopList();
+    else if (this.artTab === "forge") this._renderForgeList();
     this._renderPendingArea();
     this.renderBackpack();   // 同步网格显示
   },
@@ -711,6 +881,40 @@ const UI = {
       list.appendChild(el);
     }
   },
+  /* ---------- 芯片工坊（19.7）：服务列表读 CFG.chipForge.services，点击调 Game.chipForge(action) ----------
+   * 契约：Game.chipForge(action) → {ok, msg}（战斗线稍后实现）；UI 侧负责判款显示、点击、toast。
+   * 战斗侧未接入时（Game.chipForge 不存在）提示「功能未就绪」，不抛异常。 */
+  _renderForgeList() {
+    const list = document.getElementById("forge-list");
+    if (!list) return;
+    list.innerHTML = "";
+    const svc = (CFG.chipForge && CFG.chipForge.services) || {};
+    const r = G.run;
+    const labels = { merge: "◈ 合成（升级）", reroll: "🜲 重铸词条", craft: "✦ 定向合成" };
+    for (const key of Object.keys(svc)) {
+      const s = svc[key];
+      const row = document.createElement("div");
+      const dim = r && r.coin < s.cost;
+      row.className = "chest-row" + (dim ? " readonly" : "");
+      row.innerHTML = `<div class="sw" style="background:#b06cff"></div>
+        <b>${labels[key] || key}</b><small>¥${s.cost} · ${s.desc}</small>`;
+      row.style.cursor = dim ? "not-allowed" : "pointer";
+      if (dim) row.style.opacity = "0.55";
+      row.onclick = () => this.chipForgeService(key);
+      list.appendChild(row);
+    }
+  },
+  chipForgeService(action) {
+    const fn = typeof Game !== "undefined" && typeof Game.chipForge === "function" ? Game.chipForge : null;
+    if (!fn) { this.toast("芯片工坊功能未就绪", "bad"); return; }
+    let ret;
+    try { ret = fn(action); }
+    catch (e) { this.toast("芯片工坊操作失败（内部错误）", "bad"); return; }
+    if (ret && ret.ok === false) this.toast(ret.msg || "操作失败", "bad");
+    else this.toast((ret && ret.msg) || "操作成功", "gold");
+    this.renderArtisan();
+  },
+
   /* ---------- 属性卡牌（8.3：仅工匠世界可用） ---------- */
   _cardEffectText(c) {
     const def = CFG.cardPool.attrs[c.attr];
@@ -906,7 +1110,7 @@ const UI = {
       for (let j = t.y; j < t.y + it.shape[1]; j++) for (let i = t.x; i < t.x + it.shape[0]; i++) {
         const cell = t.inv === G.run.backpack
           ? document.querySelector(`#grid-backpack .cell[data-x="${i}"][data-y="${j}"]`)
-          : document.querySelector(`#grid-weapon .cell[data-x="${i}"][data-y="${j}"]`);
+          : document.querySelector(`#grid-chip .cell[data-x="${i}"][data-y="${j}"],#grid-weapon .cell[data-x="${i}"][data-y="${j}"]`);
         if (cell) cell.classList.add(ok ? "hl-ok" : "hl-bad");
       }
     } else if (t && t.type === "drop") {
@@ -939,7 +1143,7 @@ const UI = {
           else { r.pendingItems.push(it); this.toast("空间不足", "bad"); }
         }
       } else {
-        const srcInv = it.inv === "backpack" ? r.backpack : r.weaponInv;
+        const srcInv = this._srcInv(it);
         const sameSpot = t.inv === srcInv && t.x === it.x && t.y === it.y;
         if (!sameSpot) {
           // ignore=it：目标区域允许与拖拽物品自身 footprint 重叠（同格内挪动）
@@ -992,7 +1196,7 @@ const UI = {
       }
     } else if (t && t.type === "drop" && !this.drag.fromPending) {
       // 丢弃：移出背包（9.1.1；原型直接销毁，不生成地上掉落物）
-      const srcInv = it.inv === "backpack" ? r.backpack : r.weaponInv;
+      const srcInv = this._srcInv(it);
       srcInv.remove(it);
       this.toast(`已丢弃 ${it.name}`, "bad");
     }
@@ -1001,13 +1205,19 @@ const UI = {
     this.renderBackpack();
     if (G.inArtisan) this.renderArtisan();   // 仅工匠世界刷新开箱台/卡牌区
   },
+  /* 拖拽源背包解析：backpack → r.backpack；否则 → 芯片背包（G.run.chipInv 存在用真身，否则骨架）。 */
+  _srcInv(it) {
+    const r = G.run;
+    if (it && it.inv === "backpack") return r.backpack;
+    return this._chipInv();
+  },
   _dropTarget(e) {
     const pts = [document.elementFromPoint(e.clientX, e.clientY)];
     const el = pts[0];
     if (!el) return null;
-    const gridEl = el.closest("#grid-backpack,#grid-weapon");
+    const gridEl = el.closest("#grid-backpack,#grid-chip,#grid-weapon");
     if (gridEl) {
-      const inv = gridEl.id === "grid-backpack" ? G.run.backpack : G.run.weaponInv;
+      const inv = gridEl.id === "grid-backpack" ? G.run.backpack : this._chipInv();
       const rect = gridEl.getBoundingClientRect();
       const pad = 8, cell = 50;   // 边框2 + 内边距6；格宽46 + 间隙4 = 50
       const x = U.clamp(Math.floor((e.clientX - rect.left - pad) / cell), 0, inv.cols - 1);
@@ -1027,7 +1237,7 @@ const UI = {
       `<span style="flex-basis:100%;opacity:.85">资源折算（统一口径 价值×${CFG.settleConvert.valueRate}）：宝箱→◆${cv.chest} · 装备/武器模块→◆${cv.gear} · 道具→◆${cv.item} · 卡牌→◆${cv.card}（合计 ◆${cv.total}）</span>`;
     document.getElementById("settle-chests").innerHTML =
       `<div class="chip">${this._statsLine(r)}</div><div class="chip">背包内物品不作为物品带出，按各自固定价值统一折算为结晶（双层等级体系闭环）；局内经验与金币归零、不折算</div>`;
-    const items = [...r.weaponInv.items, ...r.backpack.items];
+    const items = [...(r.weaponInv ? r.weaponInv.items : []), ...r.backpack.items];
     document.getElementById("settle-items").innerHTML = items.length
       ? items.map(it => `<span class="chip">${it.name}${it.kind === "chest" ? " ×" + it.count : ""}（${it.kind === "chest" ? "宝箱" : CFG.itemQualities[it.itemQ].name}）</span>`).join("")
       : `<span class="chip">（无装备/武器模块保留）</span>`;
@@ -1057,8 +1267,52 @@ function statName(k) {
   return { hp: "生命", atk: "攻击", def: "防御", spd: "移速", regen: "能量恢复", energyMax: "能量上限" }[k] || k;
 }
 
+/* ---------- 芯片查询（19.6）：按 defId 在 valuePool + behaviorPool 里找定义 ---------- */
+function chipDef(defId) {
+  const c = CFG.chips;
+  if (!c || !defId) return null;
+  return (c.valuePool || []).find(x => x.id === defId) || (c.behaviorPool || []).find(x => x.id === defId) || null;
+}
+function chipPoolOf(defId) {
+  const c = CFG.chips;
+  if (!c) return null;
+  if ((c.valuePool || []).some(x => x.id === defId)) return "value";
+  if ((c.behaviorPool || []).some(x => x.id === defId)) return "behavior";
+  return null;
+}
+/* 芯片效果单行文案（图鉴用）：数值芯片按品质档位显示放大量；行为芯片显示 desc。 */
+function chipEffectLine(def, qIdx) {
+  if (!def) return "";
+  if (def.behavior) return `${def.desc}（N=${def.vals[qIdx] || def.vals[0]}）`;
+  const v = def.vals[qIdx] !== undefined ? def.vals[qIdx] : def.vals[0];
+  return def.mode === "flat" ? `${def.tag} +${v}` : `${def.tag} ${v >= 0 ? "+" : ""}${Math.round(v * 100)}%`;
+}
+/* 芯片 TIPS：品质色名称 + 效果描述（数值芯片显示 tag 放大量；行为芯片显示 desc） */
+function chipTipHTML(it) {
+  const def = chipDef(it.defId);
+  const q = CFG.itemQualities[it.itemQ] || CFG.itemQualities[0];
+  const pool = chipPoolOf(it.defId);
+  const lines = [];
+  const kindName = pool === "behavior" ? "行为芯片" : "数值芯片";
+  lines.push(`<div class="tip-head" style="color:${q.color}"><b>${def ? def.name : (it.name || it.defId)}</b><span>${q.name} · ${kindName}</span></div>`);
+  lines.push(`<div class="tip-line dim">形状 ${it.shape ? it.shape.join("×") : "1×1"} · 品质 ${q.name}</div>`);
+  if (def) {
+    if (pool === "value") {
+      const v = def.vals[it.itemQ];   // 该品质档位的放大量
+      const txt = def.mode === "flat" ? `${def.tag} +${v}` : `${def.tag} ${v >= 0 ? "+" : ""}${Math.round(v * 100)}%`;
+      lines.push(`<div class="tip-line">效果：${txt}（作用于主动技能）</div>`);
+    } else {
+      lines.push(`<div class="tip-line">效果：${def.desc}（N=${def.vals[it.itemQ]}）</div>`);
+    }
+  }
+  lines.push(`<div class="tip-line dim">芯片为局内资产，出局消失（不折算结晶）· 同名可叠，上限 ${(CFG.chips && CFG.chips.maxStack) || 9}</div>`);
+  return lines.join("");
+}
+
 /* ---------- 物品 TIPS 渲染（唯一数据源：背包面板 / TIPS 浮窗共用；信息分层渐进展示） ---------- */
 function itemTipHTML(it) {
+  // 芯片（19.6）：名称 / 品质色 / 效果描述，数据源 = CFG.chips.valuePool + behaviorPool
+  if (it.kind === "chip") return chipTipHTML(it);
   const q = it.kind === "chest" ? CFG.chestQualities[it.chestQ] : CFG.itemQualities[it.itemQ];
   const lines = [];
   // 头部：品质色名称 + 品类

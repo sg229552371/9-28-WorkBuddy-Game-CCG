@@ -2165,7 +2165,7 @@
 - 🔴 **连带硬约束**：普攻移除后，**所有主动技能都必须有伤害**，否则该英雄无法击杀敌人 →
   无法获得经验 → 局内等级卡死。见 19.2。
 
-### 19.2 英雄三定位
+### 19.2 英雄三定位（✅ 已实现：定位配置 + 徽章 UI + `exp_test` 定位映射断言）
 
 | 定位 | 代码值 | 风格 | 必须满足 |
 | ---- | ---- | ---- | ---- |
@@ -2206,7 +2206,7 @@
 > 这也直接绕开了"无伤害 → 无法击杀 → 无法升级"的死结——**无需额外机制，低伤害天然可击杀**。
 > ⚠️ 倍率仅为区间示意，**具体数值由技能表 `dmgMul` 填**（见 8.5 表 4），不在此处定死。
 
-### 19.3 技能资源 = 冷却制
+### 19.3 技能资源 = 冷却制（✅ 已实现：能量门槛摘除 + 冷却环 UI，`exp_test` 58 条锁定）
 
 - **移除能量池**：技能只受冷却约束（`CFG.skills[].cd`），不再检查 `energyMax` / `energyRegen`。
 - **配置**：`CFG.skillResource = { mode: "cooldown", startReady: true }`（进图技能即就绪，不空转）。
@@ -2334,7 +2334,324 @@
 | # | 待确认 | 现状 |
 | ---- | ---- | ---- |
 | 1 | 行为芯片 4 种的**实现优先级**（弹射→灼烧→分裂→链锁 顺序已拟） | 第 5 步前定即可 |
-| 2 | 第 9 级后「属性小包」的具体数值档位 | 第 3 步实现时拟 |
+| 2 | 第 9 级后「属性小包」的具体数值档位 | 第 3 步实现时拟（本批 19.10 已给出数值案，⚠️ 暂定可调） |
+
+***
+
+## 19.10 模块槽系统实现规格（第 3 步施工图）
+
+> **本节为第 3 步的施工依据**；与 19.4 / 19.5 / 16.5 的冲突处**以本节为准**。
+> 施工对象 = **战斗线**（`js/game.js` + `js/config.js` + `js/main.js`）与**界面线**（`js/ui.js` + `index.html` + `css/`）。
+> 本节只定义**数据结构 / 流程 / 契约**，不含具体代码。
+> 🔴 **本步属「加暂停语义」高危改动**（4 选 1 弹窗暂停），按 §4.6 / §5.34「三件套」处理：
+> 字段构造函数显式初始化 → 旧测试显式跳过冻结/暂停 → **补专项测试 `levelup_test.js`**，不得放松旧断言。
+
+### 19.10.1 数据结构
+
+| 结构 | 定义 | 说明 |
+| ---- | ---- | ---- |
+| `G.run.heroModules` | `{ [heroId]: [{defId, lv} × 4] }` | **每英雄 4 槽**（`CFG.moduleSlot.perHero`）。队伍 3 人 → 最多 12 组，**各自独立**，键 = 英雄 ID（`H001`…）。**槽内元素允许 `null`**（空槽）。 |
+| `G.run.modulePoolState` | `{ [heroId]: { offered: [...], queue: [...] } }` | 抽取/排队状态（多级连升排队用），**显式初始化**，防止「没跑过弹窗就取值为 undefined」。 |
+
+- 🔴 **英雄 ID 口径**：队长 = `G.heroDef.id`，队友 = `G.run.companions[i].heroDef.id`。
+  每英雄的槽数组**读各自 `heroId`**，**不共用队长槽**。
+- 单槽元素结构：`{ defId: "M001", lv: 1 }`，`lv ∈ [1, 9]`（= `CFG.moduleSlot.maxLv` = `CFG.moduleLevel.maxLv`，**两条口径必须同步**，见 §5.39）。
+- `createRun()` 里为**队长 + 全部队友**各建一条空槽数组：`heroModules[hid] = new Array(CFG.moduleSlot.perHero).fill(null)`。
+
+### 19.10.2 获取流程（升级 4 选 1）
+
+**触发点**：`gainExp(v)` 的升级 `while` 循环内（`js/game.js:1927` 附近）。每升 1 级 → 生成 1 次 4 选 1。
+
+**流程**：
+
+1. **升级结算**（既有）：`r.lv++`、`expNext` 重算、`baseStatGain` 全队属性成长、飘字/toast —— **保持不动**。
+2. **生成候选**：从池 `CFG.modulePool.perHero[heroId]`（未列出回落 `CFG.modulePool.default`）**按 `CFG.modulePool.weights` 加权**抽 `CFG.levelUp.choiceCount`（=4）个。
+   - `CFG.levelUp.allowDuplicateOffer = true` → **允许同一模块重复入选**（便于快速堆层）。
+3. **池过滤（方案 2）**：候选生成前**先剔除该英雄已满级（lv ≥ 9）的模块 ID**；剩余 ID 才参与加权抽取。
+4. **兜底**：过滤后**可用 ID 数 = 0**（该英雄全部模块满级）→ **改出「属性小包 4 选 1」**（见 19.10.4）。
+5. **弹窗**：调 `UI.onLevelUpChoice(candidates, onPick)`（契约见 19.10.6），**游戏暂停**（不加倒计时）。
+6. **入槽**：玩家点选 → 回调 `onPick(idx)` → 按 19.10.3 规则写入 `G.run.heroModules[heroId]` → `recomputeWeapon()` → **恢复**。
+7. **多级连升**：一次 `gainExp` 触发 N 级 → **排队逐个弹**（`modulePoolState.queue`），第 1 个结算完才弹第 2 个，全部完成才恢复。
+
+### 19.10.3 入槽规则（三选一 + 槽满策略）
+
+| 持有状态 | 规则 |
+| ---- | ---- |
+| **未持有该模块 且 有空槽** | 找**第一个空槽**放入，`lv = 1`，`defId = 候选 defId`。 |
+| **已持有该模块 且 `lv < 9`** | `lv += CFG.moduleSlot.stackLevelUp`（=1），**复用 `CFG.moduleLevel` 阶段词缀结算**（`moduleStage` / `moduleEffValue` 沿用，不新增一套）。 |
+| **已满级（`lv = 9`）** | **不出现在候选池**（19.10.2 第 3 步过滤）。 |
+| **未持有 且 4 槽全满** | 见下方**槽满策略**。 |
+
+> 🔴 **槽满策略（本代理拍板）= 「禁止选取置灰」（不自动替换）**。
+>
+> **理由**：
+> 1. **避免玩家无感知地丢模块**。自动替换会在玩家点选瞬间静默销毁一个已投入 4~9 级的模块（可能还是核心 build），
+>    是不可逆的负反馈；置灰则把「弃哪个」的决定权交还玩家，符合本作「背包/构筑管理」的核心乐趣。
+> 2. **实现更简单且无隐藏状态**。自动替换需定义「最旧槽」口径（按放入时序？按 `lv` 最低？按 `defId` 排序？），
+>    每种口径都会和后续「槽拖拽整理」功能打架；置灰只需读一次「是否有空槽」。
+> 3. **与 19.9 方案 7（暂停弹窗）契合**：弹窗期间玩家可切到背包管理界面（19.9 方案 3 的三段横排）**手动弃槽**，
+>    或直接选其他候选。UI 上对「槽满且未持有的候选」标 🔒 并附文案「槽位已满，需先弃用一个模块」。
+>
+> ⚠️ **置灰的判定边界**：只有「未持有 + 无空槽」才置灰；「已持有 + lv<9」的候选**永不置灰**（可继续叠层）。
+> 若 4 个候选**全部**被置灰 → 不允许出现（池过滤已保证至少 1 个可叠层 ID；若极端情况下全置灰，则整个弹窗降级为「属性小包 4 选 1」）。
+
+### 19.10.4 兜底：属性小包 4 选 1（数值案）
+
+当**该英雄全部模块满级**（过滤后候选为空）时，弹窗改出「属性小包」：从下表 4 项**选 1**，数值进 `CFG.levelUp.statPack`。
+
+| 选项 | 效果 | 数值（⚠️ **暂定，可调**） |
+| ---- | ---- | ---- |
+| 强攻包 | `atk` | **+3** |
+| 坚韧包 | `hpMax` / `hp` | **+15** |
+| 铁壁包 | `def` | **+1** |
+| 疾行包 | `spd` | **+8** |
+
+- **配置落点**：`CFG.levelUp.statPack = [{ id, name, stat, value } × 4]`；`G.run.statPackGain`（累计，供 `computeStats` / `companionStats` 读取）。
+- **拟数理由**：以「模块满级 ≈ 一局中后期」为基准，
+  - `atk +3` 相对单发技能基础伤害（数十量级）≈ 5%~8%，与一张白卡（`baseStatGain.atk 1.5`）的 2 倍，作为「满级后仍能变强」的保底增益**略高于常规升级**但不失控；
+  - `hp +15` = 2.5× 常规升级 `hp 6`，抵一次小怪集火；
+  - `def +1` / `spd +8` 与现有装备件（`G004` def+3、`G003` spd+25）同量级，**取小值**避免移速溢出。
+  - 四者**互斥选择**（选 1），保证「满级后仍有克制取舍」，而非无脑平推。
+- **生效通道**：并入 `runBonus().add`（全队生效），**不进 `tagCalc`**（它不是武器词条）。
+
+### 19.10.5 生效路径（heroModules 如何汇入现有体系）
+
+**现状**：`tagCalc(tag, forSkill)`（`js/game.js:414`）遍历 `G.run.weaponInv.items` 里 `kind === "module"` 的物品，读 `it.affix` + `moduleEffValue(it)` + 阶段词缀。
+
+**迁移方案（🔴 本节拍板）**：
+
+1. **`tagCalc` 新增读取源 `heroModules` 汇总**，读取顺序 = **先 `weaponInv` 旧模块（兼容期）→ 再 `heroModules` 汇总**。
+   两段结果按**同一「先加算后乘算」管线合并**（`flat` 累加、`mul` 连乘），与既有口径一致。
+2. **heroModules 汇入口径**：
+   - 遍历 **全部存活/在场英雄**（`G.heroDef` + `G.run.companions[].heroDef`）的 `heroModules[hid]`；
+   - 每个非空槽 `{defId, lv}` → 查 `CFG.moduleDefs[defId]` → 取 `affix{tag, mode, vals}`；
+   - 主词缀有效值复用 `moduleEffValue({affix:{value: vals[q]}, lv})`（**`q` 取槽内品质**）；
+   - 阶段词缀复用 `moduleStage(lv)` + `CFG.moduleLevel.stageAffixes`（`forSkill` 时才计，与现有一致）。
+3. **`weaponInv` 旧模块路径保留兼容**：`kind === "module"` 物品**在第 3 步仍可存在于 `weaponInv`**（旧存档/旧流程），
+   `tagCalc` 照常读取，**直到第 4 步（芯片系统）结束、确认无旧模块来源后再物理删除**。
+   ⚠️ 删除时机必须与「宝箱/商店不再产模块」（`CFG.chestContents` 已移除 M*）**同时**，否则会出现「能拿到模块但无处生效」。
+4. **全队生效语义**（见 19.10.7）：`heroModules` 汇总结果是**全队一份**（不是每英雄各读各的），
+   `resolveSet(heroDef)` 里 `tagCalc` 对全队返回同值，**标签过滤仍发生在 `resolveSkill` 内部按各技能 `tags`**（不改变既有链路）。
+
+### 19.10.6 弹窗契约（界面线已实现 `UI`，战斗线只按此调用）
+
+| 成员 | 签名 | 语义 |
+| ---- | ---- | ---- |
+| `UI.onLevelUpChoice(candidates, onPick)` | `candidates: Array<Candidate>`，`onPick: (idx:number) => void` | 弹出暂停弹窗；玩家点选第 `idx` 项后回调。**战斗线只负责生成 `candidates` 与消费 `idx`**，不直接操作 DOM。 |
+| `Candidate`（模块） | `{ kind:"module", heroId, defId, name, lv（入槽后等级）, locked:boolean }` | `locked=true`（槽满且未持有）→ UI 置灰不可点。 |
+| `Candidate`（兜底） | `{ kind:"statPack", packId, name, stat, value }` | 属性小包候选。 |
+| `UI.clearLevelUpChoice()` | `()` | 收尾清理（连升队列全部结算后调用）。 |
+
+- 🔴 **暂停语义**：弹窗期间 `Game.paused = true`（或等价闸门）→ 主循环 `step` **跳过世界/玩家/同伴更新**，
+  但**渲染照常**（弹窗覆盖）。**按 §5.34 三件套**：字段显式初始化、旧测试加 `Game.skipLevelUpChoice()` 类辅助跳过、
+  **新增 `levelup_test.js`** 覆盖暂停本身。
+- ⚠️ **不要给弹窗加倒计时**（19.9 方案 7 已拍板）。
+
+### 19.10.7 「对全体成员生效」的语义结论（🔴 以本节为准）
+
+**问题**：模块现在是**每英雄独立池**（获取/持有按英雄隔离），原 16.5「武器模块对小队全体生效」是否仍成立？
+
+**结论 = 仍成立**。
+
+| 维度 | 规则 |
+| ---- | ---- |
+| **获取 / 持有** | **按英雄隔离** —— `heroModules[heroId]` 各存各的，H001 拿到 M009 不代表 H002 也拿到。 |
+| **生效** | **全队汇总** —— 所有英雄的 `heroModules` 汇总成**一份词条值**喂给 `tagCalc`，**对小队全体成员生效**（与既有 5.13 一致）。 |
+| **理由** | ① 与既有 `tagCalc` / `resolveSkill` / `recomputeWeapon` 架构一致（全队一份 `syn` / 一份标签值），改动面最小；② 「谁升级、给谁选池」由获取侧隔离，避免「一个英雄升级全队白嫖」；③ 生效侧全队共享保证辅助定位（H007 恢复型）的模块也能惠及输出队友，符合小队协作基调。 |
+| **与 16.5 冲突处** | 16.5 说「模块靠**摆放位置**（连接/套装）产生构建收益」—— **该部分以 19.5 / 本节为准，已废弃**；「对全体生效」这一条**保留**。 |
+
+### 19.10.8 ✅ 验收断言清单（`levelup_test.js`，未来锁定行为）
+
+1. `createRun` 后 `G.run.heroModules` 对**队长 + 每个队友**各有一条长为 4 的全 `null` 数组。
+2. 单次升级后 `UI.onLevelUpChoice` 被调用一次，`candidates.length === 4`。
+3. 候选全部来自 `CFG.modulePool.perHero[heroId]`（未列出英雄来自 `default`）。
+4. 已满级（lv=9）模块**不出现在任何候选**中。
+5. 选一个**未持有**模块 → 该英雄**第一个空槽**被填入，`lv === 1`。
+6. 选一个**已持有且 lv<9** 模块 → **不新增槽**，该槽 `lv` +1。
+7. 同一模块连续选 9 次 → `lv === 9`；第 10 次候选池中**不再含**该模块。
+8. 4 槽全满且候选为**未持有**模块 → 该候选 `locked === true`。
+9. 4 槽全满但候选为**已持有 lv<9** 模块 → `locked === false`（可叠层）。
+10. 该英雄**全部模块满级** → 候选降级为 `kind:"statPack"`，共 4 项。
+11. 属性小包选定后 → `G.run.statPackGain` 对应 `stat` 按 `CFG.levelUp.statPack` 数值累加，且 `computeStats` 反映该值。
+12. 一次 `gainExp` 触发 N 级连升 → `onLevelUpChoice` **被调用 N 次**（排队逐个弹）。
+13. 弹窗期间 `Game.paused === true` 且世界更新被跳过；`onPick` 后恢复。
+14. `heroModules` 内模块词条**汇入 `tagCalc`**：放入 M009(lv9) 后 `tagCalc("伤害", true)` 明显大于空槽基线。
+15. `weaponInv` 旧 `kind:"module"` 物品**仍被 `tagCalc` 读取**（兼容期断言）。
+16. 「全队生效」：**仅** H001 的 `heroModules` 放了 M001，H002（队友）的 `resolveSkill` 弹道数**同样增加**。
+17. 队长升级时 `heroModules` 只写**队长**的槽，队友槽数组**不受影响**。
+18. 两英雄各持有同名模块 → 汇总为**两份词条叠加**（不是取其一）。
+
+***
+
+## 19.11 芯片系统实现规格（第 4 步施工图）
+
+> **本节为第 4 步的施工依据**；与 19.6 / 16.5 冲突处**以本节为准**。
+> 第 4 步目标 = **先打通数值芯片链路**（白/蓝），行为芯片（紫/金）**只定义数据通路**、实现留到第 5 步。
+
+### 19.11.1 数据结构
+
+| 结构 | 定义 | 说明 |
+| ---- | ---- | ---- |
+| `G.run.chipInv` | `new Inventory(CFG.chips.grid.cols, CFG.chips.grid.rows, "chip")` | 芯片背包 **6×5**（`CFG.chips.grid`），取代旧 `weaponInv`（4×3）。**独立容器**，与搜刮背包同屏上下并列（`CFG.invLayout`）。 |
+| 芯片物品 | `{ kind:"chip", defId, q, lv, shape, value }` | `kind` 固定 `"chip"`；`q` = 品质 0~3；`lv` = 叠加等级 1~9；`shape` = 占格（数值 `[1,1]` / 行为 `[2,1]`）。 |
+
+- 🔴 **`weaponInv` 的去留**：第 4 步**新建** `chipInv`，**不物理删除** `weaponInv`（旧装备件 `kind:"gear"` 仍可能在其中，见 19.10.5 迁移案）；
+  `weaponGearBonus()` 兼容期**同时读 `weaponInv`（gear）**，第 4 步结束删旧模块路径时一并收口。
+- 芯片**不做永久资产、不折算**（`carryOut:false`）。
+
+### 19.11.2 生成器 `makeChip(defId, q)`
+
+```
+makeChip(defId, q):
+  - 数值芯片：从 CFG.chips.valuePool 找 defId → { name, tag, mode, vals }
+      value = vals[q]
+      → { kind:"chip", defId, q, lv:1, shape: CFG.chips.shapes.value, value, affix:{tag,mode,value} }
+  - 行为芯片：从 CFG.chips.behaviorPool 找 defId → { name, behavior, vals }
+      value = vals[q]
+      → { kind:"chip", defId, q, lv:1, shape: CFG.chips.shapes.behavior, value, behavior }
+  - 品质色：UI 侧读 CFG.itemQualities[q].color（物品不存色，与既有物品一致）
+```
+
+- **`defId` 前缀约定**：`C_V_*` = 数值芯片，`C_B_*` = 行为芯片（决定走哪条生成分支）。
+- 品质 `q` 决定生成哪类：`q ∈ {0,1}` → 数值；`q ∈ {2,3}` → 行为（`CFG.chips.qualityMode`）。
+
+### 19.11.3 获取接入
+
+| 来源 | 规则 | 配置 |
+| ---- | ---- | ---- |
+| **宝箱** | 开箱时按 `CFG.chipSources.chest.weight`（26）判定是否**额外**掉出芯片（与装备/消耗品并列，不互斥）；品质按 `CFG.chipSources.chest.itemQW` 加权。**获得即入 `chipInv`**（满则走 `pendingItems`）。 | `chest.weight` / `chest.itemQW` |
+| **商店（芯片工坊）** | ① `craft` 定向合成 1 枚（品质按 `CFG.chipSources.shop.qualityWeights`）；② 直接购买随机芯片（价格 `CFG.chipSources.shop.cost`）。 | `chipForge.services.craft` / `chipSources.shop` |
+
+- 交易契约沿用 §5.25 模式：`shopBuyChip()` 返回 `{ok, msg}`，**内部完成判款/扣款/生成/入包**，**不调 `UI.toast`**。
+- ⚠️ 开箱唯一入口仍 = **工匠世界**（§5.8），主地图掉落走既有 `grantItemToRun` 的 `"discard"` 语义（见 §5.32）。
+
+### 19.11.4 数值生效：统一词条链（方案 6，🔴 以本节为准）
+
+**插入点 = `tagCalc(tag, forSkill)`（`js/game.js:414`）的汇总循环内**。
+
+- **现有签名不改**：`tagCalc(tag, forSkill)` → 返回 `(base + flat) × mul`（clamp 后）。
+- **汇总顺序**（同一「先加算后乘算」管线，`flat` 累加、`mul` 连乘）：
+
+  | 顺序 | 来源 | 说明 |
+  | ---- | ---- | ---- |
+  | ① | `weaponInv` 旧模块（兼容期） | 既有逻辑，见 19.10.5 |
+  | ② | `heroModules` 汇总 | 第 3 步新增 |
+  | ③ | **`chipInv` 内数值芯片** | **第 4 步新增**：遍历 `chipInv.items` 中 `kind==="chip"` 且**无 `behavior` 字段**（即数值芯片）的物品，按 `affix.tag === tag` 匹配，`mode:"mult"` → `mul *= (1 + value)`；`mode:"flat"` → `flat += value`。 |
+  | ④ | 卡牌通道（恒空） | 19.7 已退役，保留占位 |
+
+- **芯片等级成长**：`lv` 叠加后有效值复用模块同类公式 —— **可复用 `moduleEffValue` 的 `valueStep` 口径**（⚠️ 暂定：芯片同样 `(1 + (lv-1) × CFG.moduleLevel.valueStep)`，可调）。
+- **行为芯片不进数值链**：带 `behavior` 字段的芯片**跳过 `tagCalc`**（由 19.12 的数据通路处理）。
+- **`resolveSkill` 不改**：芯片词条在 `tagCalc` 阶段已并入，`resolveSkill` 照常调 `tagCalc` 即可全队生效（与 19.10.7 同语义）。
+
+### 19.11.5 行为芯片（紫/金）数据通路
+
+- **不进数值链**：`tagCalc` 跳过。
+- **改为 `resolveSkill` 之后给技能实例挂 `behavior` 参数**：在 `resolveSkill` 返回值上附加
+  `behavior: { type: "bounce"|"burn"|"split"|"chain", value: N }`（同类型**取最高值**，多枚叠加取 `max`，**不叠乘**）。
+- **积木本步不实现**：第 4 步只在结果对象上**透传** `behavior` 字段，`SkillSystem` 的消费点见 19.12。
+- ⚠️ **静默期**：第 4 步结束时行为芯片**已可获得但无手感**（字段挂上但没人消费）→ **UI 需提示「行为芯片效果开发中」**，或先**限定商店/宝箱只出数值芯片**（由 `CFG.chips.qualityMode` 或 `chipSources` 权重临时收敛），**第 5 步再放开**。
+
+### 19.11.6 芯片工坊服务逻辑
+
+| 服务 | 前置校验 | 消耗 | 成功 | 失败分支 |
+| ---- | ---- | ---- | ---- | ---- |
+| **merge** | 选中 ≥2 枚**同名同品质**芯片（`defId` 相同）；目标 `lv < 9` | `CFG.chipForge.services.merge.cost`（200 金币） | 合并 → `lv += 1`（按 `stackLevelUp`），消耗被合芯片 | 不足 2 枚 / 不同名 / 已满级 / 金币不足 → `{ok:false, msg}` |
+| **reroll** | 选中 1 枚芯片 | `reroll.cost`（120 金币） | **重掷词条档位**：在同 `tag`/`behavior` 下重掷 `q` 档位数值（`value = vals[新q]`），**保留品质类型**（数值仍是数值、行为仍是行为） | 未选中 / 金币不足 → `{ok:false, msg}` |
+| **craft** | 无（定向 = 指定 `defId`） | `craft.cost`（180 金币） | 生成 1 枚指定 `defId` 芯片，品质按 `CFG.chipSources.shop.qualityWeights` | 金币不足 / `chipInv` 满（转 `pendingItems`）→ `{ok:false, msg}` |
+
+- ⚠️ **`reroll` 口径**：只重掷**档位数值**，**不改变 `defId` / `tag` / `behavior`**（避免"重铸成另一个体系"，与 `chipCodex` 收集冲突）。
+- 服务统一走 `{ok, msg}`，UI 弹 toast（§5.25）。
+
+### 19.11.7 撤离与死亡
+
+| 场景 | 规则 |
+| ---- | ---- |
+| **撤离结算** | `calcSettleConvert()`（`js/game.js:2078`）**排除 `chipInv`**：芯片 `carryOut:false` → **不折算**、出局直接消失。`b.total` **不含芯片**。 |
+| **死亡** | 芯片**不参与 70% 损失**（`CFG.deathPenalty.loseRatio`）——它本就是局内资产、出局即消，**无「掉芯片」逻辑**。 |
+| **`chipCodex`** | 只记录「见过的芯片」（`collectOnly`），**不加属性、不影响折算**。 |
+
+### 19.11.8 芯片与背包重量的关系
+
+🔴 **本节拍板：芯片计入负重**（与其余物品一致）。
+
+| 项 | 数值（⚠️ **暂定，可调**） | 理由 |
+| ---- | ---- | ---- |
+| 数值芯片重量 | `q + 1`（白 1 / 蓝 2 / 紫 3 / 金 4） | 品质越高越重，提供"带不带高价值芯片"的取舍。 |
+| 行为芯片重量 | `(q + 1) × 2`（紫 6 / 金 8） | 行为芯片占格更大（2×1）、更稀有，重量翻倍强化取舍。 |
+| 汇总口径 | 并入现有 `totalWeight()` | `CFG.weight`（threshold 100 / minFactor 0.2 / slope 0.8）**口径不变**，移动速度惩罚照常。 |
+
+- **理由**：① 芯片是**局内唯一「越拿越强」的资产**，不限重会导致「无脑囤芯片」；
+  ② 与搜刮背包共用一套重量规则（本作核心是「搜打撤」的**取舍**），芯片不该有特权；
+  ③ 数值保守（满背包 30 格全金数值芯片 = 120 重量），确保**极端构筑会明显变慢**但不至于寸步难行。
+- ⚠️ 若实测手感过重，**先调 `CFG.chips.weightMul`（新增全局系数）**，不要单体改每个芯片。
+
+### 19.11.9 ✅ 验收断言清单（`chip_test.js`，未来锁定行为）
+
+1. `createRun` 后 `G.run.chipInv` 尺寸 = `CFG.chips.grid`（6×5），`id === "chip"`。
+2. `makeChip("C_V_DMG", 0/1/2/3)` → `value` 分别等于 `vals[q]`；`q∈{0,1}` 带 `affix` 无 `behavior`。
+3. `makeChip("C_B_BURN", q≥2)` → 带 `behavior:"burn"`，`shape === CFG.chips.shapes.behavior`。
+4. 数值芯片品质映射：`q∈{0,1}` → 数值类；`q∈{2,3}` → 行为类（`qualityMode`）。
+5. 开箱判定：模拟多次开箱，芯片出现频率 ≈ `chipSources.chest.weight` 权重比例（统计容差）。
+6. 开箱掉出芯片 → 入 `chipInv`；`chipInv` 满 → 入 `pendingItems`（不丢失）。
+7. 数值芯片进 `tagCalc`：放入 C_V_DMG(q3) → `tagCalc("伤害", true)` 显著高于基线。
+8. `tagCalc` 汇总顺序：`weaponInv` 旧模块 + `heroModules` + `chipInv` **三者叠加**（flat 累加、mul 连乘），数值符合手算。
+9. 行为芯片**不进 `tagCalc`**：放入 C_B_BURN → `tagCalc` 数值**不变**。
+10. `resolveSkill` 结果上 `behavior` 透传：放入 C_B_BURN → 技能实例 `behavior.type === "burn"`。
+11. 多枚同类行为芯片 → `behavior.value` 取 **max**（不叠乘）。
+12. `merge`：2 枚同名同品质 → `lv` +1，消耗被合芯片；满级 9 → `{ok:false}`。
+13. `merge` 金币不足 → `{ok:false, msg}` 且**不改变**芯片。
+14. `reroll`：重掷后 `defId`/`tag`/`behavior` **不变**，`value` 取自 `vals[新q]`。
+15. `craft`：消耗 `craft.cost` 金币 → 生成指定 `defId` 芯片，品质符合 `shop.qualityWeights`。
+16. `shopBuyChip()` 返回 `{ok, msg}`，**不调 `UI.toast`**（沿用 §5.25）。
+17. `calcSettleConvert`：`chipInv` 内芯片**不产生折算价值**（`total` 与无芯片时相同）。
+18. 死亡惩罚：芯片**不参与** `loseRatio 0.7`（存活/死亡两场景芯片数一致）。
+19. 芯片计入 `totalWeight()`：放入芯片后总重增加，符合 19.11.8 公式。
+20. `chipCodex` 记录已见芯片，**不改变**任何属性 / 折算。
+
+***
+
+## 19.12 行为芯片积木（第 5 步施工图，数据定义先行）
+
+> 本节**只定义数据契约与注入点**，不写实现。第 4 步透传 `behavior`，第 5 步在 `SkillSystem`（`js/game.js:438+`）落地消费。
+> 实现优先级（19.9 待确认 #1 已拟）：**弹射 → 灼烧 → 分裂 → 链锁**。
+
+### 19.12.1 四种行为的数据契约
+
+统一字段：`behavior = { type, value }`（`value` 来自 `CFG.chips.behaviorPool[].vals[q]`，见下表）。
+
+| type | 中文 | `value` 语义（`vals[q]`） | 注入点 | 数据通路 |
+| ---- | ---- | ---- | ---- | ---- |
+| `bounce` | 折射 | 命中后**弹射次数** N（`vals = [1,1,2,2]`） | **bullet 命中后**（`Bullet` 命中回调） | 命中未消亡时，取附近新目标 → 改变 `bullet` 速度方向并续命，剩余弹射次数 -1（**复用现有 `bounce` 字段链路**）。 |
+| `burn` | 燃蚀 | 每秒**灼烧伤害** N（`vals = [3,5,8,12]`），持续 3 秒 | **bullet 命中后** | 给被命中怪物挂 `m.burn = {dps, remain}`；`Monster.update` 扣血 + 渲染火色描边。 |
+| `split` | 裂变 | 击杀后**分裂小弹**数量 N（`vals = [1,1,2,3]`） | **敌人死亡时**（`onMonsterKilled` / `damageMonster` 致死分支） | 死亡怪物位置生成 N 枚继承部分属性的小弹（`owner` 沿用击杀弹 owner）。 |
+| `chain` | 链锁 | 命中后**传导目标数** N（`vals = [1,1,2,2]`） | **bullet 命中后** | 命中后向 N 个最近敌人发射瞬结（闪电/线段）并结算伤害；**链锁标记**防止无限链。 |
+
+- 🔴 **`value` 取 max 不叠乘**（同 type 多枚芯片）：与 19.11.5 一致。
+- **四种行为与 `CFG.chips.behaviorPool` 一一对应**：`C_B_BOUNCE`→bounce / `C_B_BURN`→burn / `C_B_SPLIT`→split / `C_B_CHAIN`→chain。
+
+### 19.12.2 注入点（`SkillSystem` / `Bullet` / `Monster`）
+
+| 行为 | 需要接入的函数 | 需读取的字段 |
+| ---- | ---- | ---- |
+| `bounce` | `Bullet` 命中处理（现有 `bounce` 计数） | `bullet.behavior.value`（剩余次数） |
+| `burn` | `damageMonster` / `Monster.update` | `monster.burn = {dps, remain}` |
+| `split` | `damageMonster` 致死分支 / `onMonsterKilled` | `killer` 弹的 `behavior.value` + `owner` |
+| `chain` | `Bullet` 命中处理 + 索敌（`nearestMonster`） | `bullet.behavior.value` + 已链集合 |
+
+- ⚠️ **`LaserBeam`（17.7 未实现）走弹幕吞噬路径，不在本规格范围**；行为芯片**只挂 bullet 类技能**，召唤/陷阱是否挂载**待第 5 步定**。
+
+### 19.12.3 ✅ 验收断言清单（`chip_behavior_test.js`，未来锁定行为）
+
+1. `behavior` 字段从 `resolveSkill` 结果**透传到实际生成的 `Bullet` 实例**。
+2. `bounce`：命中 1 个目标后 `bullet` 转向并继续存在，剩余次数按 `value` 递减；次数耗尽后消亡。
+3. `burn`：命中后怪物获得 `burn.remain ≈ 3s`，每帧按 `dps` 扣血；`remain` 归零后停止扣血。
+4. `burn` 的 `dps` 与 `vals[q]` 一致（4 档分别 3/5/8/12）。
+5. `split`：击杀怪物后场上新增 `value` 枚小弹，`owner` 与击杀弹一致。
+6. `split` 的小弹**不再触发 `split`**（防止无限分裂，需显式护栏）。
+7. `chain`：命中后向最近 N 个敌人传导伤害，目标数 ≤ `value`。
+8. `chain` 不重复链接同一敌人（链锁标记生效）。
+9. 同 type 多枚芯片 → 生效 `value` = **max**（非叠乘）。
+10. **无**行为芯片时，bullet / monster / onKill 行为与接入前**完全一致**（回归护栏，等价性断言）。
 
 ***
 

@@ -138,7 +138,7 @@ const driver = `
     step(30);
     const basicShots = w.playerBullets.filter(b => !b.isSkill).length;
     check("普攻已移除：30 帧内无 isSkill=false 玩家子弹", basicShots === 0);
-    // ② 技能全自动：不开 autoFight、不按 Space，冷却好 + 能量够 → 自动施放
+    // ② 技能全自动：不开 autoFight、不按 Space，冷却好即释放（19.3 冷却制，无能量门槛）
     check("前置：autoFight 未开启", G.run.autoFight === false);
     check("前置：Space 未按下", !G.keys[" "]);
     G.run.energy = G.run.energyMax;
@@ -148,7 +148,7 @@ const driver = `
     const skillShots = w.playerBullets.filter(b => b.isSkill).length;
     check("技能全自动释放（无需 autoFight / Space）", skillShots > 0 || G.run.drones.length > 0 || G.run.traps.length > 0);
     check("施放后进入冷却（skillTimer > 0）", p.skillTimer > 0);
-    check("施放后能量被扣除（能量制仍生效，第 2 步才退役）", G.run.energy < G.run.energyMax);
+    check("施放后能量不再被消耗（冷却制已生效，19.3）", G.run.energy === G.run.energyMax);
   }
 
   /* ============ 六、队友：无普攻，技能照旧自动放 ============ */
@@ -161,17 +161,17 @@ const driver = `
     const c = G.run.companions[0];
     check("队友存在", !!c);
     // 队友不普攻
-    c.skillTimer = 999; c.energy = 0;   // 压技能：能量清零
+    c.skillTimer = 999; c.energy = 0;   // 压技能冷却（19.3 后能量不再参与门槛）
     w.playerBullets.length = 0;
     step(30);
     const cBasic = w.playerBullets.filter(b => !b.isSkill && b.owner === c).length;
     check("队友普攻已移除（无 isSkill=false 且 owner=队友 的子弹）", cBasic === 0);
-    // 队友技能照常（aiSkill + 独立能量池）
-    c.energy = c.energyMax; c.skillTimer = 0;
+    // 队友技能照常（19.3 冷却制：能量为 0 也能释放）
+    c.energy = 0; c.skillTimer = 0;
     w.playerBullets.length = 0;
     step(5);
     const cSkill = w.playerBullets.filter(b => b.isSkill && b.owner === c).length;
-    check("队友技能照常自动释放（独立能量池语义不变）", cSkill > 0 || G.run.drones.length > 0 || G.run.traps.length > 0);
+    check("队友技能照常自动释放（冷却制：能量为 0 也释放，19.3）", cSkill > 0 || G.run.drones.length > 0 || G.run.traps.length > 0);
   }
 
   /* ============ 七、经验宝石仍为中立掉落 → 队池（参与伤害语义，19.4） ============ */
@@ -190,6 +190,111 @@ const driver = `
     const exp0 = G.run.exp;
     if (gem) { gainExp(gem.value); }
     check("经验入队池（r.exp 增加，无个人归属）", G.run.exp !== exp0 || G.run.lv !== lv0);
+  }
+
+  /* ============ 八、第 2 步：冷却制 + 三定位 + 维修无人机（19.2 / 19.3） ============ */
+  {
+    // ① 技能资源 = 冷却制
+    check("CFG.skillResource.mode = cooldown", CFG.skillResource && CFG.skillResource.mode === "cooldown");
+    check("CFG.skillResource.startReady = true", CFG.skillResource.startReady === true);
+    // ② 英雄三定位映射锁定
+    const by = CFG.heroRoles.byHero;
+    check("定位-H001/H002/H003/H006 = output",
+      by.H001 === "output" && by.H002 === "output" && by.H003 === "output" && by.H006 === "output");
+    check("定位-H004/H005/H008 = defense", by.H004 === "defense" && by.H005 === "defense" && by.H008 === "defense");
+    check("定位-H007 = recovery（维修型）", by.H007 === "recovery");
+    // ③ requireAll 三定位齐全
+    const need = CFG.heroRoles.requireAll || [];
+    const got = new Set(Object.keys(by).map(k => by[k]));
+    check("定位-requireAll 三定位齐全（output/defense/recovery）",
+      need.every(r => got.has(r)) && need.indexOf("output") >= 0 && need.indexOf("defense") >= 0 && need.indexOf("recovery") >= 0);
+    check("定位-三定位定义均有 name/color", need.every(r => CFG.heroRoles[r] && CFG.heroRoles[r].name && CFG.heroRoles[r].color));
+
+    // ④ 冷却制：能量为 0 时队长技能仍释放（无能量门槛）
+    Game.startRun(CFG.heroes[0]);
+    Game.skipIntroFreeze();
+    const w = G.mainWorld, p = G.player;
+    w.monsters.length = 0;
+    w.monsters.push(new Monster("NM0010", p.x + 200, p.y, 1));
+    G.run.energy = 0; p.skillTimer = 0;
+    w.playerBullets.length = 0;
+    for (let i = 0; i < 3; i++) p.update(w, 0.016);
+    check("冷却制-队长能量为 0 仍释放技能（无能量门槛）",
+      w.playerBullets.filter(b => b.isSkill).length > 0 || G.run.drones.length > 0 || G.run.traps.length > 0);
+    // 冷却好 → 立即再放；冷却未到 → 不放
+    p.skillTimer = 0; w.playerBullets.length = 0;
+    for (let i = 0; i < 3; i++) p.update(w, 0.016);
+    check("冷却制-冷却好即再放（skillTimer 重置 > 0）", p.skillTimer > 0);
+    p.skillTimer = 1.0; w.playerBullets.length = 0;
+    for (let i = 0; i < 3; i++) p.update(w, 0.016);
+    check("冷却制-冷却中不释放（skillTimer 仍 > 0 且无新弹）",
+      p.skillTimer > 0 && w.playerBullets.filter(b => b.isSkill).length === 0);
+
+    // ⑤ skillTimer 语义正确（界面冷却环契约：剩余秒 = cd × cdMul，逐帧递减）
+    p.skillTimer = 0; w.playerBullets.length = 0;
+    p.update(w, 0.016);
+    const cd0 = G.run.weapon.skill.cd * computeStats().cdMul;
+    check("冷却环契约-skillTimer 释放后 = cd × cdMul（≈" + cd0.toFixed(3) + "）", near(p.skillTimer, cd0 - 0.016, 0.02));
+    const before = p.skillTimer; p.update(w, 0.016);
+    check("冷却环契约-skillTimer 逐帧递减", p.skillTimer < before);
+
+    // ⑥ 维修无人机：技能表挂了 repair 标记 + CFG 数值齐全
+    check("维修-AT113 技能表标 repair:true", CFG.skills.AT113 && CFG.skills.AT113.repair === true);
+    check("维修-CFG.skills2.repairDrone 数值齐全（healPerSec/repairInterval）",
+      CFG.skills2 && CFG.skills2.repairDrone && CFG.skills2.repairDrone.healPerSec > 0 && CFG.skills2.repairDrone.repairInterval > 0);
+    check("维修-AT113 ID 在 repairDrone.skillIds 内", (CFG.skills2.repairDrone.skillIds || []).indexOf("AT113") >= 0);
+  }
+
+  /* ============ 九、维修无人机行为：治疗 HP 比例最低的己方成员（19.2） ============ */
+  {
+    // 召唤师 H007 为队长（AT113 = 维修无人机）
+    Game.startRun([CFG.heroes[6], CFG.heroes[0]]);
+    Game.skipIntroFreeze();
+    const w = G.mainWorld, r = G.run, p = G.player;
+    r.drones.length = 0;
+    const sk = resolveSkill(CFG.skills.AT113, 1, { dmgMul: 1, cdMul: 1, bullets: 0 });
+    SkillSystem.cast(w, p, sk, null, { atk: 10 });
+    check("维修-无人机已召唤（" + r.drones.length + " 架）", r.drones.length > 0);
+    check("维修-无人机带 repair 标记（AT113 判定）", r.drones.every(d => d.repair === true));
+
+    // 队长（召唤师）残血：治疗应给 HP 比例最低者 = 队长
+    const c0 = r.companions[0];
+    r.hp = Math.max(1, r.hpMax - 50);         // 队长残血
+    c0.hp = c0.hpMax;                          // 队友满血
+    const hpB = r.hp;
+    const dr = r.drones[0];
+    dr.repairTimer = 0;                        // 立即触发一次修理
+    dr.update(w, 0.016);
+    check("维修-为 HP 比例最低者（队长）回血（" + hpB + " → " + r.hp + "）", r.hp > hpB);
+    check("维修-治疗量 = healPerSec（单次结算）", near(r.hp - hpB, CFG.skills2.repairDrone.healPerSec, 0.001));
+    // 绿字提示（spawnFloat 走 #7de08a）
+    const greens = global.__ctxCalls.filter(c => c[0] === "set:fillStyle" && c[1][0] === "#7de08a").length;
+    check("维修-走 spawnFloat 绿字提示（#7de08a）", greens > 0);
+
+    // 队友残血更狠 → 切给队友
+    r.hp = r.hpMax; c0.hp = Math.max(1, c0.hpMax - 80);
+    const chpB = c0.hp;
+    dr.repairTimer = 0; dr.update(w, 0.016);
+    check("维修-改治 HP 比例更低的队友（" + chpB + " → " + c0.hp + "）", c0.hp > chpB);
+
+    // 不超 hpMax：全员接近满血时按缺口夹紧
+    r.hp = r.hpMax; c0.hp = c0.hpMax - 1;
+    dr.repairTimer = 0; dr.update(w, 0.016);
+    check("维修-治疗不超 hpMax（缺口 1 → 回复 1）", c0.hp === c0.hpMax);
+
+    // 全员满血：不治疗
+    r.hp = r.hpMax; c0.hp = c0.hpMax;
+    const beforeFull = global.__ctxCalls.length;
+    dr.repairTimer = 0; dr.update(w, 0.016);
+    const newGreen = global.__ctxCalls.slice(beforeFull).filter(c => c[0] === "set:fillStyle" && c[1][0] === "#7de08a").length;
+    check("维修-全员满血不治疗（无绿字）", newGreen === 0);
+
+    // 非维修型无人机（H001 的 AT113 手工施放）不带 repair 标记也不治疗
+    const skNoRepair = resolveSkill(CFG.skills.AT113, 1, { dmgMul: 1, cdMul: 1, bullets: 0 });
+    skNoRepair.repair = false;    // 模拟非维修技能
+    r.drones.length = 0;
+    SkillSystem.cast(w, p, skNoRepair, null, { atk: 10 });
+    check("维修-未标 repair 的召唤物不带维修行为", r.drones.every(d => d.repair === false));
   }
 
   console.log(ok ? "EXP OK" : "EXP FAILED");

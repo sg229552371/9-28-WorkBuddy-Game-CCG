@@ -70,7 +70,7 @@ vm.runInContext(`
   check("开局 run.autoFight = false（默认关闭）", G.run.autoFight === false);
   check("开局按钮文案为「自动战斗：关」", document.getElementById("btn-autofight").textContent.includes("关"));
 
-  // ---- 场景：场上有怪、能量够、冷却好 ----
+  // ---- 场景：场上有怪、冷却好（19.3 冷却制：能量不再是门槛） ----
   const w = G.activeWorld, p = G.player;
   const m = new Monster("NM0010", p.x + 200, p.y, 1);
   w.monsters.push(m);
@@ -82,12 +82,14 @@ vm.runInContext(`
   w.playerBullets.length = 0;
   p.update(w, 0.016);
   check("19.1：普攻已移除（无 isSkill=false 子弹）", w.playerBullets.filter(b => !b.isSkill).length === 0);
-  check("关闭态：技能同样自动施放（不再受 autoFight 控制）", G.run.energy < sk.energy && p.skillTimer > 0);
+  check("关闭态：技能同样自动施放（不再受 autoFight 控制）",
+    w.playerBullets.filter(b => b.isSkill).length > 0 && p.skillTimer > 0);
 
   // 2. Space 不再是施法门槛（键位保留但无施法语义；技能全自动）
   setReady(); G.keys[" "] = true;
   p.update(w, 0.016);
-  check("Space 按下与否不影响技能自动施放（19.1 全自动）", G.run.energy < sk.energy && p.skillTimer > 0);
+  check("Space 按下与否不影响技能自动施放（19.1 全自动）",
+    w.playerBullets.filter(b => b.isSkill).length > 0 && p.skillTimer > 0);
   G.keys[" "] = false;
 
   // 3. 开启自动战斗：按钮状态翻转 + 技能自动施放
@@ -97,15 +99,17 @@ vm.runInContext(`
   check("按钮文案翻转为「开」", afBtn.textContent.includes("开"));
   setReady();
   p.update(w, 0.016);
-  check("开启态：技能能量够即自动施放", G.run.energy < sk.energy && p.skillTimer > 0);
+  check("开启态：冷却好即自动施放（能量不再是门槛）", p.skillTimer > 0);
 
-  // 4. 开启态：能量不足不施放、冷却中不施放
-  G.run.energy = sk.energy - 1; p.skillTimer = 0;
+  // 4. 19.3 冷却制：能量不足（=0）仍施放；冷却中不施放
+  G.run.energy = 0; p.skillTimer = 0;
+  w.playerBullets.length = 0;
   p.update(w, 0.016);
-  check("开启态：能量不足不施放", G.run.energy < sk.energy);
+  check("开启态：能量不足仍施放（冷却制，能量退役）", p.skillTimer > 0);
   setReady(); p.skillTimer = 1;
+  w.playerBullets.length = 0;
   p.update(w, 0.016);
-  check("开启态：冷却中不施放", G.run.energy >= G.run.energyMax - 0.01);
+  check("开启态：冷却中不施放", p.skillTimer > 0 && w.playerBullets.filter(b => b.isSkill).length === 0);
 
   // 5. 再次点击关闭
   afBtn.onclick();
