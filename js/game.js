@@ -242,10 +242,10 @@ function affixText(it) {
 function createRun(heroDef) {
   return {
     heroDef,
-    autoFight: false,               // 自动战斗（HUD 按钮）：关闭=技能手动（Space），开启=技能能量够即自动放；普攻始终自动索敌
+    autoFight: false,               // 自动战斗（HUD 按钮）：19.1 后普攻已移除，技能**全自动**释放（冷却好+能量够即放，与本开关无关）；本开关仅控制**走位托管**
     hp: heroDef.hp, hpMax: heroDef.hp,
     energy: heroDef.energyMax, energyMax: heroDef.energyMax,
-    lv: 1, exp: 0, expNext: 14, coin: 0, kills: 0, eliteKills: 0,
+    lv: 1, exp: 0, expNext: expNextFor(1), coin: 0, kills: 0, eliteKills: 0,
     backpack: new Inventory(CFG.backpack.cols, CFG.backpack.rows, "backpack"),
     weaponInv: new Inventory(CFG.weaponGrid.cols, CFG.weaponGrid.rows, "weapon"),
     buffs: [],                      // 战争雕像增益 {id, stat, mul, remain, label}
@@ -260,7 +260,7 @@ function createRun(heroDef) {
     },
     curse: null,                    // 诅咒道具（待细化36）{defMul,hpMul,atkMul,spdMul,rewardMul,remain}
     lifesteal: 0,
-    cardAssets: 0,                  // 属性卡牌资产（升级 +1，仅工匠世界可使用，8.3）
+    cardAssets: 0,                  // 属性卡牌资产（🔴 19.7 已退役：升级不再 +1，恒 0；UI 走 0 分支自然冻结，折算恒 0）
     cardRefresh: CFG.cardPool.refreshPerRun,   // 本局剩余刷新次数
     cardCandidates: null,           // 当前候选卡牌（进入工匠世界时抽取）
     appliedCards: [],               // 已使用卡牌 {attr, q, value}，退出局内随 run 清除
@@ -388,9 +388,11 @@ const Meta = {
     this.commit();
     return true;
   },
-  // 结算发结晶：撤离全额，死亡按 deathRatio 折算
+  // 结算发结晶（19.8 已定）：来源① = 击杀 BOSS（crystalBoss）；来源② = 撤离彻底折算
+  // （main.js 结算时另加 conv.total，不经本函数）。**小怪击杀（crystalKill）已退役**——
+  // kills 参数保留仅为兼容调用方签名；死亡时来源②不发生，BOSS 结晶按 deathRatio 保留。
   awardRun(kills, bossDefeated, extracted) {
-    let v = kills * CFG.outLevel.crystalKill + (bossDefeated ? CFG.outLevel.crystalBoss : 0);
+    let v = bossDefeated ? CFG.outLevel.crystalBoss : 0;
     if (!extracted) v = Math.floor(v * CFG.outLevel.deathRatio);
     this.data.crystals += v;
     this.commit();
@@ -562,10 +564,18 @@ function runBonus() {
     else if (stat === "cdMul") mul.cd *= mv;
     else if (stat === "lifesteal") add.lifesteal += mv;
   }
-  for (const c of (r.appliedCards || [])) {    // 属性卡牌（8.3，工匠世界使用后随本局）
+  for (const c of (r.appliedCards || [])) {    // 属性卡牌（8.3，工匠世界使用后随本局）——19.7 已退役，本循环恒为空
     if (c.attr === "cd") mul.cd *= c.value;
     else if (c.attr === "bullets") { /* 弹道数量在 tagCalc / resolveSkill 内生效（全队同源） */ }
     else if (add[c.attr] != null) add[c.attr] += c.value;
+  }
+  // 19.4：升级即时属性（原属性卡牌「升级 +1 资产」职能并入）——每升 1 级全队 +baseStatGain，LV1 无加成
+  const g19 = CFG.levelUp && CFG.levelUp.baseStatGain;
+  if (g19) {
+    const n19 = Math.max(0, (r.lv || 1) - 1);
+    add.hp += (g19.hp || 0) * n19;
+    add.atk += (g19.atk || 0) * n19;
+    add.def += (g19.def || 0) * n19;
   }
   return { add, mul };
 }
@@ -1009,7 +1019,7 @@ function autoFightMove(p, w, dt) {
 class Player {
   constructor(x, y) {
     this.x = x; this.y = y; this.r = G.heroDef.radius;
-    this.fireTimer = 0; this.skillTimer = 0;
+    this.skillTimer = 0;    // 🔴 19.1 普攻移除：fireTimer 已随 fireBasic 一起退役
     this.faceDir = 1;
     this.mvx = 0; this.mvy = 0;   // 当前移动方向（0=静止；队友列队与朝向依赖此值）
   }
@@ -1046,23 +1056,14 @@ class Player {
     } else { this.mvx = 0; this.mvy = 0; }   // 停止移动即清零
     // 能量恢复
     G.run.energy = Math.min(G.run.energyMax, G.run.energy + st.regen * dt);
-    // 自动攻击：锁定屏幕内最近敌人
-    this.fireTimer -= dt; this.skillTimer -= dt;
+    // 自动攻击（19.1 移除普攻）：英雄**唯一输出 = 主动技能**——冷却好 + 能量够 + 有目标即自动释放，
+    // 不再看 autoFight 开关或 Space（方案 4 已确认：技能全自动，玩家专注走位；autoFight 仅托管移动）
+    this.skillTimer -= dt;
     const target = nearestMonster(w, this.x, this.y);
-    if (target) {
-      if (this.fireTimer <= 0) { this.fireBasic(w, target, st); this.fireTimer = G.run.weapon.basic.cd * st.cdMul; }
-      // 主动技能：Space 手动触发；或开启「自动战斗」(G.run.autoFight) 后能量够即自动释放
-      if (this.skillTimer <= 0 && G.run.energy >= G.run.weapon.skill.energy &&
-          (G.run.autoFight || G.keys[" "])) {
-        this.fireSkill(w, target, st); this.skillTimer = G.run.weapon.skill.cd * st.cdMul;
-      }
+    if (target && this.skillTimer <= 0 && G.run.energy >= G.run.weapon.skill.energy) {
+      this.fireSkill(w, target, st);
+      this.skillTimer = G.run.weapon.skill.cd * st.cdMul;
     }
-  }
-  fireBasic(w, target, st) {
-    SkillSystem.castBullet(w, this, G.run.weapon.basic,
-      Math.atan2(target.y - this.y, target.x - this.x),
-      { side: "player", isSkill: false, atk: st.atk, spread: 0.14 });
-    SFX.play("shoot");
   }
   fireSkill(w, target, st) {
     const s = G.run.weapon.skill;
@@ -1236,21 +1237,13 @@ function updateCompanions(w, dt) {
       resolveObstacles(c, w, { x: tx, y: ty });   // 偏置 = 跟随目标点（被挡时沿墙绕向队尾点位）
     }
     // 自动普攻（武器栏内的武器模块对全队生效：技能值取 recomputeWeapon 解析出的 c.skills）
-    c.fireTimer -= dt;
-    const tgt = nearestMonster(w, c.x, c.y);
-    if (tgt && c.fireTimer <= 0) {
-      const b = (c.skills && c.skills.basic)
-        || CFG.skills[CFG.weapons[c.heroDef.weapon].skills.basic];   // 兜底：未重算时用技能表原始值
-      SkillSystem.castBullet(w, c, b, Math.atan2(tgt.y - c.y, tgt.x - c.x),
-        { side: "player", isSkill: false, atk: st.atk, spread: 0.14 });
-      c.fireTimer = b.cd * st.cdMul;   // 冷却缩减（属性卡「攻速」/ 增益「迅击」）对队友同样生效
-      c.faceDir = tgt.x > c.x ? 1 : -1;
-    }
+    // 🔴 19.1 普攻移除：队友与队长一致，唯一输出 = 主动技能（c.fireTimer 已随之退役）
     // 主动技能（技能石）：与队长同一套 SkillSystem。队友是**独立个体**——
     // 用**自己的能量池**（各自恢复、各自扣费），不占用队长能量池（CFG.team.aiSkill 可关）。
     c.skillTimer = (c.skillTimer || 0) - dt;
     c.energy = Math.min(c.energyMax, (c.energy || 0) + st.regen * dt);
     const cs = c.skills && c.skills.skill;
+    const tgt = nearestMonster(w, c.x, c.y);
     if (CFG.team.aiSkill !== false && tgt && cs && c.skillTimer <= 0 && c.energy >= (cs.energy || 0)) {
       c.energy -= (cs.energy || 0);
       SkillSystem.cast(w, c, cs, tgt, { side: "player", isSkill: true, atk: st.atk });
@@ -1918,17 +1911,27 @@ function clearExtractChannel() {
   r.extractChanneling = false; r.extractProgress = 0; r.extractHolder = null;
 }
 
+/* ---------- 局内升级（19.4）：经验曲线 fastEarly 公式驱动 + 全队即时属性 ----------
+ * 经验来源 = 参与伤害即给（19.4）：经验宝石为**中立掉落物**，任何成员拾取均入**队池**（无个人归属），
+ * 因此"参与即给"由拾取制天然满足——没有"击杀者独得"的零和问题。 */
+function expNextFor(lv) {
+  const c = CFG.levelUp.curve;
+  let v = c.base * Math.pow(c.growth, lv - 1);
+  if (lv <= c.softCapLv) v *= c.softCapMul;   // 前期额外宽松：开局雪球手感
+  return Math.max(1, Math.round(v));
+}
 function gainExp(v) {
-  const r = G.run;
+  const r = G.run, c = CFG.levelUp.curve;
+  if (r.lv >= c.maxLv) return;                 // 局内等级封顶（与 99 关主线对齐）
   r.exp += v;
-  while (r.exp >= r.expNext) {
+  while (r.exp >= r.expNext && r.lv < c.maxLv) {
     r.exp -= r.expNext; r.lv++;
-    r.expNext = Math.round(14 + (r.lv - 1) * 9);
+    r.expNext = expNextFor(r.lv);
     spawnFloat(G.player.x, G.player.y - 44, `LV ${r.lv}！`, "#c79bff");
-    r.cardAssets++;
     SFX.play("levelup");
-    UI.toast(`升级！LV ${r.lv}（属性提升 · 属性卡牌 +1，工匠世界可用）`, "gold");
+    UI.toast(`升级！LV ${r.lv}（全队属性提升）`, "gold");
   }
+  if (r.lv >= c.maxLv) r.exp = 0;              // 封顶后经验不再累积
 }
 
 /* ---------- 属性卡牌（8.3 / 13.15：资产累积、工匠世界使用、池内同属性去重） ---------- */

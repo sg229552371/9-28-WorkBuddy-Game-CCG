@@ -175,7 +175,7 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
 
 ## 3. 验证流程（必做）
 
-**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 530**。
+**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 565**。
 
 核心要求：
 
@@ -424,9 +424,9 @@ companion 构造带 `energy/energyMax/regen = hd.energyMax/energyMax/energyRegen
 改队友施法逻辑时别退回"只按 CD"。
 
 ### 5.20 AI 队友是全战斗单位
-`updateCompanions` 里队友 **普攻 + 主动技能各自独立计时**（`c.fireTimer` / `c.skillTimer`，
-`skillTimer` 在 `createRun` 里按 `(i+1)*CFG.team.skillStagger` 错峰）。
-队友技能走同一个 `SkillSystem.cast`；`CFG.team.aiSkill=false` 可整体关掉。
+`updateCompanions` 里队友只有**主动技能计时**（`c.skillTimer`，`createRun` 里按
+`(i+1)*CFG.team.skillStagger` 错峰）——19.1 普攻移除后 `c.fireTimer` 已退役。
+队友技能走同一个 `SkillSystem.cast`；`CFG.team.aiSkill=false` 可整体关掉（关掉后完全沉默）。
 
 ### 5.21 产物池按成员隔离
 `G.run.drones` / `G.run.traps` 是**全队共用容器**，但**计数与上限按 `owner === caster` 过滤**
@@ -437,7 +437,8 @@ companion 构造带 `energy/energyMax/regen = hd.energyMax/energyMax/energyRegen
 
 ### 5.22 技能执行器 = `SkillSystem`（`js/game.js`）
 `castBullet` / `castSummon` / `castTrap` / `cast`（按 `sk.type` 分发 bullet/summon/trap），
-玩家、队友、召唤物共用。**不要再在 Player 里写释放逻辑**；Player 的 `fireBasic`/`fireSkill` 只是薄包装。
+玩家、队友、召唤物共用。**不要再在 Player 里写释放逻辑**；Player 的 `fireSkill` 只是薄包装
+（`fireBasic` 已随普攻移除删除，见 §5.41）。
 
 ### 5.23 敌人技能已表化（组合，别再往怪物表加攻击参数）
 `CFG.monsters[].skillList = ["AT2xx"]` 指向技能表，**攻击参数（fireCd/bulletSpd/keepDist/
@@ -642,6 +643,29 @@ for (const sid in CFG.moduleSets) {
 - HUD 左上**能量条 → 技能冷却环**（13.1 条款变更）
 - 属性卡牌里的能量条目（随卡牌一起删）
 
+### 5.41 ✅ 第 1 步已落地：普攻移除 + 技能全自动 + 经验/结晶新口径（19.1 / 19.4 / 19.8）
+
+**别改回去**，以下是与旧版的关键差异（`exp_test` 34 条锁定）：
+
+- **普攻移除**：`Player.fireBasic` 已删除；`updateCompanions` 的队友普攻分支已删除。
+  英雄/队友**唯一输出 = 主动技能**；敌人侧 basic 条目保留（`CFG.basicAttack.keepEntriesForMonster`）。
+- **技能全自动**：释放条件 = 冷却好 + 能量够 + 有目标，**不再看 `G.run.autoFight` 或 Space**。
+  「自动战斗」按钮只剩**走位托管**语义。`CFG.skills2.autoCast` 已退役留存。
+- **经验曲线公式化**：`expNextFor(lv)` 读 `CFG.levelUp.curve`（fastEarly：base 8 / growth 1.32 /
+  softCap 12 级内 ×0.7 / maxLv 99）；`createRun` 初始 `expNext: expNextFor(1)`。
+  经验宝石仍是**中立掉落物 → 队池**（"参与伤害即给"由拾取制天然满足，没有击杀者归属）。
+- **升级奖励**：不再 `cardAssets++`（恒 0，卡牌通道自然冻结）；改为 `runBonus()` 按
+  `(lv-1) × CFG.levelUp.baseStatGain` 给全队即时属性（队长 `computeStats` 与队友 `companionStats` 自动吃到）。
+- **结晶口径（19.8）**：`Meta.awardRun` 只发 **BOSS 结晶**（`crystalBoss`），`kills × crystalKill` 已删；
+  撤离折算（`conv.total`）在 `main.js` 结算处**另行叠加**；死亡 = `floor(crystalBoss × deathRatio)`、
+  折算不发生。`crystalKill` 字段保留但**禁止新代码引用**。
+- **测试改法记录**：`skill_table_test` 队友普攻断言改为「无 isSkill=false 子弹」；
+  `aiSkill=false` 从「只普攻」改为「完全沉默」；`autofight_test` 场景 1/2 重写为「关闭态也自动放 +
+  Space 无施法语义」。都是**换期望值，没放松断言**。
+- ⚠️ **中间态手感**：本步落地后、第 2 步（冷却制）之前，技能仍走能量制
+  （H001 技能耗能 100 = 全部能量，regen 10/s → 约 10 秒一发），输出频率明显下降是**预期行为**，
+  第 2 步落地后恢复。
+
 ## 6. 并行开发切分（已验证可用）
 
 多路 Agent 并行时**按文件所有权切分**，一方不得碰另一方的文件：
@@ -674,17 +698,18 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 
 ## 8. 当前基线
 
-测试 **18/18 全绿**，**PASS 合计 530**：
+测试 **19/19 全绿**，**PASS 合计 565**：
 
 `smoke_test` / `runtime_test` / `backpack_test` / `econ_test` / `skill_module_test` /
 `team_trigger_test` / `artisan_test` / `ui_flow_test` / `rift_test` / `extract_test` /
 `shop_test` / **`skill_table_test`**（技能表 + 敌人技能表化 + 武器模块全队生效 + 装备全队 +
 队友技能与独立能量池 + 局内增益全队/吸血归属 + 产物池隔离 + Buff 等级 +
 英雄召唤物/陷阱上限 + 判定圈统一规则 + Boss 弹幕招式计数，**178 条**）/
-**`autofight_test`**（托管 AI 三风格，41 条）/ **`mobile_test`**（移动端摇杆，14 条）/
+**`autofight_test`**（托管 AI 三风格，42 条）/ **`mobile_test`**（移动端摇杆，14 条）/
 **`boss_test`**（Boss 弹幕化 + 阶段机 + 护栏，**85 条**）/
 **`bugfix_test`**（世界归属 + 视线判定 + 沿墙绕行 + 主城布局 + 画布跨端，**17 条**）/
-**`grant_test`**（物品入包四分支行为锁定，**30 条**）/ **`freeze_test`**（主关卡开场冻结，**28 条**）。
+**`grant_test`**（物品入包四分支行为锁定，**30 条**）/ **`freeze_test`**（主关卡开场冻结，**28 条**）/
+**`exp_test`**（第 1 步战斗主链路：普攻移除 / 技能全自动 / 经验曲线 / 升级属性 / 结晶口径，**34 条**）。
 
 跑测试前先确认这个基线，改完必须仍然全绿且 `bad=0`，改完建议连跑 3 轮看抖动。
 ⚠️ 改动队友施法/产物相关逻辑会连带撞到 `skill_table_test` 第十节（队友技能与能量）与产物池断言
@@ -697,8 +722,8 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 
 `Game.startRun([...两个英雄])` → `G.run.companions[0]` → 往 `G.run.weaponInv.place(makeModule(...), x, y)` →
 `recomputeWeapon()` 断言 `c.skills.*`；
-要验「真的用上了」就造怪 + 清空弹池 + `c.fireTimer=0` + `updateCompanions(G.mainWorld, 0.016)`，
-断言 `w.playerBullets.length`。
+要验「真的用上了」就造怪 + 清空弹池 + `c.energy=c.energyMax; c.skillTimer=0` +
+`updateCompanions(G.mainWorld, 0.016)`，断言 `w.playerBullets`（19.1 后只有技能弹，全部 `isSkill=true`）。
 队友 `heroDef` 是 `applyOutLevel` 返回的**副本**，可直接改 `weaponLv` 做等级独立性测试，
 不会污染 `CFG.heroes`。
 
@@ -710,13 +735,11 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
   线段-圆命中）；第 4 步（BS0004~BS0010 配表）；17.9 待定 5 条。
 - **内容铺量**：关卡 3 → 10+、怪物 11 → 17+、技能锚点数值填表；属性卡池本批未动。
 - **🔴 v2 重构（第十九章）落地顺序**（配置+文档已完成，逻辑待做）：
-  1. **删普攻 + 改经验来源**（参与伤害即给）—— 同时改 `autofight_test`（AI 从"射击"改"放技能"）；
-     顺带退役 `CFG.outLevel.crystalKill`（19.8：小怪击杀不给结晶，来源只留 BOSS + 撤离折算，
-     撞 `econ_test` 相关断言时按新规则改期望值）
+  1. ✅ **删普攻 + 改经验来源**（参与伤害即给）+ AI 改放技能 + crystalKill 退役 —— **已落地**（见 §5.41，基线 565）
   2. **英雄三定位 + 技能冷却制**（退役能量池，撞 `skill_table_test` 队友能量断言，按新规则改期望值不放松）
   3. **升级 4 选 1 + 模块池**（每英雄独立池，需新增选择 UI）
   4. **芯片系统**（先数值芯片，再行为芯片；行为芯片需新增行为积木）
   5. **UI 改造**：芯片背包 6×5 + 上下并列布局 + 芯片工坊 + 芯片图鉴
   - ⚠️ 每步都要跑全量测试；**改完必须仍是 `18/18 全绿 / bad=0`**。
 - **待确认**：主城商人新位置 `(0.14, 0.62)`；竖屏视野变窄是刻意行为（如需全宽需竖版布局）；
-  第十九章 19.9 的 4 条待确认项（结晶来源已定，见 19.8）。
+  第十九章 19.9 的 2 条待确认项（七项方案已全部确认，见 19.9 表）。

@@ -98,9 +98,9 @@ vm.runInContext(`
   // 9) 局外元进度：结晶 / 局外等级 / 出战加成
   console.assert(typeof Meta.data.crystals === "number", "Meta 默认数据");
   Meta.data.crystals = 0;
-  console.assert(Meta.awardRun(10, true, true) === 40, "撤离结晶 = 10击杀+30Boss, got " + Meta.awardRun(0, false, true));
-  console.assert(Meta.data.crystals === 40, "结晶入账 40, got " + Meta.data.crystals);
-  console.assert(Meta.awardRun(10, true, false) === 12, "死亡结晶 30% = 12");
+  console.assert(Meta.awardRun(10, true, true) === 30, "撤离结晶 = 仅Boss结晶30（19.8 小怪击杀退役）, got " + Meta.awardRun(0, false, true));
+  console.assert(Meta.data.crystals === 30, "结晶入账 30, got " + Meta.data.crystals);
+  console.assert(Meta.awardRun(10, true, false) === 9, "死亡结晶 30% = 9");
   console.assert(Meta.levelUpCost("H001") === 50, "LV1→2 消耗 50");
   Meta.data.crystals = 0;
   console.assert(!Meta.levelUp("H001"), "结晶不足不能升级");
@@ -142,7 +142,8 @@ vm.runInContext(`
   // 10) 属性卡牌（8.3：升级获得资产 / 工匠世界使用 / 同属性去重）
   console.assert(run.cardAssets === 0 && run.cardRefresh === CFG.cardPool.refreshPerRun && run.appliedCards.length === 0, "卡牌初始状态");
   run.exp = 999; gainExp(0);
-  console.assert(run.lv > 1 && run.cardAssets === run.lv - 1, "升级发卡资产 +1/级, assets=" + run.cardAssets);
+  console.assert(run.lv > 1 && run.cardAssets === 0, "19.7 升级不再发卡（cardAssets 恒 0）, lv=" + run.lv);
+  console.assert(runBonus().add.hp === CFG.levelUp.baseStatGain.hp * (run.lv - 1), "19.4 升级即时属性按级成长");
   // 候选抽取：内无重复属性、数量正确
   let cands = drawCardCandidates();
   console.assert(cands.length === CFG.cardPool.candidateCount, "候选 3 张");
@@ -153,13 +154,11 @@ vm.runInContext(`
   console.assert(!useCard(0), "非工匠世界不能用卡");
   console.assert(!refreshCards(), "非工匠世界不能刷新");
   G.inArtisan = true;
-  // 使用卡牌：属性生效 + 去重
+  // 使用卡牌：19.7 卡牌退役——升级不发卡，cardAssets 恒 0 → useCard 恒 false（逻辑保留供回退）
   run.cardCandidates = drawCardCandidates();
-  const first = run.cardCandidates[0];
-  const assetsBefore = run.cardAssets;
-  console.assert(useCard(0), "使用卡牌成功");
-  console.assert(run.cardAssets === assetsBefore - 1, "资产 -1");
-  console.assert(run.appliedCards.length === 1 && run.appliedCards[0].attr === first.attr, "已用记录");
+  console.assert(useCard(0) === false, "无资产时不能使用卡（19.7 恒 0）");
+  console.assert(run.cardAssets === 0, "资产保持 0");
+  console.assert(run.appliedCards.length === 0, "无已用记录");
   if (CFG.cardPool.dedupApplied) {
     const used = new Set(run.appliedCards.map(c => c.attr));
     for (let i = 0; i < 20; i++) {

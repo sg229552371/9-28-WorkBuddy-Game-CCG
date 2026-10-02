@@ -324,15 +324,15 @@ const driver = `
     recomputeWeapon();
     check("全队-冷却武器模块使队友普攻冷却下降", c.skills.basic.cd < cdBefore);
 
-    // 端到端：队友实际开火弹数 = 解析后的 c.skills.basic.bullets（证明开火走的是解析值而非技能表原始值）
+    // 端到端：19.1 普攻移除——队友不再有 basic 发射路径（无 isSkill=false 子弹）
     {
       const w = G.mainWorld;
-      r.companions.forEach(k => { k.fireTimer = 0; });
+      r.companions.forEach(k => { k.skillTimer = 999; k.energy = 0; });   // 压技能：只暴露普攻路径
       w.playerBullets.length = 0;
       w.monsters.push(new Monster("NM0010", c.x + 60, c.y, 1));
       updateCompanions(w, 0.016);
-      check("全队-端到端：队友开火弹数 = c.skills.basic.bullets（" + w.playerBullets.length + "/" + c.skills.basic.bullets + "）",
-        w.playerBullets.length === c.skills.basic.bullets);
+      check("全队-端到端：19.1 队友不再普攻（isSkill=false 弹数 0 / 原 basic.bullets " + c.skills.basic.bullets + "）",
+        w.playerBullets.filter(b => !b.isSkill).length === 0);
     }
 
     // 标签过滤：不是一刀切，各成员按自己武器的技能标签生效
@@ -447,21 +447,20 @@ const driver = `
     check("队友能量-按 regen 恢复（+" + rg + "/s → " + c.energy.toFixed(2) + "）",
       near(c.energy, Math.min(c.energyMax, rg), 1e-6));
 
-    // 普攻与技能各自独立计时：都归零且能量充足则一帧内各打一次
+    // 19.1：普攻移除，队友只剩技能一条计时线（原「普攻+技能独立计时」断言按新规则改）
     w.playerBullets.length = 0;
-    c.fireTimer = 0; c.skillTimer = 0; c.energy = c.energyMax;
-    const cb = c.skills.basic;
+    c.skillTimer = 0; c.energy = c.energyMax;
     updateCompanions(w, 0.016);
-    check("队友技能-普攻与技能各自独立计时（" + cb.bullets + " + " + cs.bullets + " = " + (cb.bullets + cs.bullets) + "）",
-      w.playerBullets.length === cb.bullets + cs.bullets);
+    check("队友技能-19.1 普攻移除后仅技能计时（弹数 = cs.bullets " + cs.bullets + "）",
+      w.playerBullets.filter(b => b.isSkill).length === cs.bullets);
 
-    // 开关：CFG.team.aiSkill = false 时队友只普攻
+    // 开关：CFG.team.aiSkill = false 时队友不释放主动技能（19.1 后无普攻 → 完全沉默）
     const savedAi = CFG.team.aiSkill;
     CFG.team.aiSkill = false;
     w.playerBullets.length = 0;
-    c.fireTimer = 0; c.skillTimer = 0; c.energy = c.energyMax;
+    c.skillTimer = 0; c.energy = c.energyMax;
     updateCompanions(w, 0.016);
-    check("队友技能-CFG.team.aiSkill=false 时不释放主动技能", w.playerBullets.length === cb.bullets);
+    check("队友技能-CFG.team.aiSkill=false 时不释放主动技能（19.1 后完全沉默）", w.playerBullets.length === 0);
     CFG.team.aiSkill = savedAi;
 
     /* ---- 产物池：**每个成员各自独立**（召唤物 / 陷阱按 owner 隔离，互不顶替） ---- */

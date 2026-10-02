@@ -53,7 +53,8 @@ vm.runInContext(`
   // ---- 配置与元素静态检查 ----
   const html = fs.readFileSync("index.html", "utf8");
   check("index.html 存在 #btn-autofight", html.includes('id="btn-autofight"'));
-  check("CFG.skills2.autoCast 默认 false（由局内按钮接管）", CFG.skills2.autoCast === false);
+  check("19.1：普攻已移除（CFG.basicAttack.removed）", CFG.basicAttack && CFG.basicAttack.removed === true);
+  check("autoCast 配置退役留存（技能全自动，不再受开关控制）", CFG.skills2 && "autoCast" in CFG.skills2);
 
   // ---- 场景准备：DOM 桩不解析 HTML，需先手工预置风格按钮子节点（bindEvents 才能绑上 onclick） ----
   const styleRowPre = document.getElementById("autofight-styles");
@@ -76,17 +77,17 @@ vm.runInContext(`
   const sk = G.run.weapon.skill;
   const setReady = () => { G.run.energy = G.run.energyMax; p.skillTimer = 0; G.keys[" "] = false; };
 
-  // 1. 关闭态：技能不自动施放（普攻仍自动开火）
+  // 1. 19.1：普攻已移除；技能全自动（不再区分开/关态，玩家专注走位）
   setReady();
-  const bullets0 = w.playerBullets.length;
+  w.playerBullets.length = 0;
   p.update(w, 0.016);
-  check("关闭态：普攻自动开火（弹池增加）", w.playerBullets.length > bullets0);
-  check("关闭态：技能未自动施放（能量未被扣除）", G.run.energy >= G.run.energyMax - 0.01);
+  check("19.1：普攻已移除（无 isSkill=false 子弹）", w.playerBullets.filter(b => !b.isSkill).length === 0);
+  check("关闭态：技能同样自动施放（不再受 autoFight 控制）", G.run.energy < sk.energy && p.skillTimer > 0);
 
-  // 2. 关闭态：Space 手动施法仍可用（H001 技能耗能 = 能量上限 100，施放后能量归 0 且进入冷却）
+  // 2. Space 不再是施法门槛（键位保留但无施法语义；技能全自动）
   setReady(); G.keys[" "] = true;
   p.update(w, 0.016);
-  check("关闭态：Space 手动施法生效（能量归 0 + 进入冷却）", G.run.energy < sk.energy && p.skillTimer > 0);
+  check("Space 按下与否不影响技能自动施放（19.1 全自动）", G.run.energy < sk.energy && p.skillTimer > 0);
   G.keys[" "] = false;
 
   // 3. 开启自动战斗：按钮状态翻转 + 技能自动施放

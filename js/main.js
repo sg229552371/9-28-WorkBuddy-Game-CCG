@@ -96,7 +96,7 @@ const Game = {
     if (typeof UI.updateAutoFightBtn === "function") UI.updateAutoFightBtn();   // 每局按钮重置为关（run.autoFight 默认 false；测试 UI 桩缺该方法时跳过）
     const hud = document.getElementById("hud");
     if (hud) hud.classList.remove("city-mode");
-    UI.toast(`进入 ${G.levelCfg.name} · 局外 LV${G.heroDef.outLevel} · WASD 移动 · Space 技能 · B 背包`, "gold");
+    UI.toast(`进入 ${G.levelCfg.name} · 局外 LV${G.heroDef.outLevel} · WASD 移动 · 技能自动释放 · B 背包`, "gold");
   },
   /* 跳过当前世界的开场冻结（仅测试/调试用）。
    * 主关卡与裂缝进场都有 3 秒冻结（CFG.levelFreeze / CFG.rift.freezeTime），
