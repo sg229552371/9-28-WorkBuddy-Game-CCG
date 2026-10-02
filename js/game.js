@@ -459,6 +459,7 @@ function moduleSynergy() {
   out.dmgMul *= 1 + out.links * (ml ? (ml.linkBonus || 0) : 0);
   for (const sid in CFG.moduleSets) {
     const set = CFG.moduleSets[sid];
+    if (!set || !set.members) continue;      // 跳过非套装条目（如 removed 标记位）
     const n = mods.filter(m => set.members.includes(m.defId)).length;
     for (const need in set.bonuses) {
       if (n < Number(need)) continue;

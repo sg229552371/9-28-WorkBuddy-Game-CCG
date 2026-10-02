@@ -566,6 +566,7 @@ Boss 从「血多的精英怪」变成**会发弹幕的 2 阶段 Boss**。
 - ⚠️ **`rift_test.js` 不要加 `skipIntroFreeze()`** —— 它专门验证裂缝冻结，需真实等待 3 秒走完。
 
 ### 5.35 左上角 HUD 三块内容别叠在一起（头像栏 / 自动战斗 / Buff）
+
 `#city-avatar-bar`（`left:16px; top:12px`）与 `#hud-tl`（`left:20px; top:16px`）**都锚定左上角**，
 `#hud-tl` 内含「自动战斗按钮 + 风格选择器 + 状态 Buff 图标」。
 若不处理，三者会在战斗时叠成一团。
@@ -576,6 +577,70 @@ Boss 从「血多的精英怪」变成**会发弹幕的 2 阶段 Boss**。
 - `#hud-tl` 改为 `flex-direction:column; gap:8px`（纵向排布，避免依赖 margin 撑开）。
 - `#buff-area` 加 `flex-wrap:wrap; max-width:420px`（Buff 多了换行，不横向溢出）。
 - 回归：`freeze_test` / `ui_flow_test` / 全量 530 条断言。
+
+### 5.36 🔴 第十九章 = v2 重构基准（优先级高于第十六章）
+
+设计文档新增**第十九章「战斗重构：芯片体系」**，与第八章 / 第十六章冲突时**以第十九章为准**。
+第十八章是「施工标记表」，列出旧章节的失效条款，接手前先扫一眼。
+
+**🟡 当前状态 = 仅配置/文档**：`CFG` 已就位（`js/config.js` 顶部「★ 第十九章 规则重做」段），
+**逻辑尚未接入**，运行时行为与改动前**完全一致**（基线仍 `18/18 全绿 / PASS 530`）。
+
+新增配置块（全部为**预留**，逻辑侧未读取）：
+
+| 配置 | 内容 |
+| ---- | ---- |
+| `CFG.basicAttack` | 普攻移除开关（`removed: true`） |
+| `CFG.heroRoles` | 英雄三定位 output/defense/recovery + `byHero` 映射（三者**都有伤害**，防御/恢复是**低伤害**） |
+| `CFG.skillResource` | 技能资源 = 冷却制（`mode: "cooldown"`） |
+| `CFG.levelUp` | 经验来源 `participation` + 前期快后期慢曲线 + 4 选 1 |
+| `CFG.moduleSlot` | 每英雄 4 模块槽，不限个数，同名叠加上限 9 级 |
+| `CFG.modulePool` | 每英雄独立模块池（4 选 1 的候选来源） |
+| `CFG.chips` / `chipSources` / `chipCodex` / `chipForge` | 芯片系统 / 来源 / 图鉴 / 芯片工坊 |
+| `CFG.invLayout` | 同屏上下并列：搜刮背包（上）+ 芯片背包（下） |
+
+标注废弃（**保留结构防报错**，逻辑侧不再读取）：`CFG.cardPool.removed`、`CFG.moduleSets.removed`、
+`CFG.moduleLevel.linkBonus`、`CFG.weaponGrid`（旧尺寸）、`CFG.settleConvert.cardValue`、
+`CFG.outLevel.crystalKill`（19.8 已定：结晶来源 = 击杀 BOSS + 撤离彻底折算并存，小怪击杀退役）。
+
+### 5.37 🔴 给「被遍历的配置对象」加标记字段必须同步加守卫
+
+`CFG.moduleSets` 加 `removed: true` 后，`js/game.js` 的 `moduleSynergy()` 遍历时把它当套装读 →
+`TypeError: Cannot read properties of undefined (reading 'includes')`，
+**一次性弄红 6 个测试文件**（smoke / runtime / backpack / econ / skill_module / skill_table）。
+
+修法（已落地，`js/game.js:462`）：
+
+```js
+for (const sid in CFG.moduleSets) {
+  const set = CFG.moduleSets[sid];
+  if (!set || !set.members) continue;      // 跳过非套装条目（如 removed 标记位）
+  const n = mods.filter(m => set.members.includes(m.defId)).length;
+```
+
+**规则**：往任何**会被 `for...in` / `Object.keys` 遍历**的 CFG 表里加"元字段"（`removed` / `note` / `desc`），
+**必须同时给遍历点加守卫**。否则就是 §4.6 那类"改配置炸一片"的坑。
+
+### 5.38 芯片背包口径（第十九章，待实现）
+
+- **原武器栏（4×3）→ 芯片背包（6×5）**，配置读 `CFG.chips.grid`（`CFG.weaponGrid` 是旧值，别再用）。
+- 与搜刮背包**同屏上下并列**（`CFG.invLayout`），不是标签页切换。
+- 芯片 = **局内资产，出局消失**（`carryOut: false`），**不参与撤离折算**。
+- 效果形式：**白蓝 = 纯数值放大；紫金 = 附加行为**（弹射/灼烧/分裂/传导）。
+  行为芯片需代码侧新增"行为积木"，实现成本最高，**建议先做数值芯片打通链路**。
+
+### 5.39 模块叠层口径必须与 `moduleLevel.maxLv` 同步
+
+`CFG.moduleSlot.maxLv`（9）与 `CFG.moduleLevel.maxLv`（9）是**同一个上限的两处表达**。
+改一处必须改另一处，否则"模块 9 级"与"阶段词缀解锁到第 3 阶段"会对不上。
+
+### 5.40 能量池退役的连带面（第十九章 19.3，待实现）
+
+技能改冷却制后，以下都要一起处理（**别只删技能门槛**）：
+- 英雄属性 `energyMax` / `energyRegen`（条目可保留，但不参与技能门槛）
+- **队友独立能量池**（§5.19）整体作废
+- HUD 左上**能量条 → 技能冷却环**（13.1 条款变更）
+- 属性卡牌里的能量条目（随卡牌一起删）
 
 ## 6. 并行开发切分（已验证可用）
 
@@ -644,4 +709,14 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 - **第十七章剩余**：17.7 第 3 步（激光实体 `LaserBeam` + 弹幕吞噬机制，含 `laserCap 6`、
   线段-圆命中）；第 4 步（BS0004~BS0010 配表）；17.9 待定 5 条。
 - **内容铺量**：关卡 3 → 10+、怪物 11 → 17+、技能锚点数值填表；属性卡池本批未动。
-- **待确认**：主城商人新位置 `(0.14, 0.62)`；竖屏视野变窄是刻意行为（如需全宽需竖版布局）。
+- **🔴 v2 重构（第十九章）落地顺序**（配置+文档已完成，逻辑待做）：
+  1. **删普攻 + 改经验来源**（参与伤害即给）—— 同时改 `autofight_test`（AI 从"射击"改"放技能"）；
+     顺带退役 `CFG.outLevel.crystalKill`（19.8：小怪击杀不给结晶，来源只留 BOSS + 撤离折算，
+     撞 `econ_test` 相关断言时按新规则改期望值）
+  2. **英雄三定位 + 技能冷却制**（退役能量池，撞 `skill_table_test` 队友能量断言，按新规则改期望值不放松）
+  3. **升级 4 选 1 + 模块池**（每英雄独立池，需新增选择 UI）
+  4. **芯片系统**（先数值芯片，再行为芯片；行为芯片需新增行为积木）
+  5. **UI 改造**：芯片背包 6×5 + 上下并列布局 + 芯片工坊 + 芯片图鉴
+  - ⚠️ 每步都要跑全量测试；**改完必须仍是 `18/18 全绿 / bad=0`**。
+- **待确认**：主城商人新位置 `(0.14, 0.62)`；竖屏视野变窄是刻意行为（如需全宽需竖版布局）；
+  第十九章 19.9 的 4 条待确认项（结晶来源已定，见 19.8）。
