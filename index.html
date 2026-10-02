@@ -172,6 +172,8 @@
       <div id="weight-line">负重 <b id="weight-num">0</b> / 100</div>
       <div id="weight-pen"></div>
     </div>
+    <!-- 全队技能栏（19.12）：底部居中；每人一条 [主动技能图标 + 冷却环][模块槽 ×4]（存升级所选武器模块） -->
+    <div id="party-skillbar" class="party-skillbar"></div>
     <div id="hud-br">
       <button id="btn-backpack" class="btn">背包 (B)</button>
     </div>
@@ -324,6 +326,8 @@
   <div id="levelup-overlay" class="overlay hidden">
     <div class="panel levelup-panel">
       <h2>⚡ 升级！选择一项强化</h2>
+      <!-- 归属英雄标题（19.12）：运行时由 _renderLevelUp 填充「给 <英雄名> 选择强化」（带定位色） -->
+      <div id="levelup-hero" class="levelup-hero"></div>
       <p class="tip">战斗已暂停 · 点选一张卡牌继续（不倒计时）</p>
       <div id="levelup-cards" class="levelup-cards"></div>
     </div>

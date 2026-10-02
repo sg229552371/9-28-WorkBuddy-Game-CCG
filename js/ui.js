@@ -41,15 +41,20 @@ const UI = {
   },
 
   /* ---------- 升级 4 选 1 暂停弹窗（19.4 方案 7） ----------
-   * 契约：UI.onLevelUpChoice(candidates, onPick)
-   *   candidates 元素形态：{kind:"module", defId, name, desc} 或 {kind:"statPack", attr, name, value}
-   *   用户点第 i 张 → onPick(i)；弹窗不倒计时；暂停语义由战斗线负责（本处只做 UI）。
+   * 契约：UI.onLevelUpChoice(candidates, onPick, meta?)
+   *   candidates 元素形态：{kind:"module", defId, name, desc, lv?, locked?} 或 {kind:"statPack", attr/stat, name, value}
+   *   用户点第 i 张（且未置灰）→ onPick(i)；弹窗不倒计时；暂停语义由战斗线负责（本处只做 UI）。
+   *   meta（可选，向后兼容）：{ heroId, heroName, roleColor, slotUsed?, slotTotal? }
+   *     - heroName 缺失回落 heroId；meta 整体缺失时退化为旧行为（不显示归属标题）。
+   *     - slotUsed = 该英雄已占用模块槽数 → 卡片标注「模块槽 N/4」（本次将占第 slotUsed+1 格）。
    * UI.onLevelUpChoiceClose() 供测试 / 强制关闭。 */
   levelUpCandidates: null,
   levelUpOnPick: null,
-  onLevelUpChoice(candidates, onPick) {
+  levelUpMeta: null,
+  onLevelUpChoice(candidates, onPick, meta) {
     this.levelUpCandidates = candidates || [];
     this.levelUpOnPick = onPick;
+    this.levelUpMeta = meta || null;
     this._renderLevelUp();
     const ov = document.getElementById("levelup-overlay");
     if (ov) ov.classList.remove("hidden");
@@ -59,28 +64,74 @@ const UI = {
     if (ov) ov.classList.add("hidden");
     this.levelUpCandidates = null;
     this.levelUpOnPick = null;
+    this.levelUpMeta = null;
+  },
+  /* 归属英雄标题（19.12）：meta 缺失时清空标题（旧行为），不报错。 */
+  _renderLevelUpHeader() {
+    const el = document.getElementById("levelup-hero");
+    if (!el) return;
+    const m = this.levelUpMeta;
+    if (!m || (!m.heroId && !m.heroName)) { el.innerHTML = ""; el.classList.remove("has-hero"); return; }
+    const name = m.heroName || m.heroId;
+    const color = m.roleColor || "#ffd76a";
+    el.classList.add("has-hero");
+    el.innerHTML = `给 <b style="color:${color}">${name}</b> 选择强化`;
   },
   _renderLevelUp() {
+    this._renderLevelUpHeader();
     const box = document.getElementById("levelup-cards");
     if (!box) return;
     box.innerHTML = "";
     const list = this.levelUpCandidates || [];
+    const m = this.levelUpMeta || {};
+    const perHero = (CFG.moduleSlot && CFG.moduleSlot.perHero) || 4;
+    // 槽位序号：优先用 meta.slotUsed（战斗侧已知），否则从 candidates[i].heroId + G.run.heroModules 推导
+    const slotUsed = (typeof m.slotUsed === "number") ? m.slotUsed : this._occupiedSlotCount();
     list.forEach((c, i) => {
+      const locked = !!c.locked;
       const card = document.createElement("div");
-      card.className = "levelup-card";
+      card.className = "levelup-card" + (locked ? " lu-locked" : "");
       // 卡片内容：按候选类型渲染（module = 武器模块叠加 / statPack = 属性小包）
       const kindLabel = c.kind === "module" ? "武器模块" : (c.kind === "statPack" ? "属性小包" : (c.kind || ""));
       const desc = c.kind === "statPack" ? `+${c.value}` : (c.desc || "");
+      // 模块候选：标注「模块槽 N/4」（已持有则为已有槽升级，N 取该模块所在格）
+      let slotLine = "";
+      if (c.kind === "module") {
+        const ownedIdx = this._slotIndexOf(c);
+        const n = ownedIdx >= 0 ? ownedIdx + 1 : Math.min(slotUsed + 1, perHero);
+        const lvLine = c.lv ? ` · 入槽 LV${c.lv}` : "";
+        slotLine = `<span class="lu-slot">${ownedIdx >= 0 ? "强化已有槽" : "模块槽"} ${n}/${perHero}${lvLine}</span>`;
+      }
+      const lockLine = locked ? `<span class="lu-lock">🚫 槽位已满 · 不可选</span>` : "";
       card.innerHTML = `<span class="lu-kind">${kindLabel}</span>
         <span class="lu-name">${c.name || ""}</span>
-        <span class="lu-desc">${desc}</span>`;
-      card.onclick = () => {
-        const cb = this.levelUpOnPick;
-        this.onLevelUpChoiceClose();   // 先关闭（防重复点击）
-        if (typeof cb === "function") cb(i);
-      };
+        <span class="lu-desc">${desc}</span>${slotLine}${lockLine}`;
+      if (!locked) {
+        card.onclick = () => {
+          const cb = this.levelUpOnPick;
+          this.onLevelUpChoiceClose();   // 先关闭（防重复点击）
+          if (typeof cb === "function") cb(i);
+        };
+      }
       box.appendChild(card);
     });
+  },
+  /* 该英雄已占用模块槽数（推导 slotUsed 用）：数据缺失返回 0，不报错。 */
+  _occupiedSlotCount() {
+    const m = this.levelUpMeta || {};
+    const heroId = m.heroId || (this.levelUpCandidates && this.levelUpCandidates[0] && this.levelUpCandidates[0].heroId);
+    const slots = (heroId && G.run && G.run.heroModules && G.run.heroModules[heroId]) || [];
+    let n = 0;
+    for (const s of slots) if (s) n++;
+    return n;
+  },
+  /* 候选模块是否已在某槽中（返回槽下标，未持有返回 -1）。 */
+  _slotIndexOf(c) {
+    if (!c || c.kind !== "module") return -1;
+    const heroId = c.heroId || (this.levelUpMeta && this.levelUpMeta.heroId);
+    const slots = (heroId && G.run && G.run.heroModules && G.run.heroModules[heroId]) || [];
+    for (let i = 0; i < slots.length; i++) if (slots[i] && slots[i].defId === c.defId) return i;
+    return -1;
   },
 
   /* ---------- 提示 ---------- */
@@ -253,6 +304,154 @@ const UI = {
     }
     if (nameEl) nameEl.textContent = (skill && skill.name) || "";
   },
+
+  /* ---------- 全队技能栏（19.12，底部居中 HUD） ----------
+   * 布局：每人一条横向卡片 [技能图标 + 冷却环][模块槽1..4]（存该英雄升级时选到的武器模块）。
+   * 数据源：G.run.heroModules[heroId]（长度 4 数组，元素 {defId, lv} 或 null）；缺失优雅降级为空框。
+   * 性能（每帧刷新）：结构只建一次（_buildPartySkillbar，按队伍签名）；之后 updatePartySkillbar
+   *   只更新变化部分（冷却弧角度 / 槽内容签名），DOM 不重建。 */
+  _psSig: "",          // 队伍结构签名（人数 + 英雄 ID 列表）→ 变了才重建
+  _psCache: null,      // [{ row, arc, txt, slots:[{el, sig}] }] 结构引用缓存
+  _psSlotSig: null,    // 各槽内容签名（避免每帧重写 innerHTML）
+
+  /* 取全队成员列表（队长 + 队友）：统一包装为 { id, name, heroDef, rt }（rt = 运行时实体，供读 skillTimer）。
+   * 数据缺失时返回空数组，不报错。队长运行时优先 G.player，回退 G.heroDef。 */
+  _partyMembers() {
+    const out = [];
+    const leaderDef = G.heroDef || (G.team && G.team[0]);
+    if (leaderDef && leaderDef.id) {
+      out.push({ id: leaderDef.id, name: leaderDef.name || leaderDef.id, heroDef: leaderDef,
+        rt: (G.player && G.player.heroDef === leaderDef) ? G.player : (G.player || leaderDef) });
+    }
+    for (const c of (G.run && G.run.companions) || []) {
+      if (c && c.id) out.push({ id: c.id, name: c.name || c.id, heroDef: c.heroDef || {}, rt: c });
+    }
+    return out;
+  },
+  /* 模块品质色：按等级占 maxLv 的比例分为 4 档（白/蓝/紫/金）等分区间。
+   * 用于「品质色边框」——模块本身无 itemQ，等级档位即强度品质。缺失返回最低档色。
+   * 档位阈值 25/50/75%：LV1-2 白 / LV3-5 蓝 / LV6-8 紫 / LV9 金（maxLv=9）。 */
+  moduleQualityColor(lv) {
+    const qs = CFG.itemQualities || [{ color: "#b8c4d4" }];
+    const maxLv = (CFG.moduleSlot && CFG.moduleSlot.maxLv) || 9;
+    const tier = Math.ceil(Math.max(1, Math.min(maxLv, lv || 1)) / maxLv * qs.length);   // 1..qs.length
+    const idx = Math.max(0, Math.min(qs.length - 1, tier - 1));
+    return (qs[idx] && qs[idx].color) || "#b8c4d4";
+  },
+  /* 单条技能条的结构（英雄标识 + 技能图标/冷却环 + 4 模块槽）。只在队伍变化时建。 */
+  _buildPartyRow(member) {
+    const role = this.heroRole(member.id) || {};
+    const heroDef = member.heroDef || (CFG.heroes || []).find(h => h.id === member.id) || {};
+    const weapon = CFG.weapons[heroDef.weapon] || {};
+    const skillId = weapon.skills && weapon.skills.skill;
+    const skillDef = (typeof CFG.skills === "object" && skillId) ? CFG.skills[skillId] : null;
+    const skillName = (skillDef && skillDef.name) || weapon.name || "技能";
+    const per = (CFG.moduleSlot && CFG.moduleSlot.perHero) || 4;
+    const row = document.createElement("div");
+    row.className = "ps-row";
+    row.dataset.heroId = member.id;
+    // 技能图标：svg 冷却环 + 技能首字 + 冷却秒数
+    const icon = document.createElement("div");
+    icon.className = "ps-icon ready";
+    icon.innerHTML = `<svg viewBox="0 0 80 80"><circle class="ps-track" cx="40" cy="40" r="34"/><circle class="ps-arc" cx="40" cy="40" r="34"/></svg>
+      <span class="ps-glyph">${(skillName || "技").slice(0, 1)}</span>
+      <span class="ps-cd"></span>`;
+    row.appendChild(icon);
+    // 英雄名 + 定位色
+    const info = document.createElement("div");
+    info.className = "ps-info";
+    info.innerHTML = `<b class="ps-name" style="color:${role.color || "#cfe0ff"}">${member.name || member.id}</b>
+      <small class="ps-role" style="color:${role.color || "#9fb4cc"}">${role.name || ""}</small>`;
+    row.appendChild(info);
+    // 模块槽 ×4
+    const slotsBox = document.createElement("div");
+    slotsBox.className = "ps-slots";
+    const slots = [];
+    for (let i = 0; i < per; i++) {
+      const el = document.createElement("div");
+      el.className = "ps-slot ps-slot-empty";
+      el.dataset.idx = i;
+      slotsBox.appendChild(el);
+      slots.push({ el, sig: "\u0000" });   // 初始签名保证首帧写入
+    }
+    row.appendChild(slotsBox);
+    return { row, icon, arc: icon.querySelector(".ps-arc"), glyph: icon.querySelector(".ps-glyph"),
+      cdTxt: icon.querySelector(".ps-cd"), slots, skillName, skillDef, member };
+  },
+  /* 构建/重建全队技能栏结构（仅在队伍签名变化时调用）。 */
+  _buildPartySkillbar(members) {
+    const bar = document.getElementById("party-skillbar");
+    if (!bar) return;
+    bar.innerHTML = "";
+    const cache = [];
+    for (const m of members) {
+      const r = this._buildPartyRow(m);
+      bar.appendChild(r.row);
+      cache.push(r);
+    }
+    this._psCache = cache;
+    this._psSig = members.map(m => m.id).join(",");
+    this._psSlotSig = {};
+  },
+  /* 模块槽内容更新（按签名比对，内容没变不碰 DOM）。 */
+  _updatePartySlots(entry, member) {
+    const per = (CFG.moduleSlot && CFG.moduleSlot.perHero) || 4;
+    const maxLv = (CFG.moduleSlot && CFG.moduleSlot.maxLv) || 9;
+    const list = (G.run && G.run.heroModules && G.run.heroModules[member.id]) || [];
+    for (let i = 0; i < per; i++) {
+      const s = entry.slots[i];
+      if (!s) continue;
+      const slot = list[i] || null;
+      const sig = slot ? (slot.defId + ":" + (slot.lv || 1)) : "empty";
+      if (s.sig === sig) continue;              // 无变化：跳过 DOM 写入
+      s.sig = sig;
+      if (!slot) {
+        s.el.className = "ps-slot ps-slot-empty";
+        s.el.innerHTML = `<span class="ps-slot-no">${i + 1}</span>`;
+        s.el.style.borderColor = "";
+        s.el.title = "空槽 · 升级可选择武器模块填入";
+      } else {
+        const name = this._moduleName(slot.defId) || slot.defId;
+        const color = this.moduleQualityColor(slot.lv || 1);
+        s.el.className = "ps-slot ps-slot-filled";
+        s.el.style.borderColor = color;
+        s.el.innerHTML = `<span class="ps-slot-nm" style="color:${color}">${name}</span>
+          <span class="ps-slot-lv">LV${slot.lv || 1}/${maxLv}</span>`;
+        s.el.title = `${name} LV${slot.lv || 1}/${maxLv}（该英雄升级所选武器模块）`;
+      }
+    }
+  },
+  /* 冷却环更新（复用 updateSkillCd 的 213.6 弧长口径）：技能/槽位缺失不抛异常。
+   * 剩余秒优先读运行时实体 rt.skillTimer（队长 = G.player，队友 = companion）。 */
+  _updatePartyCd(entry) {
+    const icon = entry.icon;
+    if (!icon) return;
+    const skill = entry.skillDef;
+    const cd = (skill && skill.cd) || 0;
+    const rt = entry.member && entry.member.rt;
+    const remain = (rt && rt.skillTimer) || 0;
+    const ready = remain <= 0 || cd <= 0;
+    if (entry.arc) entry.arc.style.strokeDashoffset = ready ? "0" : (213.6 * (remain / cd)).toFixed(1);
+    icon.classList.toggle("ready", ready);
+    if (entry.cdTxt) entry.cdTxt.textContent = ready ? "" : remain.toFixed(1) + "s";
+  },
+  /* 全量渲染（结构 + 更新）：队伍变化时重建结构，否则只更新变化部分。 */
+  renderPartySkillbar() {
+    const members = this._partyMembers();
+    const sig = members.map(m => m.id).join(",");
+    if (sig !== this._psSig || !this._psCache) this._buildPartySkillbar(members);
+    this.updatePartySkillbar();
+  },
+  /* 每帧刷新入口（updateHUD 内调用）：只更新变化部分，不重建 DOM。 */
+  updatePartySkillbar() {
+    const cache = this._psCache;
+    if (!cache) { this.renderPartySkillbar(); return; }
+    for (const entry of cache) {
+      this._updatePartyCd(entry);
+      if (entry.member) this._updatePartySlots(entry, entry.member);
+    }
+  },
+
   updateHUD() {
     const r = G.run;
     if (!r || G.state !== "playing") return;
@@ -263,6 +462,8 @@ const UI = {
     document.getElementById("exp-num").textContent = r.exp;
     // 技能冷却环（19.3：能量条退役 → 冷却制）：skillTimer 剩余秒 / skill.cd 总长
     this.updateSkillCd();
+    // 全队技能栏（19.12）：底部居中，结构只建一次 + 变化检测更新（不每帧重建 DOM）
+    this.renderPartySkillbar();
     // 进度条
     const lv = G.levelCfg;
     const pf = document.getElementById("progress-fill");

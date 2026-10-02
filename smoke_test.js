@@ -248,7 +248,7 @@ vm.runInContext(`
   run.weaponInv.place(makeModule("M009", 0), 0, 0);   // 伤害 +10%
   const atkBase0 = run.heroDef.atk;
   recomputeWeapon();
-  console.assert(Math.abs(G.run.weapon.skill.dmgMul - 2.5 * 1.1) < 1e-6, "伤害词条进技能 dmgMul, got " + G.run.weapon.skill.dmgMul);
+  console.assert(Math.abs(G.run.weapon.skill.dmgMul - CFG.skills.AT102.dmgMul * 1.1) < 1e-6, "伤害词条进技能 dmgMul, got " + G.run.weapon.skill.dmgMul);
   // H004（AT108 环形弹幕，tags 含 弹道数量，基础 8 发）：弹道模块 +1 → 9 发
   G.team = [CFG.heroes[3], CFG.heroes[0]];
   G.heroDef = G.team[0];

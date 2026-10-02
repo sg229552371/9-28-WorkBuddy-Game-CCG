@@ -150,6 +150,56 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 
 #hud-br { position:absolute; right:20px; bottom:18px; display:flex; gap:10px; }
 
+/* ===== 全队技能栏（19.12：底部居中；每人一条 [技能图标+冷却环][模块槽 ×4]） ===== */
+.party-skillbar {
+  position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+  display:flex; gap:12px; align-items:flex-end; pointer-events:none;
+}
+.party-skillbar:empty { display:none; }
+.ps-row {
+  display:flex; align-items:center; gap:10px;
+  background:rgba(16,24,38,.82); border:1px solid #2e3d55; border-radius:12px;
+  padding:8px 12px; box-shadow:0 4px 16px rgba(0,0,0,.5);
+}
+/* 技能图标 + 冷却环（复用 #hud-skill-cd 同款 213.6 弧长口径） */
+.ps-icon { position:relative; width:44px; height:44px; flex:none; }
+.ps-icon svg { width:44px; height:44px; transform:rotate(-90deg); }
+.ps-icon .ps-track { fill:rgba(0,0,0,.5); stroke:#3a4a66; stroke-width:6; }
+.ps-icon .ps-arc {
+  fill:none; stroke:#6cb2ff; stroke-width:6; stroke-linecap:round;
+  stroke-dasharray:213.6; stroke-dashoffset:213.6; transition:stroke-dashoffset .1s linear;
+}
+.ps-icon.ready .ps-arc { stroke:#7de08a; }
+.ps-icon.ready { filter:drop-shadow(0 0 6px rgba(125,224,138,.7)); }
+.ps-glyph {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:16px; font-weight:bold; color:#fff; text-shadow:0 1px 3px #000;
+}
+.ps-cd {
+  position:absolute; left:50%; bottom:-2px; transform:translateX(-50%);
+  font-size:9px; font-weight:bold; color:#ffd76a; text-shadow:0 1px 2px #000;
+}
+/* 英雄标识（名字 + 定位色） */
+.ps-info { display:flex; flex-direction:column; justify-content:center; min-width:52px; }
+.ps-name { font-size:13px; line-height:1.2; }
+.ps-role { font-size:10px; opacity:.9; }
+/* 模块槽 ×4：空槽虚线 / 已选品质色边框 */
+.ps-slots { display:flex; gap:6px; }
+.ps-slot {
+  width:52px; height:44px; border-radius:8px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:2px; overflow:hidden;
+  background:#131b29; border:2px solid #2e3d55;
+}
+.ps-slot.ps-slot-empty { border-style:dashed; border-color:#3a4a66; }
+.ps-slot.ps-slot-empty .ps-slot-no { font-size:13px; color:#46536a; font-weight:bold; }
+.ps-slot.ps-slot-filled { background:#1a2638; }
+.ps-slot .ps-slot-nm { font-size:10px; line-height:1.15; text-align:center; padding:0 2px; overflow:hidden; }
+.ps-slot .ps-slot-lv { font-size:9px; color:#8ba0bd; }
+/* 小屏：技能栏整体缩放，避免遮挡 */
+@media (max-width: 900px) {
+  .party-skillbar { transform:translateX(-50%) scale(.82); transform-origin:bottom center; }
+}
+
 #channel-wrap { position:absolute; left:50%; bottom:120px; transform:translateX(-50%); text-align:center; }
 #channel-circle { position:relative; width:80px; height:80px; margin:0 auto; }
 #channel-circle svg { width:80px; height:80px; transform:rotate(-90deg); }
@@ -333,6 +383,10 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .levelup-panel { width:min(1000px, 96vw); max-height:94vh; overflow:auto; text-align:center; }
 .levelup-panel h2 { color:#ffd76a; }
 .levelup-panel .tip { margin-bottom:16px; }
+/* 归属英雄标题（19.12 任务一）：告诉玩家本次强化的对象 */
+.levelup-hero { font-size:20px; font-weight:bold; color:#e8ecf2; margin:2px 0 6px; }
+.levelup-hero:empty { display:none; }
+.levelup-hero b { font-size:23px; }
 .levelup-cards { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; }
 .levelup-card {
   flex:1 1 200px; min-width:160px; min-height:150px; padding:18px 16px;
@@ -344,6 +398,14 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .levelup-card .lu-name { font-size:16px; font-weight:bold; color:#fff; }
 .levelup-card .lu-desc { font-size:12px; color:#8ba0bd; line-height:1.6; }
 .levelup-card .lu-kind { font-size:11px; color:#c79bff; }
+/* 模块槽标注（19.12）：第 N/4 格 */
+.levelup-card .lu-slot { font-size:11px; color:#6cb2ff; }
+/* 禁用视觉（19.12 任务一）：槽满候选置灰 + 不可点（灰度滤镜 + 无 hover 抬升） */
+.levelup-card.lu-locked {
+  filter:grayscale(1) brightness(.6); opacity:.55; cursor:not-allowed;
+}
+.levelup-card.lu-locked:hover { transform:none; border-color:#33486b; background:#1d2a3d; }
+.levelup-card .lu-lock { font-size:11px; color:#ff9a9a; }
 /* 手机端：单列大按钮，高度 ≥64px 方便点选 */
 @media (max-width: 640px) {
   .levelup-card { flex:1 1 100%; min-height:80px; }

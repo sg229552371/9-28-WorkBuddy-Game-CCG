@@ -83,9 +83,11 @@ const driver = `
   const realChoice = UI.onLevelUpChoice;
   let captured = [];
   let autoPick = true;
+  let lastMeta = null;
   const installSpy = () => {
-    UI.onLevelUpChoice = function (cands, onPick) {
+    UI.onLevelUpChoice = function (cands, onPick, meta) {
       captured.push({ cands: cands, onPick: onPick });
+      lastMeta = meta || null;      // 归属元信息（界面线 C1 契约，第 3 个参数）
       if (autoPick) { const i = cands.findIndex(c => !c.locked); if (i >= 0) onPick(i); }
     };
   };
@@ -337,6 +339,26 @@ const driver = `
     UI.onLevelUpChoice = savedChoice;
     check("默认路径：UI.onLevelUpChoice 缺失时不抛异常", !threw);
     check("默认路径：自动结算升级（lv 增加，主循环不卡死）", G.run.lv === lvBefore + 1);
+  }
+
+  /* ============ 十七、归属元信息 meta（界面线 C1 契约，§5.46） ============ */
+  {
+    Game.startRun([CFG.heroes[0]]);
+    Game.skipIntroFreeze();
+    installSpy(); resetCapture(); lastMeta = null;
+    autoPick = true;
+    gainExp(G.run.expNext + 1);
+    check("升级弹窗：第 3 参 meta 被传入（非 undefined）", lastMeta !== null);
+    check("meta.heroId = 本次升级英雄", lastMeta && lastMeta.heroId === CFG.heroes[0].id);
+    check("meta.heroName = 英雄显示名（非空、不等于 id）",
+      lastMeta && typeof lastMeta.heroName === "string" && lastMeta.heroName.length > 0);
+    check("meta.slotPer = 4（模块槽总数）", lastMeta && lastMeta.slotPer === 4);
+    check("meta.slotUsed 为 0~4 的整数", lastMeta && Number.isInteger(lastMeta.slotUsed) && lastMeta.slotUsed >= 0 && lastMeta.slotUsed <= 4);
+    // 选完后 slotUsed 应 +1（已入槽）
+    const usedBefore = lastMeta.slotUsed;
+    resetCapture(); lastMeta = null;
+    gainExp(G.run.expNext + 1);
+    check("再升一级后 meta.slotUsed 递增（模块已入槽）", lastMeta && lastMeta.slotUsed === usedBefore + 1);
   }
 
   UI.onLevelUpChoice = realChoice;

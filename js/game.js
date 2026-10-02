@@ -2242,7 +2242,21 @@ function presentLevelUpChoice(heroId) {
   const ui = (typeof UI !== "undefined") ? UI : null;
   if (ui && typeof ui.onLevelUpChoice === "function") {
     setPaused(true);         // 弹窗暂停闸门：主循环跳过世界/玩家/同伴更新（渲染照常）
-    ui.onLevelUpChoice(cands, (idx) => done((idx >= 0 && idx < cands.length) ? idx : 0));
+    /* 归属元信息（界面线 C1 契约，第 3 个参数可选）：让弹窗能显示「给谁选强化」+ 槽位进度。
+     * roleColor 用 UI.heroRole（19.2 定位色）；slotUsed 取 heroModules 中已占槽数（19.10）。 */
+    const hd = (G.run && G.run.heroDef) || (G.team && G.team[0]) || null;
+    const slots = (G.run && G.run.heroModules && G.run.heroModules[heroId]) || [];
+    let slotUsed = 0;
+    for (let i = 0; i < slots.length; i++) if (slots[i]) slotUsed++;
+    const roleDef = (ui.heroRole && heroId) ? ui.heroRole(heroId) : null;
+    const meta = {
+      heroId,
+      heroName: heroDefNameOf(heroId),
+      roleColor: roleDef ? roleDef.color : null,
+      slotUsed,
+      slotPer: slots.length || ((CFG.moduleSlot && CFG.moduleSlot.perHero) || 4),
+    };
+    ui.onLevelUpChoice(cands, (idx) => done((idx >= 0 && idx < cands.length) ? idx : 0), meta);
     return;
   }
   // 默认路径：自动选第一个「非置灰」候选（没有则取第 0 个），保证升级结算永不悬挂
@@ -4044,3 +4058,18 @@ function renderBurnAura(ctx, m) {
   ctx.restore();
 }
 
+
+/* ============================================================================
+ *  UI 归属辅助（升级弹窗「给谁选强化」，见 §5.46）
+ * ============================================================================ */
+
+/** 按 heroId 查英雄显示名（队长取 G.heroDef，队友遍历 G.team，最后回落 CFG.heroes）。
+ *  查不到时返回 heroId 本身，保证弹窗永远有可显示文本。 */
+function heroDefNameOf(heroId) {
+  if (!heroId) return "";
+  let hd = G.heroDef || (G.team && G.team[0]) || null;
+  if (hd && hd.id === heroId && hd.name) return hd.name;
+  for (const h of (G.team || [])) if (h && h.id === heroId && h.name) return h.name;
+  for (const h of (CFG.heroes || [])) if (h && h.id === heroId && h.name) return h.name;
+  return heroId;
+}

@@ -22,17 +22,62 @@ class FakeEl {
     this._html = ""; this.textContent = ""; this.disabled = false;
     this.width = 300; this.height = 300; this.value = "";
   }
+  get className() { return this._cls || ""; }
+  set className(v) {
+    this._cls = v; this.classList = new ClassList();
+    String(v).split(/\s+/).forEach(c => { if (c) this.classList.add(c); });
+  }
   // 真实 DOM innerHTML="" 会清空子节点；桩必须一致，否则重复渲染读到旧卡片
   get innerHTML() { return this._html; }
-  set innerHTML(v) { this._html = v; if (v === "") this.children.length = 0; }
+  set innerHTML(v) {
+    this._html = v;
+    // 解析字符串里带 class 的元素为子节点（供 querySelector(".ps-arc") / querySelectorAll(".ps-slot") 命中）
+    this.children.length = 0;
+    this._q = null; this._qa = null;
+    const re = /<(\w+)([^>]*\bclass\s*=\s*"([^"]*)"[^>]*)>/g;
+    let m;
+    while ((m = re.exec(v)) !== null) {
+      const el = new FakeEl(m[1]);
+      el.className = m[3];
+      el._parent = this;
+      this.children.push(el);
+    }
+  }
   appendChild(c) { this.children.push(c); c._parent = this; return c; }
   remove() { if (this._parent) { const i = this._parent.children.indexOf(this); if (i >= 0) this._parent.children.splice(i, 1); } }
   get firstChild() { return this.children[0]; }
   addEventListener() { }
   getContext() { return ctxProxy; }
   // 按实例缓存：renderXxx 里 card.querySelector(".lu-name").onclick = ... 需要稳定对象
-  querySelector(sel) { this._q = this._q || {}; return this._q[sel] || (this._q[sel] = new FakeEl(sel)); }
-  querySelectorAll() { return []; }
+  // 递归后代查找 + 稳定缓存（.ps-arc 嵌在 .ps-icon 内，非行节点直接子级）
+  querySelector(sel) {
+    this._q = this._q || {};
+    if (!this._q[sel]) {
+      const list = this._findAll(sel.replace(/^\./, ""));
+      this._q[sel] = list[0] || new FakeEl(sel);
+    }
+    return this._q[sel];
+  }
+  // 技能栏 _buildPartyRow 用 querySelector 在同一节点上重复取 .ps-arc/.ps-glyph/.ps-cd → 必须稳定；
+  // 选择器按 class token 精确匹配并**递归**后代（.ps-slot 嵌在 .ps-slots 里，非行节点的直接子级）
+  _findAll(cls, acc) {
+    acc = acc || [];
+    for (const c of this.children) {
+      if (c.classList && c.classList.contains(cls)) acc.push(c);
+      if (c._findAll) c._findAll(cls, acc);
+    }
+    return acc;
+  }
+  querySelectorAll(sel) {
+    this._qa = this._qa || {};
+    if (!this._qa[sel]) {
+      const list = this._findAll(sel.replace(/^\./, ""));
+      this._qa[sel] = list;
+      this._q = this._q || {};
+      if (list.length && !this._q[sel]) this._q[sel] = list[0];
+    }
+    return this._qa[sel];
+  }
   closest() { return null; }
   getBoundingClientRect() { return { left: 0, top: 0, width: 400, height: 400 }; }
 }
@@ -65,14 +110,16 @@ const htmlIds = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map(m => m[1]));
 const requiredIds = [
   // ① HUD 技能冷却环
   "hud-skill-cd", "skill-cd-arc", "skill-cd-txt", "skill-cd-name",
-  // ③ 升级 4 选 1 弹窗
-  "levelup-overlay", "levelup-cards",
+  // ③ 升级 4 选 1 弹窗（含 19.12 归属英雄标题：给 <英雄名> 选择强化 / 模块槽 N/4）
+  "levelup-overlay", "levelup-cards", "levelup-hero",
   // ④ 背包三段布局
   "grid-backpack", "grid-chip", "module-slots", "bp-grid-unit", "bp-panel-main",
   // ⑤ 芯片工坊
   "art-tab-forge", "art-page-forge", "forge-list",
   // ⑥ 芯片图鉴
   "screen-chip-codex", "chip-codex-value", "chip-codex-behavior", "btn-home-chip-codex", "btn-chip-codex-back",
+  // ⑦ 全队技能栏（19.12 底部居中：每人一条 [技能图标+冷却环][4 模块槽]）
+  "party-skillbar",
 ];
 let okStatic = true;
 for (const id of requiredIds) {
@@ -268,6 +315,120 @@ vm.runInContext(`
   check("芯片图鉴页显示", !get("screen-chip-codex").classList.contains("hidden"));
 
   delete Game.chipForge;   // 清理桩，避免影响后续
+
+  /* ============ ⑦ 升级弹窗标明归属英雄（19.12 任务一） ============ */
+  // ① meta 存在 → 标题区显示「给 <英雄名> 选择强化」+ 定位色
+  //    （用 H002 的空槽环境，避免复用前面 block 里已装的 heroModules 干扰槽位推断）
+  G.run.heroModules = { H002: [null, null, null, null] };
+  const heroCands = [
+    { kind: "module", heroId: "H002", defId: "M001", name: "弹头扩容", desc: "弹道数量 +1", lv: 3, locked: false },
+    { kind: "module", heroId: "H002", defId: "M009", name: "增幅器", desc: "伤害 +22%", lv: 1, locked: false },
+    { kind: "module", heroId: "H002", defId: "M006", name: "弹跳装置", desc: "弹射次数 +1", lv: 1, locked: true },
+    { kind: "statPack", heroId: "H002", packId: "pack_atk", name: "强攻包", stat: "atk", value: 3 },
+  ];
+  UI.onLevelUpChoice(heroCands, () => {}, { heroId: "H002", heroName: "散弹手", roleColor: CFG.heroRoles.output.color, slotUsed: 2 });
+  const heroTitle = get("levelup-hero");
+  check("meta 存在 → 弹窗标题显示「给 散弹手 选择强化」",
+    heroTitle.innerHTML.indexOf("给") >= 0 && heroTitle.innerHTML.indexOf("散弹手") >= 0 && heroTitle.innerHTML.indexOf("选择强化") >= 0);
+  check("meta.roleColor → 标题带定位色", heroTitle.innerHTML.indexOf(CFG.heroRoles.output.color) >= 0);
+
+  // ② 候选属于模块槽 → 标注「模块槽 N/4」
+  const luH = get("levelup-cards").children;
+  check("候选渲染 4 张（含 1 张置灰）", luH.length === 4);
+  check("模块槽已用 2 → 标注模块槽 3/4", luH[0].innerHTML.indexOf("模块槽") >= 0 && luH[0].innerHTML.indexOf("3/4") >= 0);
+
+  // ③ locked 候选 → 明显禁用视觉（灰度类）且点击无效
+  check("locked 候选带禁用类（lu-locked）", luH[2].classList.contains("lu-locked"));
+  check("locked 候选标注「已满」提示", luH[2].innerHTML.indexOf("已满") >= 0 || luH[2].innerHTML.indexOf("不可选") >= 0);
+  window.__lockedPick = -1;
+  UI.onLevelUpChoice(heroCands, (i) => { window.__lockedPick = i; }, { heroId: "H002", heroName: "散弹手", slotUsed: 2 });
+  const lockedCard = get("levelup-cards").children[2];
+  check("locked 候选未绑定点击处理器（不可点）", typeof lockedCard.onclick !== "function");
+  if (typeof lockedCard.onclick === "function") lockedCard.onclick({});   // 兜底：即便有处理器也应无效
+  check("locked 候选点击不被选取（仍停留弹窗）", window.__lockedPick === -1 && !get("levelup-overlay").classList.contains("hidden"));
+  UI.onLevelUpChoiceClose();
+
+  // ④ 向后兼容：meta 缺失 → 不崩、不显示英雄标题（旧 2 参调用）
+  UI.onLevelUpChoice(cands, () => {});
+  check("meta 缺失时仍渲染 4 卡（向后兼容）", get("levelup-cards").children.length === 4);
+  check("meta 缺失时不显示英雄标题（无 heroId）", heroTitle.innerHTML.indexOf("选择强化") < 0);
+  UI.onLevelUpChoiceClose();
+  // meta 存在但 heroName 缺失 → 回落到 heroId，不崩
+  UI.onLevelUpChoice(heroCands, () => {}, { heroId: "H002" });
+  check("meta 只给 heroId → 标题回落显示 heroId 不崩", heroTitle.innerHTML.indexOf("H002") >= 0);
+  UI.onLevelUpChoiceClose();
+
+  /* ============ ⑧ 全队技能栏（19.12 任务二，底部居中） ============ */
+  // 当前局：单英雄 H001
+  const soloHero = CFG.heroes[0];
+  G.heroDef = soloHero;
+  G.run.heroModules = { [soloHero.id]: [{ defId: "M001", lv: 3 }, null, null, null] };
+  UI.renderPartySkillbar();
+  const bar = get("party-skillbar");
+  check("技能栏按队伍人数渲染 1 条（单英雄）", bar.children.length === 1);
+  const row0 = bar.children[0];
+  check("技能条含技能图标元素", !!row0.querySelector(".ps-icon"));
+  check("技能条渲染 4 个模块槽（CFG.moduleSlot.perHero）", row0.querySelectorAll(".ps-slot").length === 4);
+  check("空模块槽 → 虚线类 ps-slot-empty", row0.querySelectorAll(".ps-slot")[1].classList.contains("ps-slot-empty"));
+  // 已选槽显示模块名 + 品质色（品质按等级阶段推导：LV3 → 蓝 q1）
+  const slot0 = row0.querySelectorAll(".ps-slot")[0];
+  check("已选槽显示模块名（弹头扩容）", slot0.innerHTML.indexOf("弹头扩容") >= 0);
+  check("已选槽按品质阶段着色（LV3 → 蓝 " + CFG.itemQualities[1].color + "）", slot0.innerHTML.indexOf(CFG.itemQualities[1].color) >= 0);
+  check("英雄标识显示名字（猎手）+ 定位色",
+    row0.children[1].innerHTML.indexOf("猎手") >= 0
+    && row0.children[1].innerHTML.indexOf(CFG.heroRoles.output.color) >= 0);
+
+  // 冷却环更新：不抛异常，且冷却中/就绪两态
+  UI.updatePartySkillbar();
+  check("updatePartySkillbar 正常更新不抛异常", true);
+  const arc0 = row0.querySelector(".ps-arc");
+  G.player.skillTimer = G.run.weapon.skill.cd;
+  UI.updatePartySkillbar();
+  check("技能栏冷却环冷却中 → 弧长拉满（非 0）", parseFloat(arc0.style.strokeDashoffset) > 0);
+  G.player.skillTimer = 0;
+  UI.updatePartySkillbar();
+  check("技能栏冷却环就绪 → 弧长填满（dashoffset=0）", parseFloat(arc0.style.strokeDashoffset) === 0);
+
+  // heroModules 缺失 → 优雅降级（空框照显示，不崩）
+  delete G.run.heroModules;
+  let degradeOk = true;
+  try { UI.renderPartySkillbar(); UI.updatePartySkillbar(); } catch (e) { degradeOk = false; }
+  check("heroModules 缺失 → 技能栏降级渲染不崩", degradeOk && get("party-skillbar").children[0].querySelectorAll(".ps-slot")[0].classList.contains("ps-slot-empty"));
+
+  // 5 人满队：5 条 + 每条 4 槽
+  const five = CFG.heroes.slice(0, 5);
+  G.heroDef = five[0];
+  const savedCompanions = G.run.companions;
+  G.run.companions = five.slice(1).map((hd, i) => ({ heroDef: hd, id: hd.id, name: hd.name, alive: true, skillTimer: i * 0.6 }));
+  G.run.heroModules = {};
+  for (const h of five) G.run.heroModules[h.id] = [null, null, null, null];
+  G.run.heroModules[five[4].id] = [{ defId: "M009", lv: 9 }, null, null, null];
+  UI.renderPartySkillbar();
+  const bar5 = get("party-skillbar");
+  check("5 人满队 → 渲染 5 条技能条", bar5.children.length === 5);
+  let allFour = true;
+  for (let i = 0; i < bar5.children.length; i++) if (bar5.children[i].querySelectorAll(".ps-slot").length !== 4) allFour = false;
+  check("5 人满队 → 每条均渲染 4 个模块槽", allFour);
+  check("5 人满队 → 第 5 人已选槽显示模块名（增幅器 LV9 → 金）",
+    bar5.children[4].querySelectorAll(".ps-slot")[0].innerHTML.indexOf("增幅器") >= 0
+    && bar5.children[4].querySelectorAll(".ps-slot")[0].innerHTML.indexOf(CFG.itemQualities[3].color) >= 0);
+
+  // 变化检测：同一批数据重复 render 不重建 DOM（结构只建一次）
+  const rowBefore = bar5.children[0];
+  UI.renderPartySkillbar();
+  check("结构复用：重复 render 同一数据不重建行节点", bar5.children[0] === rowBefore);
+  UI.updatePartySkillbar();
+  check("update 路径不重建行节点（复用同一节点）", bar5.children[0] === rowBefore);
+  check("updatePartySkillbar 在 companions 缺失时也不抛异常", (() => {
+    const saved = G.run.companions; G.run.companions = null;
+    let ok = true; try { UI.updatePartySkillbar(); } catch (e) { ok = false; }
+    G.run.companions = saved; return ok;
+  })());
+
+  // 复原现场，避免污染（后续无断言，但保持整洁）
+  G.run.companions = savedCompanions;
+  G.heroDef = soloHero;
+
   console.log(window.__v2Ok ? "UI V2 TEST OK" : "UI V2 TEST FAILED");
   if (!window.__v2Ok) throw new Error("UI V2 TEST FAILED");
 `, ctx, { filename: "driver" });

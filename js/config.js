@@ -491,34 +491,34 @@ CFG.skillCat = { active: "主动", passive: "被动", buff: "增益", debuff: "�
 CFG.skills = {
   /* ===== 表 4a 视图：主动技能（含普攻） ===== */
   AT101: { name: "速射", cat: "active", kind: "basic", type: "bullet",
-    cd: 0.75, energy: 0, dmgMul: 1.0, bullets: 1, bulletSpd: 620, pierce: 0, bounce: 0 },
+    cd: 0.5, energy: 0, dmgMul: 0.75, bullets: 1, bulletSpd: 620, pierce: 0, bounce: 0 },
   AT102: { name: "能量爆发", cat: "active", kind: "skill", type: "bullet",
-    cd: 3.0, energy: 100, tags: ["伤害","冷却","范围","弹道数量"],
-    dmgMul: 2.5, radius: 130 },   // 朝目标发射能量弹，命中后圆形范围爆炸
+    cd: 1.8, energy: 100, tags: ["伤害","冷却","范围","弹道数量"],
+    dmgMul: 1.5, radius: 130 },   // 朝目标发射能量弹，命中后圆形范围爆炸
   AT103: { name: "三向散射", cat: "active", kind: "basic", type: "bullet",
-    cd: 1.0, energy: 0, dmgMul: 0.85, bullets: 3, bulletSpd: 520, pierce: 0, bounce: 0 },
+    cd: 0.8, energy: 0, dmgMul: 0.7, bullets: 3, bulletSpd: 520, pierce: 0, bounce: 0 },
   AT104: { name: "震荡波", cat: "active", kind: "skill", type: "bullet",
-    cd: 3.2, energy: 100, tags: ["伤害","冷却","范围"], dmgMul: 2.0, radius: 150 },
+    cd: 1.9, energy: 100, tags: ["伤害","冷却","范围"], dmgMul: 1.3, radius: 150 },
   AT105: { name: "磁轨弹", cat: "active", kind: "basic", type: "bullet",
-    cd: 0.95, energy: 0, dmgMul: 1.1, bullets: 1, bulletSpd: 760, pierce: 2, bounce: 0 },
+    cd: 0.7, energy: 0, dmgMul: 0.85, bullets: 1, bulletSpd: 760, pierce: 2, bounce: 0 },
   AT106: { name: "贯穿射线", cat: "active", kind: "skill", type: "bullet",
-    cd: 3.0, energy: 100, tags: ["伤害","冷却","穿透","弹速"], dmgMul: 2.6, radius: 120 },
+    cd: 1.8, energy: 100, tags: ["伤害","冷却","穿透","弹速"], dmgMul: 1.6, radius: 120 },
   AT107: { name: "跳弹", cat: "active", kind: "basic", type: "bullet",
-    cd: 0.85, energy: 0, dmgMul: 1.0, bullets: 1, bulletSpd: 560, pierce: 0, bounce: 2 },
+    cd: 0.65, energy: 0, dmgMul: 0.75, bullets: 1, bulletSpd: 560, pierce: 0, bounce: 2 },
   AT108: { name: "环形弹幕", cat: "active", kind: "skill", type: "bullet",
-    cd: 3.2, energy: 110, tags: ["伤害","冷却","范围","弹道数量"],
-    dmgMul: 1.8, radius: 160, bullets: 8 },
+    cd: 2.0, energy: 110, tags: ["伤害","冷却","范围","弹道数量"],
+    dmgMul: 1.2, radius: 160, bullets: 8 },
   AT109: { name: "双生速射", cat: "active", kind: "basic", type: "bullet",
-    cd: 0.42, energy: 0, dmgMul: 0.62, bullets: 1, bulletSpd: 640, pierce: 0, bounce: 0 },
+    cd: 0.4, energy: 0, dmgMul: 0.55, bullets: 1, bulletSpd: 640, pierce: 0, bounce: 0 },
   AT110: { name: "疾风连爆", cat: "active", kind: "skill", type: "bullet",
-    cd: 2.4, energy: 100, tags: ["伤害","冷却","弹道数量"], dmgMul: 1.9, radius: 120, bullets: 3 },
+    cd: 1.5, energy: 100, tags: ["伤害","冷却","弹道数量"], dmgMul: 1.2, radius: 120, bullets: 3 },
   AT111: { name: "重锤弹", cat: "active", kind: "basic", type: "bullet",
-    cd: 1.25, energy: 0, dmgMul: 1.6, bullets: 1, bulletSpd: 430, pierce: 1, bounce: 0 },
+    cd: 0.9, energy: 0, dmgMul: 1.15, bullets: 1, bulletSpd: 430, pierce: 1, bounce: 0 },
   AT112: { name: "攻城爆破", cat: "active", kind: "skill", type: "bullet",
-    cd: 3.5, energy: 120, tags: ["伤害","冷却","范围","弹速"], dmgMul: 3.2, radius: 190 },
+    cd: 2.3, energy: 120, tags: ["伤害","冷却","范围","弹速"], dmgMul: 1.9, radius: 190 },
 
   /* ===== 召唤物 / 陷阱类技能（离散值走 anchors 锚点表，1~100 级全程有效） ===== */
-  AT113: { name: "召唤无人机", cat: "active", type: "summon", kind: "skill", cd: 12.0, energy: 110,
+  AT113: { name: "召唤无人机", cat: "active", type: "summon", kind: "skill", cd: 5.5, energy: 110,
     tags: ["召唤物", "伤害", "冷却"],
     // 🔴 19.2 恢复定位载体：召唤师 H007 的无人机改造为「维修型」——照常开火，附加持续修理队友。
     // 数值统一在 CFG.skills2.repairDrone（铁律：数值一律进 CFG）；此处只挂开关与定位标记。
@@ -531,7 +531,7 @@ CFG.skills = {
       fireCd: { 1: 0.8, 50: 0.65, 100: 0.5 },          // 攻击间隔（含小数 → 保留两位）
       orbit:  { 1: 66, 50: 74, 100: 90 },              // 环绕半径
     } },
-  AT114: { name: "大地雷", cat: "active", type: "trap", kind: "skill", cd: 9.0, energy: 90,
+  AT114: { name: "大地雷", cat: "active", type: "trap", kind: "skill", cd: 5.0, energy: 90,
     tags: ["陷阱", "伤害", "范围", "冷却"], armDelay: 0.5,   // 敌人入圈后引信延迟（固定规则值）
     desc: "在脚下布设地雷：敌人进入范围 0.5 秒后引爆（范围伤害），随后消失",
     anchors: {

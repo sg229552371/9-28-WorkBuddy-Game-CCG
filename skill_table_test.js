@@ -88,18 +88,20 @@ const driver = `
     check("曲线参数-上限 100", wl.maxLv === 100);
     // 普攻：每级 +4%
     const b1 = skillEntry("AT101", 1), b100 = skillEntry("AT101", 100);
-    check("公式-普攻 LV1 伤害 = 基础值 1.0", near(b1.dmgMul, 1.0));
-    check("公式-普攻 LV100 = 1.0 × (1+0.04×99) = 4.96", near(b100.dmgMul, 1 + 0.04 * 99),
+    const B_BASE = CFG.skills.AT101.dmgMul;   // 普攻基准（随 CFG 调整）
+    const S_BASE = CFG.skills.AT102.dmgMul;   // 技能基准（随 CFG 调整）
+    check("公式-普攻 LV1 伤害 = 基础值 " + B_BASE, near(b1.dmgMul, B_BASE));
+    check("公式-普攻 LV100 = " + B_BASE + " × (1+0.04×99)", near(b100.dmgMul, B_BASE * (1 + 0.04 * 99)),
       );
     // 主动技能：每级 +6%
     const s1 = skillEntry("AT102", 1), s100 = skillEntry("AT102", 100);
-    check("公式-技能 LV1 伤害 = 基础值 2.5", near(s1.dmgMul, 2.5));
-    check("公式-技能 LV100 = 2.5 × (1+0.06×99)", near(s100.dmgMul, 2.5 * (1 + 0.06 * 99)));
+    check("公式-技能 LV1 伤害 = 基础值 " + S_BASE, near(s1.dmgMul, S_BASE));
+    check("公式-技能 LV100 = " + S_BASE + " × (1+0.06×99)", near(s100.dmgMul, S_BASE * (1 + 0.06 * 99)));
     // 等级钳制 & 非法输入
-    check("公式-等级下钳制 LV0 → 视作 LV1", near(skillEntry("AT101", 0).dmgMul, 1.0));
-    check("公式-等级上钳制 LV999 → 视作 LV100", near(skillEntry("AT101", 999).dmgMul, 1 + 0.04 * 99));
+    check("公式-等级下钳制 LV0 → 视作 LV1", near(skillEntry("AT101", 0).dmgMul, B_BASE));
+    check("公式-等级上钳制 LV999 → 视作 LV100", near(skillEntry("AT101", 999).dmgMul, B_BASE * (1 + 0.04 * 99)));
     check("公式-skillEntry 返回 lv 字段", skillEntry("AT101", 7).lv === 7);
-    check("公式-接受技能对象入参（不限于 ID 字符串）", near(skillEntry(CFG.skills.AT101, 100).dmgMul, 4.96));
+    check("公式-接受技能对象入参（不限于 ID 字符串）", near(skillEntry(CFG.skills.AT101, 100).dmgMul, B_BASE * (1 + 0.04 * 99)));
     check("公式-非法技能 ID 返回 null", skillEntry("NOPE", 1) === null);
     // 不吃等级成长的条目（敌人技能 / 增益 / 减益）
     check("公式-敌人技能不吃等级伤害成长（AT202 LV1=LV100 dmgMul）",
@@ -283,16 +285,16 @@ const driver = `
     recomputeWeapon();
     const r = G.run;
     check("普攻不吃「伤害」词条（dmgMul = 基础 × 等级曲线）",
-      near(r.weapon.basic.dmgMul, 1.0 * (1 + CFG.weaponLevel.basicMulPerLv * 0)));
+      near(r.weapon.basic.dmgMul, CFG.skills.AT101.dmgMul * (1 + CFG.weaponLevel.basicMulPerLv * 0)));
     check("主动技能吃「伤害」词条路径存在（AT102 含伤害标签）",
       (CFG.skills.AT102.tags || []).includes("伤害"));
     check("普攻保留了 bounce 字段（弹射次数词条叠加路径）", r.weapon.basic.bounce !== undefined);
-    check("技能等级 = 武器等级（LV1 时 basic.dmgMul = 基础值）", near(r.weapon.basic.dmgMul, 1.0));
+    check("技能等级 = 武器等级（LV1 时 basic.dmgMul = 基础值）", near(r.weapon.basic.dmgMul, CFG.skills.AT101.dmgMul));
     // 升到 LV11 → 普攻 ×(1+0.04×10)=1.4，技能 ×(1+0.06×10)=1.6
     G.heroDef.weaponLv = 11;
     recomputeWeapon();
-    check("LV11 普攻 dmgMul = 1.0 × 1.4 = 1.4", near(G.run.weapon.basic.dmgMul, 1.4, 1e-9));
-    check("LV11 技能 dmgMul = 2.5 × 1.6 = 4.0", near(G.run.weapon.skill.dmgMul, 4.0, 1e-9));
+    check("LV11 普攻 dmgMul = 基准 × 1.4", near(G.run.weapon.basic.dmgMul, CFG.skills.AT101.dmgMul * 1.4, 1e-9));
+    check("LV11 技能 dmgMul = 基准 × 1.6", near(G.run.weapon.skill.dmgMul, CFG.skills.AT102.dmgMul * 1.6, 1e-9));
   }
 
   /* ============ 九、武器栏 = 小队技能栏：武器模块对小队全体成员生效 ============
@@ -356,8 +358,8 @@ const driver = `
       const r3 = G.run, c3 = r3.companions[0];
       G.heroDef.weaponLv = 11; c3.heroDef.weaponLv = 51;
       recomputeWeapon();
-      check("等级独立-队长 LV11 普攻 ×(1+0.04×10) = 1.4", near(r3.weapon.basic.dmgMul, 1.4, 1e-9));
-      check("等级独立-队友 LV51 用自己的曲线 ×(1+0.04×50) = 3.0", near(c3.skills.basic.dmgMul, 3.0, 1e-9));
+      check("等级独立-队长 LV11 普攻 ×(1+0.04×10)", near(r3.weapon.basic.dmgMul, CFG.skills.AT101.dmgMul * 1.4, 1e-9));
+      check("等级独立-队友 LV51 用自己的曲线 ×(1+0.04×50)", near(c3.skills.basic.dmgMul, CFG.skills.AT101.dmgMul * (1 + 0.04 * 50), 1e-9));
       check("等级独立-同一栏武器模块、两人等级互不串味", !near(c3.skills.basic.dmgMul, r3.weapon.basic.dmgMul));
     }
 
