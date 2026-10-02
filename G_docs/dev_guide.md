@@ -175,7 +175,7 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
 
 ## 3. 验证流程（必做）
 
-**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 638**。
+**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 749**。
 
 核心要求：
 
@@ -577,7 +577,7 @@ Boss 从「血多的精英怪」变成**会发弹幕的 2 阶段 Boss**。
   同时 `#hud.city-mode` 会隐藏 `#hud-tl`，二者互斥、不共存。
 - `#hud-tl` 改为 `flex-direction:column; gap:8px`（纵向排布，避免依赖 margin 撑开）。
 - `#buff-area` 加 `flex-wrap:wrap; max-width:420px`（Buff 多了换行，不横向溢出）。
-- 回归：`freeze_test` / `ui_flow_test` / 全量断言（当时 530，现基线 638）。
+- 回归：`freeze_test` / `ui_flow_test` / 全量断言（当时 530，现基线 749）。
 
 ### 5.36 🔴 第十九章 = v2 重构基准（优先级高于第十六章）
 
@@ -696,6 +696,46 @@ for (const sid in CFG.moduleSets) {
   恢复法：镜像拉 `3403a32` tarball → `git init` 基线提交 → 工作树覆盖 → 重新生成 patch。
   **patch 交付物必须始终留存 `/workspace/_changes/`**，git 历史丢了也能重建。
 
+### 5.43 🔴 升级 4 选 1 的暂停闸门 = §4.6 坑的第三次翻版（必修）
+
+**症状**：第 3 步落地后 `extract_test` 4 条红（读条不推进）。诊断输出
+`paused=true / queue=[1,1,1,1,1] / lv=6`——`damageMonster(boss, 999999)` 一把给爆经验 →
+升到 LV6 → 队列堆 5 个待选 → `Game.paused=true` → 主循环跳过世界更新 → 读条只推进 1 帧。
+
+**这是 §4.6 / §5.34 的同一类问题**：给持续型机制加暂停语义 → 时间假设测试全崩。**必做四件套**：
+
+1. **显式初始化**：`Game.paused = false` 在 `startRun` 里重置（不能只靠对象字面量初值）。
+2. **提供跳过闸门**：`Game.skipLevelUpChoice()` —— 清空 `G.run.modulePoolState[*].queue` +
+   `paused=false` + `UI.onLevelUpChoiceClose()`。
+3. **旧测试显式跳过**：`startRun` 后紧跟 `Game.skipLevelUpChoice()`（与 `skipIntroFreeze()` 并列）。
+4. **⚠️ 中段触发的升级必须持续跳过**：只在开头调一次**不够**——杀 Boss / 拾经验宝石都会中途升级。
+   **正解是改测试的 `step(n)`**：
+   ```js
+   function step(n) { for (let i = 0; i < n; i++) { t += 16.7; global.__raf(t);
+     if (Game.paused && Game.skipLevelUpChoice) Game.skipLevelUpChoice(); } }
+   ```
+   `extract_test` 用此法后 4 条转绿。**其他涉及「杀怪/拾宝 → 继续 step」的测试同样要套用**。
+
+**无 UI 环境不存在此问题**：`presentLevelUpChoice` 在 `UI.onLevelUpChoice` 缺失时走默认路径
+（自动选第一个非置灰候选），**永不悬挂**——这是刻意设计的降级路径，别删。
+
+### 5.44 性能目标实测（`perf_test.js`，逻辑层）
+
+用户目标 **100 子弹/秒 + 80 特效 + 80 角色同屏**，逻辑层压测结论（Node 无头，帧预算 16.6ms）：
+
+| 压测项 | P99 耗时 | 占帧预算 | 判定 |
+| ------ | -------- | -------- | ---- |
+| 子弹层（100 发/秒 × 60s） | 0.135ms | **0.8%** | ✅ 大幅达标 |
+| 特效层（80 并发） | 0.021ms | **0.1%** | ✅ 大幅达标 |
+| 角色层（81 个一帧 update） | 0.194ms | **1.2%** | ✅ 达标 |
+| 对象池 vs `new` | — | — | 吞吐 **5.81×**（563ms→97ms），堆更平稳 |
+
+**结论：逻辑层远不是瓶颈（合计 <2% 预算），风险全在渲染层**（`drawImage` 调用数与缩放采样）。
+- **渲染层无法无头测**，`perf_test.js` 输出末尾附了浏览器端验证指引（DevTools Performance 面板
+  逐步操作 + Chrome tracing 关键指标 + 可注入的 `renderMs` 埋点方案）。
+- 优化方向已列：离屏 Canvas 预渲染 sprite / 图集合批 / 分层 Canvas / 关 `shadowBlur`。
+- 📌 **不要**把 `perf_test` 加进 `run_tests.sh`（性能压测不进回归门禁）。
+
 ## 6. 并行开发切分（已验证可用）
 
 多路 Agent 并行时**按文件所有权切分**，一方不得碰另一方的文件：
@@ -728,7 +768,7 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 
 ## 8. 当前基线
 
-测试 **20/20 全绿**，**PASS 合计 = 638**：
+测试 **22/22 全绿**，**PASS 合计 = 749**：
 
 `smoke_test` / `runtime_test` / `backpack_test` / `econ_test` / `skill_module_test` /
 `team_trigger_test` / `artisan_test` / `ui_flow_test` / `rift_test` / `extract_test` /
@@ -741,7 +781,10 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 **`grant_test`**（物品入包四分支行为锁定，**30 条**）/ **`freeze_test`**（主关卡开场冻结，**28 条**）/
 **`exp_test`**（第 1/2 步战斗主链路：普攻移除 / 技能全自动冷却制 / 经验曲线 / 升级属性 / 结晶口径 /
 维修无人机 / 定位映射，**58 条**）/
-**`ui_v2_test`**（界面 6 件套：冷却环 / 定位徽章 / 升级 4 选 1 弹窗 / 三段布局 / 芯片工坊 / 图鉴，**49 条**）。
+**`ui_v2_test`**（界面 6 件套：冷却环 / 定位徽章 / 升级 4 选 1 弹窗 / 三段布局 / 芯片工坊 / 图鉴，**49 条**）/
+**`levelup_test`**（第 3 步模块槽：heroModules / 池过滤 / 4 选 1 入槽 / 槽满置灰 / 属性小包兜底 / 全队生效，**50 条**）/
+**`chip_test`**（第 4 步芯片：makeChip / chipInv 6×5 / 宝箱商店接入 / tagCalc 统一词条链 / chipForge 三服务 / 负重，**61 条**）。
+（另有 `perf_test.js`——**不入回归门禁**，用 `node perf_test.js` 手动跑性能压测，见 §5.44）
 
 跑测试前先确认这个基线，改完必须仍然全绿且 `bad=0`，改完建议连跑 3 轮看抖动。
 ⚠️ 改动队友施法/产物相关逻辑会连带撞到 `skill_table_test` 第十节（队友技能与能量）与产物池断言
@@ -769,11 +812,12 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 - **🔴 v2 重构（第十九章）落地顺序**（配置+文档已完成）：
   1. ✅ **删普攻 + 改经验来源**（参与伤害即给）+ AI 改放技能 + crystalKill 退役 —— **已落地**（见 §5.41，当时基线 565）
   2. ✅ **英雄三定位 + 技能冷却制**（能量池退役 + 维修无人机 + 冷却环）—— **已落地**（见 §5.42，基线 638）
-  3. ⬜ **升级 4 选 1 + 模块池**（每英雄独立池；**UI 弹窗已就位**，战斗侧按 19.10 规格接入 `gainExp`）
-  4. ⬜ **芯片系统**（先数值芯片，再行为芯片；战斗侧按 19.11 规格接入，工坊/图鉴 UI 已就位）
+  3. ✅ **升级 4 选 1 + 模块池**（heroModules / 池过滤 / 槽满置灰 / 属性小包兜底）—— **已落地**（§5.43，`levelup_test` 50 条）
+  4. ✅ **芯片系统战斗侧**（makeChip / chipInv / 宝箱商店接入 / tagCalc 统一词条链 / chipForge 三服务）
+     —— **已落地**（`chip_test` 61 条）；行为芯片（紫/金）仅数据通路骨架
   5. ✅ **UI 改造**：芯片背包 6×5 + 上下并列布局 + 芯片工坊 + 芯片图鉴 —— **已落地**（`ui_v2_test` 49 条）
-  - ⚠️ 每步都要跑全量测试；**改完必须仍是 `20/20 全绿 / bad=0`（PASS 638）**。
-  - 📌 **下一轮派单**：第 3/4 步战斗侧按 19.10/19.11 施工图实现（48 条验收断言清单已备好），
-    第 5 步（行为芯片 + `chip_behavior_test`）随后。
+  - ⚠️ 每步都要跑全量测试；**改完必须仍是 `22/22 全绿 / bad=0`（PASS 749）**。
+  - 📌 **下一轮派单**：第 5 步行为芯片 4 种积木（弹射/灼烧/分裂/传导）+ `chip_behavior_test`；
+    随后是 `tagCalc` 双源收口（删旧 `weaponInv` 路径）、Boss 激光实体 `LaserBeam`、内容铺量。
 - **待确认**：主城商人新位置 `(0.14, 0.62)`；竖屏视野变窄是刻意行为（如需全宽需竖版布局）；
   第十九章 19.9 的 2 条待确认项（七项方案已全部确认，见 19.9 表）。
