@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>弹幕射击 Roguelike × 背包肉鸽 — HTML 原型</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <!-- 游戏画布（局内） -->
+  <canvas id="game-canvas" width="1920" height="1080"></canvas>
+
+  <!-- ====== 界面层：游戏首页 ====== -->
+  <div id="screen-main" class="screen hidden">
+    <h1 class="title">弹幕射击 Roguelike × 背包肉鸽</h1>
+    <p class="subtitle">搜打撤 · 枪火与背包的极限博弈</p>
+    <div class="panel main-panel">
+      <button id="btn-main-start" class="btn primary big">开始游戏</button>
+      <button id="btn-home-help" class="btn big">操作说明</button>
+      <button id="btn-home-settings" class="btn big">设置</button>
+      <button id="btn-home-codex" class="btn big">图鉴</button>
+      <button id="btn-home-exit" class="btn big ghost">退出游戏</button>
+    </div>
+    <div id="home-user-line" class="home-user-line"></div>
+    <p class="tip" style="margin-top:14px;opacity:.7">v0.6 · 首页 → 主城 → 传送门出征（赛季玩法上线后开放第二座传送门）</p>
+  </div>
+
+  <!-- ====== 界面层：操作说明 ====== -->
+  <div id="screen-help" class="screen hidden">
+    <div class="panel help-panel">
+      <h2>操作说明</h2>
+      <div class="help-cols">
+        <div>
+          <h3>键盘 / 鼠标</h3>
+          <p><b>WASD / 方向键</b> — 移动（队长带队，队友蛇形跟随）</p>
+          <p><b>Space</b> — 主动技能（能量足够时自动施放，也可手动触发）</p>
+          <p><b>B</b> — 打开 / 关闭背包与武器栏</p>
+          <p><b>E</b> — 撤离点查看进度 / 工匠世界开关面板</p>
+          <p><b>鼠标悬停</b> — 物品 TIPS 详情；拖拽整理背包</p>
+        </div>
+        <div>
+          <h3>触屏</h3>
+          <p><b>左下摇杆</b> — 移动（灵敏度可在设置里调）</p>
+          <p><b>技能 / 背包 / 交互</b> — 右下按钮</p>
+          <p><b>长按物品</b> — 查看 TIPS 详情；拖动整理背包</p>
+        </div>
+        <div>
+          <h3>核心循环</h3>
+          <p><b>主城</b> 找 NPC 强化 → <b>传送门</b> 出征</p>
+          <p><b>搜打撤</b>：击杀凑进度 → BOSS → 撤离点读条撤离</p>
+          <p><b>撤离</b> 才结算资源；死亡只保留 30% 结晶</p>
+          <p><b>工匠世界</b>：开宝箱 / 抽卡牌 / 购买与服务</p>
+        </div>
+      </div>
+      <div class="btn-row"><button id="btn-help-back" class="btn ghost">返回首页</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：设置 ====== -->
+  <div id="screen-settings" class="screen hidden">
+    <div class="panel settings-panel">
+      <h2>设置</h2>
+      <div class="set-row">
+        <span>音效音量</span>
+        <input id="set-sfx" type="range" min="0" max="1" step="0.1">
+        <button id="btn-set-sfx-mute" class="btn small ghost">静音</button>
+      </div>
+      <div class="set-row">
+        <span>触屏控件大小</span>
+        <input id="set-joy" type="range" min="0.7" max="1.5" step="0.1">
+      </div>
+      <div class="set-row">
+        <span>桌面端显示触屏控件</span>
+        <button id="set-touch" class="btn small">关</button>
+      </div>
+      <div class="btn-row"><button id="btn-settings-back" class="btn ghost">返回首页</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：图鉴 ====== -->
+  <div id="screen-codex" class="screen hidden">
+    <div class="panel codex-panel">
+      <div class="bp-head"><h2>图鉴 <span id="codex-count" class="card-assets"></span></h2></div>
+      <h3>英雄（使用出征激活 → 解锁同名皮肤）</h3>
+      <div id="codex-heroes" class="codex-grid"></div>
+      <h3>怪物（击杀收录）</h3>
+      <div id="codex-monsters" class="codex-grid"></div>
+      <div class="btn-row"><button id="btn-codex-back" class="btn ghost">返回首页</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：退出告别 ====== -->
+  <div id="screen-goodbye" class="screen hidden">
+    <div class="panel goodbye-panel">
+      <h1 class="title">感谢试玩</h1>
+      <p class="subtitle">网页版可直接关闭此标签页；存档已自动保存</p>
+      <div class="btn-row"><button id="btn-goodbye-back" class="btn primary">返回首页</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：关卡选择（从主城传送门进入） ====== -->
+  <div id="screen-level" class="screen hidden">
+    <h1 class="title">选择出征关卡</h1>
+    <p class="subtitle">HTML 原型 · 首版基准（第十六章）</p>
+    <div class="panel level-panel">
+      <h2>关卡选择</h2>
+      <div id="level-list"></div>
+      <div class="tip">完成目标击杀数或坚持到时限 → 触发 Boss；击败 Boss 生成撤离点；工匠雕像按击杀进度刷新。</div>
+      <div class="btn-row"><button id="btn-level-back" class="btn ghost">返回主城</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：角色选择 ====== -->
+  <div id="screen-character" class="screen hidden">
+    <div class="panel char-panel">
+      <h2>角色选择</h2>
+      <div id="meta-line" class="meta-line"></div>
+      <div id="char-list"></div>
+      <div class="btn-row">
+        <button id="btn-char-back" class="btn ghost">返回</button>
+        <button id="btn-char-start" class="btn primary" disabled>开始游戏</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 局内 HUD（city-mode 下只显示头像栏 / 摇杆 / 提示） ====== -->
+  <div id="hud" class="hidden">
+    <div id="city-avatar-bar" class="hidden-in-battle"></div>
+    <div id="hud-tl">
+      <!-- 自动战斗开关固定在左上角首位：位置不被 Buff 图标增减挤动，且避开移动端右下虚拟按钮 -->
+      <button id="btn-autofight" class="btn ghost">自动战斗：关</button>
+      <div id="autofight-styles" class="hidden">
+        <button class="af-style" data-style="berserk" title="贴脸输出，只预判冲锋与Boss大招，血线再低也不退">疯狂</button>
+        <button class="af-style" data-style="balanced" title="中距离风筝，躲密集弹幕与预警技能，血量40%以下拉开">平衡</button>
+        <button class="af-style" data-style="cautious" title="最远距离风筝，见弹就躲，血量过半即拉开距离">冷静</button>
+      </div>
+      <div id="buff-area"></div>
+    </div>
+    <div id="hud-top">
+      <div id="progress-wrap">
+        <div id="progress-fill"></div>
+        <span id="progress-txt">击杀进度 0/60</span>
+      </div>
+      <div id="boss-name" class="hidden">⚠ BOSS 出现！</div>
+    </div>
+    <div id="hud-tr">
+      <div id="lv-line">LV <b id="lv-num">1</b></div>
+      <div class="bar exp"><div class="fill" id="bar-exp"></div></div>
+      <div id="coin-line">◈ 货币 <b id="coin-num">0</b>　◆ 经验 <b id="exp-num">0</b></div>
+    </div>
+    <div id="hud-bl">
+      <div id="weight-line">负重 <b id="weight-num">0</b> / 100</div>
+      <div id="weight-pen"></div>
+    </div>
+    <div id="hud-br">
+      <button id="btn-backpack" class="btn">背包 (B)</button>
+    </div>
+    <div id="channel-wrap" class="hidden">
+      <div id="channel-circle"><svg viewBox="0 0 80 80"><circle id="channel-arc" cx="40" cy="40" r="34"/></svg><span id="channel-txt"></span></div>
+    </div>
+    <!-- 移动端虚拟控件（触屏设备自动显示；CFG.mobile 配置） -->
+    <div id="touch-controls" class="hidden">
+      <div id="joy-zone">
+        <div id="joy-base"><div id="joy-stick"></div></div>
+        <span id="joy-hint">移动</span>
+      </div>
+      <div id="touch-btns">
+        <button id="btn-touch-bag" class="tbtn tbtn-small">背包</button>
+        <button id="btn-touch-act" class="tbtn tbtn-small">交互</button>
+        <button id="btn-touch-skill" class="tbtn tbtn-big">技能</button>
+      </div>
+    </div>
+    <div id="toast-area"></div>
+    <div id="hint-center"></div>
+  </div>
+
+  <!-- ====== 物品 TIPS 浮窗（悬停/长按，跟随指针，边缘翻转） ====== -->
+  <div id="tooltip" class="hidden"></div>
+
+  <!-- ====== 主城 NPC 面板：强化导师（局外等级） ====== -->
+  <div id="panel-npc-outlevel" class="overlay hidden">
+    <div class="panel meta-panel" style="width:min(760px,94vw)">
+      <div class="bp-head">
+        <h2>✦ 强化导师 · 局外等级</h2>
+        <div class="bp-head-right"><span id="npc-crystals" class="meta-crystals">◆ 进化结晶 <b>0</b></span><button id="btn-npc-outlevel-close" class="btn ghost small">关闭</button></div>
+      </div>
+      <div id="outlevel-list" class="npc-list"></div>
+      <div class="tip">升级消耗进化结晶（撤离/击杀获得，死亡仅保留 30%）；也可找武器匠升级武器。</div>
+    </div>
+  </div>
+
+  <!-- ====== 主城 NPC 面板：武器匠（武器/技能等级） ====== -->
+  <div id="panel-npc-weapon" class="overlay hidden">
+    <div class="panel meta-panel" style="width:min(760px,94vw)">
+      <div class="bp-head">
+        <h2>⚔ 武器匠 · 武器 / 技能等级</h2>
+        <div class="bp-head-right"><span id="npc-crystals-weapon" class="meta-crystals">◆ 进化结晶 <b>0</b></span><button id="btn-npc-weapon-close" class="btn ghost small">关闭</button></div>
+      </div>
+      <div id="weapon-list" class="npc-list"></div>
+      <div class="tip">武器等级 = 技能等级（同步强化普攻与主动技能），永久保留。</div>
+    </div>
+  </div>
+
+  <!-- ====== 主城 NPC 面板：形象师（更名 / 皮肤 / 称号） ====== -->
+  <div id="panel-profile" class="overlay hidden">
+    <div class="panel meta-panel" style="width:min(640px,94vw)">
+      <div class="bp-head"><h2>☺ 形象师 · 角色档案</h2><button id="btn-profile-close" class="btn ghost small">关闭</button></div>
+      <div class="profile-rename">
+        <span>名字</span>
+        <input id="profile-name-input" maxlength="8" type="text">
+        <button id="btn-profile-rename" class="btn small primary">确认更名</button>
+      </div>
+      <h3>形象皮肤（图鉴激活的英雄外貌）</h3>
+      <div id="skin-grid" class="skin-grid"></div>
+      <h3>称号</h3>
+      <div id="title-list"></div>
+    </div>
+  </div>
+
+  <!-- ====== 背包 / 武器栏面板（工匠模式下 bp-grid-unit 整体移入工匠面板） ====== -->
+  <div id="panel-backpack" class="overlay hidden">
+    <div class="panel bp-panel" id="bp-panel-main">
+      <div class="bp-head">
+        <h2>背包与武器栏</h2>
+        <span id="bp-lock-hint" class="warn hidden">⚔ 战斗进行中，仅可查看（工匠世界内可操作）</span>
+        <button id="btn-bp-close" class="btn ghost small">关闭 (B)</button>
+      </div>
+      <div class="bp-body" id="bp-grid-unit">
+        <div class="grid-zone">
+          <h3>武器栏 · 小队技能栏（放这里才生效）4×3</h3>
+          <div id="grid-weapon" class="grid w43"></div>
+          <div id="weapon-tags" class="tags"></div>
+        </div>
+        <div class="grid-zone">
+          <h3>背包（仓储 / 战利品）6×4</h3>
+          <div id="grid-backpack" class="grid w64"></div>
+          <div id="drop-zone">拖到此处丢弃</div>
+        </div>
+        <div class="grid-zone side">
+          <h3>物品信息</h3>
+          <div id="item-info" class="item-info">选中或悬停物品查看详情</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 工匠世界：三页签（开宝箱 / 抽卡牌 / 购买·服务）+ 背包/武器栏 ====== -->
+  <div id="panel-artisan" class="overlay hidden">
+    <div class="panel art-panel">
+      <div class="bp-head">
+        <h2>工匠 · 工坊</h2>
+        <button id="btn-artisan-close" class="btn ghost small">关闭 (E)</button>
+      </div>
+      <div class="art-tabs" id="art-tabs">
+        <button class="art-tab active" id="art-tab-chest">开宝箱</button>
+        <button class="art-tab" id="art-tab-cards">抽卡牌</button>
+        <button class="art-tab" id="art-tab-shop">购买·服务</button>
+      </div>
+      <div class="art-layout">
+        <div class="art-side">
+          <!-- 页签①：开宝箱 -->
+          <div id="art-page-chest">
+            <h3>未开封货物</h3>
+            <div id="chest-list"></div>
+            <h3>开箱结果（拖入网格）</h3>
+            <div id="pending-area"></div>
+          </div>
+          <!-- 页签②：抽卡牌 -->
+          <div id="art-page-cards" class="hidden">
+            <div class="card-sec">
+              <div class="card-sec-head">
+                <h3>属性卡牌 <span id="card-assets" class="card-assets">×0</span></h3>
+                <button id="btn-card-refresh" class="btn ghost small">刷新候选（剩 2）</button>
+              </div>
+              <div id="card-candidates"></div>
+              <div id="card-applied" class="card-applied"></div>
+            </div>
+            <p class="tip" style="margin-top:10px">升级获得属性卡牌资产，仅可在工匠世界使用；生效后<b>对小队全体成员</b>生效；同一属性使用后本局不再出现。</p>
+          </div>
+          <!-- 页签③：购买·服务 -->
+          <div id="art-page-shop" class="hidden">
+            <h3>工匠商店（局内金币）</h3>
+            <div id="shop-list"></div>
+            <p class="tip" style="margin-top:10px">「强化品质 / 洗词缀」需先在右侧背包中<b>点击选中</b>装备或武器模块。</p>
+          </div>
+        </div>
+        <div id="art-grids" class="art-grids"><!-- 背包/武器栏单元在此处与背包面板间移动 --></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 结算界面 ====== -->
+  <div id="screen-settle" class="screen hidden">
+    <div class="panel settle-panel">
+      <h2>撤离成功 · 结算</h2>
+      <div id="settle-stats" class="stats"></div>
+      <h3>带出的宝箱战利品</h3>
+      <div id="settle-chests"></div>
+      <h3>最终背包</h3>
+      <div id="settle-items" class="items-list"></div>
+      <div class="btn-row"><button id="btn-settle-ok" class="btn primary">确认 · 返回主城</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 死亡界面 ====== -->
+  <div id="screen-death" class="screen hidden">
+    <div class="panel death-panel">
+      <h2>你死了</h2>
+      <div id="death-stats" class="stats"></div>
+      <h3>损失报告</h3>
+      <div id="death-lost" class="items-list lost"></div>
+      <h3>保留（原型中死亡物品不入库，仅展示判定）</h3>
+      <div id="death-kept" class="items-list"></div>
+      <div class="btn-row"><button id="btn-death-ok" class="btn primary">返回主城</button></div>
+    </div>
+  </div>
+
+  <!-- 拖拽幽灵 -->
+  <div id="drag-ghost" class="hidden"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
