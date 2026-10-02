@@ -348,6 +348,146 @@ const driver = `
     check("威胁性-记录瞄准角供电报扇面渲染", near(b4.aimAng, Math.PI, 1e-6));
   }
 
+  /* ============ 六·B、新增 Boss（BS0004~BS0010，第十七章 17.7 第 4 步）============ */
+  {
+    const NEW_BOSS = ["BS0004", "BS0005", "BS0006", "BS0007", "BS0008", "BS0009", "BS0010"];
+
+    // 配表侧：新 Boss 都进表、type=boss、有 phases
+    check("新增 Boss 全部进怪物表且 type=boss",
+      NEW_BOSS.every(id => CFG.monsters[id] && CFG.monsters[id].type === "boss"));
+    check("新增 Boss 首个阶段 hp = 1.0（满血即生效）",
+      NEW_BOSS.every(id => CFG.monsters[id].phases[0].hp === 1.0));
+    check("新增 Boss 阶段 hp 严格递减",
+      NEW_BOSS.every(id => {
+        const ps = CFG.monsters[id].phases;
+        for (let i = 1; i < ps.length; i++) if (!(ps[i].hp < ps[i - 1].hp)) return false;
+        return true;
+      }));
+
+    // 能正常 spawn（实例化不抛错、血量大于 0）
+    const spawnFail = [];
+    for (const id of NEW_BOSS) {
+      try { const m = new Monster(id, 900, 900, 1); if (!m || m.hp <= 0 || !m.bossPhase()) spawnFail.push(id); }
+      catch (e) { spawnFail.push(id + "(" + e.message + ")"); }
+    }
+    check("新增 Boss 都能正常 spawn（" + (spawnFail.length ? spawnFail.join(",") : "7 只全部成功") + "）",
+      spawnFail.length === 0);
+
+    // 阶段推进：打到低血 → 阶段指数前进 + 招式池切换 + 进入无敌
+    const phaseFail = [];
+    for (const id of NEW_BOSS) {
+      const w = fakeW();
+      const b = new Monster(id, 900, 900, 1);
+      const pool0 = b.bossPhase().skills.join();
+      b.hp = b.hpMax * 0.1;                         // 压到最低阶段
+      const want = b.bossPhase().idx;
+      b.bossPhaseTick();
+      if (b.phaseIdx !== want || want <= 0) { phaseFail.push(id + ":指数"); continue; }
+      if (b.bossPhase().skills.join() === pool0) { phaseFail.push(id + ":未换池"); continue; }
+      if (!(b.phaseInvulnT > 0)) { phaseFail.push(id + ":无无敌"); continue; }
+    }
+    check("新增 Boss 阶段推进（按血量换招式池 + 无敌）：" +
+      (phaseFail.length ? phaseFail.join(",") : "7 只全部通过"), phaseFail.length === 0);
+
+    // 端到端：新 Boss 12 秒真的发弹幕，且不超预算 / 同屏；平均速率 ≤ bulletBudget
+    const rates = [];
+    for (const id of NEW_BOSS) {
+      const w = fakeW();
+      const b = new Monster(id, 900, 900, 3);
+      let created = 0;
+      const T = 12, dt = 1 / 60;
+      for (let i = 0; i < T * 60; i++) {
+        const before = w.enemyBullets.length;
+        b.update(w, dt);
+        created += w.enemyBullets.length - before;
+        b.x = 900; b.y = 900;
+      }
+      rates.push({ id: id, created: created, rate: created / T, screen: w.enemyBullets.length });
+      check("新增端到端-" + id + " 12 秒发射 " + created + " 发弹幕", created > 0);
+      check("新增端到端-" + id + " 同屏存量 " + w.enemyBullets.length + " ≤ " + CFG.boss.bulletCap,
+        w.enemyBullets.length <= CFG.boss.bulletCap);
+      check("新增端到端-" + id + " 弹幕归属该 Boss",
+        w.enemyBullets.every(x => x.boss === true && x.owner === b));
+    }
+    check("新增 Boss 平均发射速率都 ≤ 预算 " + CFG.boss.bulletBudget + "/秒（最高 " +
+      Math.max(...rates.map(r => r.rate)).toFixed(1) + "）",
+      rates.every(r => r.rate <= CFG.boss.bulletBudget + 1e-9));
+
+    // 招式池轮转：阶段内按池顺序轮转（用 BS0004 第 1 阶段两条螺旋）
+    const w5 = fakeW();
+    const b5 = new Monster("BS0004", 900, 900, 1);
+    b5.patternTimer = 0; b5.patternIdx = 0;
+    const poolA = b5.bossPhase().skills.slice();
+    const poolA0 = poolA[0];
+    b5.bossFire(w5, P(poolA0));
+    check("新增招式轮转-BS0004 阶段 1 按池顺序推进（patternIdx 0→1）", b5.patternIdx === 1);
+    for (let i = 1; i < poolA.length; i++) b5.bossFire(w5, P(poolA[i]));   // 走完一个完整池
+    check("新增招式轮转-BS0004 走完一池后回到池首（idx 取模）",
+      b5.bossPhase().skills[b5.patternIdx % b5.bossPhase().skills.length] === poolA0 &&
+      b5.patternIdx === poolA.length);
+  }
+
+  /* ============ 六·C、激光招式实测：BS0006 + BS0009 真的放激光 ============ */
+  {
+    const LASER_BOSS = ["BS0006", "BS0009"];
+    check("BS0006 / BS0009 都配了非空 laserSkills（激光能力启用）",
+      LASER_BOSS.every(id => CFG.monsters[id].laserSkills && CFG.monsters[id].laserSkills.length));
+    check("非激光主题 Boss（含现有 3 只）未配 laserSkills（默认关闭，行为等价）",
+      ["BS0001", "BS0002", "BS0003", "BS0004", "BS0005", "BS0007", "BS0008", "BS0010"]
+        .every(id => !(CFG.monsters[id].laserSkills && CFG.monsters[id].laserSkills.length)));
+
+    const laserW = () => ({ w: 1920, h: 1920, obstacles: [], enemyBullets: [], playerBullets: [], lasers: [], monsters: [],
+      spawnMonster(id, x, y) { const m = new Monster(id, x, y, 1); this.monsters.push(m); return m; } });
+    G.player.x = 100; G.player.y = 100;
+
+    for (const id of LASER_BOSS) {
+      const w = laserW();
+      const b = new Monster(id, 900, 900, 1);
+      let totalBeams = 0, times = 0, maxSimul = 0;
+      const T = 10, dt = 1 / 60;
+      for (let i = 0; i < T * 60; i++) {
+        const before = w.lasers.length;
+        b.update(w, dt);
+        const added = w.lasers.length - before;
+        if (added > 0) { times++; totalBeams += added; }
+        maxSimul = Math.max(maxSimul, w.lasers.length);
+        b.x = 900; b.y = 900;
+      }
+      const armsMax = Math.max(...CFG.monsters[id].laserSkills.map(s => CFG.skills[s].arms || 1));
+      check("激光实测-" + id + " " + CFG.monsters[id].name + " 10 秒触发激光（累计 " + totalBeams +
+        " 束 / " + times + " 次发射）", totalBeams > 0 && times > 0);
+      check("激光实测-" + id + " 单次至少 " + armsMax + " 束（旋转多束扫描）", totalBeams >= armsMax);
+      check("激光实测-" + id + " 同屏激光 ≤ laserCap（" + maxSimul + " ≤ " + CFG.boss.laserCap + "）",
+        maxSimul <= CFG.boss.laserCap);
+      check("激光实测-" + id + " 激光均处于生命周期阶段（warn/active/fade）",
+        w.lasers.length >= 0 && w.lasers.every(lb => ["warn", "active", "fade"].indexOf(lb.phase) >= 0));
+    }
+
+    // arms 分支：一次铺开 arms 束、角度等分
+    const w6 = laserW();
+    const b6 = new Monster("BS0006", 900, 900, 1);
+    b6.laserTimer = 0; b6.laserIdx = 0;
+    const arms = CFG.skills[CFG.monsters.BS0006.laserSkills[0]].arms || 1;
+    bossLaserTick(w6, b6, 1 / 60);
+    check("激光 arms-BS0006 首条招式一次铺开 " + arms + " 束（实际 " + w6.lasers.length + "）",
+      w6.lasers.length === arms);
+    check("激光 arms-BS0006 多束角度等分",
+      w6.lasers.every((lb, i) => i === 0 || near(lb.ang - w6.lasers[0].ang, i * Math.PI * 2 / arms, 1e-6)));
+    check("激光 arms-BS0006 生成后进入冷却（laserTimer = " + (b6.laserTimer != null ? b6.laserTimer.toFixed(2) : "null") + "s）",
+      b6.laserTimer > 0);
+
+    // spin 分支：连续两次发射 → 整体旋转累计（旋转扫描）
+    const w7 = laserW();
+    const b7 = new Monster("BS0009", 900, 900, 1);
+    b7.laserTimer = 0; b7.laserIdx = 0;
+    bossLaserTick(w7, b7, 1 / 60);
+    const spin1 = b7.laserSpin;
+    b7.laserTimer = 0;                                // 立刻放第二次
+    bossLaserTick(w7, b7, 1 / 60);
+    check("激光 spin-BS0009 连续发射整体旋转累计（" + spin1.toFixed(2) + " → " + b7.laserSpin.toFixed(2) + "）",
+      Math.abs(b7.laserSpin - spin1 * 2) < 1e-9 && spin1 !== 0);
+  }
+
   /* ============ 七、渲染：电报与无敌护盾确实被画出来 ============ */
   {
     Game.startRun([CFG.heroes[0]]);

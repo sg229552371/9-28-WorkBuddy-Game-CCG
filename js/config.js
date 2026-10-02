@@ -210,8 +210,14 @@ CFG.tooltip = {
   pressDelay: 0.38,        // 移动端长按延迟（秒）
 };
 
-/* ---------- 怪物解锁进度（击杀进度百分比） ---------- */
-CFG.monsterUnlock = { NM0010: 0, NM0011: 0.25, NM0012: 0.55, NM0013: 0.15, NM0014: 0.5 };
+/* ---------- 怪物解锁进度（击杀进度百分比） ----------
+ * 随机圆按玩家击杀进度过滤怪物池（进度 < unlock 的怪暂不出现）；
+ * 新增普通怪 NM0015~NM0026 错峰开放：前期见弱怪，进度推高后强怪逐步入场。 */
+CFG.monsterUnlock = {
+  NM0010: 0, NM0011: 0.25, NM0012: 0.55, NM0013: 0.15, NM0014: 0.5,
+  NM0015: 0, NM0016: 0.1, NM0017: 0.2, NM0018: 0.3, NM0019: 0.4, NM0020: 0.5,
+  NM0021: 0.58, NM0022: 0.65, NM0023: 0.72, NM0024: 0.8, NM0025: 0.88, NM0026: 0.95,
+};
 
 /* ---------- 敌人配置表（8.5 表 2） ----------
  * type = AI 行为类型（melee / ranged / charger / boss），决定行动方式；
@@ -229,6 +235,36 @@ CFG.monsters = {
     hp: 42, atk: 11, def: 2, spd: 95,  radius: 20, exp: 6, coin: 4 },
   NM0014: { name: "深渊狙击虫", type: "ranged", sprite: "enemy08", skillList: ["AT204"],
     hp: 20, atk: 9,  def: 1, spd: 90,  radius: 16, exp: 7, coin: 5 },
+
+  /* ---------- 普通怪铺量（第十七章 17.7 第 4 步：补齐 NM 系列到 17+ 种）----------
+   * 设计口径：每只普通怪 = 一种 AI 行为（melee 近战 / ranged 远程 / charger 冲锋）
+   *   + 一条攻击技能条目（复用表 4e 的 AT201~AT206，同一套参数可被多怪共用）
+   *   + 掉落（exp 经验 / coin 金币，随强度递增）。
+   * 强度沿编号与关卡递增：低编号当炮灰，高编号当压迫。 */
+  NM0015: { name: "腐锈游荡者", type: "melee", sprite: "enemy16", skillList: ["AT201"],
+    hp: 26, atk: 9,  def: 1, spd: 105, radius: 17, exp: 4, coin: 2 },
+  NM0016: { name: "骨刺散兵", type: "ranged", sprite: "enemy08", skillList: ["AT202"],
+    hp: 15, atk: 7,  def: 0, spd: 100, radius: 15, exp: 5, coin: 3 },
+  NM0017: { name: "疾行撕咬兽", type: "charger", sprite: "enemy00", skillList: ["AT203"],
+    hp: 18, atk: 11, def: 0, spd: 145, radius: 15, exp: 6, coin: 3 },
+  NM0018: { name: "枯枝卫士", type: "melee", sprite: "enemy16", skillList: ["AT201"],
+    hp: 50, atk: 12, def: 3, spd: 88,  radius: 21, exp: 8, coin: 5 },
+  NM0019: { name: "腐沼射手", type: "ranged", sprite: "enemy08", skillList: ["AT204"],
+    hp: 24, atk: 10, def: 1, spd: 92,  radius: 16, exp: 9, coin: 6 },
+  NM0020: { name: "狂澜冲角兽", type: "charger", sprite: "enemy00", skillList: ["AT203"],
+    hp: 30, atk: 14, def: 1, spd: 150, radius: 17, exp: 10, coin: 6 },
+  NM0021: { name: "暗影潜伏者", type: "melee", sprite: "enemy00", skillList: ["AT206"],
+    hp: 34, atk: 15, def: 2, spd: 128, radius: 18, exp: 12, coin: 7 },
+  NM0022: { name: "深渊猎手", type: "ranged", sprite: "enemy08", skillList: ["AT205"],
+    hp: 32, atk: 13, def: 2, spd: 98,  radius: 17, exp: 13, coin: 8 },
+  NM0023: { name: "裂地冲撞者", type: "charger", sprite: "enemy00", skillList: ["AT203"],
+    hp: 44, atk: 17, def: 2, spd: 140, radius: 19, exp: 15, coin: 9 },
+  NM0024: { name: "重渊守卫", type: "melee", sprite: "enemy16", skillList: ["AT201"],
+    hp: 72, atk: 19, def: 4, spd: 82,  radius: 23, exp: 18, coin: 11 },
+  NM0025: { name: "虚空狙击者", type: "ranged", sprite: "enemy08", skillList: ["AT205"],
+    hp: 46, atk: 18, def: 3, spd: 94,  radius: 18, exp: 20, coin: 12 },
+  NM0026: { name: "终焉追猎兽", type: "charger", sprite: "enemy00", skillList: ["AT203"],
+    hp: 60, atk: 22, def: 3, spd: 158, radius: 20, exp: 24, coin: 14 },
 
   /* ---------- 独立精英怪 ED（3.3 原方案）：由关卡层定点投放，不进随机圆 ----------
    * 属性明显强于普通小怪（生命/攻击/防御更高、体型更大）；携带 1~2 条随机词缀（见 CFG.elites）。
@@ -267,6 +303,70 @@ CFG.monsters = {
       { hp: 0.5, skills: ["AT216", "AT218"] },        // 变奏：深渊漩涡（三臂螺旋）
     ], patternCd: 3.0,
     hp: 1400, atk: 22, def: 5, spd: 80, radius: 60, exp: 130, coin: 200 },
+
+  /* ---------- BOSS 4~10（第十七章 17.7 第 4 步：后 7 关新 Boss）----------
+   * 设计依据 17.5 关卡阵容：每只对应一种弹幕原型；阶段推进 = **换招式池**（加机制不加血）。
+   * 招式复用表 4e-2 的弹幕条目（AT211~220 按原型被多只 Boss 复用，见 17.8 契约 1）；
+   * 激光主题 Boss（BS0006 / BS0009）额外挂 `laserSkills` + `laserCd`（表 4e-3）。
+   * 血量沿关卡递进，最终 Boss（BS0010）最厚且**三阶段**分阶段解锁前面的机制。 */
+  BS0004: { name: "旋刃使者", type: "boss", sprite: "enemy22",
+    skillList: ["AT207", "AT216", "AT219", "AT220", "AT214"],
+    phases: [
+      { hp: 1.0, skills: ["AT216", "AT219"] },        // 螺旋舞者：三臂漩涡 + 双螺旋绞杀（顺逆双螺旋）
+      { hp: 0.45, skills: ["AT219", "AT220", "AT214"] },   // 压测：螺旋收束（双螺旋 + 同心环）
+    ], patternCd: 3.1,
+    hp: 1750, atk: 25, def: 6, spd: 96, radius: 56, exp: 150, coin: 240 },
+
+  BS0005: { name: "熔核暴君", type: "boss", sprite: "enemy22",
+    skillList: ["AT208", "AT215", "AT218", "AT211"],
+    phases: [
+      { hp: 1.0, skills: ["AT215", "AT218"] },        // 冲锋践踏·强化：落地冲击环 + 熔岩波幕
+      { hp: 0.5, skills: ["AT218", "AT215", "AT211"] },    // 压测：连续熔岩波 + 放射爆
+    ], patternCd: 2.9,
+    hp: 2100, atk: 28, def: 6, spd: 88, radius: 58, exp: 170, coin: 280 },
+
+  BS0006: { name: "棱镜之眼", type: "boss", sprite: "enemy22",
+    skillList: ["AT207", "AT212", "AT213", "AT217"],
+    phases: [
+      { hp: 1.0, skills: ["AT212", "AT213"] },        // 棱镜 Laser：追瞄扇压制（激光走 laserSkills 独立通道）
+      { hp: 0.5, skills: ["AT213", "AT217"] },        // 压测：扇射 + 花形爆发 双层压制
+    ], patternCd: 3.4,
+    laserSkills: ["AT231", "AT232"], laserCd: 4.0,     // 三束旋转扫描 / 交叉棱光扫描
+    hp: 2450, atk: 30, def: 7, spd: 78, radius: 60, exp: 190, coin: 320 },
+
+  BS0007: { name: "裂空织者", type: "boss", sprite: "enemy22",
+    skillList: ["AT208", "AT216", "AT219", "AT213", "AT212"],
+    phases: [
+      { hp: 1.0, skills: ["AT216", "AT219"] },        // 双螺旋
+      { hp: 0.5, skills: ["AT219", "AT213", "AT212"] },    // 压测：双螺旋 + 追瞄扇
+    ], patternCd: 3.2,
+    hp: 2800, atk: 32, def: 7, spd: 84, radius: 60, exp: 210, coin: 360 },
+
+  BS0008: { name: "噬弹虫母", type: "boss", sprite: "enemy22",
+    skillList: ["AT209", "AT212", "AT214", "AT217", "AT220"],
+    phases: [
+      { hp: 1.0, skills: ["AT212", "AT214"] },        // 弹幕吞噬：吸收反击前奏（追瞄 + 同心环）
+      { hp: 0.5, skills: ["AT217", "AT220"] },        // 压测：花形爆发（网格 + 三环）
+    ], patternCd: 3.6,
+    hp: 3200, atk: 34, def: 8, spd: 70, radius: 64, exp: 230, coin: 400 },
+
+  BS0009: { name: "深渊领主", type: "boss", sprite: "enemy22",
+    skillList: ["AT209", "AT211", "AT214", "AT220", "AT215"],
+    phases: [
+      { hp: 1.0, skills: ["AT211", "AT214"] },        // 混合：放射环
+      { hp: 0.5, skills: ["AT220", "AT215"] },        // 压测：放射环 + 深渊扫射（激光走 laserSkills）
+    ], patternCd: 3.0,
+    laserSkills: ["AT233"], laserCd: 3.8,              // 深渊旋转激光（双臂旋转扫描）
+    hp: 3600, atk: 36, def: 8, spd: 76, radius: 66, exp: 260, coin: 460 },
+
+  BS0010: { name: "终焉·邪神本体", type: "boss", sprite: "enemy22",
+    skillList: ["AT207", "AT211", "AT213", "AT216", "AT217", "AT218", "AT220", "AT215", "AT212"],
+    phases: [
+      { hp: 1.0, skills: ["AT211", "AT213"] },        // 教学：放射 + 扇形（前面出现过的母题）
+      { hp: 0.66, skills: ["AT216", "AT217", "AT218"] },   // 变奏：螺旋 + 花形 + 波幕
+      { hp: 0.33, skills: ["AT220", "AT215", "AT212"] },   // 压测：三环 + 冲击 + 追瞄混编
+    ], patternCd: 2.8,
+    hp: 4500, atk: 40, def: 9, spd: 74, radius: 72, exp: 320, coin: 600 },
 };
 
 /* ---------- 召唤物 / 陷阱上限（英雄属性：限制「该类型技能」的上限） ----------
@@ -295,6 +395,15 @@ CFG.boss = {
   warnRadius: 150,       // 电报圈/扇面尺寸缺省值
   phaseInvuln: 1.2,      // 阶段转换：Boss **无敌 + 停手**时长（不清屏，见 17.3）
   color: { boom: "#e5484d", charge: "#ff9f43", laser: "#4dd6e5", summon: "#c79bff", bullet: "#ffffff" },
+  /* ---- 激光实体（17.7 第 3 步，LaserBeam）---- */
+  laserCap: 6,           // 同屏激光束上限（17.6「独立上限 ≤ 6 束」）
+  laserWarn: 0.9,        // 预热时长（秒）：青线预报，无伤害
+  laserActive: 1.6,      // 激活时长（秒）：粗光柱，按段结算伤害 + 吞噬玩家弹
+  laserFade: 0.35,       // 消散时长（秒）：收束淡出，无伤害
+  laserLen: 1600,        // 激光射程（px）
+  laserHalfW: 12,        // 光柱半宽（px，线段-圆判定用）
+  laserDmgInterval: 0.25, // 伤害结算间隔（秒，按段节流而非逐帧）
+  laserDmgMul: 0.5,      // 单段伤害 = Boss atk × 此倍率
 };
 
 /* ---------- 英雄配置表（8.5 表 1，首发 6 角） ---------- */
@@ -507,6 +616,28 @@ CFG.skills = {
   AT220: { name: "触手狂潮", cat: "active", ai: "boss", tags: ["伤害"],
     pattern: "ring", count: 9, layers: 3, layerMul: 0.14, offset: 0, bulletSpd: 160, dmgMul: 0.6,
     cd: 4.0, warnTime: 1.0, warnRadius: 230, life: 7.0 },
+
+  /* ===== 表 4e-3：Boss 激光招式（第十七章 17.7 第 4 步，LaserBeam 专用）=====
+   * 与 AT211~220 的**弹幕发射器**不同，本组条目**不带 pattern**：它走 `bossLaserTick` 的
+   * 激光通道（线段-圆判定，独立于弹幕预算，受 laserCap ≤ 6 束约束，见 17.6 / 17.9 待定 2）。
+   * 由怪物表的 `laserSkills` 挂载（非空即启用），并按 `laserCd` 为招式间隔循环。
+   * 字段口径（bossLaserTick 消费）：
+   *   arms      = 一次铺开的激光**束数**（均匀铺开，角度 2π/arms）
+   *   spin      = 每次发射整体旋转量（弧度，正负 = 顺/逆时针 → 旋转扫描扫场）
+   *   laserLen  = 射程覆盖（px，缺省取 CFG.boss.laserLen = 1600）
+   *   dmgMul    = 单段伤害倍率（× 怪 atk；缺省取 CFG.boss.laserDmgMul = 0.5）
+   *   cd        = 招式间隔（秒；缺省取怪物表 laserCd）
+   *   laserWarn / laserActive / laserFade = 预热 / 激活 / 收束时长覆盖（青线电报语言）
+   * ⚠️ 束数 × 在场激光数必须 ≤ CFG.boss.laserCap（超出时引擎 FIFO 回收最旧的，配置上先卡死 ≤ 6）。 */
+  AT231: { name: "三束旋转扫描", cat: "active", ai: "boss", tags: ["伤害"],
+    arms: 3, spin: 0.30, laserLen: 1600, dmgMul: 0.5,
+    cd: 4.2, laserWarn: 0.9, laserActive: 1.6, laserFade: 0.35 },
+  AT232: { name: "交叉棱光扫描", cat: "active", ai: "boss", tags: ["伤害"],
+    arms: 2, spin: -0.45, laserLen: 1500, dmgMul: 0.55,
+    cd: 3.6, laserWarn: 0.75, laserActive: 1.4, laserFade: 0.35 },
+  AT233: { name: "深渊旋转激光", cat: "active", ai: "boss", tags: ["伤害"],
+    arms: 2, spin: 0.5, laserLen: 1600, dmgMul: 0.55,
+    cd: 4.0, laserWarn: 0.85, laserActive: 1.6, laserFade: 0.35 },
 
   /* ===== 表 4c 视图：增益状态技能（Buff）——战争雕像增益池也走此表 =====
    * stat/mul 对应 13.7 属性修改器；pool 用于筛选具体增益池（如 "war" = 战争雕像）。

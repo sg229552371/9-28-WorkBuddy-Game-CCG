@@ -1927,13 +1927,13 @@
 
 1. ✅ **弹幕发射器 + 性能护栏**（`PatternSystem` + `CFG.boss`），先让**现有 3 只 Boss 会发弹幕**；
 2. ✅ **阶段机 + 电报渲染扩展**，把 3 只 Boss 改造成 2 阶段；
-3. ⬜ **激光实体 + 弹幕吞噬机制**（新能力）；
-4. ⬜ **新增 BS0004~BS0010 的怪物表/技能表行**（纯配表）；
-5. ◐ 补测试：`boss_test.js` 已覆盖阶段切换 / 预算上限 / 每种发射器的弹数角度 / 端到端产出；**激光命中判定**待第 3 步落地后补。
+3. ✅ **激光实体 + 弹幕吞噬机制**（`LaserBeam`，含 `laserCap 6`、线段-圆命中、三段生命周期 warn→active→fade、激活期吞噬玩家弹；`laser_test` 59 条）；
+4. ✅ **新增 BS0004~BS0010 的怪物表/技能表行**（Boss 总数 10、普通怪 17；BS0006/BS0009 已配旋转激光招式 AT231~AT233；`content_test` 74 条）；
+5. ✅ 补测试：`boss_test.js` 128 条（阶段切换 / 预算上限 / 发射器弹数角度 / 端到端 / 激光实测）；`laser_test` 59 条（线段-圆命中 / laserCap / 生命周期 / 弹幕吞噬 / 无激光等价性）。
 
-### 17.8 实现进展（样板批，已完成）
+### 17.8 实现进展（样板批 + 激光批，已完成）
 
-> 17.7 的 **第 1、2 步已落地**（发射器 + 护栏 + 阶段机 + 电报），第 3、4 步（激光实体、弹幕吞噬、BS0004~0010 配表）未开工。
+> 17.7 的**第 1~5 步全部落地**：发射器 + 护栏 + 阶段机 + 电报 + 激光实体 + 弹幕吞噬 + BS0004~0010 配表 + 怪物铺量。
 
 | 能力 | 落点 | 说明 |
 | --- | --- | --- |
@@ -1942,7 +1942,11 @@
 | **6 种弹幕发射器 `PatternSystem`** | `js/game.js`（`SkillSystem` 旁） | `shape()` 纯几何展开（可单测）+ `emit()` 落实体；同一形状只调**弹数 / 角度 / 速度**三旋钮 |
 | **Boss 阶段机** | `js/game.js`（`Monster` 的 `boss` 分支） | 按血量比例切招式池 + 无敌停手；`damageMonster` 在无敌窗口提前返回 |
 | **电报渲染** | `js/game.js`（`World.render`） | 白圈（放射 / 同心环 / 网格）、白扇面（扇形 / 波幕）、白护盾环（无敌期）；Boss 弹幕用 `#e6f4ff` 高亮 |
-| **`boss_test.js`** | 仓库根 | **85 条断言**：几何 / 预算 / 同屏 / 阶段 / 电报时序 / 端到端产出 / 渲染可见性 |
+| **`boss_test.js`** | 仓库根 | **128 条断言**：几何 / 预算 / 同屏 / 阶段 / 电报时序 / 端到端产出 / 渲染可见性 / 新增 7 只 Boss 的 spawn 与换池 |
+| **`LaserBeam` 激光实体** | `js/game.js`（文件末尾独立区块） | 线段-圆命中（`pointSegDist` / `segCircleHit`）｜`laserCap 6` FIFO 回收｜三段生命周期 warn→active→fade｜激活期**吞噬玩家弹**｜多束 `arms` + 旋转 `spin` 扫描 |
+| **激光数值配置** | `js/config.js`（`CFG.boss.laser*`） | `laserCap/laserWarn/laserActive/laserFade/laserLen/laserHalfW/laserDmgInterval/laserDmgMul`（全可调） |
+| **BS0004~BS0010 配表** | `js/config.js`（怪物表 / 技能表） | 10 只 Boss（两阶段换池，BS0010 三阶段）｜普通怪 5→17 只｜激光技能 AT231~AT233 |
+| **`laser_test.js` / `content_test.js`** | 仓库根 | 59 条（激光） / 74 条（配表结构合法性） |
 
 **代码契约（后续加 Boss 只改表、不改逻辑）**
 
@@ -2610,7 +2614,7 @@ makeChip(defId, q):
 
 ***
 
-## 19.12 行为芯片积木（第 5 步施工图，数据定义先行）
+## 19.12 行为芯片积木（✅ 已实现，`chip_behavior_test` 48 条锁定）
 
 > 本节**只定义数据契约与注入点**，不写实现。第 4 步透传 `behavior`，第 5 步在 `SkillSystem`（`js/game.js:438+`）落地消费。
 > 实现优先级（19.9 待确认 #1 已拟）：**弹射 → 灼烧 → 分裂 → 链锁**。
@@ -2638,7 +2642,7 @@ makeChip(defId, q):
 | `split` | `damageMonster` 致死分支 / `onMonsterKilled` | `killer` 弹的 `behavior.value` + `owner` |
 | `chain` | `Bullet` 命中处理 + 索敌（`nearestMonster`） | `bullet.behavior.value` + 已链集合 |
 
-- ⚠️ **`LaserBeam`（17.7 未实现）走弹幕吞噬路径，不在本规格范围**；行为芯片**只挂 bullet 类技能**，召唤/陷阱是否挂载**待第 5 步定**。
+- ⚠️ **`LaserBeam`（17.7 已实现）走弹幕吞噬路径，不在本规格范围**；行为芯片**只挂 bullet 类技能**，召唤/陷阱是否挂载**待定**。
 
 ### 19.12.3 ✅ 验收断言清单（`chip_behavior_test.js`，未来锁定行为）
 

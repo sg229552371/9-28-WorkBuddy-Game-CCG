@@ -378,6 +378,8 @@ function createRun(heroDef) {
     // 产物池：**每个成员各自独立**（召唤物 / 陷阱都带 owner = 召唤者），互不顶替、各自计上限
     drones: [],       // 召唤物（无人机）：环绕各自的召唤者、自动攻击、可被敌人击毁
     traps: [],        // 陷阱（大地雷）：不受敌人攻击，敌人入圈延迟引爆
+    // 激光（第十七章 17.7 第 3 步）：Boss 激光实体容器（显式初始化，防「未跑过 update 取值为 undefined」）
+    lasers: [],
     weapon: computeWeaponDefaults(),
   };
 }
@@ -823,7 +825,7 @@ const SkillSystem = {
       const a = ang + (n > 1 ? (i - (n - 1) / 2) * spread : 0);
       pool.push(new Bullet(caster.x, caster.y, a, sk.bulletSpd || 480,
         Math.max(1, Math.round(atk * (sk.dmgMul != null ? sk.dmgMul : 1))), side,
-        sk.pierce || 0, sk.bounce || 0, isSkill ? sk.radius : 0, isSkill, caster));
+        sk.pierce || 0, sk.bounce || 0, isSkill ? sk.radius : 0, isSkill, caster, sk.behavior || null));
     }
     return n;
   },
@@ -1522,12 +1524,14 @@ function applyLifesteal(owner, dmg) {
 }
 
 class Bullet {
-  constructor(x, y, ang, spd, dmg, side, pierce = 0, bounce = 0, aoe = 0, isSkill = false, owner = null) {
+  constructor(x, y, ang, spd, dmg, side, pierce = 0, bounce = 0, aoe = 0, isSkill = false, owner = null, behavior = null) {
     this.x = x; this.y = y;
     this.vx = Math.cos(ang) * spd; this.vy = Math.sin(ang) * spd;
     this.dmg = dmg; this.side = side; this.pierce = pierce; this.bounce = bounce;
     this.aoe = aoe; this.isSkill = isSkill;
     this.owner = owner;                       // 发射者（吸血归属：队长 / 队友各自独立）
+    this.behavior = behavior || null;         // 行为芯片（19.12）：{ type, value }；无则 null（行为护栏）
+    if (this.behavior && this.behavior.type === "bounce") this.bounce = this.behavior.value;   // 折射：复用 bounce 字段链路
     this.dead = false; this.life = 2.2; this.hitSet = new Set();
   }
   update(w, dt) {
@@ -1550,8 +1554,9 @@ class Bullet {
         if (U.dist(this.x, this.y, m.x, m.y) < m.r + 6) {
           this.hitSet.add(m);
           if (this.aoe > 0) { explode(w, this.x, this.y, this.aoe, this.dmg, this.side); this.dead = true; return; }
-          damageMonster(w, m, this.dmg);
+          damageMonster(w, m, this.dmg, this);
           applyLifesteal(this.owner, this.dmg);   // 吸血归属发射者（全队各自独立）
+          applyBulletHitBehavior(w, this, m);     // 行为芯片（19.12）：burn 灼烧 / chain 链锁（bounce 走下方字段链路）
           if (this.pierce > 0) { this.pierce--; }
           else if (this.bounce > 0) {
             this.bounce--;
@@ -1700,6 +1705,7 @@ class Monster {
   }
   update(w, dt) {
     this.flashT -= dt;
+    if (monsterBurnTick(this, w, dt)) return;   // 行为芯片（19.12）：燃蚀灼烧结算（致死则跳过本帧 AI）
     const px0 = this.x, py0 = this.y;   // 帧初位置（供 resolveObstacles 计算切向滑动，防卡障碍）
     const p = G.player;
     const distP = U.dist(this.x, this.y, p.x, p.y);
@@ -1768,6 +1774,7 @@ class Monster {
         this.y += Math.sin(ang) * this.effSpd * dt;
         // 弹幕招式（第十七章 17.4）：电报 → 发射 → 冷却，招式池由当前阶段决定
         this.bossPatternTick(w, dt);
+        bossLaserTick(w, this, dt);   // 激光招式（17.7 第 3 步）：未配 laserSkills 时为 no-op（行为等价）
         // 圆形范围爆炸（预警 → 爆炸，命中范围内所有英雄）
         this.boomTimer -= dt;
         if (this.warnT > 0) {
@@ -1823,7 +1830,7 @@ function nearestMonster(w, x, y, exclude) {
   return bestLos || best;
 }
 
-function damageMonster(w, m, dmg) {
+function damageMonster(w, m, dmg, killer) {
   // Boss 阶段转换无敌（17.3）：转换窗口内不吃伤害（子弹照常被消耗，但 Boss 不掉血）
   if (m.phaseInvulnT > 0) { spawnBurst(m.x + U.rand(-m.r, m.r), m.y + U.rand(-m.r, m.r), "#ffffff", 2); return; }
   const cuDef = (G.run && G.run.curse) ? G.run.curse.defMul : 1;   // 诅咒附加的"防御 ×N"被动
@@ -1842,7 +1849,7 @@ function damageMonster(w, m, dmg) {
   SFX.play("hit");
   if (m.hp <= 0 && !m.dead) {
     m.dead = true;
-    onMonsterKilled(w, m);
+    onMonsterKilled(w, m, killer);   // killer = 击杀弹（供 split 裂变读 behavior / owner；普通调用为 undefined）
   }
 }
 
@@ -1924,7 +1931,7 @@ function explode(w, x, y, radius, dmg, side) {
 }
 
 /* ---------- 掉落 / 击杀 ---------- */
-function onMonsterKilled(w, m) {
+function onMonsterKilled(w, m, killer) {
   const r = G.run, lv = G.levelCfg;
   const rm = r.curse ? r.curse.rewardMul : 1;   // 诅咒风险回报：掉落倍率（待细化36）
   r.kills++;
@@ -1965,6 +1972,7 @@ function onMonsterKilled(w, m) {
     } else UI.toast("背包已满，精英宝箱作废", "bad");
     for (let i = 0; i < CFG.elites.extraExp; i++) spawnPickup(w, m.x, m.y, "exp", Math.max(2, Math.round(m.d.exp)));
   }
+  spawnSplitBullets(w, m, killer);   // 行为芯片（19.12）：裂变——击杀弹带 split 时生成小弹
   spawnBurst(m.x, m.y, "#9aa7b8", 10);
 }
 
@@ -2575,6 +2583,7 @@ class World {
     this.w = w; this.h = h; this.isMain = isMain; this.kind = kind || (isMain ? "main" : "artisan");
     this.obstacles = [];
     this.monsters = []; this.playerBullets = []; this.enemyBullets = [];
+    this.lasers = [];   // Boss 激光实体（17.7 第 3 步）：独立于弹道预算，走 laserCap 上限
     this.groundChests = []; this.altars = []; this.pickups = [];
     this.monsterHash = new SpatialHash(96);
     this.circles = []; this.spawnTimer = 0;
@@ -2923,6 +2932,8 @@ class World {
     for (const b of this.enemyBullets) b.update(this, dt);
     this.playerBullets = this.playerBullets.filter(b => !b.dead);
     this.enemyBullets = this.enemyBullets.filter(b => !b.dead);
+    updateLasers(this, dt);   // Boss 激光（17.7 第 3 步）：生命周期 + 命中 + 弹幕吞噬
+    updateChainFx(dt);        // 行为芯片（19.12）：链锁瞬结特效衰减
     // 地上宝箱拾取（自动）
     const p = G.player;
     for (const c of this.groundChests.slice()) {
@@ -3447,6 +3458,7 @@ function render() {
     ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(m.x - bw / 2, m.y - size / 2 - 12, bw, 5);
     ctx.fillStyle = m.d.type === "boss" ? "#ff5b5b" : "#e5a04b";
     ctx.fillRect(m.x - bw / 2, m.y - size / 2 - 12, bw * Math.max(0, m.hp / m.hpMax), 5);
+    renderBurnAura(ctx, m);   // 行为芯片（19.12）：燃蚀火色描边
     // 冲锋预警
     if (m.d.type === "charger" && m.state === "telegraph") {
       const ang = Math.atan2(G.player.y - m.y, G.player.x - m.x);
@@ -3514,6 +3526,8 @@ function render() {
       ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); ctx.fill();
     }
   }
+  renderLasers(ctx, w);   // Boss 激光（17.7 第 3 步）：预警细线 + 激活粗光柱
+  renderChainFx(ctx);     // 行为芯片（19.12）：链锁瞬结线段
   // 玩家
   const p = G.player;
   const heroImg = G.sprites.hero;
@@ -3659,3 +3673,374 @@ function drawActor(ctx, x, y, size, color, icon) {
   ctx.font = `${size * 0.5}px sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
   ctx.fillStyle = color; ctx.fillText(icon, x, y);
 }
+
+/* ============================================================================
+ * 第十七章 17.7 第 3 步：Boss 激光实体 `LaserBeam` + 弹幕吞噬机制
+ * ----------------------------------------------------------------------------
+ * 本区块**独立追加在文件末尾**（并行开发要求：只在 spawnBoss / Boss update 里
+ * 插入单行调用，避免与其它代理的行级冲突）。
+ *
+ * 激光不进门板弹幕的弹道预算（17.9-2）：子弹走 CFG.boss.bulletBudget / bulletCap，
+ * 激光走**独立上限** laserCfg("laserCap", 6) = 6（17.6「独立上限 ≤ 6 束」）。
+ *
+ * 三段生命周期（17.6「预热（变粗）→ 持续（伤害）→ 收束」）：
+ *   warn   ：青线预热（细线，**无伤害**，对应 17.3 颜色语言「青 = 激光」）
+ *   active ：粗光柱，按帧结算伤害（线段-圆命中，走 heroTakeDamage 队友受伤入口）
+ *   fade   ：收束消散（光柱变淡，**无伤害**）
+ *
+ * 弹幕吞噬（17.4 原型 6 弹幕吞噬 / 文档 2641 行「LaserBeam 走弹幕吞噬路径」）：
+ *   **激活中的激光会吞噬穿过的玩家子弹**（skill 弹 / 普攻残弹均吞，普攻已退役）。
+ *   被吞的子弹**不发伤害、直接消亡**（这是 Boss 的反制手段：玩家需「停火等光束过去」）。
+ *   ⚠️ 只吞 playerBullets，不吞 enemyBullets（不吞自家弹幕）。 */
+
+// ---- 激光数值（读 CFG.boss.*，缺省回退到硬编码值；数值统一在 js/config.js 调整） ----
+function laserCfg(key, dft) {
+  const b = (typeof CFG !== "undefined" && CFG.boss) ? CFG.boss : null;
+  return (b && b[key] != null) ? b[key] : dft;
+}
+// 同屏激光束上限（17.6「独立上限 ≤ 6 束」）：直接读 CFG.boss.laserCap
+
+/** 点到**线段**的最短距离（线段-圆命中判定核心，纯几何，可单测）。
+ *  返回 (px,py) 到线段 (x0,y0)-(x1,y1) 的最短距离。 */
+function pointSegDist(px, py, x0, y0, x1, y1) {
+  const dx = x1 - x0, dy = y1 - y0;
+  const len2 = dx * dx + dy * dy;
+  if (len2 <= 1e-9) return Math.hypot(px - x0, py - y0);   // 退化为点
+  let t = ((px - x0) * dx + (py - y0) * dy) / len2;
+  t = t < 0 ? 0 : (t > 1 ? 1 : t);                          // 投影钳到线段内
+  return Math.hypot(px - (x0 + t * dx), py - (y0 + t * dy));
+}
+
+/** 线段-圆命中：线段 (x0,y0)-(x1,y1) 与圆心 (cx,cy) 半径 r 的圆是否相交。
+ *  等价判据：点到线段最短距离 < 半径。抽成独立函数便于单测与复用。 */
+function segCircleHit(x0, y0, x1, y1, cx, cy, r) {
+  return pointSegDist(cx, cy, x0, y0, x1, y1) < r;
+}
+
+/** 激光段（线段-圆）命中判定的**纯函数**入口：给定激光参数与目标，返回是否命中。
+ *  抽成独立函数：测试无需真正实例化 Boss/World 即可锁定几何正确性。 */
+function laserHitsTarget(laser, target) {
+  if (!laser || !target) return false;
+  const len = laser.len || laserCfg("laserLen", 1600);
+  const x1 = laser.x + Math.cos(laser.ang) * len;
+  const y1 = laser.y + Math.sin(laser.ang) * len;
+  return segCircleHit(laser.x, laser.y, x1, y1, target.x, target.y, target.r);
+}
+
+class LaserBeam {
+  /** @param w 世界  @param owner 发射者（Boss）
+   *  @param x,y 起点  @param ang 朝向（弧度）
+   *  @param opts { len, halfW, warn, active, fade, dmg } —— 未给时取本区块局部常量 */
+  constructor(w, owner, x, y, ang, opts) {
+    opts = opts || {};
+    this.w = w; this.owner = owner;
+    this.x = x; this.y = y; this.ang = ang;
+    this.len = opts.len != null ? opts.len : laserCfg("laserLen", 1600);
+    this.halfW = opts.halfW != null ? opts.halfW : laserCfg("laserHalfW", 12);
+    this.warnT = opts.warn != null ? opts.warn : laserCfg("laserWarn", 0.9);
+    this.activeT = opts.active != null ? opts.active : laserCfg("laserActive", 1.6);
+    this.fadeT = opts.fade != null ? opts.fade : laserCfg("laserFade", 0.35);
+    this.dmg = opts.dmg != null ? opts.dmg : (owner && owner.atk ? owner.atk * laserCfg("laserDmgMul", 0.5) : 10);
+    this.dmgInterval = opts.dmgInterval != null ? opts.dmgInterval : laserCfg("laserDmgInterval", 0.25);
+    // 三段状态机：warn → active → fade → dead
+    this.phase = "warn";
+    this.t = 0;                 // 当前阶段已用时
+    this.dmgTimer = 0;          // 本帧累计到下一次伤害结算的时间
+    this.dead = false;
+    this.world = w;             // 世界归属（与产物池一致，跨世界冻结）
+    this.devoured = 0;          // 累计吞噬的玩家子弹数（供测试与统计）
+  }
+  /** 推进生命周期计时：warn → active → fade → dead。返回本帧是否处于「激活」（造成伤害）阶段。 */
+  tick(dt) {
+    if (this.dead) return false;
+    this.t += dt;
+    if (this.phase === "warn") {
+      if (this.t >= this.warnT) { this.phase = "active"; this.t = 0; this.dmgTimer = 0; }
+    } else if (this.phase === "active") {
+      if (this.t >= this.activeT) { this.phase = "fade"; this.t = 0; }
+    } else if (this.phase === "fade") {
+      if (this.t >= this.fadeT) { this.dead = true; }
+    }
+    return this.phase === "active";
+  }
+  /** 光柱末端坐标（渲染 + 命中判定共用）。 */
+  endPoint() {
+    return { x: this.x + Math.cos(this.ang) * this.len, y: this.y + Math.sin(this.ang) * this.len };
+  }
+  /** 伤害结算：仅在 active 期、按 dmgInterval 节流，命中所有存活英雄走 heroTakeDamage。 */
+  damageTick(w, dt) {
+    if (this.phase !== "active") return 0;
+    this.dmgTimer += dt;
+    if (this.dmgTimer < this.dmgInterval) return 0;
+    this.dmgTimer -= this.dmgInterval;
+    let hits = 0;
+    for (const h of aliveHeroes()) {
+      // 线段-圆命中：半径取「英雄碰撞半径」与「光柱半宽」的较大者（光柱本身有宽度）
+      if (laserHitsTarget(this, { x: h.x, y: h.y, r: Math.max(h.r, this.halfW) })) {
+        heroTakeDamage(w, h, this.dmg);
+        hits++;
+      }
+    }
+    return hits;
+  }
+  /** 弹幕吞噬：激活中的激光吞噬穿过的玩家子弹（不发伤害、直接消亡）。
+   *  守卫：仅 active 期吞噬；只吞 playerBullets；命中判据同样是线段-圆。 */
+  devourBullets(w) {
+    if (this.phase !== "active") return 0;
+    let eaten = 0;
+    for (const b of w.playerBullets) {
+      if (b.dead) continue;
+      if (laserHitsTarget(this, { x: b.x, y: b.y, r: this.halfW + 6 })) {
+        b.dead = true;               // 吞掉：本体消亡，**不结算伤害**
+        eaten++;
+      }
+    }
+    this.devoured += eaten;
+    return eaten;
+  }
+  update(w, dt) {
+    if (this.dead) return;
+    this.tick(dt);                  // 生命周期推进
+    this.devourBullets(w);          // 弹幕吞噬（仅 active 期）
+    this.damageTick(w, dt);         // 伤害结算（仅 active 期，按段）
+  }
+}
+
+/** 激光释放器（Boss 专属）：生成一束激光并登记到世界容器。
+ *  **laserCap 护栏**（17.6「超出时旧激光被替换/回收」）：本世界激光数达上限时，
+ *  移除**最早生成**的那束（FIFO），为新束腾位——保证同屏永远 ≤ laserCfg("laserCap", 6)。 */
+function spawnLaser(w, owner, x, y, ang, opts) {
+  if (!w) return null;
+  if (!w.lasers) w.lasers = [];
+  while (w.lasers.length >= laserCfg("laserCap", 6)) w.lasers.shift();   // 超出上限：回收最旧的激光
+  const lb = new LaserBeam(w, owner, x, y, ang, opts);
+  w.lasers.push(lb);
+  return lb;
+}
+
+/** 世界激光更新入口：推进每束激光 + 清理消亡的。单行调用点见 World.update。 */
+function updateLasers(w, dt) {
+  if (!w || !w.lasers || !w.lasers.length) return;
+  for (const lb of w.lasers) {
+    if (lb.world && lb.world !== w) continue;   // 世界归属：跨世界的激光冻结（与产物池一致）
+    lb.update(w, dt);
+  }
+  w.lasers = w.lasers.filter(lb => !lb.dead);
+}
+
+/** Boss 激光招式循环（第 3 步新增能力，**默认关闭**）。
+ *  ⚠️ 挂载方式：仅当 `m.d.type==="boss"` 且 `m.d.laserSkills` 为非空数组时启用
+ *  —— 现有 3 只 Boss 未配 `laserSkills`，故此函数对其为 no-op（行为等价性回归）。
+ *  配表口径（待 config 收口）：`CFG.monsters[BSxxxx].laserSkills = ["AT2xx", ...]`
+ *  招式复用技能表条目，读其 `laser` 系列字段（arms / spin / laserLen / dmgMul 等），
+ *  未填时取本区块局部常量。 */
+function bossLaserTick(w, m, dt) {
+  const ids = m.d && m.d.laserSkills;
+  if (!ids || !ids.length) return;
+  if (!w.lasers) w.lasers = [];
+  m.laserTimer = (m.laserTimer == null) ? 2.0 : m.laserTimer - dt;   // 开场稍候再放第一束
+  if (m.laserTimer > 0) return;
+  const id = ids[(m.laserIdx || 0) % ids.length];
+  const p = skillEntry(id, m.lv || 1) || {};
+  m.laserIdx = (m.laserIdx || 0) + 1;
+  // 朝向：瞄准最近目标（同 bossFire）；arms 决定束数，均匀铺开
+  const tgt = nearestTarget(w, m.x, m.y);
+  m.aimAng = Math.atan2(tgt.y - m.y, tgt.x - m.x);
+  const arms = Math.max(1, Math.round(p.arms || 1));
+  const spin = p.spin || 0;
+  m.laserSpin = (m.laserSpin || 0) + spin;
+  const dmg = Math.max(1, Math.round(m.atk * (p.dmgMul != null ? p.dmgMul : laserCfg("laserDmgMul", 0.5))));
+  for (let i = 0; i < arms; i++) {
+    const ang = m.aimAng + m.laserSpin + i * Math.PI * 2 / arms;
+    spawnLaser(w, m, m.x, m.y, ang, {
+      len: p.laserLen != null ? p.laserLen : laserCfg("laserLen", 1600),
+      dmg: dmg,
+      warn: p.laserWarn != null ? p.laserWarn : laserCfg("laserWarn", 0.9),
+      active: p.laserActive != null ? p.laserActive : laserCfg("laserActive", 1.6),
+      fade: p.laserFade != null ? p.laserFade : laserCfg("laserFade", 0.35),
+    });
+  }
+  m.laserTimer = p.cd != null ? p.cd : (m.d.laserCd || 4.0);
+}
+
+/** 激光渲染（预警细线 + 激活粗光柱 + 收束淡出）。单行调用点见 render()。
+ *  颜色语言（17.3）：青 = 激光 → CFG.boss.color.laser（缺省回落 #4dd6e5）。 */
+function renderLasers(ctx, w) {
+  if (!w || !w.lasers) return;
+  const cyan = (CFG.boss && CFG.boss.color && CFG.boss.color.laser) || "#4dd6e5";
+  for (const lb of w.lasers) {
+    if (lb.world && lb.world !== w) continue;
+    const e = lb.endPoint();
+    ctx.save();
+    if (lb.phase === "warn") {
+      // 预警：细青线 + 呼吸闪烁（充能感），随预热进度加粗
+      const k = lb.warnT > 0 ? Math.min(1, lb.t / lb.warnT) : 1;
+      ctx.globalAlpha = 0.35 + 0.4 * Math.abs(Math.sin(G.time * 16));
+      ctx.strokeStyle = cyan; ctx.lineWidth = 1 + k * 2;
+      ctx.setLineDash([10, 8]);
+      ctx.beginPath(); ctx.moveTo(lb.x, lb.y); ctx.lineTo(e.x, e.y); ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (lb.phase === "active") {
+      // 激活：外层辉光 + 内层亮芯（粗光柱，一眼可读）
+      ctx.globalAlpha = 0.3;
+      ctx.strokeStyle = cyan; ctx.lineWidth = lb.halfW * 2.4;
+      ctx.beginPath(); ctx.moveTo(lb.x, lb.y); ctx.lineTo(e.x, e.y); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = cyan; ctx.lineWidth = lb.halfW * 2;
+      ctx.beginPath(); ctx.moveTo(lb.x, lb.y); ctx.lineTo(e.x, e.y); ctx.stroke();
+      ctx.strokeStyle = "#ffffff"; ctx.lineWidth = lb.halfW * 0.7;
+      ctx.beginPath(); ctx.moveTo(lb.x, lb.y); ctx.lineTo(e.x, e.y); ctx.stroke();
+    } else {
+      // 收束：由粗变细、整体淡出
+      const k = lb.fadeT > 0 ? Math.max(0, 1 - lb.t / lb.fadeT) : 0;
+      ctx.globalAlpha = k * 0.8;
+      ctx.strokeStyle = cyan; ctx.lineWidth = lb.halfW * 2 * k;
+      ctx.beginPath(); ctx.moveTo(lb.x, lb.y); ctx.lineTo(e.x, e.y); ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+/* ============================================================================
+ * 第十九章 19.12：行为芯片积木（第 5 步）——bounce / burn / split / chain
+ * ----------------------------------------------------------------------------
+ * 本区块**独立追加在文件末尾**（并行开发要求）：现有函数里只插入**单行调用**，
+ * 具体实现全部收在此处，最大限度避免与其他代理的行级冲突。
+ *
+ * 统一数据契约（19.12.1）：`behavior = { type, value }`
+ *   bounce 折射  ：命中后弹射次数 N（复用 Bullet 的 bounce 字段链路）
+ *   burn   燃蚀  ：命中后每秒灼烧 N 伤害，持续 3 秒
+ *   split  裂变  ：击杀后分裂 N 枚小弹（owner 沿用击杀弹）
+ *   chain  链锁  ：命中后向 N 个最近敌人传导伤害（链锁标记防重复链接）
+ *
+ * 🔴 关键规则：
+ *   - 同 type 多枚芯片 → value 取 max（在 chipBehaviorSummary 已收口，此处只消费）
+ *   - split 小弹不再触发 split（显式护栏：小弹 behavior 置空）
+ *   - chain 不重复链接同一敌人（bullet.chainHit 集合标记）
+ *   - 无 behavior 时所有分支短路 → 与接入前完全一致（回归护栏）
+ * ⚠️ 注意：`LaserBeam`（17.7）走弹幕吞噬路径，不挂 behavior（不在本规格范围）。
+ * ========================================================================== */
+
+const CHIP_BURN_DURATION = 3;       // burn 持续秒数（19.12.1「持续 3 秒」）
+const CHIP_SPLIT_DMG_MUL = 0.5;     // split 小弹伤害倍率（⚠️ 规格未定，拍板 0.5：小弹弱于本体）
+const CHIP_SPLIT_SPD_MUL = 0.8;     // split 小弹速度倍率（⚠️ 规格未定，拍板 0.8）
+const CHIP_SPLIT_LIFE = 1.2;        // split 小弹存活秒数（⚠️ 规格未定，拍板 1.2s，短命便于收束）
+const CHIP_CHAIN_DMG_MUL = 1;       // chain 传导伤害倍率（= 命中弹伤害 × 此倍率）
+
+/** 命中后行为分发（单行调用点 = Bullet 玩家弹命中逻辑）。
+ *  - burn  ：给被命中怪挂灼烧
+ *  - chain ：向最近 N 个敌人传导
+ *  - bounce：由 Bullet 构造时注入的 bounce 字段链路处理（此处不重复处理）
+ *  - split ：由击杀分支（onMonsterKilled）处理 */
+function applyBulletHitBehavior(w, bullet, m) {
+  const bh = bullet.behavior;
+  if (!bh) return;                              // 无行为芯片：短路，等价于接入前
+  if (bh.type === "burn") applyBurnToMonster(m, bh.value);
+  else if (bh.type === "chain") applyChainFromHit(w, bullet, m, bh.value);
+}
+
+/** 给怪物挂 / 刷新灼烧。同源多段命中取**更高的 dps** 并刷新持续（不叠乘、不叠层）。 */
+function applyBurnToMonster(m, dps) {
+  if (!(dps > 0)) return;
+  const cur = m.burn;
+  if (cur) { cur.dps = Math.max(cur.dps, dps); cur.remain = CHIP_BURN_DURATION; }
+  else m.burn = { dps: dps, remain: CHIP_BURN_DURATION };
+}
+
+/** 单帧灼烧结算（单行调用点 = Monster.update 顶部）。
+ *  直接扣 hp（不走 damageMonster：灼烧不吃防御、不触发护盾/链锁/分裂，避免递归）。
+ *  致死时补走 onMonsterKilled（无 killer → 不触发 split），保证掉落/计数照常。
+ *  返回 true = 本次灼烧致死（调用方应跳过本帧其余 AI）。 */
+function monsterBurnTick(m, w, dt) {
+  if (!m.burn) return false;
+  m.burn.remain -= dt;
+  m.hp -= m.burn.dps * dt;
+  m.flashT = Math.max(m.flashT || 0, 0.05);      // 火色反馈
+  if (m.burn.remain <= 0) m.burn = null;
+  if (m.hp <= 0 && !m.dead) {
+    m.dead = true;
+    onMonsterKilled(w, m);                       // 灼烧致死：无击杀弹 → 不分裂
+    return true;
+  }
+  return m.dead;
+}
+
+/** 链锁传导（单行调用点 = applyBulletHitBehavior）。
+ *  向「已链集合外」的最近 N 个敌人各结算一次伤害；链锁标记写在**弹丸**上，
+ *  保证同一弹丸不会重复链接同一敌人（防无限链 / 防重复扣血）。 */
+function applyChainFromHit(w, bullet, src, n) {
+  if (!(n > 0)) return;
+  if (!bullet.chainHit) bullet.chainHit = new Set();
+  bullet.chainHit.add(src);                      // 源目标入链锁集合（不再被本弹重复链接）
+  let linked = 0;
+  for (let i = 0; i < n; i++) {
+    let best = null, bd = Infinity;
+    for (const m of w.monsters) {
+      if (m.dead || bullet.chainHit.has(m)) continue;   // 已链过的跳过（链锁标记）
+      const d = U.dist(src.x, src.y, m.x, m.y);
+      if (d < bd) { bd = d; best = m; }
+    }
+    if (!best) break;
+    bullet.chainHit.add(best);
+    damageMonster(w, best, Math.max(1, Math.round(bullet.dmg * CHIP_CHAIN_DMG_MUL)));
+    spawnChainFx(src.x, src.y, best.x, best.y);  // 瞬结（线段）表现
+    linked++;
+  }
+  return linked;
+}
+
+/** 链锁瞬结的特效段（渲染用，短命淡出）。 */
+const CHIP_CHAIN_FX = [];
+function spawnChainFx(x0, y0, x1, y1) {
+  CHIP_CHAIN_FX.push({ x0, y0, x1, y1, life: 0.18 });
+}
+function updateChainFx(dt) {
+  for (let i = CHIP_CHAIN_FX.length - 1; i >= 0; i--) {
+    CHIP_CHAIN_FX[i].life -= dt;
+    if (CHIP_CHAIN_FX[i].life <= 0) CHIP_CHAIN_FX.splice(i, 1);
+  }
+}
+function renderChainFx(ctx) {
+  if (!CHIP_CHAIN_FX.length) return;
+  for (const fx of CHIP_CHAIN_FX) {
+    const a = Math.max(0, fx.life / 0.18);
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.strokeStyle = "#9ee0ff"; ctx.lineWidth = 2 + a * 2;
+    ctx.beginPath(); ctx.moveTo(fx.x0, fx.y0); ctx.lineTo(fx.x1, fx.y1); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+/** 裂变：击杀弹带 split 行为时，在死亡位置生成 value 枚小弹（单行调用点 = onMonsterKilled）。
+ *  🔴 小弹 behavior 置空 → 不再触发 split（显式护栏，防无限分裂）。
+ *  owner 沿用击杀弹；伤害/速度/存活按本区块常量继承「部分属性」。 */
+function spawnSplitBullets(w, m, killer) {
+  const bh = killer && killer.behavior;
+  if (!bh || bh.type !== "split" || !(bh.value > 0)) return 0;
+  const n = bh.value;
+  const base = Math.max(1, Math.round(killer.dmg * CHIP_SPLIT_DMG_MUL));
+  const spd = Math.hypot(killer.vx, killer.vy) * CHIP_SPLIT_SPD_MUL || 260;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + U.rand(-0.2, 0.2);
+    const child = new Bullet(m.x, m.y, a, spd, base, "player",
+      killer.pierce || 0, 0, 0, true, killer.owner || G.player, null);
+    child.isSplitChild = true;                   // 标记（护栏：不再分裂）
+    child.life = CHIP_SPLIT_LIFE;
+    w.playerBullets.push(child);
+  }
+  return n;
+}
+
+/** 燃蚀渲染：火色描边 + 余烬（单行调用点 = 怪物渲染循环）。 */
+function renderBurnAura(ctx, m) {
+  if (!m.burn) return;
+  const a = 0.45 + 0.35 * Math.abs(Math.sin(G.time * 14));
+  ctx.save();
+  ctx.strokeStyle = `rgba(255,140,40,${a})`;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(m.x, m.y, m.r + 4, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = `rgba(255,90,20,${a * 0.15})`; ctx.fill();
+  ctx.restore();
+}
+

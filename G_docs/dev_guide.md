@@ -175,7 +175,7 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
 
 ## 3. 验证流程（必做）
 
-**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 749**。
+**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 973**。
 
 核心要求：
 
@@ -577,7 +577,7 @@ Boss 从「血多的精英怪」变成**会发弹幕的 2 阶段 Boss**。
   同时 `#hud.city-mode` 会隐藏 `#hud-tl`，二者互斥、不共存。
 - `#hud-tl` 改为 `flex-direction:column; gap:8px`（纵向排布，避免依赖 margin 撑开）。
 - `#buff-area` 加 `flex-wrap:wrap; max-width:420px`（Buff 多了换行，不横向溢出）。
-- 回归：`freeze_test` / `ui_flow_test` / 全量断言（当时 530，现基线 749）。
+- 回归：`freeze_test` / `ui_flow_test` / 全量断言（当时 530，现基线 973）。
 
 ### 5.36 🔴 第十九章 = v2 重构基准（优先级高于第十六章）
 
@@ -736,6 +736,32 @@ for (const sid in CFG.moduleSets) {
 - 优化方向已列：离屏 Canvas 预渲染 sprite / 图集合批 / 分层 Canvas / 关 `shadowBlur`。
 - 📌 **不要**把 `perf_test` 加进 `run_tests.sh`（性能压测不进回归门禁）。
 
+### 5.45 ✅ 第 5 步行为芯片 + 17.7 激光/配表已落地（三线并行批，基线 973）
+
+**三条线并行产出**（B1 行为积木 / B2 激光实体 / B3 配表铺量），合并验收 **25/25 全绿、PASS 973**：
+
+- **行为芯片四积木（19.12，B1）**：`applyBulletHitBehavior` / `applyBurnToMonster` / `monsterBurnTick` /
+  `applyChainFromHit` / `spawnSplitBullets` / `renderBurnAura`，**全部集中在 game.js 文件末尾独立区块**，
+  现有函数只插**单行调用**——这是行级冲突最小化的关键手法，后续并行务必沿用。
+  - 🔴 关键护栏：`split` 小弹标 `isSplitChild=true` **不再分裂**（防无限递归）；
+    `chain` 链锁标记挂**弹丸**上（`bullet.chainHit`）+ 传导走 `damageMonster` 不产生新弹（天然无递归）；
+    `burn` **直接扣 hp 不走 `damageMonster`**（不吃防御/不触发链锁分裂递归），致死时补调 `onMonsterKilled`。
+  - ⚠️ `damageMonster` 签名由 `(w,m,dmg)` 扩为 `(w,m,dmg,killer)`——**纯可选参**，旧调用不受影响。
+- **LaserBeam 激光（17.7 第 3 步，B2）**：三段生命周期 `warn(0.9s)→active(1.6s)→fade(0.35s)`；
+  线段-圆命中（`pointSegDist`/`segCircleHit`）；`laserCap 6` 超限 **FIFO 回收最旧**；
+  **只在 active 期吞噬 `playerBullets`**（不吞自家 `enemyBullets`）；伤害按**段**节流（0.25s）而非逐帧。
+  - 🔴 **激光独立于弹道预算**：不占 `bulletBudget/bulletCap`，只受 `laserCap` 约束。
+  - 数值全部进 `CFG.boss.laser*`（`laserCfg(key, dft)` 惰性读取，缺省回退）。
+- **配表铺量（17.7 第 4 步，B3）**：Boss **3→10 只**（BS0004~BS0010，两阶段换池，BS0010 三阶段）；
+  普通怪 **5→17 只**（NM0015~0026）；新增激光技能 AT231~AT233（BS0006 三束旋转 / BS0009 深渊旋转）。
+  - ⚠️ **敌人技能条目落在 `CFG.skills`（不是 `CFG.skills2`）**——`monsterAttackSkill`/`skillEntry` 实际读前者，
+    `skills2` 是玩家侧。配表时别放错表。
+- 🔴 **新增铁律：并行代理统一「文件末尾独立区块 + 单行调用」模式**。
+  本次三线同改 `js/game.js` 零冲突，全靠这个约定；配表类工作则可整文件独占。
+- 🔴 **收尾必查项**：代理若被禁止改 `run_tests.sh`，**新测试不会自动进门禁**，
+  主会话收口时必须手动追加到 `TESTS` 列表（本次 `chip_behavior_test`/`laser_test`/`content_test` 三处）。
+- **`tagCalc` 双源过渡仍在**：`heroModules` 与旧 `weaponInv` 路径并读，**旧路径未删**（留待下轮收口）。
+
 ## 6. 并行开发切分（已验证可用）
 
 多路 Agent 并行时**按文件所有权切分**，一方不得碰另一方的文件：
@@ -768,7 +794,7 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 
 ## 8. 当前基线
 
-测试 **22/22 全绿**，**PASS 合计 = 749**：
+测试 **25/25 全绿**，**PASS 合计 = 973**：
 
 `smoke_test` / `runtime_test` / `backpack_test` / `econ_test` / `skill_module_test` /
 `team_trigger_test` / `artisan_test` / `ui_flow_test` / `rift_test` / `extract_test` /
@@ -783,7 +809,10 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 维修无人机 / 定位映射，**58 条**）/
 **`ui_v2_test`**（界面 6 件套：冷却环 / 定位徽章 / 升级 4 选 1 弹窗 / 三段布局 / 芯片工坊 / 图鉴，**49 条**）/
 **`levelup_test`**（第 3 步模块槽：heroModules / 池过滤 / 4 选 1 入槽 / 槽满置灰 / 属性小包兜底 / 全队生效，**50 条**）/
-**`chip_test`**（第 4 步芯片：makeChip / chipInv 6×5 / 宝箱商店接入 / tagCalc 统一词条链 / chipForge 三服务 / 负重，**61 条**）。
+**`chip_test`**（第 4 步芯片：makeChip / chipInv 6×5 / 宝箱商店接入 / tagCalc 统一词条链 / chipForge 三服务 / 负重，**61 条**）/
+**`laser_test`**（17.7 第 3 步 Boss 激光：线段-圆命中 / laserCap 6 / 三段生命周期 / 弹幕吞噬 / 无激光等价性，**59 条**）/
+**`chip_behavior_test`**（19.12 行为芯片：bounce / burn / split / chain 四积木 + 无芯片等价性回归，**48 条**）/
+**`content_test`**（17.7 第 4 步配表：10 Boss + 17 普通怪结构合法性 / 技能引用存在 / 护栏内，**74 条**）。
 （另有 `perf_test.js`——**不入回归门禁**，用 `node perf_test.js` 手动跑性能压测，见 §5.44）
 
 跑测试前先确认这个基线，改完必须仍然全绿且 `bad=0`，改完建议连跑 3 轮看抖动。
@@ -806,18 +835,20 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 
 **主线 = 内容铺量 + 数值填充**（不设期限）。
 
-- **第十七章剩余**：17.7 第 3 步（激光实体 `LaserBeam` + 弹幕吞噬机制，含 `laserCap 6`、
-  线段-圆命中）；第 4 步（BS0004~BS0010 配表）；17.9 待定 5 条。
-- **内容铺量**：关卡 3 → 10+、怪物 11 → 17+、技能锚点数值填表；属性卡池本批未动。
-- **🔴 v2 重构（第十九章）落地顺序**（配置+文档已完成）：
+- **第十七章 ✅ 全部落地**：17.7 第 1~5 步完成（发射器 + 护栏 + 阶段机 + 电报 + `LaserBeam` +
+  弹幕吞噬 + BS0004~0010 配表 + 怪物铺量）；剩余仅 17.9 待定 5 条（设计层，非开发）。
+- **内容铺量进展**：怪物 **11 → 17 只**（NM0015~0026 新增 12，实际 NM 总 17）；Boss **3 → 10 只**；
+  ⬜ 关卡 3 → 10+（未做）；⬜ 属性卡池（本批未动）。
+- **🔴 v2 重构（第十九章）落地顺序**：
   1. ✅ **删普攻 + 改经验来源**（参与伤害即给）+ AI 改放技能 + crystalKill 退役 —— **已落地**（见 §5.41，当时基线 565）
   2. ✅ **英雄三定位 + 技能冷却制**（能量池退役 + 维修无人机 + 冷却环）—— **已落地**（见 §5.42，基线 638）
   3. ✅ **升级 4 选 1 + 模块池**（heroModules / 池过滤 / 槽满置灰 / 属性小包兜底）—— **已落地**（§5.43，`levelup_test` 50 条）
   4. ✅ **芯片系统战斗侧**（makeChip / chipInv / 宝箱商店接入 / tagCalc 统一词条链 / chipForge 三服务）
-     —— **已落地**（`chip_test` 61 条）；行为芯片（紫/金）仅数据通路骨架
+     —— **已落地**（`chip_test` 61 条）
   5. ✅ **UI 改造**：芯片背包 6×5 + 上下并列布局 + 芯片工坊 + 芯片图鉴 —— **已落地**（`ui_v2_test` 49 条）
-  - ⚠️ 每步都要跑全量测试；**改完必须仍是 `22/22 全绿 / bad=0`（PASS 749）**。
-  - 📌 **下一轮派单**：第 5 步行为芯片 4 种积木（弹射/灼烧/分裂/传导）+ `chip_behavior_test`；
-    随后是 `tagCalc` 双源收口（删旧 `weaponInv` 路径）、Boss 激光实体 `LaserBeam`、内容铺量。
+  6. ✅ **行为芯片 4 种积木**（bounce 折射 / burn 燃蚀 / split 裂变 / chain 链锁）—— **已落地**（§5.45，`chip_behavior_test` 48 条）
+  - ⚠️ 每步都要跑全量测试；**改完必须仍是 `25/25 全绿 / bad=0`（PASS 973）**。
+  - 📌 **下一轮候选**：① `tagCalc` 双源收口（删旧 `weaponInv` 路径，§5.45 已留过渡）；② 关卡 3 → 10+
+    铺量；③ 属性卡池；④ 美术接入（BGM/素材）；⑤ Godot 4.7.2 迁移评估。
 - **待确认**：主城商人新位置 `(0.14, 0.62)`；竖屏视野变窄是刻意行为（如需全宽需竖版布局）；
   第十九章 19.9 的 2 条待确认项（七项方案已全部确认，见 19.9 表）。
