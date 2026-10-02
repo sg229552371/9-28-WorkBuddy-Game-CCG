@@ -91,6 +91,7 @@ const Game = {
     // 图鉴：本局出战英雄全部激活（解锁同名皮肤）
     for (const h of list) Meta.activateHero(h.id);
     recomputeWeapon();   // 开局即解析全队技能（含队友），避免首帧前 c.skills 为空
+    this.paused = false; this._levelUpActive = false;   // 重置升级弹窗暂停闸门（19.10.6）
     G.state = "playing";
     UI.showHudOnly();
     if (typeof UI.updateAutoFightBtn === "function") UI.updateAutoFightBtn();   // 每局按钮重置为关（run.autoFight 默认 false；测试 UI 桩缺该方法时跳过）
@@ -104,6 +105,28 @@ const Game = {
   skipIntroFreeze() {
     if (G.mainWorld) G.mainWorld.freezeTimer = 0;
     if (G.activeWorld) G.activeWorld.freezeTimer = 0;
+  },
+  /* 升级 4 选 1 暂停闸门（19.10.6）：弹窗期间 Game.paused=true → 主循环跳过世界/玩家/同伴更新，
+   * 渲染照常（弹窗覆盖）。字段显式初始化，避免「没弹过窗读到 undefined」。 */
+  paused: false,
+  _levelUpActive: false,
+  /* 跳过当前挂起的升级 4 选 1（仅测试/调试用，§5.34 三件套）：
+   * 逐个结算队列并解除暂停——用于「startRun 后立刻 step(N)」类旧测试保持时间假设。 */
+  skipLevelUpChoice() {
+    if (!G.run) return;
+    const st = G.run.modulePoolState;
+    if (st) for (const hid in st) st[hid].queue.length = 0;
+    this._levelUpActive = false;
+    this.paused = false;
+    if (typeof UI !== "undefined" && UI.onLevelUpChoiceClose) UI.onLevelUpChoiceClose();
+  },
+  /* 芯片工坊服务入口（19.11.6，供 UI 线 UI.chipForgeService(action) 调用）：
+   * 契约 {ok,msg}；内部判款/扣款/生成/入包，不调 UI.toast（§5.25）。 */
+  chipForge(action, opts) {
+    if (!G.inArtisan || !G.run) return { ok: false, msg: "仅可在芯片工坊内操作" };
+    const svc = ChipForge[action];
+    if (typeof svc !== "function") return { ok: false, msg: `未知的芯片工坊服务：${action}` };
+    return svc.call(ChipForge, G.run, opts || {});
   },
   /* 清理局内状态（返回任一界面层前的统一收尾，不动 settings/config） */
   _clearRunState() {
@@ -534,6 +557,9 @@ const Game = {
     G.time += dt;
     if (G.state === "playing") {
       recomputeWeapon();
+      // 升级 4 选 1 弹窗暂停（19.10.6）：paused=true → 跳过世界/玩家/同伴更新，渲染照常（弹窗覆盖）
+      if (this.paused) { updateFX(dt); UI.updateHUD(); }
+      else {
       // 子地图开场冻结（5.1）：全员静止 + 全员无敌 —— 跳过玩家/同伴更新，也不推进撤离读条；
       // 怪物/子弹/祭坛等由 World.update 内部同样的闸门拦住，伤害结算天然不会发生
       const frozen = G.activeWorld && G.activeWorld.freezeTimer > 0;
@@ -550,6 +576,7 @@ const Game = {
       if (!frozen && G.activeWorld && G.activeWorld.isMain) updateExtractJudge(dt);
       updateFX(dt);
       UI.updateHUD();
+      }
     } else if (G.state === "city") {
       // 主城：玩家形象行走 + NPC/传送门交互（无战斗系统）
       updateCityWorld(dt);

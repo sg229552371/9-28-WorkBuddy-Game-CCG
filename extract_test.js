@@ -66,13 +66,14 @@ vm.runInContext(`
   UI.selectedLevel = CFG.levels[0];
   Game.startRun(CFG.heroes[0]);
   Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
+  if (typeof Game.skipLevelUpChoice === "function") Game.skipLevelUpChoice();   // 跳过升级 4 选 1 暂停闸门（19.10.6）：本文件聚焦撤离读条，不测升级弹窗
   G.run.hp = 100000;                       // 测试无敌注入，聚焦撤离流程
 
   function keyDown(k) { winHandlers.keydown.forEach(fn => fn({ key: k, preventDefault() { } })); }
   function keyUp(k) { winHandlers.keyup.forEach(fn => fn({ key: k })); }
   let t = 0;
   Game.loop(t);                            // 手动注册主循环（跳过 boot）
-  function step(n) { for (let i = 0; i < n; i++) { t += 16.7; global.__raf(t); } }
+  function step(n) { for (let i = 0; i < n; i++) { t += 16.7; global.__raf(t); if (Game.paused && Game.skipLevelUpChoice) Game.skipLevelUpChoice(); } }
 
   /* ---------- 0. 配置自检 ---------- */
   console.assert(CFG.extract.channel === 8.0, "撤离读条 8 秒");

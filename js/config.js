@@ -672,6 +672,17 @@ CFG.levelUp = {
   rerollFreePerRun: 0,            // 升级选模块不提供刷新（保持节奏紧凑；如需可调）
   // 升级时同时给予的基础属性成长（原本由属性卡牌提供，卡牌删除后并入此处）
   baseStatGain: { hp: 6, atk: 1.5, def: 0.5 },
+
+  /* 兜底：属性小包 4 选 1（19.10.4）——
+   * 触发条件 = 该英雄**全部模块已满级 9**（过滤后候选为空）时，4 选 1 弹窗改出属性小包。
+   * 数值（⚠️ 暂定，可调）：以「模块满级 ≈ 一局中后期」为基准，四者互斥选择。
+   * 生效通道：并入 G.run.statPackGain → runBonus().add（全队生效），**不进 tagCalc**（不是武器词条）。 */
+  statPack: [
+    { id: "pack_atk", name: "强攻包", stat: "atk", value: 3 },
+    { id: "pack_hp",  name: "坚韧包", stat: "hp",  value: 15 },
+    { id: "pack_def", name: "铁壁包", stat: "def", value: 1 },
+    { id: "pack_spd", name: "疾行包", stat: "spd", value: 8 },
+  ],
 };
 
 /* ---------- 武器模块槽（19.5） ----------
@@ -741,6 +752,10 @@ CFG.chips = {
   shapes: { value: [1, 1], behavior: [2, 1] },
   maxStack: 9,                      // 同名芯片叠加上限（与模块口径一致）
   carryOut: false,                  // 撤离结算时是否折算为结晶（false = 出局直接消失）
+  /* 重量系数（19.11.8 已拍板：芯片计入负重，与其余物品一致）——
+   * 数值芯片重量 = (q + 1) × weightMul；行为芯片重量 = (q + 1) × 2 × weightMul。
+   * ⚠️ 实测手感过重时**只调本系数**，不要单体改每个芯片（见 19.11.8）。 */
+  weightMul: 1,
 };
 
 /* ---------- 芯片来源：宝箱 / 商店（19.6） ---------- */

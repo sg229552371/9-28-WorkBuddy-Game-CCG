@@ -999,6 +999,17 @@ const UI = {
       this.renderArtisan();
       return;
     }
+    // 芯片额外掉落（19.11.3）：与装备/消耗品并列、不互斥；获得即入 chipInv（满则 pendingItems）
+    if (G.run && G.run.chipInv) {
+      const chip = rollChestChip();
+      if (chip) {
+        const placed = grantChipToRun(r, chip);
+        SFX.play("chest");
+        this.toast(`开出芯片【${chip.name}】${CFG.itemQualities[chip.q].name}${placed ? "" : "（芯片背包已满，已放入待分配区）"}`, "gold");
+        this.renderArtisan();
+        return;
+      }
+    }
     const pool = CFG.chestContents[this.selectedChestQ];
     const defId = U.pick(pool.defs);
     const itemQ = Number(U.weightedPick({ 0: pool.itemQW[0], 1: pool.itemQW[1], 2: pool.itemQW[2], 3: pool.itemQW[3] }));
@@ -1205,10 +1216,12 @@ const UI = {
     this.renderBackpack();
     if (G.inArtisan) this.renderArtisan();   // 仅工匠世界刷新开箱台/卡牌区
   },
-  /* 拖拽源背包解析：backpack → r.backpack；否则 → 芯片背包（G.run.chipInv 存在用真身，否则骨架）。 */
+  /* 拖拽源背包解析：backpack → r.backpack；inv==="weapon"（旧武器栏物品）→ r.weaponInv；
+   * 其余（芯片）→ 芯片背包（G.run.chipInv 存在用真身，否则骨架）。 */
   _srcInv(it) {
     const r = G.run;
     if (it && it.inv === "backpack") return r.backpack;
+    if (it && it.inv === "weapon" && r.weaponInv) return r.weaponInv;   // 旧武器栏（兼容期）
     return this._chipInv();
   },
   _dropTarget(e) {
@@ -1217,7 +1230,11 @@ const UI = {
     if (!el) return null;
     const gridEl = el.closest("#grid-backpack,#grid-chip,#grid-weapon");
     if (gridEl) {
-      const inv = gridEl.id === "grid-backpack" ? G.run.backpack : this._chipInv();
+      // #grid-weapon 为旧武器栏别名（backpack_test 兼容期）→ 显式映射 weaponInv；
+      // #grid-chip / #grid-backpack 走各自容器（芯片背包真身 / 搜刮背包）
+      const inv = gridEl.id === "grid-backpack" ? G.run.backpack
+        : (gridEl.id === "grid-weapon" && G.run.weaponInv) ? G.run.weaponInv
+        : this._chipInv();
       const rect = gridEl.getBoundingClientRect();
       const pad = 8, cell = 50;   // 边框2 + 内边距6；格宽46 + 间隙4 = 50
       const x = U.clamp(Math.floor((e.clientX - rect.left - pad) / cell), 0, inv.cols - 1);

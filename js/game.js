@@ -184,6 +184,55 @@ function moduleStage(it) {
   const ml = CFG.moduleLevel;
   return Math.min(3, Math.ceil((it.lv || 1) / (ml ? ml.perStage : 3)));
 }
+
+/* ---------- 芯片（第十九章 19.6 / 19.11）----------
+ * 芯片 = 局内资产（出局消失、不折算），装在芯片背包 chipInv（6×5）。
+ * 白/蓝 = 数值放大（进 tagCalc 统一词条链）；紫/金 = 附加行为（第 4 步只透传 behavior 字段）。
+ * defId 前缀约定：C_V_* = 数值芯片，C_B_* = 行为芯片。 */
+function chipDefOf(defId, pool) {
+  const c = CFG.chips;
+  if (!c || !defId) return null;
+  if (pool === "value") return (c.valuePool || []).find(x => x.id === defId) || null;
+  if (pool === "behavior") return (c.behaviorPool || []).find(x => x.id === defId) || null;
+  return (c.valuePool || []).find(x => x.id === defId) || (c.behaviorPool || []).find(x => x.id === defId) || null;
+}
+/** 芯片重量（19.11.8）：数值 = (q+1)×weightMul；行为 = (q+1)×2×weightMul。系数只读 CFG.chips.weightMul。 */
+function chipWeight(chip) {
+  const mul = (CFG.chips && CFG.chips.weightMul != null) ? CFG.chips.weightMul : 1;
+  const base = (chip.q || 0) + 1;
+  return Math.round(base * (chip.behavior ? 2 : 1) * mul * 100) / 100;
+}
+/** 芯片等级成长有效值（19.11.4）：复用模块 valueStep 口径：value × (1 + (lv-1) × valueStep)。 */
+function chipEffValue(chip) {
+  const ml = CFG.moduleLevel;
+  return (chip.value || 0) * (1 + ((chip.lv || 1) - 1) * (ml ? ml.valueStep : 0));
+}
+/** 生成芯片（19.11.2）：**defId 前缀决定分支**（C_V_* 数值 / C_B_* 行为），
+ *  前缀缺失时才回落到 CFG.chips.qualityMode[q]（品质决定）。
+ *  数值芯片 → { kind:"chip", defId, q, lv:1, shape, value, affix:{tag,mode,value} }
+ *  行为芯片 → { kind:"chip", defId, q, lv:1, shape, value, behavior } */
+function makeChip(defId, q) {
+  const c = CFG.chips;
+  const qq = (q == null || q < 0 || q > 3) ? 0 : q;
+  // 分支判定：前缀优先（C_B_ = 行为）；否则查 qualityMode
+  let mode;
+  if (defId && defId.indexOf("C_B_") === 0) mode = "behavior";
+  else if (defId && defId.indexOf("C_V_") === 0) mode = "value";
+  else mode = (c.qualityMode && c.qualityMode[qq]) || "value";
+  if (mode === "behavior") {
+    const d = chipDefOf(defId, "behavior") || chipDefOf(defId, "value");
+    const v = d && d.vals ? d.vals[qq] : 0;
+    return { uid: UID++, kind: "chip", defId, q: qq, lv: 1,
+      name: d ? d.name : defId, shape: c.shapes.behavior.slice(),
+      weight: 0, value: v, behavior: d ? d.behavior : "burn" };
+  }
+  const d = chipDefOf(defId, "value") || chipDefOf(defId, "behavior");
+  const v = d && d.vals ? d.vals[qq] : 0;
+  return { uid: UID++, kind: "chip", defId, q: qq, lv: 1,
+    name: d ? d.name : defId, shape: c.shapes.value.slice(),
+    weight: 0, value: v, affix: { tag: d ? d.tag : "", mode: d ? d.mode : "mult", value: v } };
+}
+
 function makeChestItem(chestQ, count = 1) {
   const c = CFG.chestQualities[chestQ];
   return { uid: UID++, kind: "chest", chestQ, name: c.name, shape: [1, 1],
@@ -239,6 +288,28 @@ function affixText(it) {
 }
 
 /* ============ 运行局数据 ============ */
+/** 模块槽初始化（19.10.1）：为**队长 + 全部队友**各建一条长 perHero 的全 null 数组。
+ *  英雄 ID 口径：队长 = G.heroDef.id，队友 = G.team[i].id（i≥1）。 */
+function buildHeroModuleSlots() {
+  const out = {};
+  const per = (CFG.moduleSlot && CFG.moduleSlot.perHero) || 4;
+  const hd = G.heroDef || (G.team && G.team[0]);
+  const ids = [];
+  if (hd && hd.id) ids.push(hd.id);
+  for (const h of (G.team || [])) if (h && h.id && ids.indexOf(h.id) < 0) ids.push(h.id);
+  for (const id of ids) out[id] = new Array(per).fill(null);
+  return out;
+}
+/** 模块抽取/排队状态初始化（19.10.1）：每英雄 { offered:[], queue:[] }。 */
+function buildModulePoolState() {
+  const out = {};
+  const hd = G.heroDef || (G.team && G.team[0]);
+  const ids = [];
+  if (hd && hd.id) ids.push(hd.id);
+  for (const h of (G.team || [])) if (h && h.id && ids.indexOf(h.id) < 0) ids.push(h.id);
+  for (const id of ids) out[id] = { offered: [], queue: [] };
+  return out;
+}
 function createRun(heroDef) {
   return {
     heroDef,
@@ -248,6 +319,16 @@ function createRun(heroDef) {
     lv: 1, exp: 0, expNext: expNextFor(1), coin: 0, kills: 0, eliteKills: 0,
     backpack: new Inventory(CFG.backpack.cols, CFG.backpack.rows, "backpack"),
     weaponInv: new Inventory(CFG.weaponGrid.cols, CFG.weaponGrid.rows, "weapon"),
+    // 芯片背包（19.11.1）：6×5 独立容器，取代旧武器栏的「技能栏」职能；出局消失、不折算
+    chipInv: new Inventory(CFG.chips.grid.cols, CFG.chips.grid.rows, "chip"),
+    // 模块槽（19.10.1）：每英雄 4 槽（队长 + 队友各自独立），槽内元素 {defId, lv} 或 null
+    heroModules: buildHeroModuleSlots(),
+    // 模块抽取/排队状态（19.10.1）：显式初始化，防「没跑过弹窗就取值为 undefined」
+    modulePoolState: buildModulePoolState(),
+    // 属性小包累计（19.10.4 兜底）：并入 runBonus().add，全队生效
+    statPackGain: { hp: 0, atk: 0, def: 0, spd: 0 },
+    // 升级 4 选 1 连升队列（19.10.2 第 7 步）：一次升级 N 级则排队逐个弹
+    levelUpQueue: [],
     buffs: [],                      // 战争雕像增益 {id, stat, mul, remain, label}
     pendingItems: [],               // 工匠开箱待分配区（未拖入背包前存放，放弃即作废）
     // 邪神雕像：多效果并列倍率表（同一目标再次触发为覆盖并重新计时，非叠乘；remain=-1 永久）
@@ -409,12 +490,17 @@ function applyOutLevel(def) {
     hp: def.hp + g.hp * n, atk: def.atk + g.atk * n, def: def.def + g.def * n };
 }
 
-/* ---------- 武器词条计算（16.5：先加算后乘算） ----------
- * forSkill=true 时额外计入武器模块阶段词缀（阶段词缀只强化主动技能，不影响普攻基础值） */
+/* ---------- 武器词条计算（16.5：先加算后乘算；19.10.5 / 19.11.4：三源统一词条链） ----------
+ * forSkill=true 时额外计入武器模块阶段词缀（阶段词缀只强化主动技能，不影响普攻基础值）。
+ * 汇总顺序（同一「先加算后乘算」管线，flat 累加、mul 连乘）：
+ *   ① weaponInv 旧模块（兼容期，第 3 步保留）→ ② heroModules 汇总（第 3 步新增）
+ *   → ③ chipInv 数值芯片（第 4 步新增；行为芯片跳过）→ ④ 卡牌通道（恒空占位）
+ * 全部来源**共用一条链**（方案 6）：不建第二条链。 */
 function tagCalc(tag, forSkill) {
   const t = CFG.affixTags[tag];
   let flat = 0, mul = 1;
   const ml = CFG.moduleLevel;
+  // ① weaponInv 旧模块（兼容期）
   for (const it of G.run.weaponInv.items) {
     if (it.kind === "module" && it.affix && it.affix.tag === tag) {
       const eff = moduleEffValue(it);   // 主词缀随武器模块等级成长
@@ -433,7 +519,43 @@ function tagCalc(tag, forSkill) {
       }
     }
   }
-  // 卡牌对武器词条的加成（弹道数量卡）
+  // ② heroModules 汇总（19.10.5）：遍历全部在场英雄槽，跨英雄叠加（19.10.7 全队共享一份词条值）
+  if (G.run.heroModules) {
+    for (const hid in G.run.heroModules) {
+      const slots = G.run.heroModules[hid];
+      if (!Array.isArray(slots)) continue;
+      for (const slot of slots) {
+        if (!slot) continue;                                  // 空槽
+        const d = (CFG.moduleDefs || []).find(m => m.id === slot.defId);
+        if (!d || !d.affix || d.affix.tag !== tag) continue;
+        const eff = (d.affix.vals ? d.affix.vals[0] : 0) * (1 + ((slot.lv || 1) - 1) * (ml ? ml.valueStep : 0));
+        if (d.affix.mode === "flat") flat += eff;
+        else mul *= (1 + eff);
+        // 阶段词缀：与旧模块同一口径（forSkill 时才计）
+        if (forSkill && ml && ml.stageAffixes) {
+          const stage = Math.min(3, Math.ceil((slot.lv || 1) / (ml.perStage || 3)));
+          for (let i = 0; i < stage; i++) {
+            const sa = ml.stageAffixes[i];
+            if (sa && sa.tag === tag) {
+              if (sa.mode === "flat") flat += sa.value;
+              else mul *= (1 + sa.value);
+            }
+          }
+        }
+      }
+    }
+  }
+  // ③ chipInv 数值芯片（19.11.4）：仅 kind==="chip" 且无 behavior 字段（数值芯片）参与
+  if (G.run.chipInv && G.run.chipInv.items) {
+    for (const it of G.run.chipInv.items) {
+      if (it.kind !== "chip" || it.behavior) continue;         // 行为芯片不进数值链（19.11.5）
+      if (!it.affix || it.affix.tag !== tag) continue;
+      const eff = chipEffValue(it);                            // 芯片等级成长（复用 moduleEffValue 的 valueStep 口径）
+      if (it.affix.mode === "flat") flat += eff;
+      else mul *= (1 + eff);
+    }
+  }
+  // ④ 卡牌对武器词条的加成（弹道数量卡；19.7 已退役，通道保留占位）
   if (tag === "弹道数量" && G.run.appliedCards)
     flat += G.run.appliedCards.filter(c => c.attr === "bullets").reduce((s, c) => s + c.value, 0);
   let v = (t.base + flat) * mul;
@@ -474,12 +596,31 @@ function moduleSynergy() {
   }
   return out;
 }
+/** 行为芯片汇总（19.11.5）：同 type 多枚取 **max**（不叠乘）。返回 {type,value} 或 null。 */
+function chipBehaviorSummary() {
+  const inv = G.run && G.run.chipInv;
+  if (!inv || !inv.items) return null;
+  const best = {};
+  for (const it of inv.items) {
+    if (it.kind !== "chip" || !it.behavior) continue;
+    const cur = best[it.behavior];
+    if (cur == null || (it.value || 0) > cur) best[it.behavior] = it.value || 0;
+  }
+  const keys = Object.keys(best);
+  if (!keys.length) return null;
+  // 同时存在多种行为时取 value 最大者作为主行为（第 5 步消费点按 type 分发；此处只透传单一主行为）
+  let type = keys[0];
+  for (const k of keys) if (best[k] > best[type]) type = k;
+  return { type, value: best[type] };
+}
 /** 技能 → 本局实际数值：skillEntry（统一的 1~100 级曲线）+ 词条标签 + 武器模块连接/套装加成。
- *  普攻与主动技能共用同一条路径；召唤/陷阱额外产出 row（召唤物/陷阱属性行）。 */
+ *  普攻与主动技能共用同一条路径；召唤/陷阱额外产出 row（召唤物/陷阱属性行）。
+ *  19.11.5：结果对象上**透传** behavior（行为芯片数据通路；第 5 步才消费）。 */
 function resolveSkill(sk, lv, syn) {
   const e = skillEntry(sk, lv);          // ① 等级曲线（公式 + 锚点插值）
   const has = (t) => (sk.tags || []).includes(t);
   const isBasic = sk.kind === "basic";
+  const behaves = chipBehaviorSummary();   // 行为芯片（紫/金）：透传字段，不参与数值链
   // 词条标签生效规则（16.5）：主动技能只有声明了该标签才吃；普攻吃除「伤害」外的全部标签
   //（「伤害」倍率与武器模块阶段词缀只强化主动技能，不影响普攻基础值，见 tagCalc）。
   const E = (t) => (isBasic ? t !== "伤害" : has(t));
@@ -487,7 +628,7 @@ function resolveSkill(sk, lv, syn) {
     // 召唤物 / 陷阱：离散属性全部来自 anchors，伤害走「伤害 / 召唤物 / 陷阱」标签倍率
     const row = { count: e.count, hp: e.hp, atk: e.atk, fireCd: e.fireCd, orbit: e.orbit,
       dmgMul: e.dmgMul, radius: e.radius };
-    return { ...e, row,
+    return { ...e, row, behavior: behaves || undefined,
       dmgMul: (row.dmgMul || 1) * (has("伤害") ? tagCalc("伤害", true) : 1)
         * (has("召唤物") ? tagCalc("召唤物", true) : 1) * (has("陷阱") ? tagCalc("陷阱", true) : 1)
         * syn.dmgMul,
@@ -499,7 +640,7 @@ function resolveSkill(sk, lv, syn) {
     };
   }
   // 弹道技能（普攻 / 主动）
-  return { ...e,
+  return { ...e, behavior: behaves || undefined,
     dmgMul: (e.dmgMul != null ? e.dmgMul : 1) * (E("伤害") ? tagCalc("伤害") : 1) * syn.dmgMul,
     cd: e.cd * (E("冷却") ? tagCalc("冷却") : 1) * syn.cdMul,
     radius: e.radius != null ? e.radius * (E("范围") ? tagCalc("范围") : 1) : e.radius,
@@ -577,6 +718,14 @@ function runBonus() {
     add.atk += (g19.atk || 0) * n19;
     add.def += (g19.def || 0) * n19;
   }
+  // 19.10.4：属性小包兜底累计（模块全满级后升级改给）——并入 add 通道，全队生效，不进 tagCalc
+  const sp = r.statPackGain;
+  if (sp) {
+    add.hp += sp.hp || 0;
+    add.atk += sp.atk || 0;
+    add.def += sp.def || 0;
+    add.spd += sp.spd || 0;
+  }
   return { add, mul };
 }
 /** 队友属性：与队长同源——局内等级成长 + 武器栏装备 + 局内增益（属性卡 / 雕像 Buff）。
@@ -640,9 +789,17 @@ function unitCap(caster, kind, skillCount) {
   return Math.max(0, Math.min(Math.floor(skillCount || 0), unitLimitOf(caster, kind)));
 }
 
-/* ---------- 负重惩罚（9.2 线性递减） ---------- */
+/* ---------- 负重惩罚（9.2 线性递减；19.11.8：芯片计入负重） ---------- */
+/** 本局总负重 = 背包 + 武器栏 + 芯片背包（芯片重量按 19.11.8 公式单独算）。 */
+function totalRunWeight() {
+  const r = G.run;
+  if (!r) return 0;
+  let w = r.backpack.totalWeight() + (r.weaponInv ? r.weaponInv.totalWeight() : 0);
+  if (r.chipInv && r.chipInv.items) for (const it of r.chipInv.items) if (it.kind === "chip") w += chipWeight(it);
+  return w;
+}
 function weightFactor() {
-  const w = G.run.backpack.totalWeight() + G.run.weaponInv.totalWeight();
+  const w = totalRunWeight();
   const c = CFG.weight;
   if (w <= c.threshold) return { w, f: 1, over: false };
   const f = Math.max(c.minFactor, 1 - c.slope * (w - c.threshold) / c.divisor);
@@ -1954,19 +2111,183 @@ function expNextFor(lv) {
   if (lv <= c.softCapLv) v *= c.softCapMul;   // 前期额外宽松：开局雪球手感
   return Math.max(1, Math.round(v));
 }
+/* ---------- 模块槽系统（19.10，第 3 步）----------
+ * 获取 = 升级 4 选 1（每英雄独立池），入槽 = 每英雄 4 槽、同名叠加至 9 级，
+ * 生效 = 所有英雄 heroModules 汇总为一份词条值喂 tagCalc（全队生效，见 19.10.7）。 */
+
+/** 该英雄模块池 ID 列表（19.10.2 第 2 步）：perHero 未列出回落 default。 */
+function heroModulePool(heroId) {
+  const mp = CFG.modulePool || {};
+  return (mp.perHero && mp.perHero[heroId]) || mp.default || [];
+}
+/** 池过滤（19.10.2 第 3 步）：剔除该英雄已满级（lv ≥ maxLv）的模块 ID。 */
+function offerModuleIds(heroId) {
+  const maxLv = (CFG.moduleSlot && CFG.moduleSlot.maxLv) || 9;
+  const slots = (G.run && G.run.heroModules && G.run.heroModules[heroId]) || [];
+  return heroModulePool(heroId).filter(defId => {
+    const owned = slots.find(s => s && s.defId === defId);
+    return !(owned && owned.lv >= maxLv);
+  });
+}
+/** 该英雄是否还有空槽（用于槽满策略判定，19.10.3）。 */
+function heroHasEmptySlot(heroId) {
+  const slots = (G.run && G.run.heroModules && G.run.heroModules[heroId]) || [];
+  return slots.some(s => s === null);
+}
+/** 构造 4 选 1 候选（19.10.6 契约）：
+ *  - 模块候选 = { kind:"module", heroId, defId, name, desc, lv, locked }
+ *    locked = 槽满且未持有 → UI 置灰（禁止选取，不静默销毁，见 19.10.3）
+ *  - 兜底 = 池过滤后可用 ID 为空（全部满级）→ 改出属性小包 4 选 1
+ *  @param heroId 英雄 ID；@param poolOverride 可选，显式指定可用 ID 池（测试/降级用） */
+function buildLevelUpCandidates(heroId, poolOverride) {
+  const avail = poolOverride || offerModuleIds(heroId);
+  if (!avail.length) return statPackCandidates();
+  const n = (CFG.levelUp && CFG.levelUp.choiceCount) || 4;
+  const dup = !(CFG.levelUp && CFG.levelUp.allowDuplicateOffer === false);   // 默认允许重复入选
+  const weights = (CFG.modulePool && CFG.modulePool.weights) || null;
+  const weighted = !!(CFG.levelUp && CFG.levelUp.weighted && weights);
+  const slots = (G.run && G.run.heroModules && G.run.heroModules[heroId]) || [];
+  const hasEmpty = heroHasEmptySlot(heroId);
+  const mk = (defId) => {
+    const d = (CFG.moduleDefs || []).find(m => m.id === defId);
+    const owned = slots.find(s => s && s.defId === defId);
+    const lv = owned ? Math.min(9, owned.lv + 1) : 1;   // 入槽后等级（UI 展示）
+    // 置灰边界（19.10.3）：仅「未持有 + 无空槽」置灰；已持有 lv<9 永不置灰
+    const locked = !owned && !hasEmpty;
+    return { kind: "module", heroId, defId, name: d ? d.name : defId,
+      desc: d ? affixPreview(d) : "", lv, locked };
+  };
+  const out = [];
+  const bag = avail.slice();
+  for (let i = 0; i < n; i++) {
+    if (!bag.length) break;
+    let defId;
+    if (weighted) {
+      const w = {}; for (const id of bag) w[id] = weights[id] != null ? weights[id] : 1;
+      defId = String(U.weightedPick(w));
+    } else defId = bag[U.randInt(0, bag.length - 1)];
+    out.push(mk(defId));
+    if (!dup) { const k = bag.indexOf(defId); if (k >= 0) bag.splice(k, 1); }
+  }
+  // 极端保险：若候选全部被置灰（理论上池过滤已保证至少 1 个可叠层），降级为属性小包
+  if (out.length && out.every(c => c.locked)) return statPackCandidates();
+  return out;
+}
+/** 模块主词缀预览文案（供弹窗 desc）。 */
+function affixPreview(d) {
+  const v = d.affix.vals ? d.affix.vals[0] : 0;
+  if (d.affix.mode === "flat") return `${d.affix.tag} +${v}`;
+  return `${d.affix.tag} ${v > 0 ? "+" : ""}${Math.round(v * 100)}%`;
+}
+/** 属性小包候选 4 选 1（19.10.4 兜底）。 */
+function statPackCandidates() {
+  return (CFG.levelUp.statPack || []).map(p => ({ kind: "statPack", packId: p.id, name: p.name, stat: p.stat, value: p.value }));
+}
+/** 入槽结算（19.10.3）：
+ *  - 已持有且 lv<9 → 该槽 lv += stackLevelUp（不新增槽）
+ *  - 未持有且有空槽 → 第一个空槽放入 lv=1
+ *  - 未持有且 4 槽全满 → 不落槽（应已被置灰；此处兜底直接忽略） */
+function applyHeroModulePick(heroId, defId) {
+  const r = G.run;
+  if (!r || !r.heroModules) return false;
+  const slots = r.heroModules[heroId] || (r.heroModules[heroId] = new Array((CFG.moduleSlot && CFG.moduleSlot.perHero) || 4).fill(null));
+  const maxLv = (CFG.moduleSlot && CFG.moduleSlot.maxLv) || 9;
+  const step = (CFG.moduleSlot && CFG.moduleSlot.stackLevelUp) || 1;
+  const owned = slots.find(s => s && s.defId === defId);
+  if (owned) {
+    if (owned.lv >= maxLv) return false;
+    owned.lv = Math.min(maxLv, owned.lv + step);
+    return true;
+  }
+  const idx = slots.indexOf(null);
+  if (idx < 0) return false;                 // 槽满且未持有 → 拒绝（置灰路径）
+  slots[idx] = { defId, lv: 1 };
+  return true;
+}
+/** 属性小包结算（19.10.4）：累加到 G.run.statPackGain（供 runBonus().add 读取，全队生效）。 */
+function applyStatPack(pack) {
+  const r = G.run;
+  if (!r || !pack) return false;
+  if (!r.statPackGain) r.statPackGain = { hp: 0, atk: 0, def: 0, spd: 0 };
+  if (r.statPackGain[pack.stat] == null) return false;
+  r.statPackGain[pack.stat] += pack.value || 0;
+  return true;
+}
+/** 结算一个 4 选 1（按候选 kind 分发）；返回是否成功。 */
+function applyLevelUpPick(heroId, cand) {
+  if (!cand) return false;
+  if (cand.kind === "statPack") return applyStatPack(cand);
+  if (cand.kind === "module") return applyHeroModulePick(heroId, cand.defId);
+  return false;
+}
+/** 弹出一次 4 选 1（19.10.6 契约）：调 UI.onLevelUpChoice(candidates, onPick)。
+ *  ⚠️ 无 DOM / UI 未就绪（没有 onLevelUpChoice 函数）时走**默认路径**：自动选第一个可选候选，
+ *  绝不能让主循环卡死（铁律）。 */
+function presentLevelUpChoice(heroId) {
+  const cands = buildLevelUpCandidates(heroId);
+  const done = (idx) => {
+    const cand = cands[idx];
+    applyLevelUpPick(heroId, cand);
+    recomputeWeapon();       // 入槽后立即重算全队技能（模块词条生效）
+    finishLevelUpChoice(heroId);
+  };
+  const ui = (typeof UI !== "undefined") ? UI : null;
+  if (ui && typeof ui.onLevelUpChoice === "function") {
+    setPaused(true);         // 弹窗暂停闸门：主循环跳过世界/玩家/同伴更新（渲染照常）
+    ui.onLevelUpChoice(cands, (idx) => done((idx >= 0 && idx < cands.length) ? idx : 0));
+    return;
+  }
+  // 默认路径：自动选第一个「非置灰」候选（没有则取第 0 个），保证升级结算永不悬挂
+  let pick = cands.findIndex(c => !c.locked);
+  if (pick < 0) pick = 0;
+  done(pick);
+}
 function gainExp(v) {
   const r = G.run, c = CFG.levelUp.curve;
   if (r.lv >= c.maxLv) return;                 // 局内等级封顶（与 99 关主线对齐）
   r.exp += v;
+  const ups = [];
   while (r.exp >= r.expNext && r.lv < c.maxLv) {
     r.exp -= r.expNext; r.lv++;
     r.expNext = expNextFor(r.lv);
     spawnFloat(G.player.x, G.player.y - 44, `LV ${r.lv}！`, "#c79bff");
     SFX.play("levelup");
     UI.toast(`升级！LV ${r.lv}（全队属性提升）`, "gold");
+    ups.push(r.lv);
   }
   if (r.lv >= c.maxLv) r.exp = 0;              // 封顶后经验不再累积
+  // 19.10.2 第 7 步：多级连升排队逐个弹（第 1 个结算完才弹第 2 个）
+  if (ups.length) beginLevelUpChoices(G.heroDef.id, ups.length);
 }
+/** 入队 N 次 4 选 1 并驱动队列；队列空才恢复（解除暂停）。 */
+let _levelUpActive = false;      // 模块内闸门（避免单测只加载 game.js 时访问未定义的 Game）
+function setPaused(v) {
+  if (typeof Game !== "undefined") Game.paused = v;
+}
+function isPaused() {
+  return typeof Game !== "undefined" && Game.paused === true;
+}
+function beginLevelUpChoices(heroId, n) {
+  const r = G.run;
+  if (!r) return;
+  if (!r.modulePoolState) r.modulePoolState = buildModulePoolState();
+  const st = r.modulePoolState[heroId] || (r.modulePoolState[heroId] = { offered: [], queue: [] });
+  for (let i = 0; i < n; i++) st.queue.push(1);
+  if (!_levelUpActive) { _levelUpActive = true; presentLevelUpChoice(heroId); }
+}
+/** 一次 4 选 1 完成后的收尾（由 presentLevelUpChoice 的 onPick 回调触发）：
+ *  出队 → 队列还有则弹下一个 → 全部完成才解除暂停。 */
+function finishLevelUpChoice(heroId) {
+  const r = G.run;
+  const st = r && r.modulePoolState && r.modulePoolState[heroId];
+  if (st && st.queue.length) st.queue.shift();
+  if (st && st.queue.length) { presentLevelUpChoice(heroId); return; }
+  _levelUpActive = false;
+  setPaused(false);
+  const ui = (typeof UI !== "undefined") ? UI : null;
+  if (ui && typeof ui.onLevelUpChoiceClose === "function") ui.onLevelUpChoiceClose();
+}
+
 
 /* ---------- 属性卡牌（8.3 / 13.15：资产累积、工匠世界使用、池内同属性去重） ---------- */
 function rollCardQuality() {
@@ -2043,6 +2364,128 @@ function grantItemToRun(r, item, opts) {
   if (mode === "pending") r.pendingItems.push(item);
   return false;
 }
+/* ---------- 芯片入包（19.11.3）：芯片进 chipInv（6×5）；同名同品质可叠（lv+1，上限 9）。 ----------
+ * 返回 true = 已入 chipInv；false = chipInv 满 → 进 r.pendingItems（工匠待分配区）。 */
+function grantChipToRun(r, chip) {
+  if (!r.chipInv) return false;
+  // 同名同品质叠加（19.11.6 merge 之外的自然叠层：获得即叠）
+  const maxLv = (r.chipInv && CFG.chips.maxStack) || 9;
+  for (const it of r.chipInv.items) {
+    if (it.kind === "chip" && it.defId === chip.defId && it.q === chip.q && (it.lv || 1) < maxLv) {
+      it.lv = Math.min(maxLv, (it.lv || 1) + 1);
+      return true;
+    }
+  }
+  const s = r.chipInv.findSpot(chip);
+  if (s) { r.chipInv.place(chip, s.x, s.y); seenChip(chip); return true; }
+  r.pendingItems.push(chip);
+  seenChip(chip);
+  return false;
+}
+/** 开箱是否落芯片（19.11.3）：按 CFG.chipSources.chest.weight（26）判定（与装备/消耗品并列，不互斥）。
+ *  rng 可注入（测试用）；返回芯片实例或 null。 */
+function rollChestChip(rng) {
+  const src = CFG.chipSources && CFG.chipSources.chest;
+  if (!src || src.enabled === false) return null;
+  const R = rng || Math.random;
+  // 权重口径：以 chipSources.chest.weight 为「每箱芯片权重」，其余内容视作基准 100 → 概率 = w/(100+w)
+  const total = 100 + (src.weight || 0);
+  if (R() * total >= (src.weight || 0)) return null;
+  const q = Number(U.weightedPick({ 0: src.itemQW[0], 1: src.itemQW[1], 2: src.itemQW[2], 3: src.itemQW[3] }, R));
+  const mode = (CFG.chips.qualityMode && CFG.chips.qualityMode[q]) || "value";
+  const pool = mode === "behavior" ? CFG.chips.behaviorPool : CFG.chips.valuePool;
+  const def = pool[U.randInt(0, pool.length - 1)];
+  return makeChip(def.id, q);
+}
+/** 芯片图鉴（19.11.7）：只记录「见过的芯片」（局外 Meta.data.chipSeen），不加属性、不折算。 */
+function seenChip(chip) {
+  if (!chip) return;
+  try {
+    if (!Meta.data.chipSeen) Meta.data.chipSeen = {};
+    Meta.data.chipSeen[chip.defId] = true;
+    Meta.commit();
+  } catch (e) { /* 无 localStorage 环境忽略 */ }
+}
+function chipSeen(defId) {
+  return !!(Meta.data && Meta.data.chipSeen && Meta.data.chipSeen[defId]);
+}
+/** 商店购买随机芯片（19.11.3）：契约沿用 §5.25 —— 返回 {ok,msg}，内部判款/扣款/生成/入包，不调 UI.toast。 */
+function shopBuyChip(defId) {
+  if (!G.inArtisan || !G.run) return { ok: false, msg: "仅可在芯片工坊内购买" };
+  const r = G.run, src = CFG.chipSources && CFG.chipSources.shop;
+  if (!src || src.enabled === false) return { ok: false, msg: "芯片商店未开放" };
+  const cost = src.cost || 0;
+  if (r.coin < cost) return { ok: false, msg: `金币不足（需 ${cost}）` };
+  r.coin -= cost;
+  let chip;
+  if (defId) chip = makeChip(defId, rollChipQualityByWeights(src.qualityWeights));
+  else {
+    const q = rollChipQualityByWeights(src.qualityWeights);
+    const mode = (CFG.chips.qualityMode && CFG.chips.qualityMode[q]) || "value";
+    const pool = mode === "behavior" ? CFG.chips.behaviorPool : CFG.chips.valuePool;
+    chip = makeChip(pool[U.randInt(0, pool.length - 1)].id, q);
+  }
+  const placed = grantChipToRun(r, chip);
+  return { ok: true, msg: placed ? `已购买：${chip.name}` : `已购买：${chip.name}（芯片背包已满，已放入待分配区）` };
+}
+/** 按品质权重抽 q（weights 为 [w0,w1,w2,w3]）。 */
+function rollChipQualityByWeights(weights) {
+  const w = weights || [55, 28, 14, 3];
+  return Number(U.weightedPick({ 0: w[0], 1: w[1], 2: w[2], 3: w[3] }));
+}
+/* ---------- 芯片工坊三服务（19.11.6）：merge / reroll / craft，统一 {ok,msg}，UI 弹 toast ----------
+ * 前置校验 → 消耗金币 → 成功分支 / 失败分支（不改变芯片）。仅工匠世界可用。 */
+const ChipForge = {
+  /** 在 chipInv 内按 uid 找芯片。 */
+  _find(r, uid) { return (r.chipInv ? r.chipInv.items : []).find(it => it.kind === "chip" && it.uid === uid) || null; },
+  /** 合成（merge）：选中 ≥2 枚同名同品质 → 目标 lv+1（上限 9），消耗被合芯片。 */
+  merge(r, opts) {
+    const cost = CFG.chipForge.services.merge.cost;
+    const uid = opts && opts.uid;
+    const target = uid != null ? this._find(r, uid) : null;
+    if (!target) return { ok: false, msg: "未选中目标芯片" };
+    if ((target.lv || 1) >= CFG.chips.maxStack) return { ok: false, msg: "该芯片已达满级 9" };
+    const others = r.chipInv.items.filter(it => it.kind === "chip" && it !== target && it.defId === target.defId && it.q === target.q);
+    if (others.length < 1) return { ok: false, msg: "需至少 2 枚同名同品质芯片" };
+    if (r.coin < cost) return { ok: false, msg: `金币不足（需 ${cost}）` };
+    r.coin -= cost;
+    // 消耗 1 枚被合芯片 → 目标 lv+1（同名同品质）
+    const consume = others[0];
+    r.chipInv.remove(consume);
+    target.lv = Math.min(CFG.chips.maxStack, (target.lv || 1) + 1);
+    return { ok: true, msg: `合成成功：${target.name} → LV${target.lv}` };
+  },
+  /** 重铸（reroll）：重掷词条档位（value = vals[新q] 中的档位），保留 defId / tag / 类型。 */
+  reroll(r, opts) {
+    const cost = CFG.chipForge.services.reroll.cost;
+    const uid = opts && opts.uid;
+    const chip = uid != null ? this._find(r, uid) : null;
+    if (!chip) return { ok: false, msg: "未选中芯片" };
+    if (r.coin < cost) return { ok: false, msg: `金币不足（需 ${cost}）` };
+    r.coin -= cost;
+    // 重掷档位：在 vals 里挑一个（保留 defId / tag / behavior，只改 value 档位数值）
+    const d = chipDefOf(chip.defId);
+    if (d && d.vals) {
+      const newQ = Number(U.randInt(0, d.vals.length - 1));
+      chip.q = newQ;
+      chip.value = d.vals[newQ];
+    }
+    return { ok: true, msg: `重铸完成：${chip.name}（词条数值重掷）` };
+  },
+  /** 定向合成（craft）：生成 1 枚指定 defId 芯片，品质按 shop.qualityWeights。 */
+  craft(r, opts) {
+    const cost = CFG.chipForge.services.craft.cost;
+    const defId = opts && opts.defId;
+    if (!defId) return { ok: false, msg: "未指定要合成的芯片" };
+    if (!chipDefOf(defId)) return { ok: false, msg: `未知芯片：${defId}` };
+    if (r.coin < cost) return { ok: false, msg: `金币不足（需 ${cost}）` };
+    r.coin -= cost;
+    const q = rollChipQualityByWeights(CFG.chipSources.shop.qualityWeights);
+    const chip = makeChip(defId, q);
+    const placed = grantChipToRun(r, chip);
+    return { ok: true, msg: placed ? `已合成：${chip.name}` : `已合成：${chip.name}（芯片背包已满，已放入待分配区）` };
+  },
+};
 function shopBuyModule() {
   if (!G.inArtisan || !G.run) return { ok: false, msg: "仅可在工匠世界内购买" };
   const r = G.run, cfg = CFG.artisanServices.buyModule;
