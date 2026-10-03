@@ -753,3 +753,78 @@ body.landscape #hud-tl { flex-direction: column; }
   .title { font-size: 30px; letter-spacing: 2px; }
   .screen { padding-top: max(28px, env(safe-area-inset-top)); }
 }
+
+
+/* ============================================================
+ * 20.4 线C：竖屏满队（4~5 人）技能栏自适应压缩
+ * ------------------------------------------------------------
+ * 目标：390×844 竖屏下，#party-skillbar 纵向堆叠 5 行 [图标][名字][4槽]。
+ *   压缩前单行 ≈ 63px（44 图标 / 8+8 内边距 + 2 边框），5 行 + 4×8 间隙 ≈ 345px，
+ *   会顶到 right 摇杆（bottom ≤ 145px）。
+ * 手法（纯 CSS，不依赖 :has() / 不改 ui.js 挂类）：竖屏下统一收紧行高与槽尺寸，
+ *   行高 px = max(图标44, 槽40) + 内边距12 + 边框2 = 58px，行间隙收窄到 6px：
+ *     3 行 = 58×3 + 12 = 186 → 视觉封顶在 ~170px 带内（较原 202px 更矮）
+ *     4 行 = 58×4 + 18 = 250
+ *     5 行 = 58×5 + 24 = 314 → 栏底锚点 bottom +170px，栏顶 ≈ 484px，摇杆顶 ≈ 503px，不重叠
+ *   栏底锚点 bottom 由 170 微调到 164，给 5 行留 6px 呼吸位。
+ * 横屏：本段全部限定在 @media (orientation: portrait) 内，横屏不受任何影响。
+ * ============================================================ */
+@media (orientation: portrait) {
+  html body .party-skillbar {
+    bottom: calc(var(--sa-bottom) + 164px);   /* 5 行压缩后栏顶 ≈484px，仍高于摇杆顶 ≈503px */
+    gap: 6px;                                 /* 行间距 8 → 6，为 5 行再省出 8px */
+  }
+  html body .ps-row {
+    padding: 5px 10px;                        /* 8px 12px → 5px 10px，行高 63 → 58 */
+    gap: 8px;
+  }
+  html body .ps-icon,
+  html body .ps-icon svg { width: 40px; height: 40px; }   /* 图标 44 → 40 */
+  html body .ps-glyph { font-size: 15px; }
+  html body .ps-info { min-width: 46px; }
+  html body .ps-name { font-size: 12px; }
+  html body .ps-role { font-size: 9px; }
+  html body .ps-slot { width: 42px; height: 40px; }        /* 槽 46×42 → 42×40，命中区仍 ≥32px */
+  html body .ps-slot .ps-slot-nm { font-size: 9px; }
+}
+
+/* ---------- 20.4 线C 结束 ---------- */
+
+/* ============================================================
+ * 方向 3 · 英雄解锁 UI（选人置灰 / 导师·武器匠未解锁分组 / 结晶解锁按钮）
+ * 追加区块：不改动上方既有规则；对齐深色主题 + 竖屏优先（390×844 不溢出）。
+ * ============================================================ */
+/* 选人卡：未解锁置灰 + 锁形条件行（.locked 与 .selected 互斥，选人拦截在 JS 侧） */
+.char-card.locked { opacity:.55; cursor:not-allowed; border-style:dashed; border-color:#2e3d55; }
+.char-card.locked:hover { border-color:#2e3d55; }
+.char-card .lock-line {
+  margin-top:6px; font-size:12px; color:#e0a24c; line-height:1.4; word-break:break-word;
+}
+
+/* 强化导师 / 武器匠：未解锁分组小标题（列表尾部） */
+.npc-group-title {
+  margin:10px 2px 2px; padding-top:10px; font-size:12px; color:#8ba0bd;
+  letter-spacing:1px; border-top:1px dashed #33486b;
+}
+/* 未解锁升级卡：置灰；其操作区不占固定宽（结晶按钮/锁标自适应） */
+.meta-card.locked { opacity:.6; }
+.meta-card.locked .meta-info b { color:#a8b6c8; }
+.meta-card.locked .meta-lv { width:auto; min-width:112px; }
+.meta-card.locked .lock-badge { font-size:12px; color:#8ba0bd; }
+/* 下级增益预览（导师卡内，同源 outLevelStats 计算） */
+.meta-card .gain-preview {
+  margin-top:6px; font-size:12px; color:#7fd08c; word-break:break-word;
+}
+
+/* 竖屏（390×844）：未解锁分组/结晶按钮不横向溢出，按钮不撑破卡片 */
+@media (orientation: portrait) {
+  .meta-card { flex-wrap:wrap; gap:10px; }
+  .meta-card .meta-lv { width:100%; align-items:stretch; }
+  .meta-card.locked .meta-lv { min-width:0; }
+  .meta-card .meta-lv .btn { width:100%; }
+  .meta-card .gain-preview { width:100%; }
+  .char-card { flex-wrap:wrap; }
+  .char-card .lock-line { width:100%; }
+}
+body.portrait .meta-card { flex-wrap:wrap; }
+body.portrait .meta-card .meta-lv { width:100%; align-items:stretch; }

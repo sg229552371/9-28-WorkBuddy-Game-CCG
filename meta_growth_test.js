@@ -90,7 +90,7 @@ CFG.outLevel.growthTable = _gt;
 Meta.data.heroes.H001 = { level: 1 };
 
 /* ============ 三、英雄解锁（首发 6 角 + 局外条件） ============ */
-check("三1 CFG.unlockOrder 与 starterCount 结构就位", Array.isArray(CFG.unlockOrder) && CFG.unlockOrder.length === 8 && CFG.starterCount === 6);
+check("三1 CFG.unlockOrder 与 starterCount 结构就位", Array.isArray(CFG.unlockOrder) && CFG.unlockOrder.length === 12 && CFG.starterCount === 6);
 check("三2 首发 6 角（H001~H006）默认解锁", [1,2,3,4,5,6].every(i => Meta.isHeroUnlocked("H00" + i)));
 check("三3 第 7/8 个（H007/H008）默认未解锁", !Meta.isHeroUnlocked("H007") && !Meta.isHeroUnlocked("H008"));
 check("三4 unlockedHeroes() 长度 = 6 且只含前 6 个", (() => { const u = Meta.unlockedHeroes(); return u.length === 6 && u.join() === "H001,H002,H003,H004,H005,H006"; })());
@@ -111,7 +111,14 @@ Meta.data.crystals = 300;
 check("三10 结晶足够 unlockHero 成功：扣款 300 + 落档", Meta.unlockHero("H008") && Meta.data.crystals === 0 && Meta.isHeroUnlocked("H008"));
 check("三11 unlockHero 幂等（已解锁再调返回 true 不重复扣款）", (() => { Meta.data.crystals = 50; const r = Meta.unlockHero("H008"); return r === true && Meta.data.crystals === 50; })());
 check("三12 解锁记录持久化字段 unlockExtra 在 Meta.data 上", Meta.data.unlockExtra && Meta.data.unlockExtra.H008 === true);
-check("三13 H006 达标回置 + unlockedHeroes() 最终 = 8 角全开", (() => { Meta.data.heroes.H006 = { level: 3 }; return Meta.unlockedHeroes().length === 8; })());
+check("三13 全解锁条件满足 + unlockedHeroes() 最终 = 12 角全开", (() => {
+  Meta.data.heroes.H006 = { level: 3 };       // H007 条件
+  Meta.data.heroes.H004 = { level: 5 };        // H009 条件
+  Meta.data.heroes.H010 = { level: 6 };        // H011 条件
+  Meta.data.unlockExtra.H010 = true;           // H010 结晶解锁
+  Meta.data.unlockExtra.H012 = true;           // H012 结晶解锁
+  return Meta.unlockedHeroes().length === 12;
+})());
 
 /* ============ 四、结晶口径回归（19.8：crystalKill 退役 / crystalBoss / deathRatio 不变） ============ */
 check("四1 CFG.outLevel.crystalKill 配置口径不变（=1，仅存档兼容，逻辑不引用）", CFG.outLevel.crystalKill === 1);

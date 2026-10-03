@@ -224,6 +224,37 @@ const UI = {
     });
   },
 
+  /* ---------- 英雄解锁 UI（方向3 · 全链路接入区块） ----------
+   * isHeroUnlocked 的**唯一 UI 消费点**：选人 / 强化导师 / 武器匠三处共用本区块。
+   * 规则文案按 CFG.unlockRules[id] 的**字段**生成（不硬编码英雄数量，防御式遍历 CFG.heroes）。 */
+  // 英雄 id → 显示名（查不到回落 id，保证永不 undefined）
+  heroName(heroId) {
+    const h = CFG.heroes.find(x => x.id === heroId);
+    return h ? h.name : heroId;
+  },
+  /* 未解锁英雄的条件短文案（供选人卡 / 导师·武器匠未解锁分组共用）：
+   *   heroLv 条件（rule.heroLv）  → 「达成 <英雄名> 局外 LV<N> 解锁」
+   *   结晶条件（rule.crystal）    → 「结晶 <N> 解锁」
+   *   通关条件（rule.level / rule.stage）→ 「通关第 <N> 关解锁」
+   *   多字段按 heroLv → crystal → level 优先级；无规则/无识别字段 → 「暂未解锁」。 */
+  _unlockRuleText(id) {
+    const rule = (CFG.unlockRules && CFG.unlockRules[id]) || null;
+    if (rule) {
+      if (rule.heroLv && typeof rule.heroLv.lv === "number") {
+        return `达成 ${this.heroName(rule.heroLv.heroId)} 局外 LV${rule.heroLv.lv} 解锁`;
+      }
+      if (typeof rule.crystal === "number") return `结晶 ${rule.crystal} 解锁`;
+      const lvN = (typeof rule.level === "number") ? rule.level : ((typeof rule.stage === "number") ? rule.stage : null);
+      if (lvN !== null) return `通关第 ${lvN} 关解锁`;
+    }
+    return "暂未解锁";
+  },
+  /* 该英雄是否可花结晶主动解锁（unlockRules[id].crystal 型）→ 返回 { cost } 或 null。 */
+  _unlockCost(id) {
+    const rule = (CFG.unlockRules && CFG.unlockRules[id]) || null;
+    return (rule && typeof rule.crystal === "number") ? { cost: rule.crystal } : null;
+  },
+
   /* 英雄定位（19.2）：CFG.heroRoles.byHero[id] → 定位定义对象（含 name/color）；缺失返回 null。 */
   heroRole(heroId) {
     const HR = CFG.heroRoles;
@@ -238,10 +269,12 @@ const UI = {
     const box = document.getElementById("char-list");
     if (!box) return;
     box.innerHTML = "";
-    const first = CFG.heroes;   // 原型阶段：全部角色可选（H007/H008 为召唤/陷阱技能验证角，正式版再作解锁门槛）
-    for (const h of first) {
+    for (const h of CFG.heroes) {
+      // 解锁门槛（方向3）：未解锁英雄置灰 + 锁标 + 条件文案，且不可入选队
+      const unlocked = Meta.isHeroUnlocked(h.id);
       const card = document.createElement("div");
-      card.className = "char-card" + (this.selectedChars.some(s => s.id === h.id) ? " selected" : "");
+      card.className = "char-card" + (unlocked ? "" : " locked")
+        + (this.selectedChars.some(s => s.id === h.id) ? " selected" : "");
       const img = Assets.images[h.sprite];
       const lv = Meta.heroLevel(h.id);
       const g = CFG.outLevel.growth, n = lv - 1;
@@ -253,6 +286,9 @@ const UI = {
       const roleBadge = role
         ? `<span class="role-badge" style="color:${role.color};border-color:${role.color}">${role.name}</span>`
         : "";
+      // 未解锁：锁形标识 + 条件短文案（解锁后此段为空，已解锁卡 HTML 与旧版一致）
+      const lockMsg = this._unlockRuleText(h.id);
+      const lockLine = unlocked ? "" : `<p class="lock-line">🔒 未解锁 · ${lockMsg}</p>`;
       card.innerHTML = `
         ${img ? `<canvas class="char-face" width="64" height="64"></canvas>` : ""}
         <div class="info"><b>${h.name}（${h.id}）${roleBadge}</b>
@@ -263,12 +299,14 @@ const UI = {
           : " · 已满级"} <small>（武器等级 = 技能等级，撤离后永久保留）</small></p>
         <p>${h.desc}</p>
         <p>HP ${h.hp} · 攻击 ${h.atk} · 防御 ${h.def} · 移速 ${h.spd} · 武器：${wpn.name}</p>
-        <p class="hint"><small>升级请前往主城 →「强化导师」</small></p></div>`;
+        <p class="hint"><small>升级请前往主城 →「强化导师」</small></p>${lockLine}</div>`;
       if (img) {
         const cv = card.querySelector(".char-face");
         if (cv && cv.getContext) cv.getContext("2d").drawImage(img, 0, 0, 64, 64);
       }
       card.onclick = () => {
+        // 未解锁 → 拦截：toast 解锁条件，不入 selectedChars（不改变选中态）
+        if (!Meta.isHeroUnlocked(h.id)) { this.toast(`🔒 ${h.name} 未解锁：${this._unlockRuleText(h.id)}`, "bad"); return; }
         // 多角色组队：点击选中/取消，上限 CFG.team.maxSize
         const idx = this.selectedChars.findIndex(s => s.id === h.id);
         if (idx >= 0) this.selectedChars.splice(idx, 1);
@@ -821,7 +859,9 @@ const UI = {
       if (p) p.classList.add("hidden");
     }
   },
-  /* 强化导师：局外等级升级（局外成长从首页/主菜单收敛至此） */
+  /* 强化导师：局外等级升级（局外成长从首页/主菜单收敛至此）
+   * 方向3 解锁接入：① 只列**已解锁**英雄的升级卡；② 每卡加「下级增益预览」；
+   * ③ 尾部「未解锁」分组显示条件，结晶型给「解锁 ◆N」按钮（Meta.unlockHero）。 */
   renderTrainer() {
     const box = document.getElementById("outlevel-list");
     if (!box) return;
@@ -829,6 +869,7 @@ const UI = {
     if (cry) cry.innerHTML = `◆ 进化结晶 <b>${Meta.data.crystals}</b>`;
     box.innerHTML = "";
     for (const h of CFG.heroes) {
+      if (!Meta.isHeroUnlocked(h.id)) continue;   // 未解锁英雄不出现（理由见交付报告：与武器匠同口径 + 避免误升级死资产）
       const lv = Meta.heroLevel(h.id);
       const lvMax = lv >= CFG.outLevel.maxLevel;
       const cost = Meta.levelUpCost(h.id);
@@ -836,7 +877,7 @@ const UI = {
       const card = document.createElement("div");
       card.className = "meta-card";
       card.innerHTML = `
-        <div class="meta-info"><b>${h.name}</b><p class="meta-desc">${h.desc}</p></div>
+        <div class="meta-info"><b>${h.name}</b><p class="meta-desc">${h.desc}</p>${this._gainPreviewHTML(h)}</div>
         <div class="meta-lv">
           <span>局外等级 <b class="lvnum">LV ${lv}</b> / ${CFG.outLevel.maxLevel}${lvMax ? " · 已满级" : ""}</span>
           <button class="btn small up-lv" ${can ? "" : "disabled"}>${lvMax ? "已满级" : `升级 ◆${cost}`}</button>
@@ -845,8 +886,56 @@ const UI = {
       if (btn) btn.onclick = () => { this.metaUpgradeLevel(h.id); this.renderTrainer(); this._cityHudSig = ""; this.updateCityHUD(); };
       box.appendChild(card);
     }
+    this._appendLockedGroup(box, "outlevel");
   },
-  /* 武器匠：武器 / 技能等级升级 */
+  /* 下级增益预览（同源取数）：调 game.js 的 outLevelStats(def, lv) —— 与 applyOutLevel 出战属性同一函数，
+   * 不手抄公式；增益 = outLevelStats(lv+1) − outLevelStats(lv)。已满级 / 无差分 → 提示文案。 */
+  _gainPreviewHTML(h) {
+    const lv = Meta.heroLevel(h.id);
+    if (lv >= CFG.outLevel.maxLevel) return `<p class="gain-preview">已满级</p>`;
+    const cur = outLevelStats(h, lv), next = outLevelStats(h, lv + 1);
+    const dHp = next.hp - cur.hp, dAtk = next.atk - cur.atk, dDef = next.def - cur.def;
+    if (dHp === 0 && dAtk === 0 && dDef === 0) return `<p class="gain-preview">下级无增益</p>`;
+    return `<p class="gain-preview">下级 +HP ${dHp} / +攻击 ${dAtk} / +防御 ${dDef}</p>`;
+  },
+  /* 尾部「未解锁」分组（导师 / 武器匠共用）：列出未解锁英雄 + 条件短文案；
+   * 结晶型给「解锁 ◆N」按钮（结晶不足 disabled），点击 → Meta.unlockHero → 成功 toast + 刷新面板。 */
+  _appendLockedGroup(box, kind) {
+    const locked = CFG.heroes.filter(h => !Meta.isHeroUnlocked(h.id));
+    if (!locked.length) return;
+    const title = document.createElement("div");
+    title.className = "npc-group-title";
+    title.textContent = `未解锁（${locked.length}）`;
+    box.appendChild(title);
+    for (const h of locked) {
+      const card = document.createElement("div");
+      card.className = "meta-card locked";
+      const uc = this._unlockCost(h.id);
+      let act = `<span class="lock-badge">🔒 暂未解锁</span>`;
+      if (uc) {
+        const enough = Meta.data.crystals >= uc.cost;
+        act = `<button class="btn small unlock-hero" ${enough ? "" : "disabled"}>解锁 ◆${uc.cost}</button>`;
+      }
+      card.innerHTML = `
+        <div class="meta-info"><b>${h.name}</b><p class="meta-desc">解锁条件：${this._unlockRuleText(h.id)}</p></div>
+        <div class="meta-lv">${act}</div>`;
+      const btn = card.querySelector(".unlock-hero");
+      if (btn) btn.onclick = () => this._doUnlockHero(h.id, kind);
+      box.appendChild(card);
+    }
+  },
+  /* 结晶解锁流程（导师 / 武器匠共用）：调 Meta.unlockHero 主动解锁 → 成功 toast + 刷新面板（含主城 HUD 结晶数）。 */
+  _doUnlockHero(id, kind) {
+    const h = CFG.heroes.find(x => x.id === id) || { name: id };
+    if (Meta.unlockHero(id)) {
+      this.toast(`🎉 已解锁 ${h.name}！`, "gold");
+    } else {
+      this.toast("结晶不足", "bad");
+    }
+    if (kind === "weapon") this.renderSmith(); else this.renderTrainer();
+    this._cityHudSig = ""; this.updateCityHUD();
+  },
+  /* 武器匠：武器 / 技能等级升级（解锁口径与导师一致：只列已解锁英雄） */
   renderSmith() {
     const box = document.getElementById("weapon-list");
     if (!box) return;
@@ -854,6 +943,7 @@ const UI = {
     if (cry) cry.innerHTML = `◆ 进化结晶 <b>${Meta.data.crystals}</b>`;
     box.innerHTML = "";
     for (const h of CFG.heroes) {
+      if (!Meta.isHeroUnlocked(h.id)) continue;
       const wlv = Meta.weaponLv(h.id);
       const wMax = wlv >= CFG.weaponLevel.maxLv;
       const cost = Meta.weaponUpCost(h.id);
@@ -870,6 +960,7 @@ const UI = {
       if (btn) btn.onclick = () => { this.metaUpgradeWeapon(h.id); this.renderSmith(); this._cityHudSig = ""; this.updateCityHUD(); };
       box.appendChild(card);
     }
+    this._appendLockedGroup(box, "weapon");
   },
   /* 形象师：更名 / 皮肤（图鉴激活解锁）/ 称号 */
   renderProfile() {

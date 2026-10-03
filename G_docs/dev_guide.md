@@ -175,7 +175,7 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
 
 ## 3. 验证流程（必做）
 
-**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 1229**。
+**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 1468**。
 
 核心要求：
 
@@ -880,7 +880,7 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 
 ## 8. 当前基线
 
-测试 **28/28 全绿**，**PASS 合计 = 1229**：
+测试 **28/28 全绿**，**PASS 合计 = 1468**：
 
 `smoke_test` / `runtime_test` / `backpack_test` / `econ_test` / `skill_module_test` /
 `team_trigger_test` / `artisan_test` / `ui_flow_test` / `rift_test` / `extract_test` /
@@ -933,7 +933,7 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
      —— **已落地**（`chip_test` 61 条）
   5. ✅ **UI 改造**：芯片背包 6×5 + 上下并列布局 + 芯片工坊 + 芯片图鉴 —— **已落地**（`ui_v2_test` 49 条）
   6. ✅ **行为芯片 4 种积木**（bounce 折射 / burn 燃蚀 / split 裂变 / chain 链锁）—— **已落地**（§5.45，`chip_behavior_test` 48 条）
-  - ⚠️ 每步都要跑全量测试；**改完必须仍是 `25/25 全绿 / bad=0`(PASS 1229)**。
+  - ⚠️ 每步都要跑全量测试；**改完必须仍是 `25/25 全绿 / bad=0`(PASS 1468)**。
   - 📌 **下一轮候选**：① `tagCalc` 双源收口（删旧 `weaponInv` 路径，§5.45 已留过渡）；② 关卡 3 → 10+
     铺量；③ 属性卡池；④ 美术接入（BGM/素材）；⑤ Godot 4.7.2 迁移评估。
 - **待确认**：主城商人新位置 `(0.14, 0.62)`；竖屏视野变窄是刻意行为（如需全宽需竖版布局）；

@@ -577,6 +577,20 @@ CFG.heroes = [
   { id: "H008", name: "陷阱师", desc: "大地雷封锁 / 掷雷 · 陷阱原型角", sprite: "hero",
     hp: 95, def: 2, atk: 15, energyMax: 110, energyRegen: 10,
     spd: 295, radius: 18, weapon: "W008", summonMax: 2, trapMax: 3 },
+  // 铺量角（批次 F）：12 角补齐，定位与武器数值均落在同定位现有角平衡带内；
+  // 武器技能复用 CFG.skills 已有条目（技能表已铺满，不新增技能条目）。
+  { id: "H009", name: "守护者", desc: "重型护盾 / 贯穿射线 · 阵地防御型", sprite: "hero",
+    hp: 100, def: 2, atk: 12, energyMax: 110, energyRegen: 9,
+    spd: 295, radius: 19, weapon: "W009", summonMax: 2, trapMax: 1 },
+  { id: "H010", name: "医疗兵", desc: "随行治疗 / 震荡波 · 续航恢复型", sprite: "hero",
+    hp: 92, def: 1, atk: 12, energyMax: 120, energyRegen: 12,
+    spd: 300, radius: 18, weapon: "W010", summonMax: 2, trapMax: 1 },
+  { id: "H011", name: "圣歌者", desc: "光环鼓舞 / 环形弹幕 · 群疗恢复型", sprite: "hero",
+    hp: 88, def: 1, atk: 11, energyMax: 115, energyRegen: 12,
+    spd: 305, radius: 18, weapon: "W011", summonMax: 2, trapMax: 1 },
+  { id: "H012", name: "灵能者", desc: "灵能护罩 / 能量爆发 · 灵力恢复型", sprite: "hero",
+    hp: 90, def: 1, atk: 13, energyMax: 125, energyRegen: 11,
+    spd: 300, radius: 18, weapon: "W012", summonMax: 2, trapMax: 1 },
 ];
 
 /* ---------- 武器配置表（8.5 表 3） ---------- */
@@ -607,6 +621,19 @@ CFG.weapons = {
   W008: { id: "W008", name: "布雷器", desc: "技能布设地雷陷阱（敌人入圈延迟引爆）",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数", "陷阱"],
     skills: { basic: "AT116", skill: "AT114" } },
+  // 铺量武器（批次 F）：专属绑定，技能引用 CFG.skills 既有条目（不新增技能）
+  W009: { id: "W009", name: "堡垒炮", desc: "重型护盾炮，技能为高穿透贯穿射线",
+    tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
+    skills: { basic: "AT107", skill: "AT106" } },
+  W010: { id: "W010", name: "生命枪", desc: "随行治疗枪，技能为震荡波压制",
+    tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
+    skills: { basic: "AT101", skill: "AT104" } },
+  W011: { id: "W011", name: "圣咏器", desc: "光环圣咏器，技能为环形弹幕群疗",
+    tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
+    skills: { basic: "AT109", skill: "AT108" } },
+  W012: { id: "W012", name: "灵能杖", desc: "灵能法杖，技能为能量爆发",
+    tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
+    skills: { basic: "AT105", skill: "AT102" } },
 };
 
 /* ---------- 技能表（8.5 表 4：**单表 + cat 分类**，不物理拆表） ----------
@@ -901,6 +928,7 @@ CFG.heroRoles = {
     H001: "output", H002: "output", H003: "output",
     H004: "defense", H005: "defense",
     H006: "output", H007: "recovery", H008: "defense",
+    H009: "defense", H010: "recovery", H011: "recovery", H012: "recovery",
   },
   // 断言用：三定位必须齐全（全部导向同一路径 = 设计失衡，测试会报错）
   requireAll: ["output", "defense", "recovery"],
@@ -1424,18 +1452,23 @@ CFG.audio = {
 };
 
 /* ========== 方向 3：局外成长——英雄解锁（追加区块，勿并入上方各表） ==========
- * 规划共 **12 个角色，首发解锁前 6 个**；⚠️ 现有 CFG.heroes 仅 8 个英雄定义（H001~H008），
- * H009~H012 **英雄数据待补**（补表后把 id 追加进 unlockOrder 即可，结构无需改动）。
+ * 规划共 **12 个角色，首发解锁前 6 个**；CFG.heroes 现为 12 个（H001~H012，批次 F 已补齐铺量角），
+ * H009~H012 已追加进 unlockOrder 并各自配置 unlockRules。
  * 解锁规则（isHeroUnlocked，见 game.js 末尾区块）：
  *   - unlockOrder 前 starterCount 个 = 首发默认解锁；
  *   - 其余按 CFG.unlockRules[id]：heroLv 条件（指定英雄局外等级达标即解锁）或
  *     crystal 条件（花结晶主动解锁，走 Meta.unlockHero）；两条都不配 = 暂不可解锁。 */
-CFG.unlockOrder = ["H001", "H002", "H003", "H004", "H005", "H006", "H007", "H008"];
+CFG.unlockOrder = ["H001", "H002", "H003", "H004", "H005", "H006", "H007", "H008", "H009", "H010", "H011", "H012"];
 CFG.starterCount = 6;                  // 首发 6 角默认解锁
 CFG.unlockRules = {
   // H007/H008 为原型验证角（批次 E），按注释「后续按设计再作解锁门槛」落地：
   H007: { heroLv: { heroId: "H006", lv: 3 }, desc: "重炮手（H006）局外达到 LV3 后解锁召唤师" },
   H008: { crystal: 300, desc: "主城花费 300 结晶解锁陷阱师" },
+  // 铺量角（批次 F）：解锁条件多样化——heroLv 达标 / 结晶消耗混合，均为 isHeroUnlocked 已支持的类型
+  H009: { heroLv: { heroId: "H004", lv: 5 }, desc: "弹射手（H004）局外达到 LV5 后解锁守护者" },
+  H010: { crystal: 500, desc: "主城花费 500 结晶解锁医疗兵" },
+  H011: { heroLv: { heroId: "H010", lv: 6 }, desc: "医疗兵（H010）局外达到 LV6 后解锁圣歌者" },
+  H012: { crystal: 800, desc: "主城花费 800 结晶解锁灵能者" },
 };
 
 /* ========== 方向 4：撤离压力设计（追加区块，勿并入 1096 行附近的 CFG.extract 基础字段） ==========

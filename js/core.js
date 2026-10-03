@@ -67,6 +67,19 @@ const Assets = {
       jobs.push(this._loadOne(key, manifest[key].src, manifest[key].tbg));
     }
     await Promise.all(jobs);
+    this.fillSprites(manifest);
+  },
+  /* 20.4 线C：按 manifest 全量填充 G.sprites（键名 = manifest 键），让 30+ 张新图真正上场。
+   * - main.js 启动时仅显式赋值 hero/enemy00/08/16/22 共 5 键（并附加尺寸裁剪），
+   *   本方法不覆写已存在键 → main.js 仍是那 5 键的权威（裁剪语义保持不变）；
+   * - 加载失败的键（Assets.images 无该项）置 null，渲染侧对 null 已有色块兜底（game.js 渲染 if(img) 分支）；
+   * - defId 前缀补零映射（NM/ED→enemyNN、H001→hero 等）由 spriteFor 负责，此处只负责装载。
+   * - 无 G（如仅桩加载 config+core 的测试沙箱）时静默跳过，保持 core.js 可独立测试。 */
+  fillSprites(manifest) {
+    if (typeof G === "undefined" || !G.sprites) return;
+    for (const key in manifest) {
+      if (!(key in G.sprites)) G.sprites[key] = this.fit(key, 48);
+    }
   },
   _loadOne(key, src, tbg) {
     return new Promise((resolve) => {

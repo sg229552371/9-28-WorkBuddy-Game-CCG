@@ -138,7 +138,11 @@ vm.runInContext(`
   // --- 主城 NPC：进圈弹面板（直接派发事件验证链路） ---
   const npc0 = G.activeWorld.cityNpcs[0];   // 强化导师
   EventBus.emit("cityNpcPanel", npc0);
-  check("靠近强化导师弹出面板", shown("panel-npc-outlevel") && get("outlevel-list").children.length === CFG.heroes.length);
+  check("靠近强化导师弹出面板", shown("panel-npc-outlevel") && get("outlevel-list").children.length === (() => {
+    // 强化导师面板渲染契约：已解锁英雄各 1 张卡；存在未解锁英雄时追加 1 个分组标题 + 每角 1 张锁定卡
+    const unlocked = Meta.unlockedHeroes().length, locked = CFG.heroes.length - unlocked;
+    return unlocked + (locked ? 1 + locked : 0);
+  })());
   EventBus.emit("cityNpcClose");
   check("离圈自动关闭面板", !shown("panel-npc-outlevel"));
 

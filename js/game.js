@@ -1669,7 +1669,7 @@ class Monster {
     this.patternTimer = 1.5;                            // 开场稍候再放第一招（给玩家反应时间）
     this.patternWarnT = 0; this.patternIdx = 0; this.warnP = null;
     this.spiralAng = 0; this.aimAng = 0;
-    this.sprite = G.sprites[d.sprite];
+    this.sprite = G.sprites[spriteFor(defId) || d.sprite || "enemy00"];   // 20.4 线C：优先按 defId 映射新精灵表（NM/ED→enemyNN），回落配表显式键，再回落默认色块路径；Boss(BS) spriteFor→null 走旧 enemy22
     this.flashT = 0;
   }
   /** Boss 当前阶段：phases 按血量比例降序，取**最后一个满足**的档位（1.0 = 满血即生效）。 */
