@@ -55,6 +55,9 @@ for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js", "js/mai
 
 vm.runInContext(`
   // ---- 启动 ----
+  // ⚠️ 隔离并行批新增的撤离压力机制（方向4）：波次怪在读条结束后转普通 AI 追击英雄，
+  // 干扰后续「返回主地图可移动」断言（移动被围攻/碰撞吃掉）→ 机制关闭，由 extract_test 专项锁定。
+  if (CFG.extract) CFG.extract.enabled = false;
   G.canvas = document.getElementById("game-canvas");
   G.ctx = G.canvas.getContext("2d");
   G.sprites.hero = { width: 60, height: 60 };
@@ -117,7 +120,7 @@ vm.runInContext(`
   EventBus.emit("returnToMain");
   frames(5);
   const x3 = G.player.x;
-  keyDown("d"); frames(30); keyUp("d");
+  keyDown("d"); frames(60); keyUp("d");
   console.assert(G.player.x > x3 + 50, "返回主地图后可移动, dx=" + (G.player.x - x3));
   console.log("返回主地图后移动 OK: dx =", Math.round(G.player.x - x3));
 

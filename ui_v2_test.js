@@ -78,7 +78,24 @@ class FakeEl {
     }
     return this._qa[sel];
   }
-  closest() { return null; }
+  // 20.3 修复：closest 原硬编码 return null —— 与真实 DOM 语义不符（真实 closest 沿祖先链
+  // 上溯且命中有效），导致 _onPartyBarClick 的 closest 分支在桩里永远找不到槽位。
+  // 现按真实语义实现：支持 ".cls" / "#id" / 逗号多选择器，沿 _parent 上溯。
+  closest(sel) {
+    const sels = String(sel).split(",").map(s => s.trim()).filter(Boolean);
+    let el = this;
+    while (el) {
+      for (const s of sels) {
+        if (s.charAt(0) === ".") {
+          if (el.classList && el.classList.contains(s.slice(1))) return el;
+        } else if (s.charAt(0) === "#") {
+          if (el._id === s.slice(1)) return el;
+        }
+      }
+      el = el._parent;
+    }
+    return null;
+  }
   getBoundingClientRect() { return { left: 0, top: 0, width: 400, height: 400 }; }
 }
 const ctxProxy = new Proxy({}, {
@@ -91,7 +108,7 @@ const ctxProxy = new Proxy({}, {
 });
 const elCache = {};
 global.document = {
-  getElementById(id) { return elCache[id] || (elCache[id] = new FakeEl(id)); },
+  getElementById(id) { const el = elCache[id] || (elCache[id] = new FakeEl(id)); el._id = id; return el; },
   createElement(tag) { return new FakeEl(tag); },
   addEventListener() { }, querySelectorAll: () => [], elementFromPoint: () => null,
 };
@@ -323,10 +340,10 @@ vm.runInContext(`
 
   delete Game.chipForge;   // 清理桩，避免影响后续
 
-  /* ============ ⑦ 升级弹窗标明归属英雄（19.12 任务一） ============ */
+  /* ============ ⑦ 升级弹窗标明归属英雄（19.12 任务一 / 20.3 任务一） ============ */
   // ① meta 存在 → 标题区显示「给 <英雄名> 选择强化」+ 定位色
-  //    （用 H002 的空槽环境，避免复用前面 block 里已装的 heroModules 干扰槽位推断）
-  G.run.heroModules = { H002: [null, null, null, null] };
+  //    H002 已用 2 格（heroModules 驱动槽号推导，20.3 起以 cand 归属 heroModules 为准）
+  G.run.heroModules = { H002: [{ defId: "M002", lv: 1 }, { defId: "M003", lv: 1 }, null, null] };
   const heroCands = [
     { kind: "module", heroId: "H002", defId: "M001", name: "弹头扩容", desc: "弹道数量 +1", lv: 3, locked: false },
     { kind: "module", heroId: "H002", defId: "M009", name: "增幅器", desc: "伤害 +22%", lv: 1, locked: false },
@@ -339,10 +356,10 @@ vm.runInContext(`
     heroTitle.innerHTML.indexOf("给") >= 0 && heroTitle.innerHTML.indexOf("散弹手") >= 0 && heroTitle.innerHTML.indexOf("选择强化") >= 0);
   check("meta.roleColor → 标题带定位色", heroTitle.innerHTML.indexOf(CFG.heroRoles.output.color) >= 0);
 
-  // ② 候选属于模块槽 → 标注「模块槽 N/4」
+  // ② 候选属于模块槽 → 标注「填入 <英雄名> 的第 N 槽」（20.3：归属 + 槽号）
   const luH = get("levelup-cards").children;
   check("候选渲染 4 张（含 1 张置灰）", luH.length === 4);
-  check("模块槽已用 2 → 标注模块槽 3/4", luH[0].innerHTML.indexOf("模块槽") >= 0 && luH[0].innerHTML.indexOf("3/4") >= 0);
+  check("模块槽已用 2 → 标注填入第 3 槽（3/4）", luH[0].innerHTML.indexOf("填入") >= 0 && luH[0].innerHTML.indexOf("3/4") >= 0);
 
   // ③ locked 候选 → 明显禁用视觉（灰度类）且点击无效
   check("locked 候选带禁用类（lu-locked）", luH[2].classList.contains("lu-locked"));
@@ -534,6 +551,163 @@ vm.runInContext(`
   check("主城：CSS 在 #hud.city-mode 下隐藏 #party-skillbar", cssHide);
   check("主城：CSS 隐藏规则先于竖屏段（不被后者覆盖）",
     cssFlat.indexOf("#party-skillbar") >= 0 && cssHide);
+
+  /* ============ ⑪ 升级入槽预览 + 模块槽详情（20.3 任务一 / 任务二） ============ */
+  // 复原单人局现场，避免前面 block 的队伍/companions 残留干扰
+  G.run.companions = [];
+  G.heroDef = CFG.heroes[0];
+  G.state = "playing";
+
+  /* ---- (A) 升级弹窗：每张卡显示「→ 填入 <英雄名> 的第 N 槽」+ 归属英雄定位色 ---- */
+  // 场景：H001 已用 1 格 → 其候选应显示「填入 <H001名> 的第 2 槽」
+  const h1 = CFG.heroes[0];
+  G.run.heroModules = { [h1.id]: [{ defId: "M001", lv: 2 }, null, null, null] };
+  const roleOut = CFG.heroRoles.output;
+  const mixedCands = [
+    // 全队混抽：cand 自带 ownerName / ownerRoleColor / heroId
+    { kind: "module", heroId: h1.id, defId: "M009", name: "增幅器", desc: "伤害 +22%", lv: 1, locked: false,
+      ownerName: "猎手", ownerRoleColor: roleOut.color },
+  ];
+  // meta 描述的是「升级者」= H001，与 cand 归属一致（混抽场景下可能不一致，见下）
+  UI.onLevelUpChoice(mixedCands, () => {}, { heroId: h1.id, heroName: "猎手", roleColor: roleOut.color, slotUsed: 1 });
+  const mc0 = get("levelup-cards").children[0];
+  check("⑪A 候选卡渲染「填入」文案", mc0.innerHTML.indexOf("填入") >= 0);
+  check("⑪A 已用 1 格 → 显示第 2 槽（2/4）", mc0.innerHTML.indexOf("第 2 槽") >= 0 && mc0.innerHTML.indexOf("2/4") >= 0);
+  check("⑪A 归属英雄名 = 猎手", mc0.innerHTML.indexOf("猎手") >= 0);
+  check("⑪A 使用 cand.ownerRoleColor 定位色（左侧色条）",
+    mc0.innerHTML.indexOf("lu-bar") >= 0 && mc0.innerHTML.indexOf(roleOut.color) >= 0);
+  UI.onLevelUpChoiceClose();
+
+  // 全队混抽：cand 归属 ≠ meta（升级者）→ 必须显示 cand 的归属，而非 meta
+  const h2 = CFG.heroes[1];
+  G.run.heroModules = { [h1.id]: [null, null, null, null], [h2.id]: [null, null, null, null] };
+  const roleDef = CFG.heroRoles.defense || CFG.heroRoles.recovery || { color: "#6cb2ff" };
+  const otherOwnerCands = [
+    { kind: "module", heroId: h2.id, defId: "M001", name: "弹头扩容", desc: "弹道数量 +1", lv: 1, locked: false,
+      ownerName: "盾卫", ownerRoleColor: roleDef.color },
+  ];
+  UI.onLevelUpChoice(otherOwnerCands, () => {}, { heroId: h1.id, heroName: "猎手", roleColor: roleOut.color, slotUsed: 0 });
+  const oc0 = get("levelup-cards").children[0];
+  check("⑪A 混抽：显示 cand 归属（盾卫）而非 meta（猎手）", oc0.innerHTML.indexOf("盾卫") >= 0 && oc0.innerHTML.indexOf("第 1 槽") >= 0);
+  check("⑪A 混抽：用 cand.ownerRoleColor（非 meta 定位色）",
+    oc0.innerHTML.indexOf(roleDef.color) >= 0 && roleDef.color !== roleOut.color);
+  UI.onLevelUpChoiceClose();
+
+  // 槽位将满警示：H001 已用 3 格 → 选中即填满 → lu-will-full + 警示文案
+  G.run.heroModules = { [h1.id]: [{ defId: "M001", lv: 1 }, { defId: "M002", lv: 1 }, { defId: "M003", lv: 1 }, null] };
+  const almostFull = [
+    { kind: "module", heroId: h1.id, defId: "M009", name: "增幅器", desc: "伤害 +22%", lv: 1, locked: false,
+      ownerName: "猎手", ownerRoleColor: roleOut.color },
+  ];
+  UI.onLevelUpChoice(almostFull, () => {}, { heroId: h1.id, heroName: "猎手", roleColor: roleOut.color, slotUsed: 3 });
+  const af0 = get("levelup-cards").children[0];
+  check("⑪A 槽位将满 → 带 lu-will-full 类", af0.classList.contains("lu-will-full"));
+  check("⑪A 槽位将满 → 警示文案（将满 / 4/4）", af0.innerHTML.indexOf("将满") >= 0 && af0.innerHTML.indexOf("4/4") >= 0);
+  check("⑪A 将满卡仍可点（非 locked）", typeof af0.onclick === "function" && !af0.classList.contains("lu-locked"));
+  UI.onLevelUpChoiceClose();
+
+  // 降级：G.run 为 null → 不崩，且不显示槽号（只显示归属英雄名）
+  const savedRun = G.run;
+  G.run = null;
+  let degradeNoThrow = true, degradeCard = null;
+  try {
+    UI.onLevelUpChoice(almostFull, () => {}, { heroId: h1.id, heroName: "猎手", roleColor: roleOut.color, slotUsed: 3 });
+    degradeCard = get("levelup-cards").children[0];
+  } catch (e) { degradeNoThrow = false; }
+  check("⑪A G.run=null → 升级弹窗渲染不崩（降级）", degradeNoThrow && !!degradeCard);
+  check("⑪A G.run=null → 不显示槽号（无 undefined）",
+    degradeCard && degradeCard.innerHTML.indexOf("第 ") < 0 && degradeCard.innerHTML.indexOf("undefined") < 0);
+  check("⑪A G.run=null → 仍显示归属英雄名", degradeCard && degradeCard.innerHTML.indexOf("猎手") >= 0);
+  UI.onLevelUpChoiceClose();
+  G.run = savedRun;
+
+  /* ---- (B) 模块槽点击 → 词条详情浮窗 ---- */
+  // 装配单人局：H001 槽0 = 增幅器 M009 LV3（阶段1），槽1 空
+  G.run.heroModules = { [h1.id]: [{ defId: "M009", lv: 3 }, null, null, null] };
+  UI.renderPartySkillbar();
+  const pRow = get("party-skillbar").children[0];
+  const pSlots = pRow.querySelectorAll(".ps-slot");
+  const slotFilled = pSlots[0], slotEmpty = pSlots[1];
+  check("⑪B 技能栏渲染 4 槽", pSlots.length === 4);
+  check("⑪B 已填槽带 filled 类", slotFilled.classList.contains("ps-slot-filled"));
+  check("⑪B 空槽带 empty 类", slotEmpty.classList.contains("ps-slot-empty"));
+
+  const mtip = get("module-tip");
+  check("⑪B 浮窗容器存在（#module-tip）", !!mtip);
+  check("⑪B 初始浮窗隐藏", mtip.classList.contains("hidden"));
+
+  // 点击已填槽（模拟事件冒泡到技能栏委托）
+  get("party-skillbar").onclick({ target: slotFilled });
+  check("⑪B 点已填槽 → 浮窗显示", !mtip.classList.contains("hidden"));
+  check("⑪B 浮窗含模块名（增幅器）", mtip.innerHTML.indexOf("增幅器") >= 0);
+  check("⑪B 浮窗含等级 LV 3/9", mtip.innerHTML.indexOf("LV 3/9") >= 0);
+  check("⑪B 浮窗含品质名（白/蓝/紫/金）", /白|蓝|紫|金/.test(mtip.innerHTML));
+  check("⑪B 浮窗品质色 = moduleQualityColor(3)",
+    mtip.innerHTML.indexOf(UI.moduleQualityColor(3)) >= 0);
+  // 词条明细：主词缀（伤害）+ 阶段词缀（阶段1 解锁第1条 强化·技能伤害）
+  check("⑪B 浮窗含主词缀（伤害/主词缀行）", mtip.innerHTML.indexOf("伤害") >= 0 && mtip.innerHTML.indexOf("mt-row main") >= 0);
+  check("⑪B 浮窗含阶段词缀明细（强化·技能伤害）", mtip.innerHTML.indexOf("技能伤害") >= 0 || mtip.innerHTML.indexOf("技能冷却") >= 0);
+
+  // 点击空槽 → 空槽提示
+  get("party-skillbar").onclick({ target: slotEmpty });
+  check("⑪B 点空槽 → 浮窗显示空槽提示", !mtip.classList.contains("hidden") && mtip.innerHTML.indexOf("空槽") >= 0 && mtip.innerHTML.indexOf("升级可选择武器模块填入") >= 0);
+
+  // 再点同一空槽 → 关闭（toggle）
+  get("party-skillbar").onclick({ target: slotEmpty });
+  check("⑪B 再点同槽 → 浮窗关闭（toggle）", mtip.classList.contains("hidden"));
+
+  // 点击外部 → 关闭
+  get("party-skillbar").onclick({ target: slotFilled });
+  check("⑪B 前置：浮窗已打开", !mtip.classList.contains("hidden"));
+  // 通过 document.onclick 模拟点击任意外部空白节点
+  const outside = document.createElement("div");
+  document.onclick({ target: outside });
+  check("⑪B 点击外部 → 浮窗关闭", mtip.classList.contains("hidden"));
+
+  // 词条行数 = 1 主 + stageAffixes 条（结构核对）
+  const affixRows = UI._moduleAffixLines("M009", 3);
+  check("⑪B 词条行 = 1 主词缀 + " + ((CFG.moduleLevel.stageAffixes || []).length) + " 阶段词缀",
+    affixRows.length === 1 + (CFG.moduleLevel.stageAffixes || []).length);
+  check("⑪B 主词缀行标记 main", affixRows[0].main === true);
+  // 高等级解锁更多阶段词缀（LV9 → 阶段3）
+  const affixRows9 = UI._moduleAffixLines("M009", 9);
+  const unlocked9 = affixRows9.filter(r => r.unlocked !== false).length;
+  check("⑪B LV9 解锁全部阶段词缀", unlocked9 === affixRows9.length);
+
+  // 未知 defId → 不崩（无主词缀数据）
+  let unknownOk = true;
+  try { UI._moduleAffixLines("MZZZ", 1); } catch (e) { unknownOk = false; }
+  check("⑪B 未知 defId 词条查询不崩", unknownOk);
+
+  // 再次点击浮窗容器外/内判定不误关（点击浮窗自身不关闭）
+  UI.showModuleSlotTip({ defId: "M009", lv: 3, idx: 0, heroId: h1.id, heroName: "猎手" }, slotFilled);
+  document.onclick({ target: mtip });
+  check("⑪B 点击浮窗自身不关闭", !mtip.classList.contains("hidden"));
+  UI.hideModuleTip();
+  check("⑪B hideModuleTip 幂等关闭", mtip.classList.contains("hidden"));
+
+  // clearBattleHud 顺带关闭浮窗（防回城残留）
+  UI.showModuleSlotTip({ defId: "M009", lv: 3, idx: 0, heroId: h1.id, heroName: "猎手" }, slotFilled);
+  UI.clearBattleHud();
+  check("⑪B clearBattleHud 关闭模块槽浮窗", mtip.classList.contains("hidden"));
+
+  // 移动端/触屏命中区：静态 CSS 核对 —— .ps-slot min 尺寸 ≥32px
+  check("⑪B CSS: .ps-slot 声明 min-width/min-height ≥32px（触屏可点）",
+    cssFlat.indexOf(".ps-slot") >= 0 && cssFlat.indexOf("min-width:32px") >= 0 && cssFlat.indexOf("min-height:32px") >= 0);
+
+  /* ---- (C) 竖屏：新增浮窗/弹窗不溢出（静态 CSS 核对） ---- */
+  // 浮窗宽度限 92vw（不横向溢出 390px 竖屏），且锚在底控件带之上
+  check("⑪C CSS: #module-tip max-width ≤96vw 防竖屏溢出", cssFlat.indexOf("max-width:92vw") >= 0);
+  check("⑪C CSS: 浮窗有 .hidden 隐藏规则", cssFlat.indexOf(".module-tip.hidden") >= 0);
+  // 竖屏下定位：JS 走 portrait 分支（bottom 锚点 + 居中）
+  setVP(390, 844);
+  UI.applyOrientation();
+  UI.showModuleSlotTip({ defId: "M001", lv: 2, idx: 0, heroId: h1.id, heroName: "猎手" }, null);
+  check("⑪C 竖屏 390×844：浮窗居中（left 50% + translateX）", mtip.style.left === "50%" && mtip.style.transform.indexOf("translateX") >= 0);
+  check("⑪C 竖屏：浮窗 bottom 锚点（不贴顶遮挡）", (mtip.style.bottom || "").indexOf("calc(") === 0);
+  UI.hideModuleTip();
+  setVP(1920, 1080);   // 复原
+  UI.applyOrientation();
 
   console.log(window.__v2Ok ? "UI V2 TEST OK" : "UI V2 TEST FAILED");
   if (!window.__v2Ok) throw new Error("UI V2 TEST FAILED");

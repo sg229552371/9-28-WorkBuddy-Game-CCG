@@ -51,6 +51,9 @@ for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/main.js"]) {
 }
 vm.runInContext(`
   // ---- 启动（跳过素材加载，直接注入桩精灵） ----
+  // ⚠️ 隔离并行批新增的撤离压力机制（方向4）：本测试锁定的是旧撤离行为（读条8s无干扰），
+  // 波次怪会吃子弹干扰 Boss 击杀链路 → 机制关闭，等价性由 extract_test 专项锁定。
+  if (CFG.extract) CFG.extract.enabled = false;
   G.canvas = document.getElementById("game-canvas");
   G.ctx = G.canvas.getContext("2d");
   G.sprites = { hero:{width:60,height:60}, enemy00:{}, enemy08:{}, enemy16:{}, enemy22:{} };

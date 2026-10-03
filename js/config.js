@@ -46,6 +46,113 @@ CFG.levels = [
     circles: [{ tpl: "SC02", count: 4 }, { tpl: "SC03", count: 3 }],
     progressGoal: 85, timeLimit: 220, artisanAtKills: 28,
   },
+  /* ---------- 第 3→10 关铺量（B 线并行批）----------
+   * 设计口径：难度沿关卡单调递增（monsterLevel / eliteBase / progressGoal / timeLimit / artisanAtKills），
+   * Boss 每关一只，LEVEL_001~010 依次对应 BS0001~BS0010（见关卡铺量测试断言「10 关 Boss 无重复」）。
+   * elitePool 权重随关卡变化：中后期 ED0002/ED0003（远程/高速）占比抬升，压制「贴脸莽」的容错。
+   * theme 为暗色主题（与既有 #1a2418 / #201a2a 风格一致，逐关加深偏冷/偏暖）。
+   * 机制：LEVEL_005 起部分关卡开启毒圈（hazard）/ 补给点（supply）；缺省字段则由 CFG.hazard / CFG.supply
+   * 的全局默认接管（hazardEnabled / supplyEnabled 为布尔开关，覆盖项写在关卡内）。 */
+  {
+    id: "LEVEL_004", name: "第 4 关 · 熔岩裂谷", theme: "#241a14",
+    mapW: 1920, mapH: 1920,
+    monsterLevel: 4,
+    eliteBase: 5,
+    elitePool: "ED0001:45/ED0002:30/ED0003:25",
+    boss: "BS0004",
+    monsterCap: 120,
+    circles: [{ tpl: "SC02", count: 4 }, { tpl: "SC03", count: 3 }],
+    progressGoal: 100, timeLimit: 240, artisanAtKills: 32,
+  },
+  {
+    id: "LEVEL_005", name: "第 5 关 · 熔核哨塔", theme: "#2a1c12",
+    mapW: 1920, mapH: 1920,
+    monsterLevel: 5,
+    eliteBase: 6,
+    elitePool: "ED0001:40/ED0002:30/ED0003:30",
+    boss: "BS0005",
+    monsterCap: 120,
+    circles: [{ tpl: "SC02", count: 5 }, { tpl: "SC03", count: 4 }],
+    progressGoal: 118, timeLimit: 270, artisanAtKills: 36,
+    // 首个毒圈关：进场 20 秒后从边缘收缩，圈外每 1.0 秒扣 6 点（可走位规避）
+    hazardEnabled: true,
+    hazard: { startDelay: 20, shrinkDuration: 90, minRadius: 360, tickInterval: 1.0, dmgPerTick: 6 },
+    // 本关同时投放 2 个补给点；站圈读条 3 秒回血 20%
+    supplyEnabled: true,
+    supply: { count: 2, channelSeconds: 3.0, effect: { type: "heal", pct: 0.20 } },
+  },
+  {
+    id: "LEVEL_006", name: "第 6 关 · 棱镜圣殿", theme: "#141f2a",
+    mapW: 1920, mapH: 1920,
+    monsterLevel: 6,
+    eliteBase: 6,
+    elitePool: "ED0001:35/ED0002:32/ED0003:33",
+    boss: "BS0006",
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 5 }, { tpl: "SC02", count: 4 }],
+    progressGoal: 132, timeLimit: 300, artisanAtKills: 40,
+    // 毒圈更凶：收缩更快、伤害更高
+    hazardEnabled: true,
+    hazard: { startDelay: 18, shrinkDuration: 80, minRadius: 340, tickInterval: 0.8, dmgPerTick: 8 },
+    supplyEnabled: true,
+    supply: { count: 1, channelSeconds: 2.5, effect: { type: "buff", buffPool: "war", duration: 25 } },
+  },
+  {
+    id: "LEVEL_007", name: "第 7 关 · 裂空回廊", theme: "#1a1426",
+    mapW: 1920, mapH: 1920,
+    monsterLevel: 7,
+    eliteBase: 7,
+    elitePool: "ED0001:30/ED0002:34/ED0003:36",
+    boss: "BS0007",
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 6 }, { tpl: "SC01", count: 4 }],
+    progressGoal: 150, timeLimit: 330, artisanAtKills: 44,
+  },
+  {
+    id: "LEVEL_008", name: "第 8 关 · 虫巢深渊", theme: "#1c2418",
+    mapW: 1920, mapH: 1920,
+    monsterLevel: 8,
+    eliteBase: 7,
+    elitePool: "ED0001:28/ED0002:34/ED0003:38",
+    boss: "BS0008",
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 6 }, { tpl: "SC02", count: 5 }],
+    progressGoal: 168, timeLimit: 360, artisanAtKills: 48,
+    hazardEnabled: true,
+    hazard: { startDelay: 15, shrinkDuration: 70, minRadius: 320, tickInterval: 0.8, dmgPerTick: 10 },
+    supplyEnabled: true,
+    supply: { count: 2, channelSeconds: 3.0, effect: { type: "heal", pct: 0.25 } },
+  },
+  {
+    id: "LEVEL_009", name: "第 9 关 · 领主王座", theme: "#26161a",
+    mapW: 1920, mapH: 1920,
+    monsterLevel: 9,
+    eliteBase: 8,
+    elitePool: "ED0001:24/ED0002:34/ED0003:42",
+    boss: "BS0009",
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 7 }, { tpl: "SC02", count: 5 }],
+    progressGoal: 184, timeLimit: 390, artisanAtKills: 52,
+    hazardEnabled: true,
+    hazard: { startDelay: 14, shrinkDuration: 65, minRadius: 300, tickInterval: 0.7, dmgPerTick: 12 },
+    supplyEnabled: true,
+    supply: { count: 3, channelSeconds: 3.0, effect: { type: "crystal", amount: 60 } },
+  },
+  {
+    id: "LEVEL_010", name: "第 10 关 · 终焉神域", theme: "#220f16",
+    mapW: 1920, mapH: 1920,
+    monsterLevel: 10,
+    eliteBase: 9,
+    elitePool: "ED0001:20/ED0002:34/ED0003:46",
+    boss: "BS0010",
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 7 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 4 }],
+    progressGoal: 200, timeLimit: 420, artisanAtKills: 56,
+    hazardEnabled: true,
+    hazard: { startDelay: 12, shrinkDuration: 60, minRadius: 280, tickInterval: 0.6, dmgPerTick: 14 },
+    supplyEnabled: true,
+    supply: { count: 3, channelSeconds: 2.5, effect: { type: "heal", pct: 0.30 } },
+  },
 ];
 
 /* ---------- 刷怪圆模板表（表 B） ---------- */
@@ -59,6 +166,41 @@ CFG.spawnCircles = {
 CFG.spawnRules = {
   minDistFromPlayer: 300,   // 刷怪点与玩家最小距离
   bossClearRadius: 380,     // BOSS 存活期间，刷怪点与 BOSS 的最小距离（避免小怪贴脸刷出）
+};
+
+/* ---------- 毒圈收缩（B 线并行批：CFG.hazard）----------
+ * 关卡级机制：进场 startDelay 秒后毒圈出现，从**地图边缘**向内收缩到 minRadius（半径线性递减）。
+ * 圆心默认取地图中心（可用圆心覆盖 cx/cy 比例）；收缩完成后保持 minRadius 不再变。
+ * 圈外任意存活英雄（队长或队友）每 tickInterval 秒扣 dmgPerTick 血（走 heroTakeDamage 队友受伤入口）。
+ * `enabled` 为全局总闸；关卡内 `hazardEnabled: true` + `hazard: { ... }` 覆盖任意字段。
+ * 渲染：红色半透明环边界 + 环外渐暗遮罩（见 game.js 文件末尾 renderHazard）。 */
+CFG.hazard = {
+  enabled: false,           // 全局缺省关（main 之外默认不开启）；关卡以 hazardEnabled 打开
+  startDelay: 20,           // 进场后多少秒出现毒圈
+  shrinkDuration: 90,       // 从满图收缩到 minRadius 所需秒数
+  minRadius: 360,           // 最终安全圈半径（收缩到位后保持）
+  tickInterval: 1.0,        // 圈外扣血间隔（秒）
+  dmgPerTick: 6,            // 每次扣除血量（已扣防御）
+  cx: 0.5, cy: 0.5,         // 毒圈圆心（地图宽/高的比例，默认正中）
+  color: "#ff3b3b",         // 边界色（红色系）
+};
+
+/* ---------- 补给点（B 线并行批：CFG.supply）----------
+ * 关卡级机制：主地图随机生成 count 个补给点（互动物）；玩家**站进判定圈**读条 channelSeconds 秒生效。
+ * 复用既有判定圈统一入口 judgeChannel（雕像/工匠/信标/撤离点共用），不新建判定体系。
+ * effect 为单一生效项（配置驱动）：
+ *   { type: "heal",    pct }                       —— 全队按 hpMax 比例回血
+ *   { type: "buff",    buffPool, duration }        —— 随机获得该池一条增益 Buff
+ *   { type: "crystal", amount }                    —— 直接给予金币/结晶
+ *   亦可用 effects: [ ... ] 组合多项（缺省时回落 effect）。
+ * 渲染：绿色发光圈 + 补给图标（见 game.js 文件末尾 renderSupply）。 */
+CFG.supply = {
+  enabled: false,           // 全局缺省关；关卡以 supplyEnabled 打开
+  count: 2,                 // 生成数量（1~3）
+  radius: 90,               // 判定/绘制圈半径（判定半径 = radius × altarJudgeMul）
+  channelSeconds: 3.0,      // 读条秒数
+  effect: { type: "heal", pct: 0.20 },
+  color: "#5ad07a",         // 绿色系
 };
 
 /* ---------- 独立精英怪投放（3.3 / 4.5） ----------
@@ -1159,8 +1301,20 @@ CFG.deathPenalty = { loseRatio: 0.7 };
  *    逻辑实现阶段（第 1 步）一并移除读取；**新代码禁止再引用 crystalKill**。 */
 CFG.outLevel = {
   maxLevel: 10,
-  costBase: 50, costStep: 40,          // LV n→n+1 消耗结晶 = costBase + (n-1)*costStep
-  growth: { hp: 8, atk: 2, def: 1 },   // 每级成长（对局内基础属性）
+  costBase: 50, costStep: 40,          // 旧线性公式（兼容回落值）：LV n→n+1 = costBase + (n-1)*costStep
+  growthRate: 1.8,                     // 新指数曲线：LV n→n+1 = round(costBase * growthRate^(n-1))；缺省回落旧线性
+                                       //   取 1.8 使 LV1→2=50、LV2→3=90（与旧曲线前两级等价，平滑过渡）
+  growth: { hp: 8, atk: 2, def: 1 },   // 旧线性每级成长（兼容回落值；也是 growthByRole 缺定位时的默认）
+  growthTable: [                       // 分段加速表（方向3 新增）：升到 LV n 的每级成长 = 定位成长 × 该段 mul
+    { upTo: 3, mul: 1.0 },             //   LV1~3 平缓期 ×1.0
+    { upTo: 6, mul: 1.35 },            //   LV4~6 加速期 ×1.35
+    { upTo: 10, mul: 1.8 },            //   LV7~10 陡峭期 ×1.8
+  ],                                   // ⚠️ 数组缺失/为空时回落旧线性（兼容老配置）
+  growthByRole: {                      // 按定位差异化成长（方向3 新增）：输出偏 atk、防御偏 hp/def；缺定位回落 growth
+    output:   { hp: 8,  atk: 2, def: 1 },
+    defense:  { hp: 12, atk: 1, def: 2 },
+    recovery: { hp: 10, atk: 2, def: 1 },
+  },
   crystalKill: 1,                      // 🔴 已退役（19.8）：小怪击杀不给结晶，保留值仅为兼容现有逻辑
   crystalBoss: 30,                     // ✅ 保留（19.8 已定）：来源①，击杀 BOSS 直接得结晶
   deathRatio: 0.3,                     // 死亡仅保留 30% 本局结晶（沿用原规则，逻辑阶段统一结算）
@@ -1268,3 +1422,52 @@ CFG.audio = {
   master: 0.45,          // 总音量 0~1
   shake: { hurt: 7, bossBoom: 11, dur: 0.32 },   // 屏幕震动：幅度(px) 与时长(s)
 };
+
+/* ========== 方向 3：局外成长——英雄解锁（追加区块，勿并入上方各表） ==========
+ * 规划共 **12 个角色，首发解锁前 6 个**；⚠️ 现有 CFG.heroes 仅 8 个英雄定义（H001~H008），
+ * H009~H012 **英雄数据待补**（补表后把 id 追加进 unlockOrder 即可，结构无需改动）。
+ * 解锁规则（isHeroUnlocked，见 game.js 末尾区块）：
+ *   - unlockOrder 前 starterCount 个 = 首发默认解锁；
+ *   - 其余按 CFG.unlockRules[id]：heroLv 条件（指定英雄局外等级达标即解锁）或
+ *     crystal 条件（花结晶主动解锁，走 Meta.unlockHero）；两条都不配 = 暂不可解锁。 */
+CFG.unlockOrder = ["H001", "H002", "H003", "H004", "H005", "H006", "H007", "H008"];
+CFG.starterCount = 6;                  // 首发 6 角默认解锁
+CFG.unlockRules = {
+  // H007/H008 为原型验证角（批次 E），按注释「后续按设计再作解锁门槛」落地：
+  H007: { heroLv: { heroId: "H006", lv: 3 }, desc: "重炮手（H006）局外达到 LV3 后解锁召唤师" },
+  H008: { crystal: 300, desc: "主城花费 300 结晶解锁陷阱师" },
+};
+
+/* ========== 方向 4：撤离压力设计（追加区块，勿并入 1096 行附近的 CFG.extract 基础字段） ==========
+ * ① 撤离读条波次：开始读条（extractChanneling false→true）时逐波刷怪围攻，强度随波数递增
+ *    （第 N 波数量 = waveSizeBase + waveSizeGrowth×(N-1)，每 waveInterval 秒一波）；
+ *    读条结束/打断 → 停止刷怪。怪池与 spawnWave 同源（刷怪圆模板池 → 关卡 spawnPool 回退）。
+ * ② 负重权衡：负重越高 → 撤离读条时间越长（读条速率打折，等效拉长时长）。
+ *    实际读条秒数 = channel × min(weightTimeScaleMax, 1 + weightSlopePer100 × max(0, 负重- weightThreshold)/100)。
+ *    纯函数 extractChannelSeconds（game.js 末尾区块）可测。 */
+CFG.extract.enabled = true;              // 总开关：false = 完全回退旧行为（无机制等价性）
+CFG.extract.waveEnabled = true;          // 读条期间波次刷怪
+CFG.extract.waveFirstDelay = 0;          // 开始读条到第 1 波的间隔（秒，0 = 立即刷第 1 波）
+CFG.extract.waveInterval = 2.5;          // 每波固定间隔（秒）
+CFG.extract.waveSizeBase = 2;            // 第 1 波数量
+CFG.extract.waveSizeGrowth = 1;          // 每波数量增量（第 N 波 = base + growth×(N-1)）
+CFG.extract.waveEliteChance = 0.08;      // 波次怪物精英化概率（applyElite 词缀）
+CFG.extract.waveSpawnRadius = 420;       // 围绕雕像的刷怪半径（> spawnRules.minDistFromPlayer=300，防贴脸刷出）
+CFG.extract.weightPenaltyEnabled = true; // 负重 → 读条时长惩罚
+CFG.extract.weightThreshold = 100;       // 负重免罚门槛（与 CFG.weight.threshold 同口径）
+CFG.extract.weightSlopePer100 = 0.25;    // 每超出 100 点负重，读条时长 +25%
+CFG.extract.weightTimeScaleMax = 2.0;    // 读条时长最大倍率（封顶，防极端背包死锁撤离）
+/* 护盾围攻（压力载体）：波次怪读条期间**只啃雕像护盾、不伤害英雄**（不打断读条——
+ * 门禁 runtime_test 需要站桩 8s 必然撤离成功，怪伤英雄 = 读条重置 = 永远撤不走）；
+ * 读条一旦中断（离圈/受击/护盾破碎），波次怪立刻交还普通 AI 追击英雄（真实威胁）。
+ * 贪心压力 = 护盾持续被啃：不清理围攻怪 → 护盾破碎 → 读条冻结，直到清怪恢复。 */
+CFG.extract.siegeRingRadius = 140;       // 波次怪围攻停留半径（雕像判定圈 120 外侧）
+CFG.extract.siegeDpsMul = 1.5;           // 围攻啃盾 DPS 倍率（× m.atk）
+CFG.extract.shieldMax = 2000;            // 雕像护盾上限（约 3 倍于整次读条的最坏啃盾量）
+CFG.extract.shieldRecoverPct = 0.5;      // 护盾破碎后恢复到该比例才解锁读条
+CFG.extract.shieldRegenPerSec = 120;     // 再生速率（围攻怪清空后）
+CFG.extract.shieldRegenDelay = 3.0;      // 脱离围攻后开始再生的延迟（秒）
+
+/* ========== 方向 5：音频扩展——BGM 开关与音量（追加字段，勿动上方 CFG.audio 原有区块） ========== */
+CFG.audio.bgmEnabled = true;   // 战斗 BGM 独立开关（关掉只静 BGM，音效不受影响）
+CFG.audio.bgmVolume = 0.28;    // BGM 总线增益（挂 SFX.master 之下，0.2~0.35 区间，不盖过音效）

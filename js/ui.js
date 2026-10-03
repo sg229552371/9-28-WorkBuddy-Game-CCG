@@ -105,8 +105,6 @@ const UI = {
     const list = this.levelUpCandidates || [];
     const m = this.levelUpMeta || {};
     const perHero = (CFG.moduleSlot && CFG.moduleSlot.perHero) || 4;
-    // 槽位序号：优先用 meta.slotUsed（战斗侧已知），否则从 candidates[i].heroId + G.run.heroModules 推导
-    const slotUsed = (typeof m.slotUsed === "number") ? m.slotUsed : this._occupiedSlotCount();
     list.forEach((c, i) => {
       const locked = !!c.locked;
       const card = document.createElement("div");
@@ -114,18 +112,37 @@ const UI = {
       // 卡片内容：按候选类型渲染（module = 武器模块叠加 / statPack = 属性小包）
       const kindLabel = c.kind === "module" ? "武器模块" : (c.kind === "statPack" ? "属性小包" : (c.kind || ""));
       const desc = c.kind === "statPack" ? `+${c.value}` : (c.desc || "");
-      // 模块候选：标注「模块槽 N/4」（已持有则为已有槽升级，N 取该模块所在格）
+      // 归属英雄（20.3 任务一）：全队混抽后每个 cand 有自己的 heroId → 显示 cand 的归属，而非 meta（升级者）。
+      //   用该英雄定位色做视觉标识（左侧色条 + 归属标签底色）。
+      const owner = this._candOwner(c);
+      // 模块候选：标注「→ 填入 <英雄名> 的第 N 槽」（N = 该英雄已用槽位数 + 1）。
+      //   已持有 → 走「强化已有槽 N」（N = 该模块所在格）；拿不到槽位信息 → 降级只显示归属英雄。
       let slotLine = "";
       if (c.kind === "module") {
         const ownedIdx = this._slotIndexOf(c);
-        const n = ownedIdx >= 0 ? ownedIdx + 1 : Math.min(slotUsed + 1, perHero);
-        const lvLine = c.lv ? ` · 入槽 LV${c.lv}` : "";
-        slotLine = `<span class="lu-slot">${ownedIdx >= 0 ? "强化已有槽" : "模块槽"} ${n}/${perHero}${lvLine}</span>`;
+        if (ownedIdx >= 0) {
+          const lvLine = c.lv ? ` · 入槽 LV${c.lv}` : "";
+          slotLine = `<span class="lu-slot">强化已有槽 ${ownedIdx + 1}/${perHero}${lvLine}</span>`;
+        } else if (owner.slotKnown) {
+          const n = Math.min(owner.slotUsed + 1, perHero);
+          const lvLine = c.lv ? ` · 入槽 LV${c.lv}` : "";
+          slotLine = `<span class="lu-slot">→ 填入 <b style="color:${owner.color}">${owner.name}</b> 的第 ${n} 槽（${n}/${perHero}）${lvLine}</span>`;
+        } else {
+          // 兜底降级：拿不到槽位 → 只标归属英雄名，不显示槽号（避免 undefined）
+          slotLine = `<span class="lu-slot">→ 填入 <b style="color:${owner.color}">${owner.name}</b></span>`;
+        }
       }
+      // 槽位将满警示：该英雄已用满 last-1 格（本次选中即填满）→ 黄色警告；其实已满（locked）→ 红色锁定行。
+      const fullWarn = (!locked && c.kind === "module" && owner.slotKnown && owner.slotUsed === perHero - 1);
+      card.classList.toggle("lu-will-full", fullWarn);
+      const warnLine = fullWarn ? `<span class="lu-full">⚠ 该队友槽位将满（${perHero}/${perHero}）</span>` : "";
       const lockLine = locked ? `<span class="lu-lock">🚫 槽位已满 · 不可选</span>` : "";
-      card.innerHTML = `<span class="lu-kind">${kindLabel}</span>
+      // 归属标签底色 = 定位色（半透明叠底 + 定位色文字）。
+      const ownerLine = `<span class="lu-owner" style="border-color:${owner.color};color:${owner.color}">👤 ${owner.name}</span>`;
+      card.innerHTML = `<span class="lu-bar" style="background:${owner.color}"></span>` +
+        `<span class="lu-kind">${kindLabel}</span>
         <span class="lu-name">${c.name || ""}</span>
-        <span class="lu-desc">${desc}</span>${slotLine}${lockLine}`;
+        <span class="lu-desc">${desc}</span>${ownerLine}${slotLine}${warnLine}${lockLine}`;
       if (!locked) {
         card.onclick = () => {
           const cb = this.levelUpOnPick;
@@ -135,6 +152,31 @@ const UI = {
       }
       box.appendChild(card);
     });
+  },
+  /* 候选归属英雄（20.3 任务一）：返回 { heroId, name, color, slotUsed, slotKnown }。
+   * 优先取 cand.heroId + cand.ownerName / cand.ownerRoleColor（战斗侧全队混抽后已带）；
+   * 缺失时回落 meta（升级者）；再查不到 → name 用 heroId（保证永不显示 undefined）。
+   * slotUsed 从 G.run.heroModules[heroId] 推算（G.run 为 null / 无数据 → slotKnown=false 走降级）。 */
+  _candOwner(c) {
+    const m = this.levelUpMeta || {};
+    const heroId = (c && c.heroId) || m.heroId || "";
+    // 名字优先级：cand.ownerName（战斗侧已知）→ meta.heroName（仅当归属即升级者）→ heroId。
+    let name = (c && c.ownerName) || "";
+    if (!name && m.heroName && heroId === m.heroId) name = m.heroName;
+    if (!name) name = (m.heroName && !heroId) ? m.heroName : (heroId || "未知英雄");
+    let color = (c && c.ownerRoleColor) || m.roleColor;
+    if (!color) { const role = heroId && this.heroRole(heroId); color = (role && role.color) || "#9fb4cc"; }
+    const slots = (heroId && G.run && G.run.heroModules && G.run.heroModules[heroId]) || null;
+    let slotUsed = 0, slotKnown = false;
+    if (slots) {
+      slotKnown = true;
+      for (const s of slots) if (s) slotUsed++;
+    } else if (G.run && typeof m.slotUsed === "number" && heroId === m.heroId) {
+      // meta.slotUsed 只描述升级者（战斗侧从 heroModules 取值）→ 仅当归属即升级者且本局存活(G.run 非空)时可用。
+      // G.run 为 null = 拿不到槽位信息 → 走降级（只显示归属英雄，不显示槽号）。
+      slotUsed = m.slotUsed; slotKnown = true;
+    }
+    return { heroId, name, color, slotUsed, slotKnown };
   },
   /* 该英雄已占用模块槽数（推导 slotUsed 用）：数据缺失返回 0，不报错。 */
   _occupiedSlotCount() {
@@ -333,6 +375,8 @@ const UI = {
   _psSig: "",          // 队伍结构签名（人数 + 英雄 ID 列表）→ 变了才重建
   _psCache: null,      // [{ row, arc, txt, slots:[{el, sig}] }] 结构引用缓存
   _psSlotSig: null,    // 各槽内容签名（避免每帧重写 innerHTML）
+  _moduleTipOpen: false,   // 模块槽词条浮窗是否打开（20.3 任务二）
+  _moduleTipKey: "",       // 当前浮窗键（heroId:idx）→ 再点同槽可关闭
 
   /* 取全队成员列表（队长 + 队友）：统一包装为 { id, name, heroDef, rt }（rt = 运行时实体，供读 skillTimer）。
    * 数据缺失时返回空数组，不报错。队长运行时优先 G.player，回退 G.heroDef。 */
@@ -409,6 +453,10 @@ const UI = {
       bar.appendChild(r.row);
       cache.push(r);
     }
+    // 事件委托（20.3 任务二）：只绑一次到容器，槽位在行内 → 避免每次重建行时重复绑定。
+    //   幂等：重复调用只是覆盖同一容器上的 onclick（不累积 handler）。
+    bar.onclick = (e) => this._onPartyBarClick(e);
+    this.bindModuleTipDismiss();   // 外部点击关闭浮窗（只绑一次）
     this._psCache = cache;
     this._psSig = members.map(m => m.id).join(",");
     this._psSlotSig = {};
@@ -425,6 +473,12 @@ const UI = {
       const sig = slot ? (slot.defId + ":" + (slot.lv || 1)) : "empty";
       if (s.sig === sig) continue;              // 无变化：跳过 DOM 写入
       s.sig = sig;
+      // 记录当前槽数据（供点击弹浮窗读取；不写 DOM，零额外开销）
+      s.defId = slot ? slot.defId : null;
+      s.lv = slot ? (slot.lv || 1) : 0;
+      s.idx = i;
+      s.heroId = member.id;
+      s.heroName = member.name || member.id;
       if (!slot) {
         s.el.className = "ps-slot ps-slot-empty";
         s.el.innerHTML = `<span class="ps-slot-no">${i + 1}</span>`;
@@ -437,9 +491,145 @@ const UI = {
         s.el.style.borderColor = color;
         s.el.innerHTML = `<span class="ps-slot-nm" style="color:${color}">${name}</span>
           <span class="ps-slot-lv">LV${slot.lv || 1}/${maxLv}</span>`;
-        s.el.title = `${name} LV${slot.lv || 1}/${maxLv}（该英雄升级所选武器模块）`;
+        s.el.title = `${name} LV${slot.lv || 1}/${maxLv}（点击查看词条明细）`;
       }
     }
+  },
+  /* 模块槽点击（20.3 任务二）：事件委托入口。点已填充槽 → 词条详情浮窗；点空槽 → 空槽提示气泡。
+   * 命中判定走「目标节点 + 最近的祖先行」——不使用 querySelector（DOM 桩下也稳定）。 */
+  _onPartyBarClick(e) {
+    const target = (e && e.target) || (typeof window !== "undefined" && window.event && window.event.target);
+    if (!target || !target.dataset) return;
+    // 找带 idx 的 .ps-slot（目标可能是槽内文字 span）：真实 DOM 用 closest（标准 API）；
+    // 测试桩无 closest → 沿 _parent/parentElement 手工上溯降级。
+    // 🔧 20.3 修复：原实现只靠 el._parent 上溯，但 _parent 从未赋值 → 实机 heroId 永远为空，
+    //     点击已填充槽也走空槽分支（Playwright 实机验证抓到；桩直接调 showModuleSlotTip 未覆盖此链）。
+    let slotEl = null;
+    if (typeof target.closest === "function") {
+      slotEl = target.closest(".ps-slot");
+    } else {
+      let el = target;
+      while (el) {
+        if (el.dataset && el.dataset.idx !== undefined) { slotEl = el; break; }
+        el = el.parentElement || el._parent || null;
+      }
+    }
+    if (!slotEl) return;
+    // 从行读 heroId（row 节点 dataset.heroId），再定位缓存 entry
+    let rowEl = null;
+    if (typeof slotEl.closest === "function") {
+      rowEl = slotEl.closest(".ps-row");
+    } else {
+      rowEl = slotEl;
+      while (rowEl && !(rowEl.dataset && rowEl.dataset.heroId)) rowEl = rowEl.parentElement || rowEl._parent || null;
+    }
+    const heroId = (rowEl && rowEl.dataset && rowEl.dataset.heroId) || "";
+    const entry = this._psCache && this._psCache.find(x => x.member && x.member.id === heroId);
+    const idx = parseInt(slotEl.dataset.idx, 10) || 0;
+    const s = entry && entry.slots && entry.slots[idx];
+    // 再点同一槽 → 关闭（toggle）
+    const key = (heroId || "") + ":" + idx;
+    if (this._moduleTipOpen && this._moduleTipKey === key) { this.hideModuleTip(); return; }
+    this._moduleTipKey = key;
+    if (s && s.defId) this.showModuleSlotTip(s, slotEl);
+    else this.showModuleSlotEmptyTip(slotEl);
+  },
+  /* 词条明细行（20.3 任务二）：主词缀（按等级成长）+ 阶段词缀（按阶段解锁）。
+   * 数据源：CFG.moduleDefs[defId].affix（主）+ CFG.moduleLevel.stageAffixes（阶段）。 */
+  _moduleAffixLines(defId, lv) {
+    const def = (CFG.moduleDefs || []).find(m => m.id === defId);
+    const ml = CFG.moduleLevel || {};
+    const maxLv = ml.maxLv || 9;
+    const lvN = Math.max(1, Math.min(maxLv, lv || 1));
+    const lines = [];
+    const fmt = (mode, tag, v) => (mode === "flat" ? `${tag} +${v}` : `${tag} ${v > 0 ? "+" : ""}${Math.round(v * 100)}%`);
+    // 主词缀：基础值 × (1 + (lv-1) × valueStep)（valueStep 缺失按 0 → 不成长）
+    if (def && def.affix) {
+      const af = def.affix;
+      const step = ml.valueStep || 0;
+      const baseV = (af.vals && af.vals[0]) || 0;      // vals[0] = 档位基准
+      const effV = af.mode === "flat" ? baseV : baseV * (1 + (lvN - 1) * step);
+      lines.push({ main: true, txt: fmt(af.mode, af.tag, af.mode === "flat" ? effV : effV) });
+    } else {
+      lines.push({ main: true, txt: "（无主词缀数据）" });
+    }
+    // 阶段词缀：阶段 = ceil(lv/perStage)；解锁前 n 条（阶段1 解锁第 1 条…）
+    const perStage = ml.perStage || 3;
+    const stage = Math.max(1, Math.ceil(lvN / perStage));
+    const sa = ml.stageAffixes || [];
+    for (let i = 0; i < sa.length; i++) {
+      const a = sa[i];
+      const unlocked = i < stage;
+      lines.push({ main: false, unlocked, txt: `${fmt(a.mode, a.tag, a.value)}（${a.name}）` });
+    }
+    return lines;
+  },
+  /* 浮窗渲染（20.3 任务二）：点击时创建/更新，绝不每帧调用。
+   * DOM：#module-tip > (.mt-head + .mt-rows) ；定位跟随点击槽位、竖屏收窄居中。 */
+  showModuleSlotTip(s, slotEl) {
+    const tip = document.getElementById("module-tip");
+    if (!tip) return;
+    const defId = s.defId, lv = s.lv || 1;
+    const name = this._moduleName(defId) || defId;
+    const color = this.moduleQualityColor(lv);
+    const maxLv = (CFG.moduleSlot && CFG.moduleSlot.maxLv) || 9;
+    const qName = this._qualityName(lv);
+    const rows = this._moduleAffixLines(defId, lv).map(r =>
+      `<div class="mt-row${r.unlocked === false ? " dim" : ""}${r.main ? " main" : ""}">${r.unlocked === false ? "🔒 " : (r.main ? "◆ " : "✔ ")}${r.txt}</div>`
+    ).join("");
+    tip.innerHTML = `<div class="mt-head"><b style="color:${color}">${name}</b>
+      <span style="color:${color}">${qName} · LV ${lv}/${maxLv}</span></div>
+      <div class="mt-rows">${rows}</div>
+      <div class="mt-foot">归属：${s.heroName || s.heroId || ""} · 第 ${(s.idx || 0) + 1} 槽 · 对小队全体生效</div>`;
+    tip.dataset.heroId = s.heroId || "";
+    tip.dataset.idx = String(s.idx || 0);
+    this._positionModuleTip(tip, slotEl);
+    tip.classList.remove("hidden");
+    this._moduleTipOpen = true;
+  },
+  /* 空槽提示（20.3 任务二）：复用浮窗容器，显示引导文案。 */
+  showModuleSlotEmptyTip(slotEl) {
+    const tip = document.getElementById("module-tip");
+    if (!tip) return;
+    tip.innerHTML = `<div class="mt-head"><b>空槽</b><span>未装备模块</span></div>
+      <div class="mt-rows"><div class="mt-row dim">空槽 · 升级可选择武器模块填入</div>
+      <div class="mt-row dim">升级 4 选 1 时选择该英雄专属模块即可填入</div></div>`;
+    tip.dataset.heroId = ""; tip.dataset.idx = "-1"; tip.dataset.empty = "1";
+    this._positionModuleTip(tip, slotEl);
+    tip.classList.remove("hidden");
+    this._moduleTipOpen = true;
+  },
+  /* 品质名（按 moduleQualityColor 同口径的档位）：白/蓝/紫/金。 */
+  _qualityName(lv) {
+    const qs = CFG.itemQualities || [{ name: "白" }];
+    const maxLv = (CFG.moduleSlot && CFG.moduleSlot.maxLv) || 9;
+    const tier = Math.ceil(Math.max(1, Math.min(maxLv, lv || 1)) / maxLv * qs.length);
+    return (qs[Math.max(0, Math.min(qs.length - 1, tier - 1))] || {}).name || "白";
+  },
+  /* 浮窗定位（20.3 任务二）：优先锚到点击槽上方；竖屏宽度限 96vw 居中避免溢出。 */
+  _positionModuleTip(tip, slotEl) {
+    const vw = (typeof window !== "undefined" && window.innerWidth) || 1920;
+    const portrait = (typeof window !== "undefined" && window.innerHeight > window.innerWidth);
+    if (portrait) {
+      // 竖屏：底部控件带之上居中，宽度自适应（CSS max-width 兜底）
+      tip.style.left = "50%"; tip.style.right = "auto";
+      tip.style.bottom = "calc(env(safe-area-inset-bottom, 0px) + 220px)";
+      tip.style.top = "auto"; tip.style.transform = "translateX(-50%)";
+      return;
+    }
+    const r = (slotEl && slotEl.getBoundingClientRect) ? slotEl.getBoundingClientRect() : { left: vw / 2, top: 220 };
+    tip.style.transform = "none";
+    tip.style.left = Math.round(r.left) + "px";
+    tip.style.right = "auto";
+    tip.style.bottom = "auto";
+    tip.style.top = Math.max(8, Math.round(r.top) - 8) + "px";
+  },
+  /* 关闭模块槽浮窗（20.3 任务二）：外部点击 / 再次点同槽 / 战斗 HUD 下线调用。幂等。 */
+  hideModuleTip() {
+    const tip = document.getElementById("module-tip");
+    if (tip) { tip.classList.add("hidden"); tip.dataset.empty = ""; }
+    this._moduleTipOpen = false;
+    this._moduleTipKey = "";
   },
   /* 冷却环更新（复用 updateSkillCd 的 213.6 弧长口径）：技能/槽位缺失不抛异常。
    * 剩余秒优先读运行时实体 rt.skillTimer（队长 = G.player，队友 = companion）。 */
@@ -479,6 +669,7 @@ const UI = {
   clearBattleHud() {
     const bar = document.getElementById("party-skillbar");
     if (bar) bar.innerHTML = "";
+    this.hideModuleTip();       // 20.3：顺带关掉模块槽词条浮窗（防残留）
     this._psCache = null;
     this._psSig = null;
     this._psSlotSig = {};
@@ -814,6 +1005,34 @@ const UI = {
     if (entry && typeof entry.onclick !== "function") entry.onclick = () => this.showChipCodex();
     const back = document.getElementById("btn-chip-codex-back");
     if (back && typeof back.onclick !== "function") back.onclick = () => { this.updateHomeUser(); this.showScreen("screen-main"); };
+  },
+  /* 模块槽浮窗的「点击外部关闭」（20.3 任务二）：document 级委托，只绑一次。
+   * 判定：点击落点不在 #module-tip、也不在 .ps-slot 内 → 关闭。DOM 桩下 document 用 onclick 亦可。 */
+  bindModuleTipDismiss() {
+    if (this._mtDismissBound) return;
+    this._mtDismissBound = true;
+    const handler = (e) => {
+      if (!this._moduleTipOpen) return;
+      const t = (e && e.target) || null;
+      // 落点是否在浮窗 / 槽位内（真实 DOM 用 closest；桩沿 _parent/parentElement 降级）
+      let inTip = false, inSlot = false;
+      if (t && typeof t.closest === "function") {
+        inTip = !!t.closest("#module-tip, .module-tip");
+        inSlot = !!t.closest(".ps-slot");
+      } else {
+        let el = t;
+        while (el) {
+          if (el.id === "module-tip" || (el.classList && el.classList.contains("module-tip"))) { inTip = true; break; }
+          if (el.dataset && el.dataset.idx !== undefined) { inSlot = true; break; }
+          el = el.parentElement || el._parent || null;
+        }
+      }
+      if (!inTip && !inSlot) this.hideModuleTip();
+    };
+    // 沙箱 / 测试桩：document.addEventListener 可能是空函数 → 同时挂 document.onclick 兜底
+    if (typeof document.addEventListener === "function") document.addEventListener("click", handler, true);
+    const prev = document.onclick;
+    document.onclick = (e) => { if (typeof prev === "function") prev(e); handler(e); };
   },
   /* 设置（音效音量 / 触屏控件缩放 / 桌面显示触屏控件） */
   renderSettings() {

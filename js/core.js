@@ -154,14 +154,66 @@ const Assets = {
   },
 };
 
-/* 需要的素材清单（key → 文件 + 背景模式） */
+/* 需要的素材清单（key → 文件 + 背景模式）
+ * 全量铺开：enemy00~enemy22（23 张）+ hero00~hero12（13 张）。
+ * 实测素材四角 alpha=0（背景已透明），tbg 仅作兜底剔除：黑底 RGB 命中 black 规则，无害。
+ * 键名规则 = 类型前缀 + 两位序号（无下划线），与 CFG.monsters[].sprite / CFG.heroes[].sprite 引用一致。 */
 const ASSET_MANIFEST = {
   hero:    { src: "assets/hero/hero_00.png", tbg: { mode: "blue" } },
+  hero01:  { src: "assets/hero/hero_01.png", tbg: { mode: "black" } },
+  hero02:  { src: "assets/hero/hero_02.png", tbg: { mode: "black" } },
+  hero03:  { src: "assets/hero/hero_03.png", tbg: { mode: "black" } },
+  hero04:  { src: "assets/hero/hero_04.png", tbg: { mode: "black" } },
+  hero05:  { src: "assets/hero/hero_05.png", tbg: { mode: "black" } },
+  hero06:  { src: "assets/hero/hero_06.png", tbg: { mode: "black" } },
+  hero07:  { src: "assets/hero/hero_07.png", tbg: { mode: "black" } },
+  hero08:  { src: "assets/hero/hero_08.png", tbg: { mode: "black" } },
+  hero09:  { src: "assets/hero/hero_09.png", tbg: { mode: "black" } },
+  hero10:  { src: "assets/hero/hero_10.png", tbg: { mode: "black" } },
+  hero11:  { src: "assets/hero/hero_11.png", tbg: { mode: "black" } },
+  hero12:  { src: "assets/hero/hero_12.png", tbg: { mode: "black" } },
   enemy00: { src: "assets/enemies/enemy_00.png", tbg: { mode: "black" } },
+  enemy01: { src: "assets/enemies/enemy_01.png", tbg: { mode: "black" } },
+  enemy02: { src: "assets/enemies/enemy_02.png", tbg: { mode: "black" } },
+  enemy03: { src: "assets/enemies/enemy_03.png", tbg: { mode: "black" } },
+  enemy04: { src: "assets/enemies/enemy_04.png", tbg: { mode: "black" } },
+  enemy05: { src: "assets/enemies/enemy_05.png", tbg: { mode: "black" } },
+  enemy06: { src: "assets/enemies/enemy_06.png", tbg: { mode: "black" } },
+  enemy07: { src: "assets/enemies/enemy_07.png", tbg: { mode: "black" } },
   enemy08: { src: "assets/enemies/enemy_08.png", tbg: { mode: "black" } },
+  enemy09: { src: "assets/enemies/enemy_09.png", tbg: { mode: "black" } },
+  enemy10: { src: "assets/enemies/enemy_10.png", tbg: { mode: "black" } },
+  enemy11: { src: "assets/enemies/enemy_11.png", tbg: { mode: "black" } },
+  enemy12: { src: "assets/enemies/enemy_12.png", tbg: { mode: "black" } },
+  enemy13: { src: "assets/enemies/enemy_13.png", tbg: { mode: "black" } },
+  enemy14: { src: "assets/enemies/enemy_14.png", tbg: { mode: "black" } },
+  enemy15: { src: "assets/enemies/enemy_15.png", tbg: { mode: "black" } },
   enemy16: { src: "assets/enemies/enemy_16.png", tbg: { mode: "black" } },
+  enemy17: { src: "assets/enemies/enemy_17.png", tbg: { mode: "black" } },
+  enemy18: { src: "assets/enemies/enemy_18.png", tbg: { mode: "black" } },
+  enemy19: { src: "assets/enemies/enemy_19.png", tbg: { mode: "black" } },
+  enemy20: { src: "assets/enemies/enemy_20.png", tbg: { mode: "black" } },
+  enemy21: { src: "assets/enemies/enemy_21.png", tbg: { mode: "black" } },
   enemy22: { src: "assets/enemies/enemy_22.png", tbg: { mode: "white" } },
 };
+
+/* 精灵键查询：按 defId 数字尾号映射精灵键（不改渲染层即可查询，供 game.js 侧一行接入）
+ * 规则：
+ *   "NM0010" / "ED0003" 等怪物编号 → 取末尾数字 n → "enemy" + 两位补零（n 0~22）；
+ *   "H001"~"H013" 英雄编号        → "hero"（H001 命中主键）/ "hero" + (n-1) 两位补零；
+ *   其它（boss "BS0001" 走 CFG.sprite 显式键、无编号 id 等）→ null。
+ * 只返回 ASSET_MANIFEST 中真实存在的键，找不到返回 null（调用方应回退默认图）。 */
+function spriteFor(defId) {
+  if (typeof defId !== "string") return null;
+  const m = defId.match(/(\d+)\s*$/);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  const pad = (x) => ("0" + x).slice(-2);
+  let key = null;
+  if (/^H/i.test(defId)) key = n === 1 ? "hero" : "hero" + pad(n - 1);   // 英雄：H001 → 主键 hero，H002 → hero01
+  else if (/^(NM|ED)/i.test(defId)) key = "enemy" + pad(n);              // 怪物：NM0010 → enemy10
+  return ASSET_MANIFEST[key] ? key : null;                             // BS 等其它前缀不映射（走显式 sprite 键）
+}
 
 /* ---------- SFX（WebAudio 合成音效，零素材；首次用户交互后初始化） ---------- */
 const SFX = {
@@ -175,6 +227,7 @@ const SFX = {
       this.master = this.ctx.createGain();
       this.master.gain.value = CFG.audio.master;
       this.master.connect(this.ctx.destination);
+      BGM.watch();   // 音频就绪后注册 BGM 状态轮询（幂等；main.js 首次交互已调用 init）
     } catch (e) { this.ctx = null; }
   },
   resume() { if (this.ctx && this.ctx.state === "suspended") this.ctx.resume(); },
@@ -225,7 +278,118 @@ const SFX = {
         case "extract": [523, 659, 784, 1046].forEach((f, i) =>
           setTimeout(() => this.ctx && this._tone("sine", f, f, 0.22, 0.1), i * 120)); break;
         case "death": this._tone("sawtooth", 220, 40, 0.9, 0.16); break;
+        case "wave":   // 撤离波次来袭：低沉警报（两声下行锯齿）
+          this._tone("sawtooth", 220, 110, 0.32, 0.12);
+          setTimeout(() => this.ctx && this._tone("sawtooth", 196, 98, 0.4, 0.12), 360); break;
+        case "shieldBreak":   // 雕像护盾破碎：玻璃碎质感（高频噪声 + 快速下滑高音）
+          this._noise(0.35, 0.14, 2400); this._tone("square", 1800, 240, 0.28, 0.07); break;
+        case "supply":   // 补给点读条完成：温暖上行琶音
+          [392, 494, 587, 784].forEach((f, i) =>
+            setTimeout(() => this.ctx && this._tone("sine", f, f, 0.18, 0.08), i * 100)); break;
+        case "hazard":   // 进入毒圈：低鸣提示
+          this._tone("triangle", 82, 62, 0.45, 0.13); break;
       }
     } catch (e) { /* 音频异常不影响游戏 */ }
+  },
+};
+
+/* ---------- BGM（WebAudio 程序化合成战斗背景乐，零素材） ----------
+ * 结构（BPM 112，16 分音符步进，4 小节 × 16 步循环）：
+ *   低音脉冲 —— 每拍 1 次（步 0/4/8/12），三角波 A1/E2/A1/D2 交替，撑住节奏骨架；
+ *   琶音序列 —— A 小调紧张感进行，square 波短音、音量极低；第 4 小节降八度制造段落感；
+ *   高音点缀 —— 每 2 小节 1 次 sine 高音，避免循环单调。
+ * 音量策略：独立 bgmGain 总线挂 SFX.master 之下（CFG.audio.bgmVolume ≈ 0.28），
+ *   叠加 master 后远低于音效，不盖过打击反馈。
+ * 挂载点：SFX.init() 末尾调 BGM.watch()（main.js 首次交互已调用 init，零 main.js 改动）；
+ *   watcher 每 500ms 查 G.state（const G 不挂 window，用 typeof 防未声明），
+ *   进 "playing" 起播、离开淡出；visibilitychange 页面隐藏立即停止（防后台堆积）。
+ * 注：G 声明于 game.js（const，全局词法环境），core.js 直接引用标识符即可；vm 桩环境
+ *   下若 game.js 未加载，typeof 守卫返回 undefined，watcher 静默跳过，不影响现有测试。 */
+const BGM = {
+  playing: false,
+  BPM: 112,
+  _gain: null,      // BGM 独立总线（音量 = CFG.audio.bgmVolume）
+  _seq: null,       // 音序器 interval 句柄
+  _watched: false,  // watcher 注册标记（幂等）
+  _watchTimer: null,
+  _step: 0,
+  // 音序数据：低音脉冲表（0 = 休止）与小调琶音表（各 16 步一小节）
+  _bass: [55, 0, 0, 0, 82.4, 0, 0, 0, 55, 0, 0, 0, 73.4, 0, 0, 0],
+  _arp:  [220, 261.6, 329.6, 440, 261.6, 329.6, 220, 329.6,
+          220, 261.6, 329.6, 440, 293.7, 349.2, 440, 349.2],
+  start() {
+    if (this.playing) return false;                                    // 重复 start 幂等
+    if (!CFG.audio.enabled || !CFG.audio.bgmEnabled) return false;     // 总开关 / BGM 独立开关
+    if (!SFX.ctx) { SFX.init(); }
+    if (!SFX.ctx || !SFX.master) return false;
+    if (!this._gain) {
+      try {
+        this._gain = SFX.ctx.createGain();
+        this._gain.gain.value = CFG.audio.bgmVolume;
+        this._gain.connect(SFX.master);
+      } catch (e) { return false; }
+    }
+    try {
+      const t = SFX.ctx.currentTime;
+      this._gain.gain.cancelScheduledValues(t);          // 复播前清掉淡出曲线
+      this._gain.gain.setValueAtTime(CFG.audio.bgmVolume, t);
+    } catch (e) { /* 淡出恢复失败不影响起播 */ }
+    this.playing = true; this._step = 0;
+    const stepMs = 60000 / this.BPM / 4;                 // 16 分音符步长
+    this._seq = setInterval(() => this._tick(), stepMs);
+    return true;
+  },
+  stop() {
+    if (!this.playing) return false;                     // 未播放时 stop 幂等
+    this.playing = false;
+    if (this._seq) { clearInterval(this._seq); this._seq = null; }
+    if (this._gain && SFX.ctx) {                         // 300ms 淡出，避免戛然而止
+      try {
+        const g = this._gain.gain, t = SFX.ctx.currentTime;
+        g.cancelScheduledValues(t);
+        g.setValueAtTime(g.value, t);
+        g.linearRampToValueAtTime(0.0001, t + 0.3);
+      } catch (e) { /* 淡出失败不影响停止 */ }
+    }
+    return true;
+  },
+  _tick() {
+    if (!this.playing || !SFX.ctx || !this._gain) return;
+    const s = this._step % 16, bar = Math.floor(this._step / 16) % 4, t = SFX.ctx.currentTime;
+    try {
+      const bass = this._bass[s];
+      if (bass) this._note("triangle", bass, 0.30, 0.50, t);          // 低音脉冲
+      this._note("square", this._arp[s] * (bar === 3 ? 0.5 : 1), 0.09, 0.10, t);  // 琶音
+      if (s === 0 && (bar === 1 || bar === 3)) this._note("sine", 1760, 0.5, 0.05, t);  // 高音点缀
+    } catch (e) { /* 单步发声失败不中断音序 */ }
+    this._step++;
+  },
+  _note(type, f, dur, vol, t) {   // 定时发声（走 BGM 独立总线，与 SFX 互不干扰）
+    const o = SFX.ctx.createOscillator(), g = SFX.ctx.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(this._gain);
+    o.start(t); o.stop(t + dur + 0.02);
+  },
+  watch() {   // 注册状态轮询 + 页面隐藏暂停（幂等；SFX.init 成功路径内调用）
+    if (this._watched) return;
+    this._watched = true;
+    try {   // 页面隐藏立即停 BGM（后台标签页音频堆积）；恢复可见后由 watcher 下一拍自动重启
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) this.stop();
+      });
+    } catch (e) { /* 桩环境无 addEventListener 时跳过 */ }
+    this._watchTimer = setInterval(() => {
+      try {
+        const st = (typeof G !== "undefined" && G) ? G.state
+          : (typeof window !== "undefined" && window.G ? window.G.state : null);
+        if (st === "playing" && !(typeof document !== "undefined" && document.hidden)) {
+          if (!this.playing) this.start();
+        } else if (this.playing) {
+          this.stop();
+        }
+      } catch (e) { /* 状态异常静默，不影响游戏 */ }
+    }, 500);
   },
 };

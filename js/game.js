@@ -391,7 +391,7 @@ function computeWeaponDefaults() {
 /* ---------- 局外元进度（localStorage 持久化：结晶 / 各角色局外等级 / 关卡解锁 / 玩家档案 / 图鉴） ---------- */
 const SAVE_KEY = "bagrogue_save_v1";
 const Meta = {
-  data: { crystals: 0, heroes: {}, unlockedLevels: 1, profile: null, codex: null },
+  data: { crystals: 0, heroes: {}, unlockedLevels: 1, profile: null, codex: null, unlockExtra: {} },
   load() {
     try { const raw = localStorage.getItem(SAVE_KEY); if (raw) Object.assign(this.data, JSON.parse(raw)); } catch (e) { /* 无 localStorage（测试环境）则用默认值 */ }
     // 迁移：旧的"结晶技能升级"并入武器等级（技能等级 = 武器等级，局外结晶升级）——老存档字段保留兼容
@@ -399,6 +399,7 @@ const Meta = {
       const rec = this.data.heroes[id];
       if (rec.skillLevel && !rec.weaponLv) rec.weaponLv = rec.skillLevel;
     }
+    if (!this.data.unlockExtra) this.data.unlockExtra = {};   // 迁移：非首发英雄主动解锁记录（方向3）
     // 迁移：主城档案 + 图鉴（老存档补默认值；皮肤 = 英雄外貌，图鉴激活解锁）
     if (!this.data.profile) this.data.profile = { name: CFG.profile.defaultName, skinId: CFG.profile.defaultSkin, titleId: CFG.profile.titles[0].id };
     if (!this.data.codex) this.data.codex = { heroes: {}, monsters: {}, flags: {} };
@@ -446,7 +447,8 @@ const Meta = {
     if (flag && !this.data.codex.flags[flag]) { this.data.codex.flags[flag] = true; this.commit(); }
   },
   heroLevel(id) { return (this.data.heroes[id] && this.data.heroes[id].level) || 1; },
-  levelUpCost(id) { return CFG.outLevel.costBase + (this.heroLevel(id) - 1) * CFG.outLevel.costStep; },
+  // 升级花费：走文件末尾 outLevelCost 纯函数（指数曲线，缺配置回落旧线性——方向3）
+  levelUpCost(id) { return outLevelCost(id); },
   levelUp(id) {
     const lv = this.heroLevel(id);
     if (lv >= CFG.outLevel.maxLevel) return false;
@@ -458,6 +460,21 @@ const Meta = {
     this.commit();
     return true;
   },
+  /* ---- 英雄解锁（方向3：首发 starterCount 个默认解锁，其余走 CFG.unlockRules 局外条件） ---- */
+  isHeroUnlocked(id) { return isHeroUnlocked(id, this.data); },
+  // 花结晶主动解锁（crystal 条件）：结晶不足/无规则返回 false；已解锁返回 true（幂等）
+  unlockHero(id) {
+    if (this.isHeroUnlocked(id)) return true;
+    const rule = CFG.unlockRules && CFG.unlockRules[id];
+    const cost = rule && rule.crystal;
+    if (!cost || this.data.crystals < cost) return false;
+    this.data.crystals -= cost;
+    this.data.unlockExtra[id] = true;
+    this.commit();
+    return true;
+  },
+  // 已解锁英雄 id 数组（按 CFG.heroes 顺序；unlockOrder 中尚无英雄数据的 id 不计入）
+  unlockedHeroes() { return CFG.heroes.filter(h => this.isHeroUnlocked(h.id)).map(h => h.id); },
   // 武器等级（永久资产，按英雄存档；主城「武器匠」花结晶升级；技能等级 = 武器等级同步）
   weaponLv(id) { return (this.data.heroes[id] && this.data.heroes[id].weaponLv) || 1; },
   weaponUpCost(id) {
@@ -485,11 +502,12 @@ const Meta = {
 Meta.load();
 
 // 局外等级 → 英雄实际出战属性（副本，不污染 CFG）
+// 属性成长走文件末尾 outLevelStats 纯函数（分段增益表 growthTable + 定位差异化，缺表回落旧线性——方向3）
 function applyOutLevel(def) {
   const lv = Meta.heroLevel(def.id);
-  const g = CFG.outLevel.growth, n = lv - 1;
+  const s = outLevelStats(def, lv);
   return { ...def, outLevel: lv, weaponLv: Meta.weaponLv(def.id), outSkillLv: Meta.weaponLv(def.id),
-    hp: def.hp + g.hp * n, atk: def.atk + g.atk * n, def: def.def + g.def * n };
+    hp: s.hp, atk: s.atk, def: s.def };
 }
 
 /* ---------- 武器词条计算（16.5：先加算后乘算；19.10.5 / 19.11.4：三源统一词条链） ----------
@@ -1706,6 +1724,7 @@ class Monster {
   update(w, dt) {
     this.flashT -= dt;
     if (monsterBurnTick(this, w, dt)) return;   // 行为芯片（19.12）：燃蚀灼烧结算（致死则跳过本帧 AI）
+    if (extractWaveSiegeTick(this, w, dt)) return;   // 方向4：撤离波次怪读条期间围攻雕像护盾（不伤害英雄）
     const px0 = this.x, py0 = this.y;   // 帧初位置（供 resolveObstacles 计算切向滑动，防卡障碍）
     const p = G.player;
     const distP = U.dist(this.x, this.y, p.x, p.y);
@@ -2098,6 +2117,8 @@ function updateExtractJudge(dt) {
   const r = G.run;
   if (!r || !r.exitStatue) return;
   const st = r.exitStatue;
+  extractWaveTick(r, st, dt);        // 方向4：波次围攻 + 护盾推进（真实秒；内部自守卫 paused/frozen）
+  dt = extractWeightDt(r, st, dt);   // 方向4：负重 → 读条速率打折；护盾破碎未恢复 → 读条冻结（dt=0）
   const done = judgeChannel(r, st.x, st.y, CFG.extract.radius, dt, CFG.extract.channel,
     "extractProgress", "extractHolder");
   if (done) { r.extractChanneling = false; EventBus.emit("extractSuccess"); }
@@ -2696,6 +2717,7 @@ class World {
     }
     // 初始一波怪
     for (const c of this.circles) this.spawnWave(c);
+    initLevelMechanics(this);   // 毒圈 + 补给点（B 线独立区块）：初始化本关机制状态
     // 开场冻结（仅主关卡，规则同裂缝 5.1）：全员静止 + 全员无敌，红字 3/2/1 倒计时
     // 首波怪已投放完毕，冻结期间 World.update 提前 return → 怪物/子弹/祭坛/拾取全部暂停，不会被打
     this.freezeTimer = CFG.levelFreeze.freezeTime;
@@ -2959,6 +2981,7 @@ class World {
     }
     for (const b of r.buffs) b.remain -= dt;
     r.buffs = r.buffs.filter(b => b.remain > 0);
+    updateLevelMechanics(this, dt);   // 毒圈 + 补给点（B 线独立区块）：收缩/扣血/读条
     // 诅咒道具倒计时（待细化36）：到期消退，已附加在敌人身上的修改器同时失效（新生成怪不再继承）
     if (r.curse) {
       r.curse.remain -= dt;
@@ -3374,6 +3397,8 @@ function render() {
     ctx.fillStyle = "#2a3648"; ctx.fillRect(o.x, o.y, o.w, o.h);
     ctx.strokeStyle = "#44587a"; ctx.lineWidth = 2; ctx.strokeRect(o.x, o.y, o.w, o.h);
   }
+  renderHazard(ctx, w);   // 毒圈收缩（B 线独立区块）：边界环 + 环外渐暗
+  renderSupply(ctx, w);   // 补给点（B 线独立区块）：绿色发光圈 + 补给图标
   // 祭坛
   for (const a of w.altars) {
     ctx.beginPath(); ctx.arc(a.x, a.y, 26, 0, Math.PI * 2);
@@ -4124,4 +4149,439 @@ function heroDefNameOf(heroId) {
   for (const h of (G.team || [])) if (h && h.id === heroId && h.name) return h.name;
   for (const h of (CFG.heroes || [])) if (h && h.id === heroId && h.name) return h.name;
   return heroId;
+}
+
+
+/* ============================================================================
+ * 关卡机制：毒圈收缩 + 补给点（B 线并行批 · 关卡 3→10 铺量）
+ * ----------------------------------------------------------------------------
+ * 本区块**独立追加在文件末尾**（并行开发铁律，见 G_docs/dev_guide.md §5.45）：
+ * 对现有函数（World.setupMain / World.update / render）只插入**单行调用**，
+ * 绝不重写现有函数体，从而与其它代理零行级冲突。
+ *
+ * 两个机制均由 CFG 驱动（不硬编码数值）：
+ *   毒圈 CFG.hazard  —— 关卡 hazardEnabled:true + hazard 覆盖；圈外定时扣血 + 红色环渲染。
+ *   补给 CFG.supply  —— 关卡 supplyEnabled:true + supply 覆盖；复用判定圈统一入口 judgeChannel。
+ *
+ * 无机制等价性：未开启关卡（LEVEL_001~004/007）两处初始化均为 no-op，
+ * update/render 早退，行为与改动前完全一致（测试「无机制等价性回归」锁定）。
+ * ============================================================================ */
+
+/** 合并「关卡覆盖 → 全局默认」：返回 null 表示本关不启用该机制。
+ *  enabled：关卡 hazardEnabled/supplyEnabled 显式开关；缺省回落全局 CFG.hazard.enabled。 */
+function levelMechCfg(kind, lv) {
+  const base = CFG[kind];
+  const onKey = kind === "hazard" ? "hazardEnabled" : "supplyEnabled";
+  const enabled = (lv && lv[onKey] != null) ? !!lv[onKey] : !!(base && base.enabled);
+  if (!enabled || !base) return null;
+  return Object.assign({}, base, (lv && lv[kind]) || {});
+}
+
+/** 初始化本关机制状态（单行调用点 = World.setupMain 末尾）。
+ *  仅在主地图、且关卡启用对应机制时写入字段；否则字段保持缺省（无机制关卡零开销）。 */
+function initLevelMechanics(w) {
+  if (!w || !w.isMain || !G.levelCfg) return;
+  const hz = levelMechCfg("hazard", G.levelCfg);
+  if (hz) {
+    const cx = w.w * (hz.cx != null ? hz.cx : 0.5);
+    const cy = w.h * (hz.cy != null ? hz.cy : 0.5);
+    const maxR = Math.hypot(cx, cy);          // 覆盖全图（到最远角的距离）
+    w.hazard = {
+      cfg: hz, cx, cy, maxR,
+      curR: maxR,                             // 当前安全圈半径（起步 = 满图）
+      elapsed: 0,                             // 进场计时（到达 startDelay 才激活）
+      active: false,                          // 是否已开始收缩
+      tick: 0,                                // 圈外扣血计时累加
+    };
+  }
+  const sp = levelMechCfg("supply", G.levelCfg);
+  if (sp) {
+    const n = Math.max(0, Math.min(3, Math.round(sp.count != null ? sp.count : 2)));
+    w.supplyPoints = [];
+    for (let i = 0; i < n; i++) {
+      const pos = w.findFreeSpot ? w.findFreeSpot(sp.radius || 90) : null;
+      w.supplyPoints.push({
+        x: pos ? pos.x : U.rand(200, w.w - 200),
+        y: pos ? pos.y : U.rand(200, w.h - 200),
+        cfg: sp, progress: 0, holder: null, used: false,
+      });
+    }
+  }
+}
+
+/** 每帧推进毒圈 + 补给点（单行调用点 = World.update 中段）。 */
+function updateLevelMechanics(w, dt) {
+  if (!w || !w.isMain) return;
+  updateHazard(w, dt);
+  updateSupply(w, dt);
+}
+
+/* ---------------- 2a. 毒圈收缩 ---------------- */
+
+/** 毒圈：进场计时 → startDelay 后激活并线性收缩到 minRadius → 圈外每 tickInterval 秒扣 dmgPerTick。 */
+function updateHazard(w, dt) {
+  const hz = w.hazard;
+  if (!hz) return;
+  const cfg = hz.cfg;
+  hz.elapsed += dt;
+  if (!hz.active) {
+    if (hz.elapsed < (cfg.startDelay || 0)) return;   // 尚未出现
+    hz.active = true;
+    hz.shrinkT = 0;
+    UI.toast("☣ 毒圈开始收缩！留在安全圈内", "bad");
+  } else if (hz.curR > cfg.minRadius) {
+    hz.shrinkT = (hz.shrinkT || 0) + dt;
+    const dur = Math.max(0.001, cfg.shrinkDuration || 90);
+    const k = Math.min(1, hz.shrinkT / dur);
+    hz.curR = hz.maxR - (hz.maxR - cfg.minRadius) * k;   // 线性收缩
+  }
+  // 圈外扣血：任意存活英雄在圈外累计 tickInterval → 扣血
+  hz.tick += dt;
+  if (hz.tick >= (cfg.tickInterval || 1)) {
+    hz.tick -= (cfg.tickInterval || 1);
+    const outside = aliveHeroes().filter(h => U.dist(h.x, h.y, hz.cx, hz.cy) > hz.curR);
+    for (const h of outside) heroTakeDamage(w, h, cfg.dmgPerTick || 0);
+  }
+}
+
+/** 某点是否在毒圈外（供渲染/测试查询；未激活时返回 false，即尚未出现不扣）。 */
+function hazardOutside(w, x, y) {
+  const hz = w && w.hazard;
+  if (!hz || !hz.active) return false;
+  return U.dist(x, y, hz.cx, hz.cy) > hz.curR;
+}
+
+/* ---------------- 2b. 补给点 ---------------- */
+
+/** 补给点：复用判定圈统一入口 judgeChannel；读条完成 → 生效一次后消失。 */
+function updateSupply(w, dt) {
+  const pts = w.supplyPoints;
+  if (!pts || !pts.length) return;
+  for (const sp of pts) {
+    if (sp.used) continue;
+    const cfg = sp.cfg;
+    if (judgeChannel(sp, sp.x, sp.y, cfg.radius || 90, dt, cfg.channelSeconds || 3)) {
+      sp.used = true;
+      applySupplyEffect(w, sp);
+    }
+  }
+  // 生效后移除（与雕像「触发即消失」一致）
+  w.supplyPoints = w.supplyPoints.filter(s => !s.used);
+}
+
+/** 结算补给效果（配置驱动：effect 单项，或 effects 多项组合）。 */
+function applySupplyEffect(w, sp) {
+  const cfg = sp.cfg;
+  const list = Array.isArray(cfg.effects) && cfg.effects.length ? cfg.effects : [cfg.effect];
+  for (const ef of list) {
+    if (!ef) continue;
+    switch (ef.type) {
+      case "heal": {
+        for (const h of aliveHeroes()) {
+          const add = h.hpMax * (ef.pct || 0);
+          if (h === G.player) { G.player.heal(ef.pct || 0); }
+          else { h.hp = Math.min(h.hpMax, h.hp + add); spawnFloat(h.x, h.y - 30, `+${Math.round(add)}`, "#7de08a"); }
+        }
+        UI.toast(`补给点：全队恢复 ${Math.round((ef.pct || 0) * 100)}% 生命`, "gold");
+        break;
+      }
+      case "buff": {
+        const pool = (ef.buffPool && CFG[ef.buffPool + "Buffs"]) || CFG.warBuffs || [];
+        if (!pool.length) break;
+        const b = U.pick(pool);
+        const r = G.run;
+        const cur = r.buffs.find(x => (x.skillId || "") === b.skillId);
+        if (cur) cur.remain = ef.duration || 20;
+        else r.buffs.push({ skillId: b.skillId, id: b.id, lv: 1, remain: ef.duration || 20 });
+        UI.toast(`补给点：获得「${b.id}」（${ef.duration || 20}秒）`, "gold");
+        break;
+      }
+      case "crystal": {
+        G.run.coin += (ef.amount || 0);
+        spawnFloat(sp.x, sp.y - 24, `+${ef.amount || 0}`, "#ffd76a");
+        UI.toast(`补给点：获得 ${ef.amount || 0} 结晶`, "gold");
+        break;
+      }
+    }
+  }
+}
+
+/* ---------------- 渲染 ---------------- */
+
+/** 毒圈渲染：红色半透明环边界 + 环外渐暗遮罩（在障碍层之后、实体之前绘制）。 */
+function renderHazard(ctx, w) {
+  const hz = w && w.hazard;
+  if (!hz || !hz.active) return;
+  const cfg = hz.cfg, col = cfg.color || "#ff3b3b";
+  ctx.save();
+  // 环外渐暗：用 evenodd 填充「大矩形 - 安全圈」的差集
+  ctx.beginPath();
+  ctx.rect(0, 0, w.w, w.h);
+  ctx.arc(hz.cx, hz.cy, hz.curR, 0, Math.PI * 2, true);
+  ctx.fillStyle = "rgba(120,0,0,0.22)";
+  ctx.fill("evenodd");
+  // 边界环（脉动）
+  const a = 0.65 + 0.3 * Math.abs(Math.sin(G.time * 3));
+  ctx.beginPath(); ctx.arc(hz.cx, hz.cy, hz.curR, 0, Math.PI * 2);
+  ctx.strokeStyle = col; ctx.globalAlpha = a; ctx.lineWidth = 5; ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+/** 补给点渲染：绿色发光圈 + 补给图标 + 读条环（判定圈虚线 = 与判定同源）。 */
+function renderSupply(ctx, w) {
+  const pts = w && w.supplyPoints;
+  if (!pts || !pts.length) return;
+  for (const sp of pts) {
+    const cfg = sp.cfg, col = cfg.color || "#5ad07a", R = cfg.radius || 90;
+    const glow = 0.35 + 0.25 * Math.abs(Math.sin(G.time * 4));
+    ctx.save();
+    // 发光圈
+    ctx.beginPath(); ctx.arc(sp.x, sp.y, R, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(90,208,122,0.10)"; ctx.fill();
+    ctx.setLineDash([6, 6]); ctx.strokeStyle = col + "88"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.setLineDash([]);
+    // 图标
+    ctx.beginPath(); ctx.arc(sp.x, sp.y, 26, 0, Math.PI * 2);
+    ctx.fillStyle = col + "33"; ctx.fill();
+    ctx.strokeStyle = col; ctx.globalAlpha = glow + 0.4; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.font = "20px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = col; ctx.fillText("✚", sp.x, sp.y);
+    ctx.font = "12px sans-serif"; ctx.fillStyle = "#e8ecf2";
+    ctx.fillText(`补给点（读条 ${cfg.channelSeconds || 3}s）`, sp.x, sp.y + 42);
+    // 读条进度环
+    if (sp.progress > 0) {
+      const frac = Math.min(1, sp.progress / (cfg.channelSeconds || 3));
+      ctx.strokeStyle = "#ffd76a"; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(sp.x, sp.y, 34, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = "#ffd76a"; ctx.font = "bold 13px sans-serif";
+      ctx.fillText(Math.floor(frac * 100) + "%", sp.x, sp.y - 44);
+    }
+    ctx.restore();
+  }
+}
+
+/* ========== 方向 3：局外成长落地（升级曲线 / 分段增益表 / 英雄解锁——纯函数区块） ==========
+ * 铁律沿用 §5.45：新增逻辑集中本区块，现有函数只插单行调用。
+ * 兼容性硬要求：CFG.outLevel 缺 growthRate → 升级花费回落旧线性；缺 growthTable → 属性回落旧线性。 */
+
+// 当前升级花费（heroId → LV n→n+1 结晶数）：优先指数曲线 cost = round(costBase × growthRate^(n-1))，
+// 前期平缓后期陡峭；缺 growthRate（或 ≤1）回落旧线性 costBase + (n-1)×costStep。满级返回 0（不可升）。
+function outLevelCost(heroId) {
+  const o = CFG.outLevel;
+  const lv = (typeof Meta !== "undefined" && Meta && Meta.heroLevel) ? Meta.heroLevel(heroId) : 1;
+  if (lv >= o.maxLevel) return 0;
+  if (typeof o.growthRate === "number" && o.growthRate > 1)
+    return Math.round(o.costBase * Math.pow(o.growthRate, lv - 1));
+  return o.costBase + (lv - 1) * o.costStep;
+}
+
+// 升到 LV n 的每级成长段位倍率：按目标等级落在 growthTable 哪一段（lv ≤ upTo）取 mul；
+// 表缺失/为空返回 null（调用方回落旧线性）。
+function outLevelStageMul(lv) {
+  const t = CFG.outLevel.growthTable;
+  if (!Array.isArray(t) || !t.length) return null;
+  for (const seg of t) if (lv <= seg.upTo) return seg.mul;
+  return t[t.length - 1].mul;      // 超出最后一段（maxLevel 之外）按末段倍率
+}
+
+// 英雄每级成长值：按定位（CFG.heroRoles.byHero）取 growthByRole，无定位/无该定位回落 growth。
+function outLevelGrowthOf(def) {
+  const o = CFG.outLevel;
+  const role = (CFG.heroRoles && CFG.heroRoles.byHero && CFG.heroRoles.byHero[def.id]) || "";
+  return (o.growthByRole && o.growthByRole[role]) || o.growth;
+}
+
+// LV lv 的累计属性加成 → { hp, atk, def }（四舍五入取整）：有 growthTable 逐级累加「定位成长 × 段位倍率」，
+// 无表回落旧线性（growth × (lv-1)）。LV1 恒返回基础值（加成 0）。
+function outLevelStats(def, lv) {
+  const g = outLevelGrowthOf(def), n = lv - 1;
+  let hp, atk, defv;
+  if (outLevelStageMul(lv) !== null) {
+    hp = atk = defv = 0;
+    for (let L = 2; L <= lv; L++) {
+      const m = outLevelStageMul(L) || 1;
+      hp += g.hp * m; atk += g.atk * m; defv += g.def * m;
+    }
+  } else { hp = g.hp * n; atk = g.atk * n; defv = g.def * n; }
+  return { hp: Math.round(def.hp + hp), atk: Math.round(def.atk + atk), def: Math.round(def.def + defv) };
+}
+
+// 英雄是否已解锁（纯查询，无副作用）：① unlockOrder 前 starterCount 个 = 首发默认解锁；
+// ② 存档 unlockExtra[id] = 已花结晶主动解锁；③ heroLv 条件（指定英雄局外等级达标）达成即解锁。
+function isHeroUnlocked(id, data) {
+  const order = CFG.unlockOrder || [];
+  const idx = order.indexOf(id);
+  if (idx >= 0 && idx < (CFG.starterCount || order.length)) return true;
+  if (data && data.unlockExtra && data.unlockExtra[id]) return true;
+  const rule = CFG.unlockRules && CFG.unlockRules[id];
+  if (rule && rule.heroLv) {
+    if (typeof Meta !== "undefined" && Meta && typeof Meta.heroLevel === "function"
+      && Meta.heroLevel.call(Meta, rule.heroLv.heroId) >= rule.heroLv.lv) return true;
+  }
+  return false;
+}
+
+/* ================= 方向 4：撤离压力设计（追加区块，§5.45 铁律：文件末尾独立区块 + 现有函数只插单行调用） =================
+ * ① 撤离读条波次：开始读条（extractChanneling false→true）时逐波刷怪围攻，强度随波数递增
+ *    （第 N 波数量 = waveSizeBase + waveSizeGrowth×(N-1)，每 waveInterval 秒一波，全部进 CFG.extract）；
+ *    读条结束/打断/离圈 → 会话销毁 = 停止刷怪。挂点：updateExtractJudge 内单行调用 extractWaveTick
+ *    （置于负重缩放**之前**，拿原始 dt——波次/护盾按「真实秒」推进，不随负重缩放）。
+ *    ⚠️ 护栏（§4.6/§5.34）：updateExtractJudge 仅在主地图且 !frozen 时被调用（见 main.js 主循环），
+ *    且 paused 时整段跳过；extractWaveTick 内再自守卫一遍（防直接调用绕过闸门）。
+ * ② 负重权衡：选「负重越高 → 读条时间越长（读条速率打折）」方案。理由：
+ *    a) 不引入新伤害路径——若做「读条期间持续掉血」，掉血必经 heroTakeDamage → 立即打断读条，
+ *    超重等于永远撤不离（死锁）；b) 时长放大与波次压力天然相乘（见①）；c) 纯函数可测、无随机性。
+ *    挂点：updateExtractJudge 内 judgeChannel 之前单行调用 extractWeightDt 缩放 dt
+ *    （等价于拉长读条时长；圈外进度衰退不走缩放，保持旧衰退速率）。
+ * ③ 波次怪的攻击载体 = **雕像护盾**（关键设计约束：门禁 runtime_test 站桩 8s 必须撤离成功，
+ *    波次怪若伤害英雄 → 受击打断读条 → 永远撤不走，门禁必红）。读条期间波次怪由
+ *    extractWaveSiegeTick 接管（Monster.update 顶部单行插入，同 monsterBurnTick 先例）：
+ *    围到 siegeRingRadius 啃护盾，**不伤害英雄**；读条一旦中断 → 交还普通 AI 追击英雄（威胁不变）。
+ *    护盾破碎 → 读条冻结（进度不清零）+ 停刷波次；清光围攻怪 → 护盾再生至 shieldRecoverPct 解锁。
+ *    贪心压力：不清理围攻怪就反复读条 → 护盾见底 → 被锁死在撤离点。
+ * 无机制等价性：CFG.extract.enabled = false 时全部函数短路/透传，行为与旧版逐位一致。 */
+
+// 负重 → 读条时长倍率（≥1）：未启用惩罚 / 圈外（非读条帧）返回 1。
+function extractWeightMul(r, st) {
+  const c = CFG.extract;
+  if (!c || !c.enabled || !c.weightPenaltyEnabled) return 1;
+  if (!heroInCircle(st.x, st.y, c.radius)) return 1;   // 只有正在读条的帧才打折
+  const need = extractChannelSeconds(r);
+  return need > 0 ? need / c.channel : 1;
+}
+// dt 缩放（updateExtractJudge 单行挂点）：护盾破碎未恢复 → 读条冻结（dt=0，进度不清零）；
+// 圈内读条帧按负重打折读条速率；其余透传（enabled=false 恒透传，无机制等价性）。
+function extractWeightDt(r, st, dt) {
+  const c = CFG.extract;
+  if (!c || !c.enabled) return dt;
+  if (st.shieldBroken && (st.shield || 0) < c.shieldMax * c.shieldRecoverPct) return 0;
+  const mul = extractWeightMul(r, st);
+  return mul > 1 ? dt / mul : dt;
+}
+// 纯函数：当前负重下的实际撤离读条时长（秒）。runLike 仅作兼容入参（负重是全队口径，统一读 G.run）。
+// 未启用总开关 / 负重惩罚 → 返回基准 CFG.extract.channel（无机制等价性）。
+function extractChannelSeconds(runLike) {
+  const c = CFG.extract, base = c.channel;
+  if (!c || !c.enabled || !c.weightPenaltyEnabled) return base;
+  const run = (runLike && runLike.backpack) ? runLike : G.run;
+  if (!run) return base;
+  const over = Math.max(0, totalRunWeight() - c.weightThreshold);
+  return base * Math.min(c.weightTimeScaleMax, 1 + c.weightSlopePer100 * over / 100);
+}
+// 波次刷怪池：与 spawnWave 同源——优先刷怪圆模板池（主地图 circles[0]），回退关卡 spawnPool；
+// 过滤 ED 精英与 BOSS（不进随机圆），按解锁进度过滤（Boss 已死 → progress=1 全解锁）。
+function extractWavePool(w) {
+  const tpl = (w.circles && w.circles[0]) || null;
+  const raw = parseWeightPool((tpl && tpl.pool) || (G.levelCfg && G.levelCfg.spawnPool) || "NM0010:1");
+  const progress = (G.run.kills || 0) / Math.max(1, G.levelCfg.progressGoal);
+  const pool = {};
+  for (const id in raw) {
+    if (isEliteDef(id) || (CFG.monsters[id] && CFG.monsters[id].type === "boss")) continue;
+    if (progress >= (CFG.monsterUnlock[id] ?? 0)) pool[id] = raw[id];
+  }
+  if (!Object.keys(pool).length) pool.NM0010 = 1;   // 兜底（同 spawnWave）
+  return pool;
+}
+// 刷第 n 波：数量 = base + growth×(n-1)；围绕雕像 waveSpawnRadius 半径随机取点
+// （遵守 spawnRules.minDistFromPlayer / 障碍避让 / 世界边界）；spawnMonster 自带 monsterCap 守卫（满则返回 null → 本波收手）。
+function spawnExtractWave(w, st, n) {
+  const c = CFG.extract;
+  const size = Math.max(1, Math.round(c.waveSizeBase + c.waveSizeGrowth * (n - 1)));
+  const pool = extractWavePool(w);
+  const minDist = CFG.spawnRules.minDistFromPlayer;
+  let spawned = 0, attempts = 0;
+  const maxAttempts = Math.max(24, size * 8);
+  while (spawned < size && attempts < maxAttempts) {
+    attempts++;
+    const a = U.rand(0, Math.PI * 2), rr = U.rand(c.waveSpawnRadius * 0.6, c.waveSpawnRadius);
+    const x = st.x + Math.cos(a) * rr, y = st.y + Math.sin(a) * rr;
+    if (x < 40 || x > w.w - 40 || y < 40 || y > w.h - 40) continue;
+    if (blockedByObstacle(w, x, y)) continue;
+    if (G.player && U.dist(x, y, G.player.x, G.player.y) < minDist) continue;
+    const m = w.spawnMonster(U.weightedPick(pool), x, y);
+    if (!m) break;   // monsterCap 已满：spawnMonster 返回 null，停止本波（不超上限）
+    m._extWave = true;   // 标记波次怪：读条期间围攻雕像护盾（extractWaveSiegeTick），中断后转普通 AI
+    if (Math.random() < c.waveEliteChance) { applyElite(m); applyMonsterScale(m, "精英属性"); }
+    spawned++;
+  }
+  UI.toast("⚠ 撤离点遭到围攻：第 " + n + " 波来袭！（+" + spawned + "）", "bad");
+  SFX.play("boom");
+  return spawned;
+}
+// 雕像护盾再生/恢复（读条与否都推进）：无存活波次怪贴近雕像 → 延迟后缓慢再生；
+// 护盾归零 → 破碎（停刷波次 + 读条冻结由 extractWeightDt 承担）；恢复到 shieldRecoverPct × max → 解锁。
+function extractShieldTick(r, st, dt) {
+  const c = CFG.extract;
+  if (st.shield == null) return;   // 尚未开启过波次会话：护盾不存在，零足迹
+  if (!st.shieldBroken && st.shield <= 0) {
+    st.shieldBroken = true;
+    r._extWave = null;             // 停刷波次（会话销毁）：先清怪，再谈撤离
+    UI.toast("⚠ 撤离点雕像护盾被击碎！清除周围敌人后护盾将自行恢复", "bad");
+    SFX.play("boom");
+  }
+  const sieged = extractSiegersNear(r, st, c.siegeRingRadius + 240);
+  if (st.shield < c.shieldMax && !sieged) {
+    st._shieldHold = (st._shieldHold == null ? c.shieldRegenDelay : st._shieldHold) - dt;
+    if (st._shieldHold <= 0) st.shield = Math.min(c.shieldMax, st.shield + c.shieldRegenPerSec * dt);
+  } else st._shieldHold = c.shieldRegenDelay;
+  if (st.shieldBroken && st.shield >= c.shieldMax * c.shieldRecoverPct) {
+    st.shieldBroken = false;
+    UI.toast("撤离点雕像护盾已恢复，可继续读条", "gold");
+  }
+}
+// 是否有存活波次怪贴近雕像（围攻抑制再生）
+function extractSiegersNear(r, st, dist) {
+  const w = G.activeWorld || G.mainWorld;
+  if (!w || !w.monsters) return false;
+  for (const m of w.monsters) {
+    if (m.dead || !m._extWave) continue;
+    if (U.dist(m.x, m.y, st.x, st.y) < dist) return true;
+  }
+  return false;
+}
+// 波次状态机（updateExtractJudge 单行挂点，置于负重缩放**之前**以拿原始 dt）：
+// 读条开始建会话并按间隔刷波；读条结束/打断销毁会话；护盾破碎停刷并冻结读条。
+// 波次/护盾计时均按「真实秒」推进（不随负重缩放）——负重越重读条越久，承受波数越多。
+function extractWaveTick(r, st, dt) {
+  const c = CFG.extract;
+  if (!c || !c.enabled || !c.waveEnabled) { r._extWave = null; return; }
+  if (Game.paused) return;                                   // 升级 4 选 1 暂停：不推进波次（§5.43）
+  const w = G.activeWorld || G.mainWorld;
+  if (!w || !w.isMain || w.freezeTimer > 0) return;          // 冻结期间不推进波次（§4.6/§5.34 护栏）
+  extractShieldTick(r, st, dt);                              // 护盾再生/破碎/恢复（读条与否都推进）
+  if (!r.extractChanneling) { r._extWave = null; return; }   // 打断/结束/离圈 → 停止刷怪
+  if (st.shieldBroken) return;                               // 护盾破碎：先清怪恢复，不再刷波
+  let s = r._extWave;
+  if (!s) {
+    if (st.shield == null) st.shield = c.shieldMax;          // 首次波次会话：护盾就位
+    s = r._extWave = { wave: 0, timer: c.waveFirstDelay || 0 };
+  }
+  s.timer -= dt;
+  if (s.timer > 0) return;
+  s.wave++;
+  s.timer = c.waveInterval;
+  spawnExtractWave(w, st, s.wave);
+}
+// 波次怪围攻 AI（Monster.update 顶部单行挂点，同 monsterBurnTick 先例）：
+// 读条期间接管波次怪——围到雕像环啃护盾（不伤害英雄）；返回 true = 本帧已接管；
+// 读条中断/结束/机制关闭 → 返回 false → 交还普通 AI（追击英雄，真实威胁）。
+function extractWaveSiegeTick(m, w, dt) {
+  const r = G.run;
+  if (!m._extWave) return false;
+  const c = CFG.extract;
+  if (!c || !c.enabled || !c.waveEnabled) return false;
+  if (!r || !r.extractChanneling || !r.exitStatue) return false;
+  const st = r.exitStatue;
+  if (st.shield == null) return false;
+  const d = U.dist(m.x, m.y, st.x, st.y);
+  if (d > c.siegeRingRadius + m.r) {                          // 向雕像环推进
+    const ang = Math.atan2(st.y - m.y, st.x - m.x);
+    m.x += Math.cos(ang) * m.effSpd * dt;
+    m.y += Math.sin(ang) * m.effSpd * dt;
+  } else if (st.shield > 0) {                                 // 到环：啃护盾（读条期间绝不伤害英雄）
+    st.shield = Math.max(0, st.shield - m.atk * c.siegeDpsMul * dt);
+  }
+  return true;
 }

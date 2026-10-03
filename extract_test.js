@@ -68,6 +68,9 @@ vm.runInContext(`
   Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
   if (typeof Game.skipLevelUpChoice === "function") Game.skipLevelUpChoice();   // 跳过升级 4 选 1 暂停闸门（19.10.6）：本文件聚焦撤离读条，不测升级弹窗
   G.run.hp = 100000;                       // 测试无敌注入，聚焦撤离流程
+  /* 方向4（撤离压力）批注：①~⑧ 为旧口径段落——CFG.extract.enabled=false 完整回退新机制
+   * （无机制等价性基线），行为与改动前逐位一致；⑨ 起为压力机制新段落（enabled=true）。 */
+  CFG.extract.enabled = false;
 
   function keyDown(k) { winHandlers.keydown.forEach(fn => fn({ key: k, preventDefault() { } })); }
   function keyUp(k) { winHandlers.keyup.forEach(fn => fn({ key: k })); }
@@ -186,6 +189,173 @@ vm.runInContext(`
   console.assert(G.run.extractProgress === 0 && G.run.extractHolder === null,
     "撤离判定读满即被消费（进度归零 + 持有者清空）");
   console.log("⑧ 判定圈规则（任一英雄可触发 / 同圈不加速 / 单次消费）OK");
+
+  /* ==================== 方向 4：撤离压力设计（波次围攻 + 负重权衡） ==================== */
+  // 复用⑧的双英雄局？不——新开单英雄局，聚焦压力机制本身。
+  CFG.extract.enabled = true;              // 打开总开关（默认值，回退开关即本行置 false）
+  Game.startRun([CFG.heroes[0]]);
+  Game.skipIntroFreeze();
+  if (typeof Game.skipLevelUpChoice === "function") Game.skipLevelUpChoice();
+  G.run.hp = 100000;
+  G.run.kills = CFG.levels[0].progressGoal;
+  onMonsterKilled(G.mainWorld, { x: 500, y: 500, d: CFG.monsters.NM0010, dead: true });
+  G.mainWorld.boss.x = 800; G.mainWorld.boss.y = 600;
+  while (!G.mainWorld.boss.dead) damageMonster(G.mainWorld, G.mainWorld.boss, 999999);
+  G.mainWorld.monsters.forEach(m => m.dead = true);
+  G.mainWorld.enemyBullets = []; G.mainWorld.altars = [];
+  step(3);
+  const st3 = G.run.exitStatue;
+  console.assert(!!st3, "压力段：雕像应生成");
+
+  /* ---------- ⑨ 读条开始 → 触发刷怪；打断 → 停止刷怪 ---------- */
+  G.player.x = 200; G.player.y = 200;      // 先远离雕像
+  step(2);
+  console.assert(G.mainWorld.monsters.length === 0, "⑨ 未读条不应刷波次怪, got " + G.mainWorld.monsters.length);
+  G.player.x = st3.x; G.player.y = st3.y;  // 站进圈内 → 自动读条 → 第 1 波立即来袭
+  step(5);
+  const nWave1 = G.mainWorld.monsters.length;
+  console.assert(nWave1 === CFG.extract.waveSizeBase,
+    "⑨ 读条开始应立即刷第 1 波（数量 = waveSizeBase）, got " + nWave1);
+  console.assert(G.mainWorld.monsters.every(m => m._extWave), "⑨ 波次怪应带 _extWave 标记");
+  // 站桩观察：波次怪围攻雕像护盾，读条期间**不受伤害**（进度持续推进）
+  const p0 = G.run.extractProgress;
+  step(30);                                // ~0.5s：读条继续推进 → 波次怪没有打断读条
+  console.assert(G.run.extractChanneling === true, "⑨ 围攻期间读条应持续推进（波次怪不伤害英雄）");
+  console.assert(G.run.extractProgress > p0, "⑨ 读条进度应继续增长");
+  console.assert(typeof st3.shield === "number" && st3.shield >= 0 && st3.shield <= CFG.extract.shieldMax,
+    "⑨ 护盾应就位（首次会话初始化）, got " + st3.shield);
+  console.assert(st3.shield < CFG.extract.shieldMax || G.mainWorld.monsters.every(m => U.dist(m.x, m.y, st3.x, st3.y) > CFG.extract.siegeRingRadius),
+    "⑨ 围攻怪到环应啃护盾（0.5s 内可能尚未到环，此断言宽松）");
+  // 打断读条（走出圈）→ 会话销毁 → 停止刷怪
+  G.mainWorld.monsters.forEach(m => m.dead = true);   // 清场便于观察“数量不再增长”
+  G.player.x = st3.x + 400; G.player.y = st3.y + 400;
+  step(3);
+  console.assert(!G.run.extractChanneling, "⑨ 离圈应停止读条");
+  step(180);                               // ~3s（> waveInterval）：若还在刷怪，数量必然增长
+  console.assert(G.mainWorld.monsters.length === 0, "⑨ 读条中断后应停止刷怪（3s 内无新增）, got " + G.mainWorld.monsters.length);
+  console.log("⑨ 波次触发/停止 OK");
+
+  /* ---------- ⑩ 波次强度递增（第 N 波数量 > 第 1 波） ---------- */
+  G.mainWorld.monsters.forEach(m => m.dead = true); step(2);
+  const c1 = spawnExtractWave(G.mainWorld, st3, 1);
+  G.mainWorld.monsters.forEach(m => m.dead = true); step(2);
+  const c4 = spawnExtractWave(G.mainWorld, st3, 4);
+  console.assert(c1 === CFG.extract.waveSizeBase, "⑩ 第 1 波数量 = waveSizeBase, got " + c1);
+  console.assert(c4 > c1, "⑩ 波次强度应递增（第 4 波 " + c4 + " > 第 1 波 " + c1 + "）");
+  console.assert(c4 === Math.round(CFG.extract.waveSizeBase + CFG.extract.waveSizeGrowth * 3),
+    "⑩ 递增公式 = base + growth×(n-1), got " + c4);
+  G.mainWorld.monsters.forEach(m => m.dead = true); step(2);
+  console.log("⑩ 波次递增 OK: wave1=" + c1 + " wave4=" + c4);
+
+  /* ---------- ⑪ 不超 monsterCap ---------- */
+  const capBak = G.levelCfg.monsterCap;
+  G.levelCfg.monsterCap = 4;
+  spawnExtractWave(G.mainWorld, st3, 9);   // 第 9 波理论 10 只 > cap 4
+  console.assert(G.mainWorld.monsters.length <= monsterCap(),
+    "⑪ 刷怪应受 monsterCap 约束, got " + G.mainWorld.monsters.length + " / cap " + monsterCap());
+  G.levelCfg.monsterCap = capBak;
+  G.mainWorld.monsters.forEach(m => m.dead = true); step(2);
+  console.log("⑪ monsterCap 约束 OK");
+
+  /* ---------- ⑫ 负重惩罚：读条时长纯函数 + 集成推进 ---------- */
+  CFG.extract.enabled = false;
+  console.assert(extractChannelSeconds() === CFG.extract.channel, "⑫ 总开关关闭 → 读条时长 = 基准（等价性）");
+  CFG.extract.enabled = true;
+  console.assert(extractChannelSeconds() === CFG.extract.channel, "⑫ 0 负重 → 读条时长 = 基准");
+  console.assert(extractChannelSeconds(G.run) === CFG.extract.channel, "⑫ runLike 入参兼容");
+  const trwBak = totalRunWeight;
+  totalRunWeight = function () { return 340; };          // 超门槛 240 → 1 + 0.25×2.4 = 1.6 倍
+  const t340 = extractChannelSeconds();
+  console.assert(Math.abs(t340 - CFG.extract.channel * 1.6) < 1e-9, "⑫ 340 负重 → 1.6 倍读条, got " + t340);
+  totalRunWeight = function () { return 100000; };        // 极高负重 → 封顶 weightTimeScaleMax
+  const tMax = extractChannelSeconds();
+  console.assert(Math.abs(tMax - CFG.extract.channel * CFG.extract.weightTimeScaleMax) < 1e-9,
+    "⑫ 极高负重应封顶 2 倍, got " + tMax);
+  totalRunWeight = trwBak;
+  // 集成：高负重 → 同样步数下进度推进更慢
+  G.player.x = st3.x; G.player.y = st3.y;
+  G.mainWorld.monsters.forEach(m => m.dead = true);
+  step(2); G.run.extractProgress = 0; G.run.extractHolder = null;
+  step(60);                                               // ~1s 基准推进
+  const baseAdv = G.run.extractProgress;
+  G.run.extractProgress = 0; G.run._extWave = null;
+  totalRunWeight = function () { return 340; };
+  CFG.extract.enabled = false; step(1); CFG.extract.enabled = true;   // 重置会话（mul 变更后重建）
+  G.run.extractProgress = 0; G.run.extractHolder = null;
+  step(60);
+  const heavyAdv = G.run.extractProgress;
+  totalRunWeight = trwBak;
+  console.assert(heavyAdv < baseAdv - 0.2, "⑫ 高负重读条推进应更慢（" + heavyAdv.toFixed(2) + " < " + baseAdv.toFixed(2) + "）");
+  console.assert(Math.abs(baseAdv - 1.0) < 0.1, "⑫ 基准推进 ≈ 1.0s（步长累计 1.002s）, got " + baseAdv.toFixed(3));
+  G.mainWorld.monsters.forEach(m => m.dead = true); step(2);
+  console.log("⑫ 负重惩罚 OK: base=" + baseAdv.toFixed(3) + " heavy=" + heavyAdv.toFixed(3));
+
+  /* ---------- ⑬ 无机制等价性（enabled=false：与旧版逐位一致） ---------- */
+  CFG.extract.enabled = false;
+  G.player.x = 200; G.player.y = 200; step(2);
+  const monBefore = G.mainWorld.monsters.length;
+  G.player.x = st3.x; G.player.y = st3.y;
+  G.run.extractProgress = 0; G.run.extractHolder = null;
+  step(60);                                              // 站圈内 1s
+  console.assert(G.run.extractChanneling === true, "⑬ 关闭机制：读条仍正常推进");
+  console.assert(Math.abs(G.run.extractProgress - 1.002) < 0.05,
+    "⑬ 关闭机制：读条时长 = 旧版基准（无负重/破碎缩放）, got " + G.run.extractProgress.toFixed(3));
+  console.assert(G.mainWorld.monsters.length === monBefore, "⑬ 关闭机制：不刷任何波次怪");
+  console.assert(extractChannelSeconds() === CFG.extract.channel, "⑬ 关闭机制：读条时长函数 = 基准");
+  CFG.extract.enabled = true;
+  G.mainWorld.monsters.forEach(m => m.dead = true); step(2);
+  console.log("⑬ 无机制等价性 OK");
+
+  /* ---------- ⑭ 冻结期间波次不推进（§4.6/§5.34 护栏） ---------- */
+  const aliveMon = () => G.mainWorld.monsters.filter(m => !m.dead).length;   // 冻结期尸体不过滤，只数活怪
+  G.player.x = 200; G.player.y = 200; step(2);
+  G.mainWorld.monsters.forEach(m => m.dead = true);
+  G.mainWorld.freezeTimer = 999;                          // 人为冻结
+  G.player.x = st3.x; G.player.y = st3.y;                 // 冻结中站进圈
+  step(30);
+  console.assert(!G.run.extractChanneling, "⑭ 冻结期间主循环不推进撤离读条");
+  console.assert(aliveMon() === 0, "⑭ 冻结期间不刷波次怪, got " + aliveMon());
+  updateExtractJudge(0.5);                                // 直接调用绕过主循环闸门 → 内部护栏兜底
+  console.assert(aliveMon() === 0, "⑭ 冻结时直接调用 updateExtractJudge 也不刷波（内部护栏）");
+  G.mainWorld.freezeTimer = 0; step(5);
+  console.assert(aliveMon() > 0, "⑭ 解冻后读条恢复 → 波次照常");
+  G.mainWorld.monsters.forEach(m => m.dead = true);
+  G.player.x = st3.x + 400; G.player.y = st3.y + 400; step(3);
+  console.log("⑭ 冻结护栏 OK");
+
+  /* ---------- ⑮ 护盾围攻/破碎/再生（压力载体） ---------- */
+  G.player.x = st3.x; G.player.y = st3.y; step(2);        // 站圈内 → 波次会话 + 护盾就位
+  st3.shield = CFG.extract.shieldMax;
+  spawnExtractWave(G.mainWorld, st3, 3);
+  const siegers = G.mainWorld.monsters.filter(m => m._extWave && !m.dead);
+  console.assert(siegers.length > 0, "⑮ 应有存活波次怪");
+  siegers.forEach(m => { m.x = st3.x + CFG.extract.siegeRingRadius; m.y = st3.y; });   // 摆到围攻环上
+  const shield0 = st3.shield;
+  step(30);                                               // ~0.5s 围攻啃盾
+  console.assert(st3.shield < shield0, "⑮ 围攻怪应啃护盾（" + shield0.toFixed(0) + " → " + st3.shield.toFixed(0) + "）");
+  console.assert(G.run.extractChanneling === true, "⑮ 啃盾期间读条不受影响");
+  // 破碎 → 停刷波次 + 读条冻结（进度保留、不清零，由 extractWeightDt 的 dt=0 承担）
+  st3.shield = 0;
+  step(1);                                                // 下一帧护盾 tick 登记破碎
+  console.assert(st3.shieldBroken === true, "⑮ 护盾归零应破碎");
+  G.run.extractProgress = 5;
+  step(30);
+  console.assert(Math.abs(G.run.extractProgress - 5) < 1e-9,
+    "⑮ 破碎期间读条冻结（进度保留）, got " + G.run.extractProgress.toFixed(3));
+  const nAtBreak = aliveMon();
+  step(180);                                              // 3s：破碎期间不刷新波
+  console.assert(aliveMon() <= nAtBreak, "⑮ 破碎期间停止刷波");
+  // 再生：清光围攻怪 → 延迟后再生 → 恢复至 50% 解锁
+  G.player.x = st3.x + 400; G.player.y = st3.y + 400;    // 离圈（围攻怪转普通 AI 离环，且不刷新波）
+  G.mainWorld.monsters.forEach(m => m.dead = true);
+  step(2);
+  st3._shieldHold = 0;                                    // 跳过再生延迟
+  st3.shield = 900;                                       // 低于恢复线（50% × 2000 = 1000）
+  step(180);                                              // ~3s 再生：120/s × 3s = +360 → 1260 ≥ 1000
+  console.assert(st3.shield > 900, "⑮ 清怪后护盾应再生, got " + st3.shield.toFixed(0));
+  console.assert(st3.shieldBroken === false, "⑮ 恢复到 50% 后应解除破碎（可继续读条）");
+  G.mainWorld.monsters.forEach(m => m.dead = true); step(2);
+  console.log("⑮ 护盾围攻/破碎/再生 OK");
 
   console.log("EXTRACT TEST OK");
 `, ctx, { filename: "inline" });
