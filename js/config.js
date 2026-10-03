@@ -74,12 +74,13 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC02", count: 5 }, { tpl: "SC03", count: 4 }],
     progressGoal: 118, timeLimit: 270, artisanAtKills: 36,
-    // 首个毒圈关：进场 20 秒后从边缘收缩，圈外每 1.0 秒扣 6 点（可走位规避）
+    // 首个毒圈关（曲线档 HZ1）：预警期 20 秒让玩家看懂机制；收缩最慢（85s），
+    // 圈外每 1.0 秒扣 7 点——满血 100 可站约 15 秒（8~15s 压力带最温和端，走位即可规避，不劝退）
     hazardEnabled: true,
-    hazard: { startDelay: 20, shrinkDuration: 90, minRadius: 360, tickInterval: 1.0, dmgPerTick: 6 },
-    // 本关同时投放 2 个补给点；站圈读条 3 秒回血 20%
+    hazard: { startDelay: 20, shrinkDuration: 85, minRadius: 380, tickInterval: 1.0, dmgPerTick: 7 },
+    // 补给最慷慨（曲线档 SP1）：3 个点、读条仅 2.5 秒、单点回血 25%——教学期鼓励学习「进圈回血」节奏
     supplyEnabled: true,
-    supply: { count: 2, channelSeconds: 3.0, effect: { type: "heal", pct: 0.20 } },
+    supply: { count: 3, channelSeconds: 2.5, effect: { type: "heal", pct: 0.25 } },
   },
   {
     id: "LEVEL_006", name: "第 6 关 · 棱镜圣殿", theme: "#141f2a",
@@ -91,11 +92,12 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 5 }, { tpl: "SC02", count: 4 }],
     progressGoal: 132, timeLimit: 300, artisanAtKills: 40,
-    // 毒圈更凶：收缩更快、伤害更高
+    // 毒圈进阶档（HZ2）：预警期 -2s、收缩提速到 75s，圈外每 1.0 秒扣 8 点（满血约 12.5 秒）
     hazardEnabled: true,
-    hazard: { startDelay: 18, shrinkDuration: 80, minRadius: 340, tickInterval: 0.8, dmgPerTick: 8 },
+    hazard: { startDelay: 18, shrinkDuration: 75, minRadius: 350, tickInterval: 1.0, dmgPerTick: 8 },
+    // 补给转增益型（SP2）：数量降到 2、读条 3 秒——治疗变少（回复压力开始显现），改发战前增益
     supplyEnabled: true,
-    supply: { count: 1, channelSeconds: 2.5, effect: { type: "buff", buffPool: "war", duration: 25 } },
+    supply: { count: 2, channelSeconds: 3.0, effect: { type: "buff", buffPool: "war", duration: 20 } },
   },
   {
     id: "LEVEL_007", name: "第 7 关 · 裂空回廊", theme: "#1a1426",
@@ -118,10 +120,12 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 6 }, { tpl: "SC02", count: 5 }],
     progressGoal: 168, timeLimit: 360, artisanAtKills: 48,
+    // 毒圈压迫档（HZ3）：tick 缩到 0.8s（DPS 10，满血约 10.4 秒），预警 16s、终圈 330
     hazardEnabled: true,
-    hazard: { startDelay: 15, shrinkDuration: 70, minRadius: 320, tickInterval: 0.8, dmgPerTick: 10 },
+    hazard: { startDelay: 16, shrinkDuration: 65, minRadius: 330, tickInterval: 0.8, dmgPerTick: 8 },
+    // 补给回血回落（SP3）：单点 20%、读条 3 秒——比 L5 明显变抠，毒圈压力开始占上风
     supplyEnabled: true,
-    supply: { count: 2, channelSeconds: 3.0, effect: { type: "heal", pct: 0.25 } },
+    supply: { count: 2, channelSeconds: 3.0, effect: { type: "heal", pct: 0.20 } },
   },
   {
     id: "LEVEL_009", name: "第 9 关 · 领主王座", theme: "#26161a",
@@ -133,10 +137,12 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 7 }, { tpl: "SC02", count: 5 }],
     progressGoal: 184, timeLimit: 390, artisanAtKills: 52,
+    // 毒圈高压档（HZ4）：预警 14s、终圈 310，DPS 11.25（满血约 9.6 秒）
     hazardEnabled: true,
-    hazard: { startDelay: 14, shrinkDuration: 65, minRadius: 300, tickInterval: 0.7, dmgPerTick: 12 },
+    hazard: { startDelay: 14, shrinkDuration: 60, minRadius: 310, tickInterval: 0.8, dmgPerTick: 9 },
+    // 补给转经济型（SP4）：不回血改发结晶 50——毒伤走高后回血性价比下降，改为资源补偿
     supplyEnabled: true,
-    supply: { count: 3, channelSeconds: 3.0, effect: { type: "crystal", amount: 60 } },
+    supply: { count: 2, channelSeconds: 3.5, effect: { type: "crystal", amount: 50 } },
   },
   {
     id: "LEVEL_010", name: "第 10 关 · 终焉神域", theme: "#220f16",
@@ -148,10 +154,12 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 7 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 4 }],
     progressGoal: 200, timeLimit: 420, artisanAtKills: 56,
+    // 毒圈终局档（HZ5）：预警 12s、终圈 290、收缩 55s——DPS 12.5（满血 8 秒，压力带最紧端）
     hazardEnabled: true,
-    hazard: { startDelay: 12, shrinkDuration: 60, minRadius: 280, tickInterval: 0.6, dmgPerTick: 14 },
+    hazard: { startDelay: 12, shrinkDuration: 55, minRadius: 290, tickInterval: 0.8, dmgPerTick: 10 },
+    // 补给最稀缺（SP5）：仅 1 个点、读条 4 秒、回血 15%——终局生存靠走位而非站桩奶
     supplyEnabled: true,
-    supply: { count: 3, channelSeconds: 2.5, effect: { type: "heal", pct: 0.30 } },
+    supply: { count: 1, channelSeconds: 4.0, effect: { type: "heal", pct: 0.15 } },
   },
 ];
 
@@ -176,11 +184,11 @@ CFG.spawnRules = {
  * 渲染：红色半透明环边界 + 环外渐暗遮罩（见 game.js 文件末尾 renderHazard）。 */
 CFG.hazard = {
   enabled: false,           // 全局缺省关（main 之外默认不开启）；关卡以 hazardEnabled 打开
-  startDelay: 20,           // 进场后多少秒出现毒圈
-  shrinkDuration: 90,       // 从满图收缩到 minRadius 所需秒数
-  minRadius: 360,           // 最终安全圈半径（收缩到位后保持）
+  startDelay: 20,           // 进场后多少秒出现毒圈（缺省 = 最温和的教学档基准）
+  shrinkDuration: 85,       // 从满图收缩到 minRadius 所需秒数
+  minRadius: 380,           // 最终安全圈半径（收缩到位后保持）
   tickInterval: 1.0,        // 圈外扣血间隔（秒）
-  dmgPerTick: 6,            // 每次扣除血量（已扣防御）
+  dmgPerTick: 7,            // 每次扣除血量（已扣防御口径）；满血 100 约可站 15 秒（设计压力带 8~15 秒）
   cx: 0.5, cy: 0.5,         // 毒圈圆心（地图宽/高的比例，默认正中）
   color: "#ff3b3b",         // 边界色（红色系）
 };
@@ -1504,3 +1512,198 @@ CFG.extract.shieldRegenDelay = 3.0;      // 脱离围攻后开始再生的延迟
 /* ========== 方向 5：音频扩展——BGM 开关与音量（追加字段，勿动上方 CFG.audio 原有区块） ========== */
 CFG.audio.bgmEnabled = true;   // 战斗 BGM 独立开关（关掉只静 BGM，音效不受影响）
 CFG.audio.bgmVolume = 0.28;    // BGM 总线增益（挂 SFX.master 之下，0.2~0.35 区间，不盖过音效）
+
+/* ============================================================================
+ * 实战手感调参：关卡难度曲线总表（单一事实源，分段手调表）
+ * ----------------------------------------------------------------------------
+ * 定位：10 关难度的**集中调参基准**。怪物数量/血量倍率是策划手调的总览值
+ * （运行时由 CFG.levels 的 monsterLevel / eliteBase / progressGoal 分散表达，
+ * 逻辑侧暂不读本表）；毒圈/补给/宝箱档位表是**实际数值源**，
+ * 各关 CFG.levels[x].hazard / .supply 覆盖必须与本表对应档位一致
+ * （CFG._validateLevelCurve 会做一致性核对，改档位后请同步关卡覆盖）。
+ *
+ * 压力口径（毒圈）：
+ *   基准血量 100（H001~H012 满血 85~120 的中位）；受伤公式 dmg - def（防御只会更长命，安全侧）；
+ *   满血站毒目标区间 8~15 秒致命（tick 量化后逐关实测见档位注释）。
+ *   现行实现为「单次线性收缩」（无多圈轮次字段），故压迫感三要素 =
+ *   startDelay 预警期（12~20s，随关卡递减 = 走位/撤离准备时间缩短）+
+ *   shrinkDuration 总收缩时长（递减 = 收缩提速）+ minRadius 终圈（递减 = 安全区更小）。
+ * 节奏设计：LEVEL_007 为**休整关**（机制关闭）——连续高压之间留喘息点，防劝退；
+ *   曲线倍率仍连续无断崖（countMul/hpMul 逐关小步抬升）。
+ * ============================================================================ */
+CFG.levelCurve = {
+  /* ---- 10 关分段表（逐行手调；hazard/supply = 档位 key，null = 该关不启用机制） ---- */
+  rows: [
+    // lv  countMul(怪物数量压力)  hpMul(怪物血量)  hazard(毒圈档)  supply(补给档)  chest(宝箱档)
+    { lv: 1,  countMul: 1.00, hpMul: 1.00, hazard: null,  supply: null,  chest: "CT1" },
+    { lv: 2,  countMul: 1.12, hpMul: 1.12, hazard: null,  supply: null,  chest: "CT1" },
+    { lv: 3,  countMul: 1.25, hpMul: 1.24, hazard: null,  supply: null,  chest: "CT2" },
+    { lv: 4,  countMul: 1.38, hpMul: 1.36, hazard: null,  supply: null,  chest: "CT2" },
+    { lv: 5,  countMul: 1.50, hpMul: 1.48, hazard: "HZ1", supply: "SP1", chest: "CT2" },
+    { lv: 6,  countMul: 1.65, hpMul: 1.60, hazard: "HZ2", supply: "SP2", chest: "CT3" },
+    { lv: 7,  countMul: 1.80, hpMul: 1.72, hazard: null,  supply: null,  chest: "CT3" },   // 休整关：机制关闭，倍率曲线保持连续
+    { lv: 8,  countMul: 1.95, hpMul: 1.84, hazard: "HZ3", supply: "SP3", chest: "CT3" },
+    { lv: 9,  countMul: 2.10, hpMul: 1.96, hazard: "HZ4", supply: "SP4", chest: "CT4" },
+    { lv: 10, countMul: 2.25, hpMul: 2.08, hazard: "HZ5", supply: "SP5", chest: "CT4" },
+  ],
+
+  /* ---- 毒圈档位（值 = 关卡 hazard 覆盖的权威来源）----
+   * dps = dmgPerTick / tickInterval；ttk = 满血 100 站毒致命秒数（ceil 量化）。
+   * 设计意图逐档：预警期 -2s/档、收缩提速、终圈收紧，DPS 7→12.5 严格递增。 */
+  hazardTiers: {
+    HZ1: { name: "教学档", startDelay: 20, shrinkDuration: 85, minRadius: 380, tickInterval: 1.0, dmgPerTick: 7 },   // dps 7.0   ttk 15.0s
+    HZ2: { name: "进阶档", startDelay: 18, shrinkDuration: 75, minRadius: 350, tickInterval: 1.0, dmgPerTick: 8 },   // dps 8.0   ttk 13.0s
+    HZ3: { name: "压迫档", startDelay: 16, shrinkDuration: 65, minRadius: 330, tickInterval: 0.8, dmgPerTick: 8 },   // dps 10.0  ttk 10.4s
+    HZ4: { name: "高压档", startDelay: 14, shrinkDuration: 60, minRadius: 310, tickInterval: 0.8, dmgPerTick: 9 },   // dps 11.25 ttk 9.6s
+    HZ5: { name: "终局档", startDelay: 12, shrinkDuration: 55, minRadius: 290, tickInterval: 0.8, dmgPerTick: 10 },  // dps 12.5  ttk 8.0s
+  },
+
+  /* ---- 补给档位（值 = 关卡 supply 覆盖的权威来源）----
+   * 设计意图：数量 3→1、读条 2.5→4.0s、治疗 25%→15% 全部单调走向稀缺；
+   * L6 转增益 / L9 转结晶，避免后期「无限奶站撸毒圈」，又不至于完全没收益。 */
+  supplyTiers: {
+    SP1: { name: "教学档·慷慨", count: 3, channelSeconds: 2.5, effect: { type: "heal", pct: 0.25 } },
+    SP2: { name: "进阶档·增益", count: 2, channelSeconds: 3.0, effect: { type: "buff", buffPool: "war", duration: 20 } },
+    SP3: { name: "压迫档·缩水", count: 2, channelSeconds: 3.0, effect: { type: "heal", pct: 0.20 } },
+    SP4: { name: "高压档·资源", count: 2, channelSeconds: 3.5, effect: { type: "crystal", amount: 50 } },
+    SP5: { name: "终局档·稀缺", count: 1, channelSeconds: 4.0, effect: { type: "heal", pct: 0.15 } },
+  },
+
+  /* ---- 宝箱档位（品质权重基准，对齐 CFG.chestQualities 的五阶 key）----
+   * 设计意图：高阶（divine+mythic）占比 3%→16% 单调抬升；CT2 = 现行祭坛宝箱（ALTAR_003）基准。 */
+  chestTiers: {
+    CT1: { name: "前期档",   weights: { normal: 55, advanced: 30, epic: 12, divine: 3,  mythic: 0 } },
+    CT2: { name: "中期档",   weights: { normal: 48, advanced: 28, epic: 16, divine: 6,  mythic: 2 } },
+    CT3: { name: "中后期档", weights: { normal: 40, advanced: 28, epic: 20, divine: 9,  mythic: 3 } },
+    CT4: { name: "后期档",   weights: { normal: 34, advanced: 28, epic: 22, divine: 12, mythic: 4 } },
+  },
+};
+
+/* ---------- 配置一致性自检（纯函数，不依赖 DOM，不抛错） ----------
+ * 用法：CFG._validateLevelCurve() → { ok: true/false, issues: [字符串…] }。
+ * 检查面：曲线表结构 / 倍率单调不减 / 毒圈与补给的数值区间 / 档位 key 存在 /
+ * 关卡覆盖与档位值一致 / 补给相对毒伤不失衡 / 宝箱高阶占比单调抬升。 */
+CFG._validateLevelCurve = function () {
+  const issues = [];
+  try {
+    const num = (v) => typeof v === "number" && isFinite(v);
+    const lv = CFG.levels;
+    if (!Array.isArray(lv) || lv.length < 10) { issues.push("CFG.levels 缺失或少于 10 关"); return { ok: false, issues: issues }; }
+    const curve = CFG.levelCurve;
+    if (!curve || !Array.isArray(curve.rows) || curve.rows.length !== 10) { issues.push("levelCurve.rows 必须为 10 行"); return { ok: false, issues: issues }; }
+
+    // ---- 1. 倍率：数值合理 + 单调不减 ----
+    let prevCount = 0, prevHp = 0;
+    for (let i = 0; i < curve.rows.length; i++) {
+      const r = curve.rows[i];
+      if (r.lv !== i + 1) issues.push("rows[" + i + "].lv 应为 " + (i + 1));
+      if (!num(r.countMul) || r.countMul <= 0 || r.countMul > 10) issues.push("第" + r.lv + "关 countMul 超界: " + r.countMul);
+      if (!num(r.hpMul) || r.hpMul <= 0 || r.hpMul > 10) issues.push("第" + r.lv + "关 hpMul 超界: " + r.hpMul);
+      if (r.countMul < prevCount) issues.push("第" + r.lv + "关 countMul 单调回落: " + prevCount + "→" + r.countMul);
+      if (r.hpMul < prevHp) issues.push("第" + r.lv + "关 hpMul 单调回落: " + prevHp + "→" + r.hpMul);
+      prevCount = r.countMul; prevHp = r.hpMul;
+    }
+
+    // ---- 2. 毒圈档位：数值区间 + 递增压力 + 与关卡覆盖一致 ----
+    const HZ = curve.hazardTiers;
+    let prevDps = 0, prevDelay = Infinity, prevMinR = Infinity;
+    for (let i = 0; i < 10; i++) {
+      const r = curve.rows[i], L = lv[i], key = r.hazard;
+      if (!!L.hazardEnabled !== (key != null)) { issues.push("第" + (i + 1) + "关 hazard 开关与曲线档位不一致"); continue; }
+      if (key == null) continue;
+      const t = HZ[key];
+      if (!t) { issues.push("毒圈档位 key 不存在: " + key); continue; }
+      if (!num(t.startDelay) || t.startDelay < 5 || t.startDelay > 60) issues.push(key + " startDelay 超界: " + t.startDelay);
+      if (!num(t.shrinkDuration) || t.shrinkDuration < 10 || t.shrinkDuration > 300) issues.push(key + " shrinkDuration 超界: " + t.shrinkDuration);
+      if (!num(t.minRadius) || t.minRadius < 50 || t.minRadius > 960) issues.push(key + " minRadius 超界: " + t.minRadius);
+      if (!num(t.tickInterval) || t.tickInterval < 0.1 || t.tickInterval > 5) issues.push(key + " tickInterval 超界: " + t.tickInterval);
+      if (!num(t.dmgPerTick) || t.dmgPerTick < 0.5 || t.dmgPerTick > 30) issues.push(key + " dmgPerTick 超界（0/负数/天文数字）: " + t.dmgPerTick);
+      const dps = t.dmgPerTick / t.tickInterval;
+      const ttk = Math.ceil(100 / t.dmgPerTick) * t.tickInterval;   // 满血 100（不计防御，安全侧）
+      if (dps < 1 || dps > 25) issues.push(key + " 毒圈 DPS 超界: " + dps);
+      if (ttk < 8 - 1e-9 || ttk > 15 + 1e-9) issues.push(key + " 满血站毒 " + ttk.toFixed(1) + "s 出 8~15s 压力带");
+      if (dps < prevDps) issues.push("毒圈 DPS 未随关卡递增: 第" + i + "档→" + key);
+      if (t.startDelay > prevDelay) issues.push("毒圈预警期未随关卡缩短: " + key);
+      if (t.minRadius > prevMinR) issues.push("毒圈终圈未随关卡收紧: " + key);
+      prevDps = dps; prevDelay = t.startDelay; prevMinR = t.minRadius;
+      // 与 CFG.levels 覆盖逐字段核对（合并全局缺省后比对）
+      const m = {};
+      const base = CFG.hazard || {}, ov = L.hazard || {};
+      const fields = ["startDelay", "shrinkDuration", "minRadius", "tickInterval", "dmgPerTick"];
+      for (const f of fields) m[f] = ov[f] != null ? ov[f] : base[f];
+      for (const f of fields) if (m[f] !== t[f]) issues.push("第" + (i + 1) + "关 hazard." + f + "=" + m[f] + " 与档位 " + key + " 不一致（应同步曲线表）");
+    }
+
+    // ---- 3. 补给档位：数值区间 + 稀缺化单调 + 与关卡覆盖一致 + 不失衡 ----
+    const SP = curve.supplyTiers;
+    let prevCnt = Infinity, prevChan = 0, prevHeal = Infinity;
+    for (let i = 0; i < 10; i++) {
+      const r = curve.rows[i], L = lv[i], key = r.supply;
+      if (!!L.supplyEnabled !== (key != null)) { issues.push("第" + (i + 1) + "关 supply 开关与曲线档位不一致"); continue; }
+      if (key == null) continue;
+      const t = SP[key];
+      if (!t) { issues.push("补给档位 key 不存在: " + key); continue; }
+      if (!num(t.count) || t.count < 1 || t.count > 3) issues.push(key + " count 超界（1~3）: " + t.count);
+      if (!num(t.channelSeconds) || t.channelSeconds < 1 || t.channelSeconds > 6) issues.push(key + " channelSeconds 超界: " + t.channelSeconds);
+      const ef = t.effect || {};
+      let healAmt = 0;
+      if (ef.type === "heal") { if (!num(ef.pct) || ef.pct <= 0 || ef.pct > 0.5) issues.push(key + " heal pct 超界(0~0.5]: " + ef.pct); healAmt = 100 * (ef.pct || 0); }
+      else if (ef.type === "buff") { if (!CFG[(ef.buffPool || "") + "Buffs"] || !CFG[ef.buffPool + "Buffs"].length) issues.push(key + " buffPool 无效: " + ef.buffPool); if (!num(ef.duration) || ef.duration <= 0 || ef.duration > 120) issues.push(key + " buff duration 超界: " + ef.duration); }
+      else if (ef.type === "crystal") { if (!num(ef.amount) || ef.amount <= 0 || ef.amount > 200) issues.push(key + " crystal amount 超界: " + ef.amount); }
+      else issues.push(key + " effect.type 未知: " + ef.type);
+      if (t.count > prevCnt) issues.push("补给数量未随关卡稀缺化: " + key);
+      if (t.channelSeconds < prevChan) issues.push("补给读条未随关卡变长: " + key);
+      if (ef.type === "heal" && healAmt >= prevHeal) issues.push("补给回血未随关卡缩水: " + key);
+      prevCnt = t.count; prevChan = t.channelSeconds; if (ef.type === "heal") prevHeal = healAmt;
+      // 失衡检查：单点回血 ≤ 30s 毒伤、全关补给池 ≤ 90s 毒伤（毒圈未开时跳过）
+      const hzKey = r.hazard;
+      if (healAmt > 0 && hzKey && HZ[hzKey]) {
+        const dps = HZ[hzKey].dmgPerTick / HZ[hzKey].tickInterval;
+        if (healAmt > dps * 30) issues.push(key + " 单点回血 " + healAmt + " 超过 30s 毒伤（站撸失衡）");
+        if (t.count * healAmt > dps * 90) issues.push(key + " 全关补给池超 90s 毒伤（无限奶失衡）");
+      }
+      // 与 CFG.levels 覆盖核对
+      const ov = L.supply || {}, base = CFG.supply || {};
+      const cnt = ov.count != null ? ov.count : base.count;
+      const chan = ov.channelSeconds != null ? ov.channelSeconds : base.channelSeconds;
+      const efv = ov.effect || base.effect;
+      if (cnt !== t.count) issues.push("第" + (i + 1) + "关 supply.count=" + cnt + " 与档位 " + key + " 不一致");
+      if (chan !== t.channelSeconds) issues.push("第" + (i + 1) + "关 supply.channelSeconds=" + chan + " 与档位 " + key + " 不一致");
+      if (!efv || efv.type !== ef.type || (ef.type === "heal" && efv.pct !== ef.pct)
+        || (ef.type === "buff" && (efv.buffPool !== ef.buffPool || efv.duration !== ef.duration))
+        || (ef.type === "crystal" && efv.amount !== ef.amount)) issues.push("第" + (i + 1) + "关 supply.effect 与档位 " + key + " 不一致");
+    }
+
+    // ---- 4. 宝箱档位：key 存在 + 权重合法 + 高阶占比单调抬升 ----
+    const CT = curve.chestTiers, okKeys = CFG.chestQualities ? Object.keys(CFG.chestQualities) : [];
+    let prevHigh = -1;
+    for (let i = 0; i < 10; i++) {
+      const r = curve.rows[i];
+      const t = CT[r.chest];
+      if (!t) { issues.push("宝箱档位 key 不存在: " + r.chest); continue; }
+      const w = t.weights || {};
+      let sum = 0, high = 0;
+      for (const k in w) {
+        if (okKeys.indexOf(k) < 0) { issues.push(r.chest + " 权重 key 不在 chestQualities: " + k); continue; }
+        if (!num(w[k]) || w[k] < 0) issues.push(r.chest + " 权重非法: " + k + "=" + w[k]);
+        sum += w[k];
+        if (k === "divine" || k === "mythic") high += w[k];
+      }
+      if (sum <= 0) issues.push(r.chest + " 权重总和为 0");
+      const share = sum > 0 ? high / sum : 0;
+      if (share < prevHigh - 1e-9) issues.push("宝箱高阶占比未随关卡抬升: 第" + (i + 1) + "关");
+      prevHigh = share;
+    }
+
+    // ---- 5. 全局缺省（CFG.hazard / CFG.supply）兜底区间 ----
+    const gh = CFG.hazard || {};
+    if (!num(gh.dmgPerTick) || gh.dmgPerTick < 0.5 || gh.dmgPerTick > 30) issues.push("CFG.hazard.dmgPerTick 超界: " + gh.dmgPerTick);
+    if (!num(gh.tickInterval) || gh.tickInterval < 0.1 || gh.tickInterval > 5) issues.push("CFG.hazard.tickInterval 超界: " + gh.tickInterval);
+    const gs = CFG.supply || {};
+    if (!num(gs.count) || gs.count < 1 || gs.count > 3) issues.push("CFG.supply.count 超界: " + gs.count);
+    if (!num(gs.channelSeconds) || gs.channelSeconds < 1 || gs.channelSeconds > 6) issues.push("CFG.supply.channelSeconds 超界: " + gs.channelSeconds);
+  } catch (e) {
+    issues.push("自检过程异常: " + (e && e.message ? e.message : String(e)));   // 防御：绝不向外抛
+  }
+  return { ok: issues.length === 0, issues: issues };
+};

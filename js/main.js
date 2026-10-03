@@ -136,6 +136,7 @@ const LoadingOverlay = {
 
 const Game = {
   async boot() {
+    BootGuard.arm();   // 20.6 首屏看门狗：12s 未进首页 → 弹兜底面板
     G.canvas = document.getElementById("game-canvas");
     G.ctx = G.canvas.getContext("2d");
     this.fitCanvas();
@@ -162,6 +163,7 @@ const Game = {
     }
     G.state = "menu";
     UI.showScreen("screen-main");   // 启动落到游戏首页（→ 主城 → 传送门 → 选关）
+    BootGuard.done();               // 20.6 首屏已出现：取消看门狗（正常路径零打扰）
     requestAnimationFrame((t) => this.loop(t));
   },
   /* 20.5 读取素材加载进度（防御式）：
@@ -765,3 +767,340 @@ const Game = {
 
 window.addEventListener("DOMContentLoaded", () => Game.boot());
 Game.loadSettings();   // 脚本加载即恢复设置（boot 前也要有默认值，防止测试/早期调用读不到）
+
+/* ============================================================
+ * 20.6 首屏启动兜底（BootGuard）—— 独立区块
+ * 背景：线上有「无法开始游戏」投诉，四组环境复现均正常，怀疑个别手机端
+ *       缓存/环境异常导致首屏静默失败（白屏、卡死、JS 半加载）。
+ * 目标：任何异常都能被用户「看见 + 自救」——不依赖游戏 canvas / 主循环。
+ * 设计要点：
+ *   1) 看门狗：boot 起 12s 内若未落到首页 screen-main → 弹兜底面板；
+ *      正常进首页则由 done() 取消（正常路径零打扰）。
+ *   2) 全局错误捕获：首屏前任何错误立即弹面板（不等超时）；首屏后只记录。
+ *   3) 兜底面板为纯 DOM + 内联样式，字体/布局不依赖 css/style.css（避免冲突）。
+ *   4) 防御式：所有 DOM 判空；桩/无 DOM 环境（typeof document === "undefined"）
+ *      全部静默跳过，绝不抛错（否则会破坏 perf_guard_test 等既有桩测试）。
+ *   5) 只用 ES5/ES6 基础语法（var/function/箭头/模板串），兼容较老移动端浏览器。
+ * ============================================================ */
+/* 全局错误数组：供面板展示与「复制诊断信息」拼接。
+ * 用 || 兜底，避免被其它脚本重复定义时被覆盖（幂等）。 */
+window.__bootErrors = window.__bootErrors || [];
+
+/* 面板内联样式：一次性注入 <head>，选择器带 #boot-error-panel 前缀隔离，
+ * 不写 css/style.css（避免与他人改动冲突）。 */
+function _bootInjectStyle() {
+  try {
+    if (typeof document === "undefined" || !document.head || !document.createElement) return;
+    if (document.getElementById("boot-guard-style")) return;   // 幂等：只注入一次
+    var css = [
+      "#boot-error-panel{position:fixed;left:0;top:0;right:0;bottom:0;z-index:99999;",
+      "display:flex;align-items:center;justify-content:center;background:rgba(10,10,14,.92);",
+      "color:#e8e8ee;font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;}",
+      "#boot-error-panel.hidden{display:none!important;}",
+      "#boot-error-panel .bep-box{width:min(560px,92vw);max-height:88vh;overflow:auto;box-sizing:border-box;",
+      "background:#1a1a22;border:1px solid #3a3a48;border-radius:10px;padding:20px 22px;box-shadow:0 8px 40px rgba(0,0,0,.5);}",
+      "#boot-error-panel h2{margin:0 0 8px;font-size:20px;color:#ff8a8a;}",
+      "#boot-error-panel p{margin:6px 0;font-size:13px;line-height:1.6;color:#b8b8c4;}",
+      "#boot-error-panel .bep-sec{margin:12px 0;padding:10px 12px;background:#12121a;border:1px solid #2c2c38;border-radius:8px;}",
+      "#boot-error-panel .bep-k{color:#8a8a98;font-size:12px;margin-bottom:4px;}",
+      "#boot-error-panel .bep-v{color:#d8d8e0;font-size:12px;font-family:ui-monospace,Menlo,Consolas,monospace;",
+      "white-space:pre-wrap;word-break:break-all;max-height:150px;overflow:auto;}",
+      "#boot-error-panel .bep-v.err{color:#ffb0b0;}",
+      "#boot-error-panel .bep-btns{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}",
+      "#boot-error-panel .bep-btn{flex:1;min-width:130px;padding:11px 16px;border-radius:8px;border:1px solid #4a4a5a;",
+      "background:#2a2a36;color:#e8e8ee;font-size:14px;cursor:pointer;}",
+      "#boot-error-panel .bep-btn.primary{background:#3a6ea5;border-color:#5a8ec5;font-weight:bold;}",
+      "#boot-error-panel .bep-btn:active{opacity:.8;}",
+    ].join("");
+    var st = document.createElement("style");
+    st.id = "boot-guard-style";
+    // 优先 textContent（现代）；老 IE 无则退 text（try 包裹防只读抛错）
+    if ("textContent" in st) st.textContent = css;
+    else st.text = css;
+    if (document.head.appendChild) document.head.appendChild(st);
+  } catch (e) { /* 样式注入失败不影响功能，静默 */ }
+}
+
+const BootGuard = {
+  TIMEOUT_MS: 12000,     // 看门狗时长：素材慢也通常 12s 内出首屏；超时兜底
+  _timer: null,          // 看门狗句柄（done 时清除）
+  _armed: false,         // 是否已 arm（避免重复挂看门狗）
+  _booted: false,        // 是否已进入首页（首屏标志）
+  ready: false,          // 面板按钮/错误监听是否已就绪（测试可观测）
+  panel: null,           // 面板元素缓存
+
+  /* 取 dom，缺省取全局 document；无 DOM 环境返回 null（调用方判空） */
+  _doc(dom) {
+    if (dom) return dom;
+    return (typeof document !== "undefined") ? document : null;
+  },
+  /* 取 body（兼容桩里 body 延迟定义成 getter 的情况） */
+  _body(doc) {
+    try { return doc ? doc.body : null; } catch (e) { return null; }
+  },
+  /* 取窗口对象；无 window 返回 null */
+  _win() {
+    return (typeof window !== "undefined") ? window : null;
+  },
+
+  /* 确保面板 + 按钮 + 全局错误监听就绪（幂等；无 DOM 直接跳过）。
+   * 端到端时 index.html 内联脚本会在加载脚本后立刻调用，保证从此刻起：
+   *   - 任何「首屏前错误」能立即弹面板
+   *   - 「脚本加载失败」兜底面板的按钮可用（此时 main.js 的 Game 可能未定义） */
+  ensure() {
+    if (this.ready) return this;
+    var doc = this._doc();
+    if (!doc || !doc.getElementById || !this._body(doc)) return this;   // 无可用 DOM：安全跳过
+    _bootInjectStyle();
+    this.panel = doc.getElementById("boot-error-panel");
+    // 若 index.html 未提供面板（片段缺失）→ 动态造一个最小面板（双保险，保证一定有自救入口）
+    if (!this.panel && doc.createElement) {
+      this.panel = doc.createElement("div");
+      this.panel.id = "boot-error-panel";
+      this.panel.className = "hidden";
+      this.panel.innerHTML = '<div class="bep-box"><h2>启动未能完成</h2>' +
+        '<p>页面似乎没有正常加载，可能是网络或缓存问题。</p><div class="bep-btns"></div></div>';
+      try { this._body(doc).appendChild(this.panel); } catch (e) { }
+    }
+    // 按钮绑定：优先用面板内已有按钮，否则动态补
+    var btns = this.panel && this.panel.querySelector ? this.panel.querySelector(".bep-btns") : null;
+    if (!btns && this.panel && doc.createElement) {
+      btns = doc.createElement("div");
+      btns.className = "bep-btns";
+      try { this.panel.appendChild(btns); } catch (e) { }
+    }
+    var self = this;
+    var retry = doc.getElementById ? doc.getElementById("boot-error-retry") : null;
+    if (!retry && btns && doc.createElement) {
+      retry = doc.createElement("button");
+      retry.id = "boot-error-retry";
+      retry.className = "bep-btn primary";
+      retry.textContent = "重试";
+      btns.appendChild(retry);
+    }
+    if (retry) retry.onclick = function () { self.retry(); };
+    var copy = doc.getElementById ? doc.getElementById("boot-error-copy") : null;
+    if (!copy && btns && doc.createElement) {
+      copy = doc.createElement("button");
+      copy.id = "boot-error-copy";
+      copy.className = "bep-btn";
+      copy.textContent = "复制诊断信息";
+      btns.appendChild(copy);
+    }
+    if (copy) copy.onclick = function () { self.copy(); };
+    // 全局错误监听只装一次（本区块任一入口都可能先被调用）
+    if (!this._errBound) {
+      this._errBound = true;
+      this._installGlobalHandlers(this._win());
+    }
+    this.ready = true;
+    return this;
+  },
+
+  /* 挂全局错误监听：window.onerror + unhandledrejection。
+   * 均 push 到 window.__bootErrors；首屏未出现 → 立即弹面板，已出现 → 只记录。 */
+  _installGlobalHandlers(w) {
+    if (!w) return;
+    var self = this;
+    var prev = w.onerror;   // 保留原有处理器，不互相覆盖
+    w.onerror = function (message, filename, lineno, colno, e) {
+      try {
+        var stack = (e && e.stack) ? String(e.stack) : "";
+        self.record(message, filename, lineno, stack);
+      } catch (er) { }
+      if (typeof prev === "function") { try { return prev.apply(this, arguments); } catch (er) { } }
+      return false;   // 不吞掉：交由浏览器控制台照常打印
+    };
+    w.addEventListener("unhandledrejection", function (ev) {
+      try {
+        var r = ev && ev.reason;
+        var msg = r ? (r.message || String(r)) : "unhandledrejection";
+        var stack = (r && r.stack) ? String(r.stack) : "";
+        self.record(msg, "(promise)", 0, stack);
+      } catch (er) { }
+    });
+  },
+
+  /* 记录一条错误。首屏前 → 立即弹面板；首屏后 → 只记录。
+   * 返回是否触发弹窗（便于单测断言）。 */
+  record(message, filename, lineno, stack) {
+    var info = {
+      message: (message == null || message === "") ? "未知错误" : String(message),
+      filename: filename ? String(filename) : "",
+      lineno: (lineno == null || lineno === "") ? "" : String(lineno),
+      stack: stack ? String(stack) : "",
+      time: (new Date()).toISOString(),
+    };
+    try {
+      if (typeof window !== "undefined") {
+        window.__bootErrors = window.__bootErrors || [];
+        window.__bootErrors.push(info);
+        if (window.__bootErrors.length > 40) window.__bootErrors.shift();   // 上限：防内存无限增长
+      }
+    } catch (e) { }
+    if (!this._booted) { this.showPanel(); return true; }
+    return false;
+  },
+
+  /* arm：boot 开头调用，挂看门狗定时器。重复调用幂等（只挂一次）。 */
+  arm() {
+    var self = this;
+    this.ensure();
+    if (this._armed) return this;
+    this._armed = true;
+    if (typeof setTimeout === "function") {
+      this._timer = setTimeout(function () {
+        if (self._booted) return;     // 首屏已出（理论到不了这，双保险）
+        // 看门狗诊断：明确「不是 JS 崩溃」而是「启动没走完」
+        try { window.__bootErrors = window.__bootErrors || []; window.__bootErrors.push({ message: "启动超时：boot() 在 " + (self.TIMEOUT_MS / 1000) + " 秒内未进入首页", filename: "(boot-watchdog)", lineno: "", stack: "", time: (new Date()).toISOString() }); } catch (e) { }
+        self.showPanel();
+      }, this.TIMEOUT_MS);
+    }
+    return this;
+  },
+
+  /* done：首屏出现（showScreen("screen-main") 后）调用，取消看门狗。
+   * 幂等：重复调用安全；此后错误只记录不弹面板。 */
+  done() {
+    this._booted = true;
+    if (this._timer && typeof clearTimeout === "function") { clearTimeout(this._timer); this._timer = null; }
+    return this;
+  },
+
+  /* 判断首屏是否已出现：
+   *   - BootGuard._booted 已置位 → 已出现
+   *   - 或 DOM 上 #screen-main 不含 hidden → 已出现（兜底：即便 done() 漏调也能救）
+   * 无 DOM → 返回 false（视为未出现，走兜底更安全）。 */
+  isMainReady() {
+    if (this._booted) return true;
+    try {
+      var doc = this._doc();
+      var el = (doc && doc.getElementById) ? doc.getElementById("screen-main") : null;
+      return !!(el && el.classList && !el.classList.contains("hidden"));
+    } catch (e) { return false; }
+  },
+
+  /* 取素材进度文案：读 Assets.progress；不存在/异常 → 「未知」 */
+  _assetsText() {
+    try {
+      if (typeof Assets === "undefined" || !Assets || !Assets.progress) return "未知";
+      var p = Assets.progress;
+      var loaded = Number(p.loaded) || 0, total = Number(p.total) || 0;
+      if (total > 0) return loaded + "/" + total + (p.done ? "（已完成）" : "");
+      return p.done ? "已完成" : "未知";
+    } catch (e) { return "未知"; }
+  },
+  /* 脚本加载状态文案：Game 是否定义（4 个脚本任一失败都可能缺 Game）。
+   * 注意：Game 是顶层 const，**不会**挂到 window 上（只有 var/function 才会），
+   * 所以必须用 typeof Game 判断，不能写 window.Game。同一页面的后续 <script> 共享
+   * 全局词法环境，因此内联兜底脚本同样能用 typeof Game。 */
+  _scriptsText() {
+    try {
+      var hasGame = (typeof Game !== "undefined");
+      var parts = ["Game：" + (hasGame ? "√" : "× 未定义（脚本可能加载失败）")];
+      if (typeof Assets !== "undefined") parts.push("Assets：√");
+      if (typeof UI !== "undefined") parts.push("UI：√");
+      if (typeof CFG !== "undefined") parts.push("CFG：√");
+      return parts.join("　");
+    } catch (e) { return "未知"; }
+  },
+  /* 错误列表文案：最近 5 条（信息 + 位置 + stack 前 5 行） */
+  _errorsText() {
+    var arr = (typeof window !== "undefined" && window.__bootErrors) ? window.__bootErrors : [];
+    if (!arr.length) return "（暂未捕获到错误）";
+    return arr.slice(-5).map(function (e, i) {
+      var head = "[错误" + (i + 1) + "] " + e.message;
+      var loc = (e.filename ? "  位置：" + e.filename + (e.lineno ? ":" + e.lineno : "") : "");
+      var stk = e.stack ? "\n" + e.stack.split("\n").slice(0, 5).join("\n") : "";
+      return head + loc + stk;
+    }).join("\n\n");
+  },
+
+  /* 弹兜底面板 + 用实时状态填充各字段（面板为纯 DOM，不依赖 canvas/主循环）。
+   * 无 DOM → 静默降级（返回 false）。 */
+  showPanel(dom, overrideMsg) {
+    var doc = this._doc(dom);
+    if (!doc || !doc.getElementById) return false;
+    this.ensure();
+    var panel = this.panel || doc.getElementById("boot-error-panel");
+    if (!panel || !panel.style) return false;
+    var setText = function (id, text) {
+      var el = doc.getElementById(id);
+      if (el) el.textContent = text;
+    };
+    setText("boot-err-scripts", this._scriptsText());
+    setText("boot-err-assets", this._assetsText());
+    setText("boot-err-errors", overrideMsg ? overrideMsg : this._errorsText());
+    try {
+      if (panel.classList) panel.classList.remove("hidden");
+      panel.style.display = "";   // 清掉可能的 inline display:none
+    } catch (e) { }
+    return true;
+  },
+
+  /* 隐藏面板（正常进首屏时用；测试用） */
+  hidePanel(dom) {
+    var doc = this._doc(dom);
+    if (!doc || !doc.getElementById) return false;
+    var panel = this.panel || doc.getElementById("boot-error-panel");
+    if (!panel) return false;
+    try { if (panel.classList) panel.classList.add("hidden"); } catch (e) { }
+    return true;
+  },
+
+  /* 拼装诊断文本（供复制；也可单测）。含：时间/UA/脚本/素材/视口/错误列表。 */
+  diagText() {
+    var w = this._win();
+    var ua = "";
+    try { ua = (typeof navigator !== "undefined" && navigator.userAgent) || ""; } catch (e) { }
+    var vw = (w && w.innerWidth) || 0, vh = (w && w.innerHeight) || 0;
+    var arr = (w && w.__bootErrors) ? w.__bootErrors : [];
+    var errLines = arr.length
+      ? arr.slice(-5).map(function (e, i) {
+        return "[" + (i + 1) + "] " + e.message + (e.filename ? " @ " + e.filename + (e.lineno ? ":" + e.lineno : "") : "") +
+          (e.stack ? "\n    " + e.stack.split("\n").slice(0, 5).join("\n    ") : "");
+      }).join("\n")
+      : "（暂未捕获到错误）";
+    return [
+      "【启动诊断】" + (new Date()).toISOString(),
+      "脚本状态: " + this._scriptsText(),
+      "素材进度: " + this._assetsText(),
+      "视口: " + vw + "x" + vh,
+      "UA: " + ua,
+      "错误记录:",
+      errLines,
+    ].join("\n");
+  },
+
+  /* 复制诊断信息：优先 navigator.clipboard.writeText；
+   * 失败/缺失（老浏览器、非 https）降级为 prompt() 显示全文让用户手抄。
+   * 全程 try 包裹，绝不抛错。 */
+  copy() {
+    var text = this.diagText();
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text);
+        return text;
+      }
+    } catch (e) { /* 降级 */ }
+    try { if (typeof window !== "undefined" && window.prompt) window.prompt("请长按复制以下诊断信息：", text); } catch (e) { }
+    return text;
+  },
+
+  /* 重试：整页重载（最粗暴也最有效的自救：绕开一切缓存/半加载状态） */
+  retry() {
+    try {
+      if (typeof location !== "undefined" && location.reload) { location.reload(); return true; }
+      if (typeof window !== "undefined" && window.location && window.location.reload) { window.location.reload(); return true; }
+    } catch (e) { }
+    return false;
+  },
+};
+
+/* 20.6a 移除 favicon 探针：本项目无 favicon.ico，探针必然 404 → record() 在首屏前
+ * 误弹「启动未能完成」面板盖住首页（实测复现：正常启动被面板遮挡 = 无法开始游戏）。
+ * 脚本加载失败自有 window.onerror + 看门狗超时双兜底，网络探针无增益，故整块删除。 */
+
+/* 脚本加载即就绪：挂错误监听 + 注入样式。
+ * 无 DOM 时 ensure 内部直接 return，桩测试完全不受影响。 */
+try { BootGuard.ensure(); } catch (e) { }

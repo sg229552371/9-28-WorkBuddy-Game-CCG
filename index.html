@@ -3,8 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="app-version" content="20261003">
 <title>弹幕射击 Roguelike × 背包肉鸽 — HTML 原型</title>
-<link rel="stylesheet" href="css/style.css">
+<script>
+/* ====== 缓存自愈：静态资源统一版本号 + 旧版自动强刷（必须先于其他脚本执行） ======
+ * 背景：手机浏览器可能缓存新旧混合版本（旧 js 配新 html）导致无法开始游戏。
+ * 机制：所有 js/css 引用统一带 ?v=版本号；localStorage.app_version 与当前版本不一致
+ * （说明刚从旧版升上来）时，强制 location.reload 重拉一次（sessionStorage 标记防死循环）。
+ * 整段包裹 try/catch：隐私模式 / 存储被禁时静默降级，绝不阻断页面加载。 */
+var APP_VERSION = "20261003";
+(function () {
+  try {
+    var alreadyReloaded = sessionStorage.getItem("app_version_reloaded");
+    var saved = localStorage.getItem("app_version");
+    if (saved !== APP_VERSION && !alreadyReloaded) {
+      // 从旧版升级而来：重载前先写入新版本号 + 本次会话标记（防死循环），再强制重拉
+      localStorage.setItem("app_version", APP_VERSION);
+      sessionStorage.setItem("app_version_reloaded", "1");
+      location.reload(true);
+    }
+    // 版本一致（或本会话已重载过）→ 什么都不做
+  } catch (e) { /* 存储不可用：静默降级，不阻断页面 */ }
+})();
+</script>
+<link rel="stylesheet" href="css/style.css?v=20261003">
 </head>
 <body>
 <div id="app">
@@ -394,12 +416,74 @@
 
   <!-- 拖拽幽灵 -->
   <div id="drag-ghost" class="hidden"></div>
+
+  <!-- ====== 20.6 首屏启动兜底面板（默认隐藏；纯 DOM，样式由 js/main.js 内联注入，不依赖 css/style.css） ====== -->
+  <div id="boot-error-panel" class="hidden">
+    <div class="bep-box">
+      <h2>启动未能完成</h2>
+      <p>页面似乎没有正常加载。可能是网络或缓存问题，也可能是浏览器环境异常。</p>
+      <p>你可以点「重试」重新加载，或点「复制诊断信息」把情况发给开发者。</p>
+      <div class="bep-sec">
+        <div class="bep-k">脚本加载状态</div>
+        <div id="boot-err-scripts" class="bep-v">—</div>
+      </div>
+      <div class="bep-sec">
+        <div class="bep-k">素材进度</div>
+        <div id="boot-err-assets" class="bep-v">—</div>
+      </div>
+      <div class="bep-sec">
+        <div class="bep-k">捕获到的错误</div>
+        <div id="boot-err-errors" class="bep-v err">—</div>
+      </div>
+      <div class="bep-btns">
+        <button id="boot-error-retry" class="bep-btn primary">重试</button>
+        <button id="boot-error-copy" class="bep-btn">复制诊断信息</button>
+      </div>
+    </div>
+  </div>
 </div>
 
-<script src="js/config.js"></script>
-<script src="js/core.js"></script>
-<script src="js/game.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/main.js"></script>
+<script src="js/config.js?v=20261003"></script>
+<script src="js/core.js?v=20261003"></script>
+<script src="js/game.js?v=20261003"></script>
+<script src="js/ui.js?v=20261003"></script>
+<script src="js/main.js?v=20261003"></script>
+<!-- 20.6 JS 未加载兜底：main.js 之后立刻执行；若 window.Game 未定义（脚本全部/部分加载失败）
+     则直接显示兜底面板。面板与按钮由 main.js 的 BootGuard.ensure() 建成（本行也可能在
+     main.js 未执行时运行，故此处再自查一次并按需补按钮）。 -->
+<script>
+(function () {
+  try {
+    // 注意：Game 是顶层 const，不挂在 window 上，故用 typeof Game 判断（后置 script 共享全局词法环境）
+    var hasGame = (typeof Game !== "undefined");
+    if (hasGame) return;   // 脚本正常：静默走正常流程
+    var msg = "脚本加载失败，可能是网络或缓存问题，请刷新重试。";
+    if (typeof BootGuard !== "undefined" && BootGuard && BootGuard.ensure) {
+      BootGuard.ensure();                       // 建面板 + 按钮 + 错误监听
+      BootGuard.showPanel(null, msg);           // 覆盖错误区为明确提示
+      return;
+    }
+    // BootGuard 也缺失（main.js 完全没执行）→ 纯 DOM 兜底，不依赖任何脚本
+    var doc = document;
+    var p = doc.getElementById("boot-error-panel");
+    if (!p) return;
+    var set = function (id, t) { var el = doc.getElementById(id); if (el) el.textContent = t; };
+    set("boot-err-scripts", "Game：× 未定义");
+    set("boot-err-assets", "未知");
+    set("boot-err-errors", msg);
+    if (p.classList) p.classList.remove("hidden");
+    var btn = doc.getElementById("boot-error-retry");
+    if (btn) btn.onclick = function () { try { location.reload(); } catch (e) { } };
+    var cpy = doc.getElementById("boot-error-copy");
+    if (cpy) cpy.onclick = function () {
+      try {
+        var txt = "【启动诊断】脚本加载失败\n" + msg + "\n" + (navigator && navigator.userAgent ? navigator.userAgent : "");
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt);
+        else if (window.prompt) window.prompt("请长按复制以下信息：", txt);
+      } catch (e) { }
+    };
+  } catch (e) { /* 兜底脚本自身绝不抛错 */ }
+})();
+</script>
 </body>
 </html>
