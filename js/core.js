@@ -61,9 +61,14 @@ class SpatialHash {
 /* ---------- 素材加载与背景抠图（洪泛填充，从边缘剔除背景色） ---------- */
 const Assets = {
   images: {},   // key -> HTMLCanvasElement（已抠图）
+  // 只读进度状态（供 UI 层轮询显示加载条）：{loaded,total,done}。
+  // loaded = 图片解码完成数（含失败，不算卡住）；done = fit 分帧装载完成数；done===total 表示精灵全部就绪。
+  progress: { loaded: 0, total: 0, done: false },
   async load(manifest) {
+    const keys = Object.keys(manifest);
+    this.progress = { loaded: 0, total: keys.length, done: false };
     const jobs = [];
-    for (const key in manifest) {
+    for (const key of keys) {
       jobs.push(this._loadOne(key, manifest[key].src, manifest[key].tbg));
     }
     await Promise.all(jobs);
@@ -74,16 +79,40 @@ const Assets = {
    *   本方法不覆写已存在键 → main.js 仍是那 5 键的权威（裁剪语义保持不变）；
    * - 加载失败的键（Assets.images 无该项）置 null，渲染侧对 null 已有色块兜底（game.js 渲染 if(img) 分支）；
    * - defId 前缀补零映射（NM/ED→enemyNN、H001→hero 等）由 spriteFor 负责，此处只负责装载。
-   * - 无 G（如仅桩加载 config+core 的测试沙箱）时静默跳过，保持 core.js 可独立测试。 */
+   * - 无 G（如仅桩加载 config+core 的测试沙箱）时静默跳过，保持 core.js 可独立测试。
+   * - 分帧（消除首屏长任务）：36 次 fit 不再同一 tick 跑完，改由 _scheduleBatch 每帧只做
+   *   FIT_PER_FRAME 张（默认 4），链式推进；未就绪键保持「不存在」，渲染侧 if(img) 走色块兜底。
+   *   调度优先 requestAnimationFrame（顺滑不卡帧），无则退 setTimeout(0)；完成后置 progress.done。 */
   fillSprites(manifest) {
     if (typeof G === "undefined" || !G.sprites) return;
-    for (const key in manifest) {
-      if (!(key in G.sprites)) G.sprites[key] = this.fit(key, 48);
-    }
+    const keys = Object.keys(manifest).filter((k) => !(k in G.sprites));   // 只装未占用键（main.js 5 键不动）
+    this.progress.total = Math.max(this.progress.total, Object.keys(manifest).length);
+    this.progress.done = false;
+    let i = 0;
+    const step = () => {
+      if (typeof G === "undefined" || !G.sprites) return;    // 中途环境失效则安全停止
+      const end = Math.min(i + this.FIT_PER_FRAME, keys.length);   // 本帧配额（每帧最多 N 张）
+      for (; i < end; i++) {
+        const key = keys[i];
+        if (!(key in G.sprites)) G.sprites[key] = this.fit(key, 48);
+      }
+      this.progress.loaded = i;                              // 已装载（含失败→null）计数
+      if (i < keys.length) this._scheduleBatch(step);
+      else this.progress.done = true;
+    };
+    if (keys.length) step();   // 立即启动（首帧同步做一批，保证「不等待」的直觉）
+    else this.progress.done = true;
+  },
+  FIT_PER_FRAME: 4,   // 每帧装载上限；4 张 × <0.5ms ≈ 2ms/帧，远低于长任务阈值
+  // 分帧调度：优先 rAF（与渲染同步、不产生宏任务间隙卡顿），退化到 setTimeout(0)
+  _scheduleBatch(fn) {
+    if (typeof requestAnimationFrame === "function") { requestAnimationFrame(fn); return; }
+    setTimeout(fn, 0);
   },
   _loadOne(key, src, tbg) {
     return new Promise((resolve) => {
       const img = new Image();
+      const finish = () => { this.progress.loaded = (this.progress.loaded + 1) | 0; resolve(); };
       img.onload = () => {
         try {
           this.images[key] = tbg ? this._keyOut(img, tbg) : this._toCanvas(img);
@@ -92,9 +121,9 @@ const Assets = {
           console.warn("素材抠图失败，降级为原图（建议通过 HTTP 预览获得抠图效果）:", src);
           try { this.images[key] = this._toCanvas(img); } catch (e2) { /* 彻底失败则该素材缺失 */ }
         }
-        resolve();
+        finish();
       };
-      img.onerror = () => { console.warn("素材加载失败:", src); resolve(); };
+      img.onerror = () => { console.warn("素材加载失败:", src); finish(); };   // 单张失败不中断队列
       img.src = src;
     });
   },
@@ -140,29 +169,65 @@ const Assets = {
     return c;
   },
   // 裁剪透明边并缩放到目标尺寸，返回离屏 canvas
+  /* 性能改造（消除首屏长任务）：
+   * 原实现：对 512×512 原图 getImageData 后逐像素（步长 2，65536 次迭代）扫描透明包围盒，
+   *   36 张串行 ≈ 76ms 同步阻塞（移动端更慢）；且单次 1:10.7 降采样画质差。
+   * 新实现：① 先把原图缩到 PRE_SCAN（默认 64×64）再 getImageData——像素量降 64 倍，
+   *   包围盒误差 ≤ 原图 8px，缩到 48px 后视觉无差；② 从**原图**按包围盒裁剪（不损失清晰度）；
+   *   ③ 缩放走**逐级减半**（每级 ≤2 倍），移动端画质与速度都优于一次性大比例缩放。
+   * 复杂度：O(64×64) 采样 + O(log n) 级缩放，替代 O(512×512) 全图扫描。
+   * 语义与调用契约不变：返回带 width/height 的离屏 canvas；找不到内容时回落原图 src。 */
   fit(key, targetH) {
     const src = this.images[key];
     if (!src) return null;
+    // ① 低分辨率代理（64×64）用于找透明包围盒：数据量约为原图的 1/64，getImageData 回读代价骤降
+    const PS = 64;
+    const probe = document.createElement("canvas");
+    probe.width = PS; probe.height = PS;
+    const pctx = probe.getContext("2d");
+    pctx.drawImage(src, 0, 0, PS, PS);
+    const sx = src.width / PS, sy = src.height / PS;   // 代理 → 原图坐标比例
     let x0 = src.width, y0 = src.height, x1 = 0, y1 = 0;
     try {
-      const ctx = src.getContext("2d");
-      const d = ctx.getImageData(0, 0, src.width, src.height).data;
-      for (let y = 0; y < src.height; y += 2) for (let x = 0; x < src.width; x += 2) {
-        if (d[(y * src.width + x) * 4 + 3] > 20) {
-          if (x < x0) x0 = x; if (x > x1) x1 = x;
-          if (y < y0) y0 = y; if (y > y1) y1 = y;
+      const d = pctx.getImageData(0, 0, PS, PS).data;
+      for (let y = 0; y < PS; y++) for (let x = 0; x < PS; x++) {
+        if (d[(y * PS + x) * 4 + 3] > 20) {   // alpha>20 视为前景
+          const ox = x * sx, oy = y * sy;
+          if (ox < x0) x0 = ox; if (ox > x1) x1 = ox;
+          if (oy < y0) y0 = oy; if (oy > y1) y1 = oy;
         }
       }
     } catch (e) {
       // file:// 画布被污染无法读像素：跳过透明边裁剪，直接整图缩放
       x0 = 0; y0 = 0; x1 = src.width; y1 = src.height;
     }
-    if (x1 <= x0) return src;
-    const cw = x1 - x0, ch = y1 - y0;
+    if (x1 <= x0) return src;   // 代理全透明（或异常）：回落原图
+    // ② 从原图按包围盒裁剪（含右/下边 +sx/sy 补齐代理格宽，避免边缘被切）
+    x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0));
+    x1 = Math.min(src.width, Math.ceil(x1 + sx)); y1 = Math.min(src.height, Math.ceil(y1 + sy));
+    let cw = x1 - x0, ch = y1 - y0;
+    if (cw <= 0 || ch <= 0) { x0 = 0; y0 = 0; cw = src.width; ch = src.height; }
+    // ③ 逐级减半降采样到目标尺寸（每级 ≤ 2 倍），提升移动端画质
     const scale = targetH / ch;
+    return this._halveScale(src, x0, y0, cw, ch, Math.ceil(cw * scale), Math.ceil(targetH));
+  },
+  // 逐级减半缩放：每次最多减半，直到 ≤ 目标 2 倍，再一次性收尾到精确目标（级数 O(log n)，可忽略开销）
+  _halveScale(src, sx, sy, sw, sh, tw, th) {
+    let cur = document.createElement("canvas");
+    cur.width = Math.max(1, sw); cur.height = Math.max(1, sh);
+    cur.getContext("2d").drawImage(src, sx, sy, sw, sh, 0, 0, cur.width, cur.height);
+    let cw = cur.width, ch = cur.height;
+    while (cw > tw * 2 || ch > th * 2) {   // 逐级减半（每级 ≤2 倍）
+      const nw = Math.max(tw, cw >> 1), nh = Math.max(th, ch >> 1);
+      const tmp = document.createElement("canvas");
+      tmp.width = nw; tmp.height = nh;
+      tmp.getContext("2d").drawImage(cur, 0, 0, cw, ch, 0, 0, nw, nh);
+      cur = tmp; cw = nw; ch = nh;
+    }
+    if (cw === tw && ch === th) return cur;
     const out = document.createElement("canvas");
-    out.width = Math.ceil(cw * scale); out.height = Math.ceil(targetH);
-    out.getContext("2d").drawImage(src, x0, y0, cw, ch, 0, 0, out.width, out.height);
+    out.width = tw; out.height = th;
+    out.getContext("2d").drawImage(cur, 0, 0, cw, ch, 0, 0, tw, th);   // 末级精确收尾（≤2 倍）
     return out;
   },
 };

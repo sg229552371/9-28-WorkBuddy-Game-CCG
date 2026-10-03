@@ -62,7 +62,8 @@ function makeSandbox(loadOk) {
     },
     window: { addEventListener(t, fn) { (winHandlers[t] = winHandlers[t] || []).push(fn); } },
     localStorage: { getItem: () => null, setItem() { }, removeItem() { } },
-    requestAnimationFrame: () => 0,
+    requestAnimationFrame: (fn) => { (sandbox.__rafQ = sandbox.__rafQ || []).push(fn); return sandbox.__rafQ.length; },
+    cancelAnimationFrame: () => { },
   };
   sandbox.globalThis = sandbox;
   sandbox.Image = class {
@@ -130,26 +131,21 @@ for (const f of WITH_GAME) vm.runInContext(fs.readFileSync(f, "utf8"), ctxB, { f
 
 try {
   // 触发一次全量加载（模拟 Game.boot：await Assets.load(ASSET_MANIFEST)）
-  const loadRes = vm.runInContext(
-    "Assets.load(ASSET_MANIFEST).then(() => Object.keys(G.sprites))", ctxB);
-  // Promise 为微任务，需借道导出（vm 内 Promise 与宿主 Promise 不同，直接 await 取不到）
-  vm.runInContext("globalThis.__loaded = false; Assets.load(ASSET_MANIFEST).then(() => { globalThis.__loaded = true; });", ctxB);
-
-  // 同步跑微任务队列：用宿主 Promise 包裹一个 setImmediate 型等待（用 while 不现实，改为回调链）
-  // 兼容做法：把断言放进 .then 里，最后由 __done 标志 + 忙等短超时收口
-  let done = false, keysSeen = null;
-  vm.runInContext(
-    "Assets.load(ASSET_MANIFEST).then(function(){ globalThis.__keys = Object.keys(G.sprites); globalThis.__done = true; });",
-    ctxB);
-  const t0 = Date.now();
-  while (!vm.runInContext("globalThis.__done === true", ctxB) && Date.now() - t0 < 3000) {
-    // 驱动微任务：宿主宏任务让出，microtask 才推进；用 execSync 式空转不可行，这里 await 由外层处理
-    // 由于 Image.onload 同步 resolve，Promise.all 的 resolve 已入队，只需一次微任务检查
-    break;
+  vm.runInContext("Assets.load(ASSET_MANIFEST);", ctxB);
+  // 分帧装载：fillSprites 现按 rAF 逐帧推进（每帧 FIT_PER_FRAME 张），
+  // 这里手动调用 fillSprites 并**同步驱动 rAF 队列直到 done**（等价于真实浏览器多帧跑完）。
+  let keysSeen = null;
+  vm.runInContext("Assets.fillSprites(ASSET_MANIFEST);", ctxB);
+  const drive = () => {   // 取出一帧的 rAF 回调并执行（模拟浏览器逐帧推进）
+    const q = vm.runInContext("(globalThis.__rafQ || []).splice(0)", ctxB);
+    for (const fn of q) fn();
+    return q.length;
+  };
+  let guard = 0;
+  while (vm.runInContext("Assets.progress.done !== true", ctxB) && guard++ < 1000) {
+    if (drive() === 0) break;   // 队列空却未 done：异常兜底
   }
-  // 若上面未触发，直接调用 fillSprites 兜底（等价于 load 完成后的装载）
-  vm.runInContext("if (!globalThis.__keys) { Assets.fillSprites(ASSET_MANIFEST); globalThis.__keys = Object.keys(G.sprites); }", ctxB);
-  keysSeen = vm.runInContext("globalThis.__keys", ctxB);
+  keysSeen = vm.runInContext("Object.keys(G.sprites)", ctxB);
 
   const missingEnemy = [];
   for (let i = 0; i <= 22; i++) {

@@ -3,6 +3,137 @@
  * ============================================================ */
 "use strict";
 
+/* ============================================================
+ * 20.5 性能护栏（帧率监测 / 长帧告警 / 诊断数据源）
+ * —— 不侵入 game.js：在 main.js 的 Game.loop 内挂轻量打点（见 loop 顶部），
+ *    只记录 + 按需提示，正常时零打扰（不写 console、不弹 UI）。
+ * ============================================================ */
+/* 纯函数：帧时间序列（ms）→ 统计量。可独立调用，便于单测。
+ *   avg   平均帧耗时；max 最长；p50/p95 分位（最近窗口）；
+ *   stuck 卡死帧计数（> 阈值，默认 80ms）；ms 换算 FPS。
+ * 空数组：avg/max/p50/p95=0，fps=0，stuck=0（不抛错）。 */
+function perfFrameStats(frames, stuckMs) {
+  const n = frames ? frames.length : 0;
+  if (!n) return { count: 0, avg: 0, max: 0, p50: 0, p95: 0, stuck: 0, fps: 0 };
+  const thr = stuckMs == null ? 80 : stuckMs;
+  const sorted = frames.slice().sort((a, b) => a - b);
+  let sum = 0, max = 0, stuck = 0;
+  for (let i = 0; i < n; i++) { const v = frames[i]; sum += v; if (v > max) max = v; if (v > thr) stuck++; }
+  const pick = (q) => sorted[Math.min(n - 1, Math.floor(q * n))];
+  const avg = sum / n;
+  return {
+    count: n, avg: avg, max: max,
+    p50: pick(0.5), p95: pick(0.95), stuck: stuck,
+    fps: avg > 0 ? 1000 / avg : 0,
+  };
+}
+
+/* 帧护栏：滑动窗口采样 + 卡死告警（带冷却）。UI 为可选注入（默认运行时取全局 UI）。 */
+const PerfGuard = {
+  WINDOW: 60,       // 滑动窗口：最近 60 帧
+  STUCK_MS: 80,     // 单帧 > 此值计入「卡死帧」
+  ALERT_MS: 150,    // 连续 > 此值 2 帧 → 告警
+  ALERT_RUN: 2,     // 连续阈值帧数
+  COOLDOWN_MS: 30000,   // 告警冷却：30s 内不重复提示
+  frames: [],       // 最近帧间隔（ms）
+  lastT: null,      // 上一采样时间戳（null = 未开始，避免首帧脏数据）
+  consecStuck: 0,   // 连续 > ALERT_MS 的帧计数
+  lastAlertAt: -Infinity,   // 上次告警时间（performance.now 口径；-Inf 保证首次必告警）
+  maxStuckMs: 0,    // 历史最长单帧（诊断展示用）
+  alertCount: 0,    // 累计告警次数（诊断展示用）
+  /* 每帧调用一次；now 为 rAF 时间戳（ms）。返回本帧耗时，便于测试。 */
+  sample(now, ui) {
+    if (typeof now !== "number" || !isFinite(now)) return 0;   // 桩/异常帧：丢弃
+    if (this.lastT == null) { this.lastT = now; return 0; }    // 首帧无间隔
+    const dt = now - this.lastT;
+    this.lastT = now;
+    if (dt < 0) return 0;   // 时间倒流（页面切后台等）丢弃
+    this.frames.push(dt);
+    if (this.frames.length > this.WINDOW) this.frames.shift();
+    if (dt > this.maxStuckMs) this.maxStuckMs = dt;
+    // 卡死连击：<= ALERT_MS 立即清零；> ALERT_MS 累加
+    if (dt > this.ALERT_MS) this.consecStuck++;
+    else this.consecStuck = 0;
+    if (this.consecStuck >= this.ALERT_RUN) {
+      this.consecStuck = 0;   // 触发后清空，避免每帧重复触发
+      this._maybeAlert(now, Math.round(dt), ui);
+    }
+    return dt;
+  },
+  /* 触发告警（含冷却）。now 缺省取 performance.now。 */
+  _maybeAlert(now, ms, ui) {
+    const t = (typeof now === "number") ? now : _perfNow();
+    if (t - this.lastAlertAt < this.COOLDOWN_MS) return false;   // 冷却中：静默
+    this.lastAlertAt = t;
+    this.alertCount++;
+    const target = ui || (typeof UI !== "undefined" ? UI : null);
+    if (target && typeof target.toast === "function") {
+      target.toast(`⚠ 检测到卡顿（帧耗时 ${ms}ms）——可在设置查看诊断`, "bad", 4000);
+    }
+    return true;
+  },
+  /* 诊断快照：供设置面板展示。窗口统计 + 历史最长卡死帧。 */
+  snapshot() {
+    const st = perfFrameStats(this.frames, this.STUCK_MS);
+    st.maxStuckMs = Math.round(this.maxStuckMs);
+    st.alertCount = this.alertCount;
+    return st;
+  },
+  /* 清空采样（测试/诊断重置用） */
+  reset() { this.frames.length = 0; this.lastT = null; this.consecStuck = 0; this.maxStuckMs = 0; },
+};
+function _perfNow() {
+  return (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+}
+
+/* 20.5 素材加载遮罩（纯 DOM/CSS，不进入主循环）：
+ * - 启动时显示「载入素材」遮罩 + 百分比；进度来自 getProgress() 注入的回调（Assets.progress）。
+ * - 防御策略：getProgress() 返回 null（接口缺失/结构异常）→ **立即隐藏**，绝不阻塞进入游戏；
+ *   轮询 ~100ms；done=true 或超时（6s）→ 淡出隐藏。
+ * - 桩/无 DOM 环境：静默降级（不抛错）。 */
+const LoadingOverlay = {
+  POLL_MS: 100,
+  TIMEOUT_MS: 6000,
+  _timer: null,
+  _startAt: 0,
+  show(getProgress) {
+    const ov = document.getElementById("loading-overlay");
+    if (!ov) return;                       // 桩环境无该 DOM：跳过
+    const bar = document.getElementById("loading-bar");
+    const txt = document.getElementById("loading-text");
+    ov.classList.remove("hidden", "loading-fade");
+    this._startAt = _perfNow();
+    // 接口缺失 → 立即隐藏（清除可能的加载态），不阻塞
+    const first = getProgress ? getProgress() : null;
+    if (first === null || first === undefined) { this.hide(true); return; }
+    this._set(first, bar, txt);
+    if (first.done) { this.hide(); return; }   // 同步已完成：淡出，不必轮询
+    const tick = () => {
+      const p = getProgress ? getProgress() : null;
+      // 接口中途消失 → 立即隐藏（防御）
+      if (p === null || p === undefined) { this.hide(true); return; }
+      this._set(p, bar, txt);
+      if (p.done || _perfNow() - this._startAt > this.TIMEOUT_MS) { this.hide(); return; }
+      this._timer = setTimeout(tick, this.POLL_MS);
+    };
+    this._timer = setTimeout(tick, this.POLL_MS);
+  },
+  _set(p, bar, txt) {
+    const loaded = Number(p.loaded) || 0, total = Number(p.total) || 0;
+    const pct = total > 0 ? Math.min(100, Math.round(loaded / total * 100)) : 0;
+    if (bar) bar.style.width = pct + "%";
+    if (txt) txt.textContent = total > 0 ? `载入素材 ${loaded}/${total}（${pct}%）` : "载入素材…";
+  },
+  hide(immediate) {
+    if (this._timer) { clearTimeout(this._timer); this._timer = null; }
+    const ov = document.getElementById("loading-overlay");
+    if (!ov) return;
+    if (immediate) { ov.classList.add("hidden"); return; }
+    ov.classList.add("loading-fade");     // 淡出（CSS transition）
+    setTimeout(() => ov.classList.add("hidden"), 320);
+  },
+};
+
 const Game = {
   async boot() {
     G.canvas = document.getElementById("game-canvas");
@@ -10,8 +141,11 @@ const Game = {
     this.fitCanvas();
     window.addEventListener("resize", () => this.fitCanvas());
     window.addEventListener("orientationchange", () => setTimeout(() => this.fitCanvas(), 120));   // 旋转后布局稳定再重算
+    // 20.5 素材加载遮罩：数据源 Assets.progress（另一代理在加）。接口缺失/同步完成 → 立即隐藏，绝不白屏卡死。
+    LoadingOverlay.show(this._assetProgress.bind(this));
     // 素材加载（含抠图）
     await Assets.load(ASSET_MANIFEST);
+    LoadingOverlay.hide();
     const szMul = CFG.monsterSizeMul || 1;   // 怪物体积倍数：精灵按放大后尺寸裁剪，保持清晰
     G.sprites.hero = Assets.fit("hero", 60);
     G.sprites.enemy00 = Assets.fit("enemy00", 48 * szMul);
@@ -29,6 +163,18 @@ const Game = {
     G.state = "menu";
     UI.showScreen("screen-main");   // 启动落到游戏首页（→ 主城 → 传送门 → 选关）
     requestAnimationFrame((t) => this.loop(t));
+  },
+  /* 20.5 读取素材加载进度（防御式）：
+   * - Assets.progress 存在 → 返回 {loaded,total,done}（字段缺失按 0 兜底）
+   * - 不存在 / 结构异常 → 返回 null（遮罩据此立即隐藏，不阻塞进入游戏） */
+  _assetProgress() {
+    try {
+      if (typeof Assets === "undefined" || !Assets || !Assets.progress) return null;
+      const p = Assets.progress;
+      const loaded = Number(p.loaded) || 0;
+      const total = Number(p.total) || 0;
+      return { loaded: loaded, total: total, done: p.done === true || (total > 0 && loaded >= total) };
+    } catch (e) { return null; }
   },
   /* 画布自适应（跨端口径修正 + 竖屏优先 20.x）：旧版画布固定 1920×1080 再整体缩进窗口——手机竖屏时
    * 游戏只是屏幕中间一条小横带，角色物理尺寸与 PC 全屏差数倍（「视野/角色大小不一致」的根因）。
@@ -262,6 +408,16 @@ const Game = {
       if (sfxSlider2) sfxSlider2.value = G.settings.sfxVolume;
       this.applySettings();
     });
+    // 20.5 低画质开关（契约字段 G.settings.lowQuality + window.__lowQuality，供 game.js 后续读取）
+    const lqToggle = document.getElementById("set-lowq");
+    if (lqToggle) lqToggle.onclick = () => {
+      G.settings.lowQuality = !G.settings.lowQuality;
+      this.applySettings();
+      UI.renderSettings();
+      UI.toast(G.settings.lowQuality ? "低画质模式：已开启（部分特效由渲染层后续读取 __lowQuality 降级）" : "低画质模式：已关闭", "");
+    };
+    // 20.5 复制诊断信息
+    on("btn-perf-copy", () => UI.copyPerfDiag());
     /* ---- 主城事件：传送门读条完成 → 选关；NPC 进圈弹面板 / 离圈关闭 ---- */
     EventBus.on("cityPortalEnter", () => {
       if (G.state !== "city") return;
@@ -500,6 +656,7 @@ const Game = {
       sfxVolume: CFG.settings.sfxVolume.default,
       joyScale: CFG.settings.joyScale.default,
       showTouchOnDesktop: CFG.settings.showTouchOnDesktop.default,
+      lowQuality: false,   // 20.5 低画质：契约字段，供渲染层读取（game.js 后续消费）
     };
     try {
       const raw = localStorage.getItem(CFG.settings.saveKey);
@@ -509,6 +666,8 @@ const Game = {
   },
   applySettings() {
     const s = G.settings;
+    // 20.5 低画质契约：暴露全局标志供渲染层读取（不强行改渲染，只提供约定）
+    if (typeof window !== "undefined") window.__lowQuality = !!s.lowQuality;
     // 音效音量：直接驱动 SFX 主增益（未初始化时记下，init 时用）
     if (SFX.master) SFX.master.gain.value = s.sfxVolume;
     else if (CFG.audio) CFG.audio.master = s.sfxVolume;
@@ -565,6 +724,7 @@ const Game = {
   loop(t) {
     // 先续帧：任何单帧异常（如 UI 渲染错误）不再中断主循环导致游戏冻结
     requestAnimationFrame((tt) => this.loop(tt));
+    PerfGuard.sample(t);              // 20.5 帧护栏：采样帧间隔（纯记录，异常时按冷却提示）
     const dt = Math.min(0.05, (t - this.lastT) / 1000 || 0.016);
     this.lastT = t;
     G.time += dt;

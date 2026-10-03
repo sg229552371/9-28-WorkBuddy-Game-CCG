@@ -828,3 +828,56 @@ body.landscape #hud-tl { flex-direction: column; }
 }
 body.portrait .meta-card { flex-wrap:wrap; }
 body.portrait .meta-card .meta-lv { width:100%; align-items:stretch; }
+
+/* ============================================================
+ * 20.5 性能护栏（诊断面板 / 加载遮罩 / 低画质开关）
+ * 追加区块：不改动上方既有规则；深色主题 + 竖屏优先（390×844 可滚动查看）。
+ * ============================================================ */
+/* 素材加载遮罩：纯 DOM/CSS，居中卡片 + 进度条（接口缺失立即隐藏 → 不会白屏卡死） */
+.loading-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: #0b1220; opacity: 1;
+  transition: opacity .32s ease;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.loading-overlay.hidden { display: none; }
+.loading-overlay.loading-fade { opacity: 0; pointer-events: none; }
+.loading-box { width: min(320px, 78vw); text-align: center; }
+.loading-title { color: #cfe1ff; font-size: 16px; letter-spacing: 2px; margin-bottom: 16px; }
+.loading-track {
+  height: 10px; border-radius: 6px; background: #1b2740;
+  overflow: hidden; box-shadow: inset 0 0 0 1px #2e405e;
+}
+.loading-bar {
+  height: 100%; width: 0%; border-radius: 6px;
+  background: linear-gradient(90deg, #3a7bd5, #5fd0ff);
+  transition: width .18s ease;
+}
+.loading-text { margin-top: 12px; color: #8ba0bd; font-size: 13px; }
+
+/* 性能诊断区块（设置页追加）：深色卡片 + 两列信息行；窄屏纵向滚动不溢出 */
+.perf-diag {
+  margin-top: 18px; padding: 14px 16px; border-radius: 10px;
+  background: #101a2b; border: 1px solid #24344d;
+}
+.perf-diag-title {
+  margin: 0 0 10px; font-size: 14px; color: #7fd08c; letter-spacing: 1px;
+}
+.perf-diag-grid { display: flex; flex-direction: column; gap: 4px; }
+.perf-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 12px; font-size: 13px; line-height: 1.6;
+}
+.perf-k { color: #8ba0bd; flex: 0 0 auto; }
+.perf-v { color: #cfe1ff; text-align: right; word-break: break-all; }
+
+/* 竖屏（390×844）：诊断信息行改上下堆叠，值左对齐，不横向溢出；卡片可随页面滚动 */
+@media (orientation: portrait) {
+  .perf-row { flex-direction: column; align-items: flex-start; gap: 0; }
+  .perf-v { text-align: left; }
+  .loading-box { width: 82vw; }
+}
+body.portrait .perf-row { flex-direction: column; align-items: flex-start; gap: 0; }
+body.portrait .perf-v { text-align: left; }
+/* ---------- 20.5 性能护栏 结束 ---------- */

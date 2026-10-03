@@ -11,6 +11,15 @@
   <!-- 游戏画布（局内） -->
   <canvas id="game-canvas" width="1920" height="1080"></canvas>
 
+  <!-- ====== 20.5 素材加载遮罩（纯 DOM/CSS；接口缺失立即隐藏，不阻塞） ====== -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-box">
+      <div class="loading-title">弹幕射击 Roguelike</div>
+      <div class="loading-track"><div id="loading-bar" class="loading-bar"></div></div>
+      <div id="loading-text" class="loading-text">载入素材…</div>
+    </div>
+  </div>
+
   <!-- ====== 界面层：游戏首页 ====== -->
   <div id="screen-main" class="screen hidden">
     <h1 class="title">弹幕射击 Roguelike × 背包肉鸽</h1>
@@ -75,7 +84,28 @@
         <span>桌面端显示触屏控件</span>
         <button id="set-touch" class="btn small">关</button>
       </div>
+      <div class="set-row">
+        <span>低画质模式</span>
+        <button id="set-lowq" class="btn small">关</button>
+      </div>
       <div class="btn-row"><button id="btn-settings-back" class="btn ghost">返回首页</button></div>
+
+      <!-- 20.5 性能诊断区块（追加；桩环境无 DOM 时 renderSettings 判空跳过） -->
+      <div id="perf-diag" class="perf-diag">
+        <h3 class="perf-diag-title">性能诊断</h3>
+        <div class="perf-diag-grid">
+          <div class="perf-row"><span class="perf-k">帧率</span><span id="perf-fps" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">帧耗时 p50 / p95</span><span id="perf-p50p95" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">最长卡死帧</span><span id="perf-maxstuck" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">卡死帧计数（&gt;80ms）</span><span id="perf-stuck" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">素材加载</span><span id="perf-assets" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">设备像素比</span><span id="perf-dpr" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">视口</span><span id="perf-viewport" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">屏幕方向</span><span id="perf-orient" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">运行环境</span><span id="perf-ua" class="perf-v">—</span></div>
+        </div>
+        <div class="btn-row"><button id="btn-perf-copy" class="btn small">复制诊断信息</button></div>
+      </div>
     </div>
   </div>
 

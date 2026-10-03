@@ -1125,7 +1125,7 @@ const UI = {
     const prev = document.onclick;
     document.onclick = (e) => { if (typeof prev === "function") prev(e); handler(e); };
   },
-  /* 设置（音效音量 / 触屏控件缩放 / 桌面显示触屏控件） */
+  /* 设置（音效音量 / 触屏控件缩放 / 桌面显示触屏控件 / 低画质 / 性能诊断） */
   renderSettings() {
     const s = G.settings, cfg = CFG.settings;
     const sfx = document.getElementById("set-sfx");
@@ -1134,6 +1134,89 @@ const UI = {
     if (joy) joy.value = s.joyScale;
     const tgl = document.getElementById("set-touch");
     if (tgl) tgl.classList.toggle("on", !!s.showTouchOnDesktop);
+    const lq = document.getElementById("set-lowq");   // 20.5 低画质开关状态同步
+    if (lq) { lq.classList.toggle("on", !!s.lowQuality); lq.textContent = s.lowQuality ? "开" : "关"; }
+    this.renderPerfDiag();
+  },
+
+  /* ---------- 20.5 性能诊断面板（设置页区块） ----------
+   * 数据源：PerfGuard.snapshot()（main.js 帧护栏）+ Assets.progress（core.js，可能未落地→防御式）。
+   * 全部字段判空，桩/接口缺失不崩；文本形式便于「复制诊断」。 */
+  _perfDiagInfo() {
+    const st = (typeof PerfGuard !== "undefined" && PerfGuard.snapshot) ? PerfGuard.snapshot() : null;
+    // 素材进度：接口可能还不存在 → 「未知」；存在则真实数字
+    let assets = "未知";
+    try {
+      if (typeof Assets !== "undefined" && Assets && Assets.progress) {
+        const p = Assets.progress;
+        const loaded = Number(p.loaded) || 0, total = Number(p.total) || 0;
+        assets = total > 0 ? `${loaded}/${total}` + (p.done ? "（完成）" : "") : (p.done ? "完成" : "未知");
+      }
+    } catch (e) { assets = "未知"; }
+    const dpr = (typeof window !== "undefined" && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+    const vw = (typeof window !== "undefined" && window.innerWidth) || 0;
+    const vh = (typeof window !== "undefined" && window.innerHeight) || 0;
+    const portrait = vh >= vw;
+    const ua = (typeof navigator !== "undefined" && navigator.userAgent) ? navigator.userAgent : "未知";
+    const fps = st && st.fps > 0 ? Math.round(st.fps) : 0;
+    return {
+      fps: fps,
+      p50: st ? Math.round(st.p50) : 0,
+      p95: st ? Math.round(st.p95) : 0,
+      maxStuck: st ? st.maxStuckMs : 0,
+      stuck: st ? st.stuck : 0,
+      frames: st ? st.count : 0,
+      alertCount: st ? st.alertCount : 0,
+      assets: assets,
+      dpr: dpr, vw: vw, vh: vh, portrait: portrait,
+      ua: ua.length > 68 ? ua.slice(0, 68) + "…" : ua,
+    };
+  },
+  renderPerfDiag() {
+    const info = this._perfDiagInfo();
+    const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+    set("perf-fps", info.frames > 0 ? `${info.fps} FPS（窗口 ${info.frames} 帧）` : "采样中…");
+    set("perf-p50p95", `${info.p50}ms / ${info.p95}ms`);
+    set("perf-maxstuck", `${info.maxStuck}ms`);
+    set("perf-stuck", `${info.stuck} 帧${info.alertCount ? ` · 告警 ${info.alertCount} 次` : ""}`);
+    set("perf-assets", info.assets);
+    set("perf-dpr", String(info.dpr));
+    set("perf-viewport", `${info.vw}×${info.vh}`);
+    set("perf-orient", info.portrait ? "竖屏" : "横屏");
+    set("perf-ua", info.ua);
+  },
+  /* 复制诊断信息：优先 clipboard，降级 textarea+select。桩环境不崩。 */
+  copyPerfDiag() {
+    const info = this._perfDiagInfo();
+    const text = [
+      "【性能诊断】" + new Date().toISOString(),
+      `帧率: ${info.fps} FPS`,
+      `帧耗时 p50/p95: ${info.p50}ms / ${info.p95}ms`,
+      `最长卡死帧: ${info.maxStuck}ms`,
+      `卡死帧计数(>80ms): ${info.stuck} 帧 · 告警 ${info.alertCount} 次`,
+      `素材加载: ${info.assets}`,
+      `设备像素比: ${info.dpr}`,
+      `视口: ${info.vw}×${info.vh} (${info.portrait ? "竖屏" : "横屏"})`,
+      `UA: ${info.ua}`,
+    ].join("\n");
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text);
+        this.toast("诊断信息已复制", "gold");
+        return text;
+      }
+    } catch (e) { /* 降级 */ }
+    try {   // 降级：临时 textarea + select + execCommand
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      if (document.execCommand) document.execCommand("copy");
+      if (ta.remove) ta.remove();
+      this.toast("诊断信息已复制（降级）", "gold");
+    } catch (e) { this.toast("复制失败：请手动截图诊断面板", "bad"); }
+    return text;
   },
 
   /* ---------- 物品 TIPS 浮窗（悬停/长按；一个渲染函数全场景复用） ---------- */
