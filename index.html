@@ -164,24 +164,31 @@ var APP_VERSION = "20261003";
     </div>
   </div>
 
-  <!-- ====== 界面层：关卡选择（从主城传送门进入） ====== -->
+  <!-- ====== 界面层：关卡选择（从主城传送门进入） ======
+       单屏布局：panel 用 flex 纵向三段（header 固定 / #level-list flex:1 滚动 / footer 固定）。
+       10 关改 2 列紧凑网格 → 一屏塞下，返回按钮始终在屏内可见。 -->
   <div id="screen-level" class="screen hidden">
-    <h1 class="title">选择出征关卡</h1>
-    <p class="subtitle">HTML 原型 · 首版基准（第十六章）</p>
     <div class="panel level-panel">
-      <h2>关卡选择</h2>
+      <div class="level-head">
+        <h2>选择出征关卡</h2>
+        <div class="tip">达成目标击杀或坚持到时限 → 触发 Boss → 击败生成撤离点</div>
+      </div>
       <div id="level-list"></div>
-      <div class="tip">完成目标击杀数或坚持到时限 → 触发 Boss；击败 Boss 生成撤离点；工匠雕像按击杀进度刷新。</div>
-      <div class="btn-row"><button id="btn-level-back" class="btn ghost">返回主城</button></div>
+      <div class="btn-row level-foot"><button id="btn-level-back" class="btn ghost">返回主城</button></div>
     </div>
   </div>
 
-  <!-- ====== 界面层：角色选择 ====== -->
+  <!-- ====== 界面层：角色选择 ======
+       单屏布局（自上而下）：标题 + #meta-line → 12 宫格头像（#char-list）→ 固定高度详情区
+       （#char-detail，展示当前选中英雄的技能/角色说明）→ 底部按钮。整屏不滚动。 -->
   <div id="screen-character" class="screen hidden">
     <div class="panel char-panel">
-      <h2>角色选择</h2>
-      <div id="meta-line" class="meta-line"></div>
+      <div class="char-head">
+        <h2>角色选择</h2>
+        <div id="meta-line" class="meta-line"></div>
+      </div>
       <div id="char-list"></div>
+      <div id="char-detail" class="char-detail"></div>
       <div class="btn-row">
         <button id="btn-char-back" class="btn ghost">返回</button>
         <button id="btn-char-start" class="btn primary" disabled>开始游戏</button>

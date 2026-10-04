@@ -154,8 +154,9 @@ const driver = `
     const byCat = (c) => ids.filter((id) => CFG.skills[id].cat === c);
     // 25 条玩家主动（表 4a）+ 10 条 Boss 弹幕招式（表 4e-2，AT211~AT220，第十七章）
     //   + 3 条 Boss 激光招式（表 4e-3，AT231~AT233，第十七章 17.7 第 4 步，不带 pattern）
+    //   + 4 条冲锋怪招式（表 4e-4，AT241~AT244，charger 表现差异化扩充）
     const bossPatterns = ids.filter((id) => CFG.skills[id].pattern);
-    check("cat=active（表 4a + 4e 视图）共 " + byCat("active").length + " 条", byCat("active").length === 38);
+    check("cat=active（表 4a + 4e 视图）共 " + byCat("active").length + " 条", byCat("active").length === 42);
     check("其中 Boss 弹幕招式（带 pattern 字段）共 " + bossPatterns.length + " 条", bossPatterns.length === 10);
     check("cat=buff（表 4c 视图）4 条", byCat("buff").length === 4);
     check("cat=debuff（表 4d 视图）3 条", byCat("debuff").length === 3);

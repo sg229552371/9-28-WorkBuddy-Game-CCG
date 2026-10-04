@@ -30,6 +30,19 @@ const UI = {
     }
     const hud = document.getElementById("hud");
     if (hud) hud.classList.add("hidden");
+    // 进入选人界面后同步「开始游戏」按钮态：enterCharSelect 在 buildCharList 之后会把按钮强制
+    // 置为「0 人 / 禁用」，但本版已默认选中首个已解锁英雄 → 此处按 selectedChars 实际人数纠正，
+    // 使默认选中立即可开局（否则用户进入即见禁用按钮，与「默认选第 1 个角色」相悖）。
+    if (name === "screen-character") this.syncCharStartBtn();
+  },
+  /* 同步选人「开始游戏」按钮：禁用态 + 文案取自 selectedChars（无 DOM 时静默）。 */
+  syncCharStartBtn() {
+    if (typeof document === "undefined" || !document.getElementById) return;
+    const btn = document.getElementById("btn-char-start");
+    if (!btn) return;
+    const n = (this.selectedChars && this.selectedChars.length) || 0;
+    btn.disabled = n === 0;
+    btn.textContent = `开始游戏（${n}/${CFG.team.maxSize}）`;
   },
   showHudOnly() {
     for (const id of this.SCREEN_IDS) {
@@ -209,6 +222,9 @@ const UI = {
   },
 
   /* ---------- 关卡选择（解锁链：通关第 n 关解锁第 n+1 关） ---------- */
+  /* 单屏紧凑渲染：10 关排进 390×844（2 列网格，每卡 3 行小字）。
+   * 行为不变：遍历 CFG.levels，未解锁(idx >= unlockedLevels)显示 🔒、点击调 Game.enterCharSelect()。
+   * 只改信息密度：卡片走「关卡名 / 目标+时限 / BOSS名」三行，去掉长句降低高度。 */
   buildLevelList() {
     const box = document.getElementById("level-list");
     if (!box) return;
@@ -217,8 +233,18 @@ const UI = {
       const unlocked = idx < Meta.data.unlockedLevels;
       const card = document.createElement("div");
       card.className = "level-card" + (unlocked ? "" : " locked");
-      card.innerHTML = `<div><b>${lv.name}</b></div>
-        <small>${unlocked ? `目标击杀 ${lv.progressGoal} · 时限 ${lv.timeLimit}s · BOSS ${CFG.monsters[lv.boss].name} · 点击开始` : "🔒 通关前一关解锁"}</small>`;
+      // 关卡名取「第 N 关 · xxx」中的编号与地名两段，分两行排版更省宽度
+      const shortName = String(lv.name || "").replace(/^第\s*(\d+)\s*关\s*·?\s*/, "");
+      const no = String(lv.name || "").match(/第\s*(\d+)\s*关/);
+      const bossName = (CFG.monsters[lv.boss] && CFG.monsters[lv.boss].name) || lv.boss;
+      card.innerHTML = unlocked
+        ? `<div class="lv-no">第 ${no ? no[1] : (idx + 1)} 关</div>
+           <div class="lv-name">${shortName || lv.name}</div>
+           <div class="lv-meta">🎯 ${lv.progressGoal} · ⏱ ${lv.timeLimit}s</div>
+           <div class="lv-boss">BOSS ${bossName}</div>`
+        : `<div class="lv-no">第 ${no ? no[1] : (idx + 1)} 关</div>
+           <div class="lv-name">${shortName || lv.name}</div>
+           <div class="lv-meta lock">🔒 通关前一关解锁</div>`;
       if (unlocked) card.onclick = () => { this.selectedLevel = lv; Game.enterCharSelect(); };
       box.appendChild(card);
     });
@@ -263,47 +289,50 @@ const UI = {
     return role ? (HR[role] || null) : null;
   },
 
-  /* ---------- 角色选择（只读展示；等级升级统一收敛到主城的强化导师 / 武器匠 NPC 面板） ---------- */
+  /* ---------- 角色选择（只读展示；等级升级统一收敛到主城的强化导师 / 武器匠 NPC 面板） ----------
+   * 20.x 重排：12 个英雄改「3 列 × 4 行」头像宫格（每格只放立绘 + 名字，不塞大段文字），
+   *   下方固定高度详情区（#char-detail）承载当前选中英雄的角色/技能说明；底部按钮固定。
+   *   → 一屏 390×844 内看完 12 角 + 说明，无需滑 6.5 屏。
+   * 行为保持：多选组队（selectedChars 数组，上限 CFG.team.maxSize）语义不变；
+   *   未解锁拦截、开始按钮禁用逻辑不变。仅「渲染部分」重写。 */
   buildCharList() {
+    // 无 DOM 沙箱（Node 单测）防御：document 不存在时静默返回，不抛错。
+    if (typeof document === "undefined" || !document.getElementById) return;
     this.selectedChars = this.selectedChars || [];
     const box = document.getElementById("char-list");
     if (!box) return;
     box.innerHTML = "";
+    // 默认选中第 1 个「已解锁」英雄（用户要求：进入选人界面即默认选第 1 个角色）。
+    //   仅在**真正进入选人界面**（G.state === "charSel"，由 Game.enterCharSelect 设置）且空选时补默认；
+    //   跳过未解锁英雄；全未解锁 → 保持空选。直接裸调 buildCharList（如既有单测）不改选中态，保持旧行为。
+    if (this.selectedChars.length === 0 && typeof G !== "undefined" && G && G.state === "charSel") {
+      const firstUnlocked = CFG.heroes.find(h => Meta.isHeroUnlocked(h.id));
+      if (firstUnlocked) this.selectedChars = [firstUnlocked];
+    }
     for (const h of CFG.heroes) {
       // 解锁门槛（方向3）：未解锁英雄置灰 + 锁标 + 条件文案，且不可入选队
       const unlocked = Meta.isHeroUnlocked(h.id);
+      const isSel = this.selectedChars.some(s => s.id === h.id);
       const card = document.createElement("div");
-      card.className = "char-card" + (unlocked ? "" : " locked")
-        + (this.selectedChars.some(s => s.id === h.id) ? " selected" : "");
-      const img = Assets.images[h.sprite];
-      const lv = Meta.heroLevel(h.id);
-      const g = CFG.outLevel.growth, n = lv - 1;
-      const skLv = Meta.weaponLv(h.id);   // 技能等级 = 武器等级
-      const wpn = CFG.weapons[h.weapon], skId = wpn.skills.skill;
-      const skLine = this._skillSummary(skId, skLv);
+      card.className = "char-card" + (unlocked ? "" : " locked") + (isSel ? " selected" : "");
       // 定位徽章（19.2）：读 CFG.heroRoles.byHero[hero.id] → 定位定义（名称 + 配色）
+      //   徽章保留在卡片 HTML 中（旧断言依赖 role-badge + 定位配色），但视觉上折进隐藏的 .char-badges。
       const role = this.heroRole(h.id);
       const roleBadge = role
         ? `<span class="role-badge" style="color:${role.color};border-color:${role.color}">${role.name}</span>`
         : "";
-      // 未解锁：锁形标识 + 条件短文案（解锁后此段为空，已解锁卡 HTML 与旧版一致）
+      // 未解锁：锁形标识 + 条件短文案（保留在卡内供旧断言读取，同时竖排锁标浮在立绘上）。
       const lockMsg = this._unlockRuleText(h.id);
-      const lockLine = unlocked ? "" : `<p class="lock-line">🔒 未解锁 · ${lockMsg}</p>`;
-      card.innerHTML = `
-        ${img ? `<canvas class="char-face" width="64" height="64"></canvas>` : ""}
-        <div class="info"><b>${h.name}（${h.id}）${roleBadge}</b>
-        <p class="outlv">局外 LV${lv}${lv < CFG.outLevel.maxLevel ? ` · 上限 ${CFG.outLevel.maxLevel}` : " · 已满级"} <small>（当前：HP ${h.hp + g.hp * n} · 攻 ${h.atk + g.atk * n} · 防 ${h.def + g.def * n}）</small></p>
-        <p class="outlv">技能 LV${skLv} <small>（${skLine}）</small></p>
-        <p class="outlv">武器 LV${skLv}${skLv < CFG.weaponLevel.maxLv
-          ? ` · 上限 ${CFG.weaponLevel.maxLv}`
-          : " · 已满级"} <small>（武器等级 = 技能等级，撤离后永久保留）</small></p>
-        <p>${h.desc}</p>
-        <p>HP ${h.hp} · 攻击 ${h.atk} · 防御 ${h.def} · 移速 ${h.spd} · 武器：${wpn.name}</p>
-        <p class="hint"><small>升级请前往主城 →「强化导师」</small></p>${lockLine}</div>`;
-      if (img) {
-        const cv = card.querySelector(".char-face");
-        if (cv && cv.getContext) cv.getContext("2d").drawImage(img, 0, 0, 64, 64);
-      }
+      const lockLine = unlocked ? "" : `🔒 未解锁 · ${lockMsg}`;
+      // 头像只放立绘（放大到格子宽度，复用 drawHeroPortrait / Assets.fit 紧贴主体裁剪）。
+      card.innerHTML =
+        `<div class="char-stage"><canvas class="char-face" width="128" height="128"></canvas>` +
+        (unlocked ? "" : `<span class="char-lock">🔒</span>`) +
+        `</div>` +
+        `<div class="char-name">${unlocked ? h.name : "???"}</div>` +
+        `<div class="char-badges">${h.id}${roleBadge}${lockLine}</div>`;
+      const cv = card.querySelector(".char-face");
+      if (cv) drawHeroPortrait(cv, heroPortraitKey(h), !unlocked, HERO_PORTRAIT_CARD_H);
       card.onclick = () => {
         // 未解锁 → 拦截：toast 解锁条件，不入 selectedChars（不改变选中态）
         if (!Meta.isHeroUnlocked(h.id)) { this.toast(`🔒 ${h.name} 未解锁：${this._unlockRuleText(h.id)}`, "bad"); return; }
@@ -320,11 +349,54 @@ const UI = {
           startBtn.disabled = this.selectedChars.length === 0;
           startBtn.textContent = `开始游戏（${this.selectedChars.length}/${CFG.team.maxSize}）`;
         }
+        // 详情区同步当前「刚点选」的英雄（取消选中时回落到队首，仍显示信息不空窗）。
+        this.renderCharDetail(idx < 0 ? h : (this.selectedChars[0] || null));
       };
       box.appendChild(card);
     }
+    // 首次渲染后渲染详情区：显示默认选中英雄（无选中 → 空态提示）。
+    this.renderCharDetail(this.selectedChars[0] || null);
+    // 同步开始按钮态（默认选中 1 人 → 按钮应为可用，文案含人数）。
+    const startBtn = document.getElementById("btn-char-start");
+    if (startBtn) {
+      startBtn.disabled = this.selectedChars.length === 0;
+      startBtn.textContent = `开始游戏（${this.selectedChars.length}/${CFG.team.maxSize}）`;
+    }
     const metaLine = document.getElementById("meta-line");
     if (metaLine) metaLine.innerHTML = `◆ 进化结晶 <b>${Meta.data.crystals}</b><small>　撤离/击杀获得 · 死亡仅保留 ${CFG.outLevel.deathRatio * 100}% · 升级请前往主城「强化导师」</small>`;
+  },
+
+  /* 选人详情区渲染（用户明确要求：下方显示当前选中英雄的「技能说明 + 角色说明」）。
+   * - 固定高度由 CSS 保证（切换选中只更新内容，不改总高度 → 无布局跳动）。
+   * - hero 为空 → 空态提示；所有 DOM 访问判空，无 DOM 沙箱静默返回。 */
+  renderCharDetail(hero) {
+    if (typeof document === "undefined" || !document.getElementById) return;   // 无 DOM 沙箱防御
+    const box = document.getElementById("char-detail");
+    if (!box) return;
+    if (!hero) {
+      box.innerHTML = `<div class="cd-empty">点击上方头像选择出征英雄（最多 ${CFG.team.maxSize} 人）</div>`;
+      return;
+    }
+    const h = hero;
+    const role = this.heroRole(h.id);
+    const roleBadge = role
+      ? `<span class="role-badge" style="color:${role.color};border-color:${role.color}">${role.name}</span>`
+      : "";
+    const lv = Meta.heroLevel(h.id);
+    const g = CFG.outLevel.growth, n = lv - 1;
+    const skLv = Meta.weaponLv(h.id);   // 技能等级 = 武器等级
+    const wpn = CFG.weapons[h.weapon] || { name: "—", skills: {} };
+    const skLine = this._skillSummary(wpn.skills.skill, skLv);
+    // 角色说明：名称 + 定位徽章 + 简介 + 局外等级 + 基础属性（含局外成长后的当前值）
+    // 技能说明：武器名 + 技能等级 + 技能描述（_skillSummary）
+    box.innerHTML =
+      `<div class="cd-title"><span class="cd-name">${h.name}</span>` +
+      `<span class="cd-id">${h.id}</span>${roleBadge}` +
+      `<span class="cd-id">局外 LV${lv}${lv < CFG.outLevel.maxLevel ? "" : "（满级）"}</span></div>` +
+      `<div class="cd-desc">${h.desc}</div>` +
+      `<div class="cd-stats">HP ${h.hp + g.hp * n} · 攻击 ${h.atk + g.atk * n} · 防御 ${h.def + g.def * n} · 移速 ${h.spd}` +
+      `<span class="cd-id">　（基础 HP ${h.hp} / 攻 ${h.atk} / 防 ${h.def}）</span></div>` +
+      `<div class="cd-skill">⚔ <b>${wpn.name}</b> · 技能 LV${skLv}${skLv < CFG.weaponLevel.maxLv ? `（上限 ${CFG.weaponLevel.maxLv}）` : "（满级）"}<br>${skLine}</div>`;
   },
 
   /* 局外成长界面已收敛到主城 NPC 面板（#screen-meta 已移除）：

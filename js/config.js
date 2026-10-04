@@ -118,7 +118,7 @@ CFG.levels = [
     elitePool: "ED0001:28/ED0002:34/ED0003:38",
     boss: "BS0008",
     monsterCap: 120,
-    circles: [{ tpl: "SC03", count: 6 }, { tpl: "SC02", count: 5 }],
+    circles: [{ tpl: "SC03", count: 6 }, { tpl: "SC02", count: 5 }, { tpl: "SC04", count: 2 }],
     progressGoal: 168, timeLimit: 360, artisanAtKills: 48,
     // 毒圈压迫档（HZ3）：tick 缩到 0.8s（DPS 10，满血约 10.4 秒），预警 16s、终圈 330
     hazardEnabled: true,
@@ -135,7 +135,7 @@ CFG.levels = [
     elitePool: "ED0001:24/ED0002:34/ED0003:42",
     boss: "BS0009",
     monsterCap: 120,
-    circles: [{ tpl: "SC03", count: 7 }, { tpl: "SC02", count: 5 }],
+    circles: [{ tpl: "SC03", count: 7 }, { tpl: "SC02", count: 5 }, { tpl: "SC04", count: 2 }],
     progressGoal: 184, timeLimit: 390, artisanAtKills: 52,
     // 毒圈高压档（HZ4）：预警 14s、终圈 310，DPS 11.25（满血约 9.6 秒）
     hazardEnabled: true,
@@ -152,7 +152,7 @@ CFG.levels = [
     elitePool: "ED0001:20/ED0002:34/ED0003:46",
     boss: "BS0010",
     monsterCap: 120,
-    circles: [{ tpl: "SC03", count: 7 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 4 }],
+    circles: [{ tpl: "SC03", count: 7 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 4 }, { tpl: "SC04", count: 3 }],
     progressGoal: 200, timeLimit: 420, artisanAtKills: 56,
     // 毒圈终局档（HZ5）：预警 12s、终圈 290、收缩 55s——DPS 12.5（满血 8 秒，压力带最紧端）
     hazardEnabled: true,
@@ -163,11 +163,17 @@ CFG.levels = [
   },
 ];
 
-/* ---------- 刷怪圆模板表（表 B） ---------- */
+/* ---------- 刷怪圆模板表（表 B） ----------
+ * pool 权重混入冲锋特殊怪（NM0027~0030），并新增 SC04 高阶混编圆（L8~L10 挂载）：
+ * 冲锋特殊怪在场占比 SC01 ≈ 6%、SC02 ≈ 20%、SC03 ≈ 24%、SC04 ≈ 53%，
+ * 配合 monsterUnlock 错峰解锁 → 中盘起每段进度都能见到新的冲撞表现。 */
 CFG.spawnCircles = {
-  SC01: { radius: 180, waveSize: 2, pool: "NM0010:70/NM0011:20/NM0012:10", interval: 7.0, trigger: "immediate" },
-  SC02: { radius: 200, waveSize: 2, pool: "NM0010:40/NM0011:25/NM0012:20/NM0013:15", interval: 6.0, trigger: "immediate" },
-  SC03: { radius: 220, waveSize: 3, pool: "NM0013:35/NM0011:25/NM0012:25/NM0014:15", interval: 5.5, trigger: "immediate" },
+  SC01: { radius: 180, waveSize: 2, pool: "NM0010:62/NM0011:20/NM0012:12/NM0027:6", interval: 7.0, trigger: "immediate" },
+  SC02: { radius: 200, waveSize: 2, pool: "NM0010:30/NM0011:20/NM0012:16/NM0013:14/NM0027:10/NM0028:10", interval: 6.0, trigger: "immediate" },
+  SC03: { radius: 220, waveSize: 3, pool: "NM0013:26/NM0011:18/NM0012:18/NM0014:14/NM0028:10/NM0029:8/NM0030:6", interval: 5.5, trigger: "immediate" },
+  /* SC04 高阶混编圆：只服务 L8~L10（怪物池上限 NM0026，无低编号怪）——
+   * 权重配比：老面孔基础怪 40 / 冲锋特殊怪（NM0029/30/26/20/23）46，特殊怪过半制造压迫感 */
+  SC04: { radius: 220, waveSize: 3, pool: "NM0020:14/NM0021:10/NM0022:8/NM0023:12/NM0025:8/NM0029:14/NM0030:12/NM0026:8", interval: 5.0, trigger: "immediate" },
 };
 
 /* ---------- 刷怪规则（全局） ---------- */
@@ -222,17 +228,39 @@ CFG.eliteSpawn = {
 
 /* ---------- 摄像机（跟随玩家，边缘钳制在地图内） ----------
  * 跨端口径：**垂直视野固定 viewH 世界单位**（画布高 = viewH × zoom）——
- * 角色在屏幕上的大小只由 zoom 决定，PC / 手机一致；画布**宽度**跟随屏幕比例伸缩（宽屏看更多、竖屏看更窄）。 */
+ * 角色在屏幕上的大小只由 zoom 决定，PC / 手机一致；画布**宽度**跟随屏幕比例伸缩（宽屏看更多、竖屏看更窄）。
+ *
+ * ⚠️ 视野机制的关键（本次调参依据，务必理解）：
+ *   渲染处（js/game.js:3300/3383）算的是 viewW = G.W / zoom、viewH = G.H / zoom，
+ *   而 main.js fitCanvas 里又有 G.H = viewH_cfg × zoom、G.W = G.H × 屏幕宽高比。
+ *   代入后 **zoom 完全约掉**：
+ *       可视世界高 visH = G.H / zoom = viewH_cfg        （只由 viewH_cfg 决定）
+ *       可视世界宽 visW = G.W / zoom = viewH_cfg × aspect（只由 viewH_cfg 与屏幕比例决定）
+ *       1 世界单位 = 屏幕像素 = 画布高(css) / viewH_cfg  （也只由 viewH_cfg 决定）
+ *   → 单独调 zoom 并不改变「看得多远多广」，只会改变画布像素分辨率（G.H = viewH×zoom）。
+ *   所以「拉高视角、把视野变大」的真正旋钮是 **viewH 调大**；同时按 viewH×zoom ≈ 1080 反比调小 zoom，
+ *   可保持画布高 G.H=1080、竖屏画布宽 ~499 不变（既有画布/跨端契约测试因此不破），
+ *   而可视世界宽高反而各放大 (900/720-1) ≈ +25%。代价：角色/怪物在屏幕上等比缩小约 20%（属正常的视野取舍）。
+ *   本次取值：viewH 720→900（视野 +25%）、zoom 1.5→1.2（反比配平，画布高仍 1080）。 */
 CFG.camera = {
-  zoom: 1.5,                // 变焦倍数：>1 拉近（可视世界宽 = 画布宽 / zoom）
-  viewH: 720,               // 垂直视野（世界单位，固定）：跨端角色大小一致的锚
+  zoom: 1.2,                // 变焦倍数：>1 拉近。**竖屏下与 viewH 反比联动**（见上），需与 viewH 配平保持 viewH×zoom≈1080
+  viewH: 900,               // 垂直视野（世界单位）：**真正的视野旋钮**——720→900 即视野高/宽各 +25%（角色等比缩小 ~20%）
   minAspect: 0.75,          // 最小宽高比：**横屏**下比 4:3 更窄时钳制画布宽（竖屏已放开，见下）
   portraitFill: true,       // 竖屏填满屏幕（20.1）：true = 不钳制，按真实 aspect 铺满竖屏（无左右黑边）
   portraitBreakpoint: 1.0,  // 竖屏判定阈值：aspect < 此值视为竖屏
   smooth: 8,                // 相机平滑跟随系数（越大越跟手）
+  /* ---- 以下为「可选新增字段」，旧代码（game.js/main.js）不读它们时行为与本次改动完全一致，向后兼容 ---- */
+  portraitViewH: 980,       // 【可选·待接入】竖屏专用垂直视野：竖屏屏幕窄高，建议再放大一档（980 → 竖屏 visH +8.9%、
+                            //   visW 416→453、角色再小约 8%）。接入方式见文件末「CFG.camera 接入说明」。
+  zoomMin: 1.0,             // 【可选·待接入】运行时 zoom 下限：供后续「滚轮/双指缩放视野」做钳制（当前无消费者，仅占位）
+  zoomMax: 2.0,             // 【可选·待接入】运行时 zoom 上限（同上）
 };
 
-/* ---------- 怪物体积倍数（贴图与碰撞半径同步放大） ---------- */
+/* ---------- 怪物体积倍数（贴图与碰撞半径同步放大） ----------
+ * 随本次视野放大（viewH 720→900，屏幕等比缩小 ~20%），怪物屏幕尺寸也同步变小：
+ *   竖屏 60×0.9378×1.5 ≈ 84px（改前 ≈105px）、PC 60×1.2×1.5 = 108px（改前 135px）。
+ * 仍在清晰可辨区间，**本次不调整**；若后续觉得怪物偏小，可把本值 1.5 微调到 1.7~1.8（会同步放大碰撞半径）。
+ * ⚠️ 注意：碰撞半径随本值放大，调大需回归战斗手感。 */
 CFG.monsterSizeMul = 1.5;
 
 /* ---------- 技能系统（现阶段：普攻 + 主动技能自动施法；终极技局外解锁后续开发） ----------
@@ -364,18 +392,26 @@ CFG.tooltip = {
 
 /* ---------- 怪物解锁进度（击杀进度百分比） ----------
  * 随机圆按玩家击杀进度过滤怪物池（进度 < unlock 的怪暂不出现）；
- * 新增普通怪 NM0015~NM0026 错峰开放：前期见弱怪，进度推高后强怪逐步入场。 */
+ * 新增普通怪 NM0015~NM0030 错峰开放：前期见弱怪，进度推高后强怪逐步入场。
+ * NM0027~NM0030 为冲锋（charger）特殊怪扩充档：0.35 / 0.45 起步，
+ * 让中盘起每隔一段进度就有新的冲锋表现入场（对应用户「出怪节奏多一些特殊怪」诉求）。 */
 CFG.monsterUnlock = {
   NM0010: 0, NM0011: 0.25, NM0012: 0.55, NM0013: 0.15, NM0014: 0.5,
   NM0015: 0, NM0016: 0.1, NM0017: 0.2, NM0018: 0.3, NM0019: 0.4, NM0020: 0.5,
   NM0021: 0.58, NM0022: 0.65, NM0023: 0.72, NM0024: 0.8, NM0025: 0.88, NM0026: 0.95,
+  NM0027: 0.35, NM0028: 0.45, NM0029: 0.78, NM0030: 0.85,
 };
 
 /* ---------- 敌人配置表（8.5 表 2） ----------
  * type = AI 行为类型（melee / ranged / charger / boss），决定行动方式；
  * skillList = 攻击技能条目（技能表 4e 视图），**攻击参数全部来自技能表**，本表不再硬编码
  *   （原 fireCd / bulletSpd / keepDist / chargeRange / boomCd / minionCd 等已迁至 AT2xx）。
- * 多个怪物可复用同一技能条目（如 AT201 被重甲兵与重装督军共用）。 */
+ * 多个怪物可复用同一技能条目（如 AT201 被重甲兵与重装督军共用）。
+ * charger 冲锋表现差异化（AT241~244，见表 4e-4）：同是冲锋，前摇/冲速/滑行/冷却/倍率各不相同——
+ *   NM0012 冲锋猎犬（AT203 标准冲，参数被 skill_table_test 锁定，保持不动）
+ *   NM0017 疾行撕咬兽（AT241 连突）/ NM0020 狂澜冲角兽（AT243 碾压）
+ *   NM0023 裂地冲撞者（AT242 蓄力猛冲）/ NM0026 终焉追猎兽（AT244 俯冲）
+ *   NM0027~NM0030 为冲锋扩充档（表 4e-4 四招全覆盖）。 */
 CFG.monsters = {
   NM0010: { name: "重甲兵", type: "melee", sprite: "enemy16", skillList: ["AT201"],
     hp: 20, atk: 8,  def: 1, spd: 115, radius: 17, exp: 3, coin: 2 },
@@ -397,26 +433,43 @@ CFG.monsters = {
     hp: 26, atk: 9,  def: 1, spd: 105, radius: 17, exp: 4, coin: 2 },
   NM0016: { name: "骨刺散兵", type: "ranged", sprite: "enemy08", skillList: ["AT202"],
     hp: 15, atk: 7,  def: 0, spd: 100, radius: 15, exp: 5, coin: 3 },
-  NM0017: { name: "疾行撕咬兽", type: "charger", sprite: "enemy00", skillList: ["AT203"],
+  NM0017: { name: "疾行撕咬兽", type: "charger", sprite: "enemy00", skillList: ["AT241"],
     hp: 18, atk: 11, def: 0, spd: 145, radius: 15, exp: 6, coin: 3 },
   NM0018: { name: "枯枝卫士", type: "melee", sprite: "enemy16", skillList: ["AT201"],
     hp: 50, atk: 12, def: 3, spd: 88,  radius: 21, exp: 8, coin: 5 },
   NM0019: { name: "腐沼射手", type: "ranged", sprite: "enemy08", skillList: ["AT204"],
     hp: 24, atk: 10, def: 1, spd: 92,  radius: 16, exp: 9, coin: 6 },
-  NM0020: { name: "狂澜冲角兽", type: "charger", sprite: "enemy00", skillList: ["AT203"],
+  NM0020: { name: "狂澜冲角兽", type: "charger", sprite: "enemy00", skillList: ["AT243"],
     hp: 30, atk: 14, def: 1, spd: 150, radius: 17, exp: 10, coin: 6 },
   NM0021: { name: "暗影潜伏者", type: "melee", sprite: "enemy00", skillList: ["AT206"],
     hp: 34, atk: 15, def: 2, spd: 128, radius: 18, exp: 12, coin: 7 },
   NM0022: { name: "深渊猎手", type: "ranged", sprite: "enemy08", skillList: ["AT205"],
     hp: 32, atk: 13, def: 2, spd: 98,  radius: 17, exp: 13, coin: 8 },
-  NM0023: { name: "裂地冲撞者", type: "charger", sprite: "enemy00", skillList: ["AT203"],
+  NM0023: { name: "裂地冲撞者", type: "charger", sprite: "enemy00", skillList: ["AT242"],
     hp: 44, atk: 17, def: 2, spd: 140, radius: 19, exp: 15, coin: 9 },
   NM0024: { name: "重渊守卫", type: "melee", sprite: "enemy16", skillList: ["AT201"],
     hp: 72, atk: 19, def: 4, spd: 82,  radius: 23, exp: 18, coin: 11 },
   NM0025: { name: "虚空狙击者", type: "ranged", sprite: "enemy08", skillList: ["AT205"],
     hp: 46, atk: 18, def: 3, spd: 94,  radius: 18, exp: 20, coin: 12 },
-  NM0026: { name: "终焉追猎兽", type: "charger", sprite: "enemy00", skillList: ["AT203"],
+  NM0026: { name: "终焉追猎兽", type: "charger", sprite: "enemy00", skillList: ["AT244"],
     hp: 60, atk: 22, def: 3, spd: 158, radius: 20, exp: 24, coin: 14 },
+
+  /* ---------- 冲锋特殊怪扩充档（NM0027~NM0030，全部 charger）----------
+   * 设计意图：对应用户「出怪的节奏多一些特殊怪，冲撞类的」——在中高解锁段插入 4 只
+   * 冲锋怪，与表 4e-4 四种冲锋招式一一对应，保证刷怪时冲撞表现轮换、不重复。
+   * 强度对齐同解锁段既有怪物（hp/atk/def/spd/exp/coin 取相邻 NM 区间中位）：
+   *   NM0027（0.35，NM0017~20 段）：重装定位，hp/def 偏高、spd 压低，AT243 慢速长滑行
+   *   NM0028（0.45，NM0019~21 段）：快脆皮，hp 压低 spd 抬高，AT244 一击脱离
+   *   NM0029（0.78，NM0023~24 段）：蓄力重炮手，AT242 长前摇高倍率
+   *   NM0030（0.85，NM0024~26 段）：连爪刺客，AT241 高频连突单次低伤 */
+  NM0027: { name: "岩壳冲犀", type: "charger", sprite: "enemy00", skillList: ["AT243"],
+    hp: 36, atk: 12, def: 2, spd: 105, radius: 20, exp: 10, coin: 6 },
+  NM0028: { name: "风暴突隼", type: "charger", sprite: "enemy00", skillList: ["AT244"],
+    hp: 24, atk: 13, def: 0, spd: 156, radius: 15, exp: 10, coin: 5 },
+  NM0029: { name: "熔核突进者", type: "charger", sprite: "enemy00", skillList: ["AT242"],
+    hp: 50, atk: 18, def: 2, spd: 120, radius: 19, exp: 16, coin: 10 },
+  NM0030: { name: "影袭连爪", type: "charger", sprite: "enemy00", skillList: ["AT241"],
+    hp: 46, atk: 15, def: 2, spd: 162, radius: 17, exp: 19, coin: 11 },
 
   /* ---------- 独立精英怪 ED（3.3 原方案）：由关卡层定点投放，不进随机圆 ----------
    * 属性明显强于普通小怪（生命/攻击/防御更高、体型更大）；携带 1~2 条随机词缀（见 CFG.elites）。
@@ -818,6 +871,30 @@ CFG.skills = {
     arms: 2, spin: 0.5, laserLen: 1600, dmgMul: 0.55,
     cd: 4.0, laserWarn: 0.85, laserActive: 1.6, laserFade: 0.35 },
 
+  /* ===== 表 4e-4：冲锋怪招式（AT241~244，charger 专属）=====
+   * 目的：让 charger 型怪物不再共用 AT203 一种表现，冲撞手感彼此拉开。
+   * 全部字段均为 js/game.js Monster AI（charger 分支）与 monsterAttackSkill 已消费的既有字段：
+   *   cd         = 冲锋冷却（dash 结束后进入 chase 的等待秒数；调小 = 冲完很快再冲 → 连突手感）
+   *   chargeRange= 触发冲锋的索敌距离（也是红色虚线预警长度）
+   *   telegraph  = 前摇（预警线亮起到起冲的秒数；越长越好躲、越有"蓄力"感）
+   *   dashSpd    = 冲刺速度（px/s）
+   *   dashTime   = 冲刺持续（秒；越长滑行越深，压迫范围越大）
+   *   dmgMul     = 冲撞伤害倍率（× 怪物 atk；dash 期间碰到英雄才结算）
+   * 设计分工：
+   *   AT203 冲撞突袭（基准，保留）：0.6s 前摇 / 560 冲速 / 3.0s 冷却 —— 全能标准冲
+   *   AT241 疾风连突：短前摇 + 冷却极短 + 触发距离远 → 连冲 2~3 次的撕咬节奏，单次低伤
+   *   AT242 蓄力猛冲：长前摇（1.2s 明显预警）+ 极高冲速 + 高倍率 + 长冷却（冲完硬直）→ 一击脱离
+   *   AT243 重装碾压：慢冲速 + 长滑行（0.7s）→ 重车推进感，冲得久压得深
+   *   AT244 游隼俯冲：中庸偏快的扑咬，各项参数均落在 AT203 邻域 → 一击脱离的轻量版 */
+  AT241: { name: "疾风连突", cat: "active", ai: "charger", tags: ["连击"],
+    cd: 0.5, chargeRange: 400, telegraph: 0.3, dashSpd: 470, dashTime: 0.3, dmgMul: 0.7 },
+  AT242: { name: "蓄力猛冲", cat: "active", ai: "charger", tags: ["高伤"],
+    cd: 4.6, chargeRange: 360, telegraph: 1.2, dashSpd: 760, dashTime: 0.22, dmgMul: 2.2 },
+  AT243: { name: "重装碾压", cat: "active", ai: "charger", tags: ["压制"],
+    cd: 2.6, chargeRange: 300, telegraph: 0.8, dashSpd: 400, dashTime: 0.7, dmgMul: 1.4 },
+  AT244: { name: "游隼俯冲", cat: "active", ai: "charger", tags: ["突袭"],
+    cd: 2.2, chargeRange: 280, telegraph: 0.45, dashSpd: 640, dashTime: 0.35, dmgMul: 1.1 },
+
   /* ===== 表 4c 视图：增益状态技能（Buff）——战争雕像增益池也走此表 =====
    * stat/mul 对应 13.7 属性修改器；pool 用于筛选具体增益池（如 "war" = 战争雕像）。
    * CFG.warBuffs 是由本表派生的过滤视图，加新增益只需在此加一行。
@@ -1106,7 +1183,7 @@ CFG.rift = {
   worldSize: 1920,        // 子地图尺寸（与关卡地图统一）
   freezeTime: 3.0,        // 开场冻结（秒）：全员静止 + 全员无敌，红字倒计时 3/2/1
   defaultSpawnCount: 16,  // 兜底投放数：未带任务直接构造子地图时使用（如单元测试）；须 ≥ rewardKills
-  spawnPool: "NM0010:50/NM0011:30/NM0012:20",   // 一次性投放的怪物池（子地图不按解锁进度过滤，全量开放）
+  spawnPool: "NM0010:40/NM0011:26/NM0012:16/NM0017:10/NM0020:8",   // 一次性投放的怪物池（子地图不按解锁进度过滤，全量开放）；混入已差异化招式的冲锋怪（连突/碾压）
   eliteBase: 3,           // 裂缝子地图独立精英基础数量（随敌群一次性投放，不再随时间补投）
   elitePool: "ED0001:50/ED0002:30/ED0003:20",   // 裂缝精英怪池（编号:权重）
   rewardKills: 12,        // 击杀达标 → 刷出基础奖励宝箱雕像（须 ≤ 各任务 spawnCount）

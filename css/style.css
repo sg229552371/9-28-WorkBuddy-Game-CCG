@@ -29,14 +29,37 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .tip { margin-top:12px; font-size:12px; color:#6d7c94; line-height:1.7; }
 
 /* ===== 关卡 / 角色选择 ===== */
-.level-panel { width:640px; }
+/* 选关面板：flex 纵向三段（头部固定 / 列表滚动 / 底部返回固定）。
+ * 高度锁定 min(92vh, 844px)，保证 390×844 下不超出视口 → 返回按钮始终可见。 */
+.level-panel {
+  width:min(560px, 94vw);
+  max-height:min(92vh, 844px);
+  display:flex; flex-direction:column;
+}
+.level-head { flex-shrink:0; }
+.level-head h2 { margin-bottom:4px; }
+.level-head .tip { margin-top:0; margin-bottom:10px; }
+/* 关卡列表：2 列紧凑网格；10 关 5 行。flex:1 占满中间，超高时才自身滚动（头顶/底部按钮不动）。 */
+#level-list {
+  flex:1; min-height:0; overflow-y:auto;
+  display:grid; grid-template-columns:1fr 1fr; gap:8px;
+  align-content:start; padding:2px;
+}
+.level-foot { flex-shrink:0; margin-top:12px; }
 .level-card {
-  display:flex; justify-content:space-between; align-items:center;
   background:#1d2a3d; border:1px solid #33486b; border-radius:10px;
-  padding:14px 18px; margin-bottom:10px; cursor:pointer; transition:.15s;
+  padding:9px 12px; cursor:pointer; transition:.15s; line-height:1.35;
+  display:flex; flex-direction:column; justify-content:center;
 }
 .level-card:hover { border-color:#ffd76a; background:#25344c; }
 .level-card.locked { opacity:.4; cursor:not-allowed; }
+.level-card .lv-no { font-size:11px; color:#8ba0bd; letter-spacing:1px; }
+.level-card .lv-name { font-size:15px; font-weight:bold; color:#eaf1fb; margin:1px 0 3px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.level-card .lv-meta { font-size:11px; color:#9fb4cc; }
+.level-card .lv-meta.lock { color:#e0a24c; }
+.level-card .lv-boss { font-size:11px; color:#e79aa0; margin-top:1px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .level-card b { font-size:17px; }
 .level-card small { color:#8ba0bd; }
 .btn {
@@ -51,25 +74,69 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .btn.small { padding:5px 12px; font-size:12px; }
 .btn-row { display:flex; gap:12px; justify-content:flex-end; margin-top:16px; flex-shrink:0; }
 .char-panel {
-  width:min(920px, 94vw);
-  max-height:92vh;
-  display:flex; flex-direction:column;   /* 列表滚动、按钮固定底部 */
+  width:min(560px, 94vw);
+  max-height:min(94vh, 844px);   /* 单屏锁定：390×844 下整块不滚出视口 */
+  display:flex; flex-direction:column;
 }
-/* 角色卡双列网格：6 角不纵向堆叠；超高时列表内部滚动，按钮始终可见 */
+.char-head { flex-shrink:0; }
+.char-head h2 { margin-bottom:6px; }
+/* 12 宫格头像：3 列 × 4 行，只放头像 + 名字，不塞大段文字（一屏看完 12 角）。 */
 #char-list {
-  flex:1; min-height:0; overflow-y:auto;
-  display:grid; grid-template-columns:1fr 1fr; gap:10px;
-  align-content:start; padding:2px 6px 2px 2px;
+  flex-shrink:0;
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;
+  padding:2px;
 }
+/* 头像格：立绘 canvas 铺满格子宽度（≥80px），下方一行名字；选中态高亮边框 + 勾角标。 */
 .char-card {
-  display:flex; align-items:center; gap:14px;
-  background:#1d2a3d; border:2px solid #33486b; border-radius:10px;
-  padding:12px 14px; cursor:pointer; transition:.15s;
+  position:relative; display:flex; flex-direction:column; align-items:center;
+  background:linear-gradient(180deg,#1d2a3d 0%,#16202e 100%);
+  border:2px solid #33486b; border-radius:12px;
+  padding:4px; cursor:pointer; transition:.15s; overflow:hidden;
 }
 .char-card:hover { border-color:#6d8fc4; }
-.char-card.selected { border-color:#ffd76a; background:#25344c; }
-.char-card img { width:64px; height:64px; object-fit:contain; }
-.char-card .info b { font-size:16px; }
+.char-card.selected { border-color:#ffd76a; box-shadow:0 0 0 2px rgba(255,215,106,.35), 0 0 14px rgba(255,215,106,.45); background:linear-gradient(180deg,#2b3a52 0%,#1d2a3d 100%); }
+.char-card.selected::after {   /* 选中勾角标（右上角） */
+  content:"✓"; position:absolute; top:2px; right:4px; font-size:13px; font-weight:bold;
+  color:#ffd76a; text-shadow:0 1px 3px rgba(0,0,0,.9);
+}
+.char-card.locked { opacity:.5; cursor:not-allowed; border-style:dashed; border-color:#2e3d55; }
+.char-card.locked:hover { border-color:#2e3d55; }
+/* 立绘舞台：方形，canvas 等比铺满，深底衬托。 */
+.char-card .char-stage {
+  position:relative; width:100%; aspect-ratio:1 / 1; border-radius:9px;
+  background:radial-gradient(circle at 50% 65%, #2a3b57 0%, #131c2a 75%);
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.char-card .char-face { width:100%; height:100%; display:block; }
+.char-card .char-name {
+  margin-top:3px; font-size:12px; color:#dbe6f4; font-weight:bold; max-width:100%;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.char-card .char-lock {   /* 未解锁竖排锁标（浮在立绘上） */
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  font-size:22px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.9));
+}
+/* 兼容旧断言：卡片内仍保留定位徽章（隐藏在名字行末端，随选人详情展示）。 */
+.char-card .char-badges { display:none; }
+.char-card .info { display:none; }   /* 旧 info 容器退场（改由固定详情区承载说明） */
+
+/* 固定高度详情区：切换选中只换内容不改高度 → 布局不跳动。
+ * 显示当前选中英雄的角色说明 + 技能说明；文本超长时区域内部滚动。 */
+.char-detail {
+  flex:1; min-height:128px; max-height:190px; margin-top:10px;
+  overflow-y:auto;
+  background:rgba(13,20,32,.72); border:1px solid #2a3a55; border-radius:12px;
+  padding:10px 12px;
+}
+.char-detail .cd-empty { color:#6d7c94; font-size:13px; text-align:center; padding-top:34px; }
+.char-detail .cd-title { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:5px; }
+.char-detail .cd-name { font-size:16px; font-weight:bold; color:#fff; }
+.char-detail .cd-id { font-size:11px; color:#8ba0bd; }
+.char-detail .cd-desc { font-size:12px; color:#a9bad2; margin-bottom:5px; line-height:1.5; }
+.char-detail .cd-stats { font-size:12px; color:#9fb4cc; margin-bottom:5px; line-height:1.5; }
+.char-detail .cd-skill { font-size:12px; color:#ffd76a; line-height:1.5; word-break:break-word; }
+.char-detail .cd-skill b { color:#ffe08a; }
+.char-detail .cd-lock { font-size:12px; color:#e0a24c; margin-top:4px; }
 /* 定位徽章（19.2）：输出红 / 防御蓝 / 恢复绿，颜色由 CFG.heroRoles[name].color 内联注入 */
 .role-badge {
   display:inline-block; margin-left:6px; padding:1px 8px; border-radius:10px;
@@ -716,10 +783,11 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   /* ---- 主菜单 / 关卡选择 / 角色选择：按钮铺满宽度、不横向溢出 ---- */
   .main-panel { width: 100%; max-width: 480px; }
   .btn.big { width: 100%; padding: 16px 18px; }
-  .level-panel { width: 96vw; }
-  .level-card { flex-wrap: wrap; gap: 6px; }
-  #char-list { grid-template-columns: 1fr; }
-  .char-panel { width: 96vw; }
+  .level-panel { width: 96vw; max-height: 94vh; }
+  .level-card { gap: 6px; }
+  /* 竖屏：12 宫格头像保持 3 列（每格 ≈110px 宽），不被压成单列纵向堆叠。 */
+  #char-list { grid-template-columns: repeat(3, 1fr); }
+  .char-panel { width: 96vw; max-height: 94vh; }
   .panel { width: 96vw; max-width: 96vw; }
   .settings-panel, .help-panel, .goodbye-panel, .settle-panel, .death-panel, .meta-panel { width: 96vw; max-width: 96vw; }
   .btn-row { flex-wrap: wrap; }
@@ -738,7 +806,7 @@ body.portrait #hud-tl { top: calc(var(--sa-top) + 82px); }
 body.portrait .bp-body { flex-direction: column; flex-wrap: nowrap; }
 body.portrait .art-layout { flex-direction: column; }
 body.portrait .codex-grid { flex-direction: column; align-items: stretch; }
-body.portrait #char-list { grid-template-columns: 1fr; }
+body.portrait #char-list { grid-template-columns: repeat(3, 1fr); }
 
 /* 横屏：显式确认沿用原布局（不改动任何既有规则，仅作可读性声明） */
 body.landscape #hud-tl { flex-direction: column; }

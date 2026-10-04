@@ -187,14 +187,16 @@ const Game = {
    * 硬编码断点 aspect<1 视为竖屏；若需做成 CFG 字段见汇报（CFG.camera.portraitFill / portraitMinAspect）。 */
   fitCanvas() {
     const cam = CFG.camera || {};
-    const zoom = cam.zoom || 1.5;
-    const viewH = cam.viewH || 720;
     const vw = window.innerWidth || 1920, vh = window.innerHeight || 1080;   // 桩环境兜底，防 NaN
     const aspect = vw / Math.max(1, vh);
+    const isPortrait = aspect < (cam.portraitBreakpoint != null ? cam.portraitBreakpoint : 1);
+    // 20.8 竖屏视野再放大一档：portraitViewH 存在且竖屏 → 用更大的垂直视野，
+    // zoom 按比例配平（画布 G.H = viewH×zoom 恒等于基准 viewH×zoom，跨端锚点不破坏）。
+    const viewH = (isPortrait && cam.portraitViewH) ? cam.portraitViewH : (cam.viewH || 720);
+    const zoom = (cam.viewH && cam.zoom) ? (cam.viewH * cam.zoom) / viewH : (cam.zoom || 1.5);
     G.H = Math.round(viewH * zoom);                                   // 画布高固定（1080）：垂直锚点，跨端角色大小一致
     // 竖屏（aspect<1）：放开 minAspect 钳制 → 画布宽按真实比例，填满整块竖屏（无左右黑边）。
     // 横屏（aspect≥1）：沿用旧口径（minAspect 对宽屏不生效，行为不变），PC 体验一致。
-    const isPortrait = aspect < (cam.portraitBreakpoint != null ? cam.portraitBreakpoint : 1);
     const fillPortrait = cam.portraitFill !== false;      // 竖屏填满开关（CFG.camera.portraitFill）
     const minAspect = (isPortrait && fillPortrait) ? 0 : (cam.minAspect || 0.75);
     G.W = Math.max(Math.round(G.H * minAspect), Math.round(G.H * aspect));
