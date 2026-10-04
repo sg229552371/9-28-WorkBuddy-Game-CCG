@@ -11,3 +11,14 @@ Desktop.ini
 
 # 助手调试临时目录（非项目产物）
 .agent_tmp/
+
+# 编辑器/工具临时产物
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# 日志与本地预览产物
+*.log
+npm-debug.log*
