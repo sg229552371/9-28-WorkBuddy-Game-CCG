@@ -3214,6 +3214,7 @@ function losClear(w, x0, y0, x1, y1) {
 /* ============ 特效 ============ */
 const FX = { parts: [], floats: [] };
 function spawnBurst(x, y, color, n = 10, radius = 20) {
+  n = lqParticleCount(n);   // 低画质：削减爆发粒子数（渲染/更新两段同时下降；关时原样返回 n）
   for (let i = 0; i < n; i++) {
     const a = U.rand(0, Math.PI * 2), s = U.rand(40, radius * 4 + 80);
     FX.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: U.rand(0.2, 0.55), maxLife: 0.55, color, size: U.rand(2, 5) });
@@ -3289,6 +3290,7 @@ function updateCityWorld(dt) {
   }
 }
 function renderCity() {
+  applyLowQualityDPR();   // 低画质：帧内纠偏 canvas 物理分辨率（DPR 封顶）
   const ctx = G.ctx, w = G.activeWorld, a = G.cityAvatar;
   if (!w || w.kind !== "city" || !a) return;
   ctx.fillStyle = "#101822";   // 主城地面主题（比战场更沉稳的夜色调）
@@ -3300,10 +3302,11 @@ function renderCity() {
   let camX = w.w <= viewW ? (w.w - viewW) / 2 : U.clamp(a.x - viewW / 2, 0, w.w - viewW);
   let camY = w.h <= viewH ? (w.h - viewH) / 2 : U.clamp(a.y - viewH / 2, 0, w.h - viewH);
   ctx.scale(zoom, zoom); ctx.translate(-camX, -camY);
-  // 地面网格 + 城墙
+  // 地面网格 + 城墙（低画质：网格步长 ×2 → 整屏描边线数减半）
+  const cityGridStep = isLowQuality() ? 96 * LQ_GRID_STEP_MUL : 96;
   ctx.strokeStyle = "rgba(255,255,255,0.03)"; ctx.lineWidth = 1;
-  for (let x = 0; x < w.w; x += 96) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, w.h); ctx.stroke(); }
-  for (let y = 0; y < w.h; y += 96) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w.w, y); ctx.stroke(); }
+  for (let x = 0; x < w.w; x += cityGridStep) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, w.h); ctx.stroke(); }
+  for (let y = 0; y < w.h; y += cityGridStep) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w.w, y); ctx.stroke(); }
   ctx.strokeStyle = "#3f5170"; ctx.lineWidth = 8; ctx.strokeRect(4, 4, w.w - 8, w.h - 8);
   // 障碍物（装饰建筑）
   for (const o of w.obstacles) {
@@ -3366,6 +3369,7 @@ function renderCity() {
 
 /* ============ 渲染 ============ */
 function render() {
+  applyLowQualityDPR();   // 低画质：帧内纠偏 canvas 物理分辨率（DPR 封顶）
   const ctx = G.ctx, w = G.activeWorld;
   ctx.fillStyle = (G.levelCfg && G.levelCfg.theme) || "#141a24";
   ctx.fillRect(0, 0, G.W, G.H);
@@ -3385,10 +3389,11 @@ function render() {
   else camY = U.clamp(G.player.y - viewH / 2, 0, w.h - viewH);
   ctx.scale(zoom, zoom);
   ctx.translate(-camX, -camY);
-  // 地面网格
+  // 地面网格（低画质：步长 ×2 → 整屏描边线数减半）
+  const gridStep = isLowQuality() ? 96 * LQ_GRID_STEP_MUL : 96;
   ctx.strokeStyle = "rgba(255,255,255,0.03)"; ctx.lineWidth = 1;
-  for (let x = 0; x < w.w; x += 96) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, w.h); ctx.stroke(); }
-  for (let y = 0; y < w.h; y += 96) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w.w, y); ctx.stroke(); }
+  for (let x = 0; x < w.w; x += gridStep) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, w.h); ctx.stroke(); }
+  for (let y = 0; y < w.h; y += gridStep) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w.w, y); ctx.stroke(); }
   // 墙
   ctx.strokeStyle = "#3a4a66"; ctx.lineWidth = 8;
   ctx.strokeRect(4, 4, w.w - 8, w.h - 8);
@@ -3517,7 +3522,10 @@ function render() {
   }
   // 怪物
   const szMul = CFG.monsterSizeMul || 1;
+  // 低画质：视野外剔除（margin 160 = 精灵/血条最大外扩；正常画质不剔除，逐位不变）
+  const lqCull = isLowQuality();
   for (const m of w.monsters) {
+    if (lqCull && (m.x + 160 < camX || m.x - 160 > camX + viewW || m.y + 160 < camY || m.y - 160 > camY + viewH)) continue;
     const img = m.sprite;
     const size = (m.d.type === "boss" ? 130 : 48) * szMul * (m.isElite ? CFG.elites.sizeMul : 1);
     // 精英光环 + 词缀名
@@ -3525,7 +3533,7 @@ function render() {
       const affixes = m.eliteAffixes || [];
       const col = (CFG.elites.affixes[affixes[0]] && CFG.elites.affixes[affixes[0]].color) || "#e5a04b";
       ctx.beginPath(); ctx.arc(m.x, m.y, m.r + 8, 0, Math.PI * 2);
-      ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.stroke();
+      if (!(LQ_SKIP_GLOW && isLowQuality())) { ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.stroke(); }   // 低画质：跳过光环描边（省一次圆弧描边，仍保留填充色块）
       ctx.fillStyle = col + "22"; ctx.fill();
       ctx.font = "bold 11px sans-serif"; ctx.textAlign = "center";
       ctx.fillStyle = col; ctx.fillText("精英·" + affixes.join("·"), m.x, m.y - size / 2 - 20);
@@ -3562,7 +3570,8 @@ function render() {
       const t = m.warnT / m.ak.boomWarn;
       ctx.strokeStyle = `rgba(229,72,77,${0.4 + 0.4 * Math.sin(G.time * 14)})`;
       ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.arc(m.x, m.y, m.ak.boomRadius * (1 - t * 0.15), 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(m.x, m.y, m.ak.boomRadius * (1 - t * 0.15), 0, Math.PI * 2);
+      if (!(LQ_SKIP_GLOW && isLowQuality())) { ctx.stroke(); } else { ctx.fillStyle = "rgba(229,72,77,0.14)"; ctx.fill(); }   // 低画质：描边改纯色填充（省圆弧描边，预警仍可见）
       ctx.fillStyle = "rgba(229,72,77,0.08)"; ctx.fill();
     }
     // Boss 弹幕电报（17.3 颜色语言：白 = 弹幕预警）——充能圈/扇面，到点才真正发射
@@ -3605,13 +3614,13 @@ function render() {
     if (b.isSkill) { ctx.arc(b.x, b.y, 10, 0, Math.PI * 2); }
     else { ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); }
     ctx.fill();
-    if (b.isSkill) { ctx.strokeStyle = "#6cb2ff66"; ctx.beginPath(); ctx.arc(b.x, b.y, b.aoe * 0.4, 0, Math.PI * 2); ctx.stroke(); }
+    if (b.isSkill) { if (!(LQ_SKIP_GLOW && isLowQuality())) { ctx.strokeStyle = "#6cb2ff66"; ctx.beginPath(); ctx.arc(b.x, b.y, b.aoe * 0.4, 0, Math.PI * 2); ctx.stroke(); } }   // 低画质：跳过技能弹范围描边（子弹本体填充保留）
   }
   for (const b of w.enemyBullets) {
     if (b.boss) {          // Boss 弹幕：更亮更大（"读得清才躲得开"），与小怪弹一眼可分
       ctx.fillStyle = "#e6f4ff";
       ctx.beginPath(); ctx.arc(b.x, b.y, 6, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = "rgba(160,220,255,.75)"; ctx.lineWidth = 1.5; ctx.stroke();
+      if (!(LQ_SKIP_GLOW && isLowQuality())) { ctx.strokeStyle = "rgba(160,220,255,.75)"; ctx.lineWidth = 1.5; ctx.stroke(); }   // 低画质：跳过弹幕描边外圈（填充已够辨识）
     } else {
       ctx.fillStyle = "#c79bff";
       ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); ctx.fill();
@@ -3711,7 +3720,9 @@ function render() {
     ctx.fillText(`撤离 ${Math.floor(frac * 100)}%`, G.player.x, G.player.y - G.player.r - 26);
   }
   // 特效
-  for (const pt of FX.parts) {
+  for (let pi = 0; pi < FX.parts.length; pi++) {
+    if (!lqShouldDrawParticle(pi)) continue;   // 低画质：隔颗抽样绘制（省填充；正常恒绘制）
+    const pt = FX.parts[pi];
     ctx.globalAlpha = pt.life / pt.maxLife;
     ctx.fillStyle = pt.color;
     ctx.fillRect(pt.x - pt.size / 2, pt.y - pt.size / 2, pt.size, pt.size);
@@ -4130,7 +4141,8 @@ function renderBurnAura(ctx, m) {
   ctx.save();
   ctx.strokeStyle = `rgba(255,140,40,${a})`;
   ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(m.x, m.y, m.r + 4, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(m.x, m.y, m.r + 4, 0, Math.PI * 2);
+  if (!(LQ_SKIP_GLOW && isLowQuality())) { ctx.strokeStyle = `rgba(255,140,40,${a})`; ctx.lineWidth = 3; ctx.stroke(); }   // 低画质：跳过火色描边（保留填充指示燃烧状态）
   ctx.fillStyle = `rgba(255,90,20,${a * 0.15})`; ctx.fill();
   ctx.restore();
 }
@@ -4336,11 +4348,10 @@ function renderSupply(ctx, w) {
     const cfg = sp.cfg, col = cfg.color || "#5ad07a", R = cfg.radius || 90;
     const glow = 0.35 + 0.25 * Math.abs(Math.sin(G.time * 4));
     ctx.save();
-    // 发光圈
+    // 发光圈（低画质：跳过虚线判定圈描边，保留填充底圈）
     ctx.beginPath(); ctx.arc(sp.x, sp.y, R, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(90,208,122,0.10)"; ctx.fill();
-    ctx.setLineDash([6, 6]); ctx.strokeStyle = col + "88"; ctx.lineWidth = 2; ctx.stroke();
-    ctx.setLineDash([]);
+    if (!(LQ_SKIP_GLOW && isLowQuality())) { ctx.setLineDash([6, 6]); ctx.strokeStyle = col + "88"; ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]); }
     // 图标
     ctx.beginPath(); ctx.arc(sp.x, sp.y, 26, 0, Math.PI * 2);
     ctx.fillStyle = col + "33"; ctx.fill();
@@ -4584,4 +4595,90 @@ function extractWaveSiegeTick(m, w, dt) {
     st.shield = Math.max(0, st.shield - m.atk * c.siegeDpsMul * dt);
   }
   return true;
+}
+
+/* ============================================================================
+ * 20.5 低画质渲染降级（独立区块，§5.45 铁律：文件末尾独立区块 + 现有函数只插单行调用）
+ * ----------------------------------------------------------------------------
+ * 背景：低画质开关早已存在（G.settings.lowQuality / window.__lowQuality，见 main.js），
+ *       但渲染层从未消费它。本区块把它真正落到绘制路径上，目标是把帧耗时压下来（渣机友好）。
+ *
+ * 铁律：
+ *  1. 只降**视觉表现**，绝不改游戏逻辑（碰撞 / 伤害 / AI / 掉落全走原路径）。
+ *  2. 低画质**关闭时行为逐位不变**（所有降级都包在 isLowQuality() 分支里，默认 false）。
+ *  3. 配置化：优先读 CFG.lowQuality，缺省用内置默认值——主会话后续可把它挪进 config.js
+ *     而无需改本文件（只读、可缺省、逐字段回落）。
+ *  4. 不引入高版本 JS 语法（ES5 兼容），所有 window/G 访问均防御式（测试沙箱可能没有）。
+ * ============================================================================ */
+
+/* 低画质可调数值：优先 CFG.lowQuality（未来可挪进 config.js），逐字段回落内置默认。
+ * 例：CFG.lowQuality = { particleMul: 0.4, dprCap: 1.5, ... }。 */
+var LQ = (typeof CFG !== "undefined" && CFG && CFG.lowQuality) ? CFG.lowQuality : {};
+/* 粒子生成倍率（<1 削弱）：0.4 → 原本 40 颗的爆发只出 16 颗，UPDATE/DRAW 两段线性下降。 */
+var LQ_PARTICLE_MUL = (typeof LQ.particleMul === "number") ? LQ.particleMul : 0.4;
+/* 粒子渲染抽样比：1 表示全部绘制；低画质把已有粒子再抽稀（只画 1/2），纯粹省填充。 */
+var LQ_PARTICLE_DRAW_DIV = (typeof LQ.particleDrawDiv === "number") ? LQ.particleDrawDiv : 2;
+/* 设备像素比封顶：DPR 2→1.5 约省 44% 像素填充（1.5²/2² = 0.5625），对 2D 满屏重绘收益最大。 */
+var LQ_DPR_CAP = (typeof LQ.dprCap === "number") ? LQ.dprCap : 1.5;
+/* 地面/主城网格步长倍率：网格是「每 96px 一条」的整屏描边，低画质拉大间距 = 少画一半线。 */
+var LQ_GRID_STEP_MUL = (typeof LQ.gridStepMul === "number") ? LQ.gridStepMul : 2;
+/* 是否跳过昂贵描边/发光（精英光环、预警圈、Boss 电报等降级为纯色/更少绘制）。 */
+var LQ_SKIP_GLOW = (typeof LQ.skipGlow === "boolean") ? LQ.skipGlow : true;
+
+/* 低画质判定：优先读 window.__lowQuality（main.js 镜像），回落 G.settings.lowQuality，均无则 false。
+ * 内部做**帧号缓存**——每帧被调用数十次（每个绘制点一次），若每次都走完整解析会引入额外开销。
+ * 缓存以 G.time 作为轻量帧戳：同一游戏时刻只解析一次；时间推进（下一次 render）自动失效重算。
+ * 另加**源值哨兵**：同一帧内若 window.__lowQuality 被外部改写（运行中切换开关），哨兵不一致 → 立即
+ * 重算返回新值（只是一次布尔属性读，开销可忽略）——保证切换即时生效、不受缓存毒化。 */
+var _lqCachedTime = -1;
+var _lqCachedVal = false;
+var _lqCachedSrc = null;   // 上次缓存时读到的原始源值（未命中任何源时为 null）
+function isLowQuality() {
+  // 读取原始源值（window 优先，回落 G.settings；均缺省 → null 表示"无源"=false）
+  var raw;
+  if (typeof window !== "undefined" && window && typeof window.__lowQuality === "boolean") raw = window.__lowQuality;
+  else if (typeof G !== "undefined" && G && G.settings && typeof G.settings.lowQuality === "boolean") raw = G.settings.lowQuality;
+  else raw = null;
+  // 帧戳缓存 + 源值哨兵：同一帧且源值未变 → 直接返回缓存（避免重复解析）
+  var now = (typeof G !== "undefined" && G) ? G.time : 0;
+  if (now === _lqCachedTime && raw === _lqCachedSrc) return _lqCachedVal;
+  _lqCachedTime = now;
+  _lqCachedSrc = raw;
+  _lqCachedVal = (raw === true);
+  return _lqCachedVal;
+}
+
+/* 供测试/调试：清空帧戳缓存（一般无需调用，时间推进/源值变化即自动失效）。 */
+function lowQualityCacheReset() { _lqCachedTime = -1; _lqCachedSrc = null; }
+
+/* 低画质下 canvas 设备像素比封顶：把物理分辨率钳到 LQ_DPR_CAP × 逻辑尺寸，显著减少填充率。
+ * main.js.fitCanvas 不可改，故在此提供「自动纠偏」入口：render 每帧单行调用，一旦发现当前
+ * canvas 物理像素超过封顶点（例如切到低画质、或窗口 resize 被 fitCanvas 重置）就立即压低。
+ * 逻辑尺寸 G.W/G.H 与 CSS 显示尺寸不变 → 画面构图/坐标零变化，只是内部像素更少（略糊，换帧率）。
+ * 关闭低画质时不干预（canvas.width 由 fitCanvas 全权控制，行为与改动前一致）。 */
+function applyLowQualityDPR() {
+  if (!isLowQuality()) return;
+  var c = (typeof G !== "undefined" && G) ? G.canvas : null;
+  if (!c || typeof c.getContext !== "function") return;
+  var W = G.W || 0, H = G.H || 0;
+  if (!W || !H) return;
+  var capW = Math.round(W * LQ_DPR_CAP), capH = Math.round(H * LQ_DPR_CAP);
+  // 已封顶（或低于封顶）→ 不动；超过封顶 → 压低物理分辨率（仅当真的超了才重设，避免每帧抖动）
+  if (c.width > capW || c.height > capH) { c.width = capW; c.height = capH; }
+}
+
+/* 低画质下的粒子生成数：正常返回 n，低画质按 LQ_PARTICLE_MUL 削减（至少 1，避免"看起来没反应"）。
+ * 纯函数、无副作用，方便单测断言「正常 40 → 低画质 <20」。 */
+function lqParticleCount(n) {
+  if (!isLowQuality()) return n;
+  var m = Math.floor(n * LQ_PARTICLE_MUL);
+  return m < 1 ? 1 : m;
+}
+
+/* 低画质下是否应绘制第 i 个粒子：按 LQ_PARTICLE_DRAW_DIV 抽样（只画 1/DIV）。
+ * 正常画质恒 true（逐位不变）；低画质隔颗绘制 → 填充次数减半。 */
+function lqShouldDrawParticle(i) {
+  if (!isLowQuality()) return true;
+  var d = LQ_PARTICLE_DRAW_DIV < 1 ? 1 : Math.floor(LQ_PARTICLE_DRAW_DIV);
+  return (i % d) === 0;
 }

@@ -1049,6 +1049,7 @@ const UI = {
       const hm = Object.keys(Meta.data.codex.heroes).length, mm = Object.keys(Meta.data.codex.monsters).length;
       cnt.textContent = `英雄 ${hm}/${CFG.heroes.length} · 怪物 ${mm}/${Object.keys(CFG.monsters).length}`;
     }
+    this.renderCodexHeroPortraits();   // 主城 12 角立绘升级（独立区块追加，见文件末尾）
   },
   /* 芯片图鉴（19.7：只读展示）。列出 CFG.chips.valuePool + behaviorPool 全部芯片，按品质染色。
    * 「已见过」数据源 = G.meta && G.meta.chipSeen（战斗线稍后接入）；判空时全部按未解锁剪影渲染。 */
@@ -1994,3 +1995,228 @@ function itemTipHTML(it) {
   }
   return lines.join("");
 }
+
+/* ============================================================
+ * 主城 12 角立绘升级（独立区块 · 只由 renderCodex() 末尾一行调用接入）
+ * ------------------------------------------------------------
+ * 目标：把英雄图鉴从 56×56 小脸升级为「放大立绘 + 点击弹大图详情」。
+ * 约定：
+ *   - 不改动 renderCodex() 主体逻辑（仅末尾追加单行调用），避免并行开发冲突；
+ *   - 立绘按素材原始宽高比绘制、不拉伸；DPR 自适应，仅按 CSS 尺寸绘制，不预生成大 canvas；
+ *   - 未解锁沿用 Meta.skinUnlocked 语义（??? + 剪影置灰），详情层同步拦截；
+ *   - 素材缺失走占位兜底（沿用现有 "?" / 灰块风格），不抛错；
+ *   - 所有 DOM 访问判空，无 DOM 沙箱静默返回。
+ * ============================================================ */
+
+/* 立绘目标绘制高度（CSS 像素）：卡片 150、详情 360（竖屏可再放大到容器宽）。 */
+const HERO_PORTRAIT_CARD_H = 150;
+const HERO_PORTRAIT_DETAIL_H = 360;
+
+/* 解析英雄立绘素材键：优先 spriteFor(h.id)（H001→hero / H002→hero01 …），
+ * 其次回退 h.sprite（旧表统一写 "hero"）；找不到返回 null。 */
+function heroPortraitKey(h) {
+  if (!h) return null;
+  let key = null;
+  try { key = (typeof spriteFor === "function") ? spriteFor(h.id) : null; } catch (e) { key = null; }
+  if (!key && h.sprite) key = h.sprite;
+  return key || null;
+}
+
+/* 取立绘图像对象（Assets.images），素材缺失返回 null（调用方兜底）。 */
+function heroPortraitImage(h) {
+  const key = heroPortraitKey(h);
+  if (!key || typeof Assets === "undefined" || !Assets.images) return null;
+  return Assets.images[key] || null;
+}
+
+/* 立绘绘制：复用 Assets.fit（紧贴主体包围盒裁剪 + 缩放到目标高度），
+ * 解决「512×512 原画布主体只占中间小块 → 整图缩放后立绘极小」的问题。
+ * - locked=true 时画布铺透明底 + 主体染黑剪影（轮廓可见；舞台底色由 CSS 径向渐变透出）。
+ *   20.7 修复：原实现先铺不透明底色再 source-in 染黑 → 整块变黑看不出剪影。
+ * - key 为 ASSET_MANIFEST 键（hero/hero01…）；fit 依赖 DOM（createElement），
+ *   桩环境/素材缺失 → 深底 + "?" 占位，绝不抛错。 */
+function drawHeroPortrait(cv, key, locked, targetH) {
+  if (!cv || !cv.getContext) return;
+  const th = targetH || HERO_PORTRAIT_CARD_H;
+  let c2 = null;
+  try { c2 = cv.getContext("2d"); } catch (e) { return; }
+  if (!c2) return;
+  const W = cv.width, H = cv.height;
+  try {
+    c2.clearRect(0, 0, W, H);
+    // fit：紧贴主体、高度 = th（含 64×64 代理包围盒扫描，单张 <1ms，仅打开图鉴时调用）
+    let fitted = null;
+    try {
+      fitted = (key && typeof Assets !== "undefined" && Assets.fit) ? Assets.fit(key, th) : null;
+    } catch (eFit) { fitted = null; }
+    if (!fitted || !fitted.width || !fitted.height) {
+      // 占位兜底：深底 + 居中 "?"（与旧图鉴占位风格一致）
+      c2.fillStyle = locked ? "#131b28" : "#1d2a3d";
+      c2.fillRect(0, 0, W, H);
+      c2.fillStyle = "#5a6a80";
+      c2.font = Math.round(Math.min(W, H) * 0.5) + "px sans-serif";
+      c2.textAlign = "center";
+      c2.textBaseline = "middle";
+      c2.fillText("?", W / 2, H / 2);
+      return;
+    }
+    // unlocked 铺深底提升对比；locked 保持透明（剪影+CSS 渐变底才有轮廓层次）
+    if (!locked) { c2.fillStyle = "#1d2a3d"; c2.fillRect(0, 0, W, H); }
+    // 等比绘制 fit 结果：不放大超过 fit 原尺寸（保清晰），水平居中 + 垂直居中
+    const dw = Math.min(W, fitted.width);
+    const dh = Math.min(H, Math.round(fitted.height * (dw / fitted.width)));
+    const dx = Math.round((W - dw) / 2);
+    const dy = Math.round((H - dh) / 2);
+    c2.drawImage(fitted, dx, dy, dw, dh);
+    if (locked) {   // 剪影：保留 alpha 通道整体染黑（透明底 → 轮廓可见）
+      c2.globalCompositeOperation = "source-in";
+      c2.fillStyle = "#000";
+      c2.fillRect(0, 0, W, H);
+      c2.globalCompositeOperation = "source-over";
+    }
+  } catch (e) { /* 画布污染（file://）等降级：保留已画内容，不抛错 */ }
+}
+
+/* 图鉴英雄立绘渲染（renderCodex 末尾一行调用）：
+ * 把 #codex-heroes 内的英雄卡重绘为「放大立绘 + 名称/定位/简介」，
+ * 并绑定点击 → 打开详情层。未解锁仍为 ??? + 剪影 + locked 类。 */
+UI.renderCodexHeroPortraits = function () {
+  const doc = (typeof document !== "undefined") ? document : null;
+  if (!doc || typeof doc.getElementById !== "function") return;   // 无 DOM 沙箱：静默
+  const box = doc.getElementById("codex-heroes");
+  if (!box) return;
+  if (typeof CFG === "undefined" || !CFG.heroes) return;
+
+  box.innerHTML = "";
+  for (const h of CFG.heroes) {
+    const unlocked = Meta.skinUnlocked(h.id);
+    const img = heroPortraitImage(h);
+    const role = UI.heroRole(h.id);
+    const roleBadge = role
+      ? `<span class="role-badge" style="color:${role.color};border-color:${role.color}">${role.name}</span>`
+      : "";
+
+    const card = doc.createElement("div");
+    card.className = "codex-card portrait-card" + (unlocked ? "" : " locked");
+    // 立绘画布：内部像素 = CSS 尺寸 × 2（DPR 折中，避免大 canvas 开销），CSS 缩回目标高度
+    const cw = 120 * 2, ch = HERO_PORTRAIT_CARD_H * 2;
+    card.innerHTML =
+      `<div class="portrait-wrap">` +
+      `<canvas class="codex-portrait" width="${cw}" height="${ch}" ` +
+      `style="width:120px;height:${HERO_PORTRAIT_CARD_H}px"></canvas>` +
+      (unlocked ? "" : `<span class="portrait-lock">🔒</span>`) +
+      `</div>` +
+      `<b>${unlocked ? h.name : "???"}${unlocked ? "" : ""}</b>` +
+      `<div class="portrait-role">${unlocked ? roleBadge : ""}</div>` +
+      `<small>${unlocked ? h.desc : "使用该英雄出征后激活"}</small>`;
+
+    const cv = card.querySelector ? card.querySelector(".codex-portrait") : null;
+    if (cv) drawHeroPortrait(cv, heroPortraitKey(h), !unlocked, HERO_PORTRAIT_CARD_H);   // 20.7：传键名，内部走 Assets.fit
+
+    // 点击 → 详情层（未解锁也给详情，但详情内为剪影 + 解锁条件）
+    card.onclick = () => { UI.openHeroDetail(h.id); };
+    box.appendChild(card);
+  }
+};
+
+/* 打开英雄详情层：放大立绘 + 完整属性 / 技能 / 武器说明。
+ * 详情层 DOM 惰性创建并挂到 body（不写 index.html，避免越权改动）。 */
+UI.openHeroDetail = function (heroId) {
+  const doc = (typeof document !== "undefined") ? document : null;
+  if (!doc || typeof doc.createElement !== "function") return null;
+  const h = (typeof CFG !== "undefined" && CFG.heroes)
+    ? CFG.heroes.find(x => x.id === heroId) : null;
+  if (!h) return null;
+  const unlocked = Meta.skinUnlocked(h.id);
+  const img = heroPortraitImage(h);
+  const role = UI.heroRole(h.id);
+
+  const overlay = UI._getHeroDetailEl();
+  if (!overlay) return null;
+
+  const wpn = (CFG.weapons && CFG.weapons[h.weapon]) || { name: "—" };
+  const skId = (wpn.skills && wpn.skills.skill) || null;
+  const skLv = (typeof Meta.weaponLv === "function") ? Meta.weaponLv(h.id) : 1;
+  const skLine = (skId && typeof UI._skillSummary === "function") ? UI._skillSummary(skId, skLv) : "—";
+  const lv = (typeof Meta.heroLevel === "function") ? Meta.heroLevel(h.id) : 1;
+
+  const roleBadge = role
+    ? `<span class="role-badge" style="color:${role.color};border-color:${role.color}">${role.name}</span>`
+    : "";
+  const lockLine = unlocked ? "" : `<p class="lock-line">🔒 未解锁 · ${UI._unlockRuleText(h.id)}</p>`;
+
+  const panel = overlay.querySelector ? overlay.querySelector(".hero-detail-panel") : null;
+  if (panel) {
+    const cw = 300 * 2, ch = HERO_PORTRAIT_DETAIL_H * 2;
+    panel.innerHTML =
+      `<button class="hero-detail-close" id="btn-hero-detail-close">✕</button>` +
+      `<div class="hero-detail-portrait">` +
+      `<canvas class="codex-portrait detail-portrait" width="${cw}" height="${ch}" ` +
+      `style="width:300px;height:${HERO_PORTRAIT_DETAIL_H}px"></canvas>` +
+      `</div>` +
+      `<h3>${unlocked ? h.name : "???"} <small>${h.id}</small>${roleBadge}</h3>` +
+      `<p class="hero-detail-desc">${unlocked ? h.desc : "使用该英雄出征后激活"}</p>` +
+      `<div class="hero-detail-stats">` +
+      `<span>HP ${h.hp}</span><span>攻击 ${h.atk}</span><span>防御 ${h.def}</span>` +
+      `<span>移速 ${h.spd}</span><span>局外 LV${lv}</span></div>` +
+      `<p class="hero-detail-line"><b>武器：</b>${wpn.name}</p>` +
+      `<p class="hero-detail-line"><b>技能 LV${skLv}：</b>${skLine}</p>` + lockLine +
+      `<button class="btn ghost hero-detail-back" id="btn-hero-detail-close2">关闭</button>`;
+    // 立绘按详情高度绘制（等比、居中）
+    const cv = panel.querySelector ? panel.querySelector(".detail-portrait") : null;
+    if (cv) drawHeroPortrait(cv, heroPortraitKey(h), !unlocked, HERO_PORTRAIT_DETAIL_H);   // 20.7：传键名，内部走 Assets.fit
+    // 关闭按钮（两种：右上 ✕ / 底部「关闭」）
+    const c1 = panel.querySelector ? panel.querySelector(".hero-detail-close") : null;
+    const c2 = panel.querySelector ? panel.querySelector(".hero-detail-back") : null;
+    const close = () => UI.closeHeroDetail();
+    if (c1) c1.onclick = close;
+    if (c2) c2.onclick = close;
+  }
+  overlay.classList.remove("hidden");
+  return overlay;
+};
+
+/* 关闭英雄详情层（幂等；无 DOM 沙箱静默）。 */
+UI.closeHeroDetail = function () {
+  const doc = (typeof document !== "undefined") ? document : null;
+  if (!doc || typeof doc.getElementById !== "function") return;
+  const overlay = doc.getElementById("hero-detail");
+  if (overlay && overlay.classList) overlay.classList.add("hidden");
+};
+
+/* 惰性创建详情层容器（#hero-detail 遮罩 + .hero-detail-panel）：
+ * 只在首次打开时创建并 append 到 body；点击遮罩空白处亦可关闭。 */
+UI._getHeroDetailEl = function () {
+  const doc = (typeof document !== "undefined") ? document : null;
+  if (!doc || typeof doc.createElement !== "function") return null;
+  let overlay = (typeof doc.getElementById === "function") ? doc.getElementById("hero-detail") : null;
+  // 已就绪则直接复用
+  if (overlay && overlay._heroDetailReady) return overlay;
+  // 真实浏览器首次调用：index.html 无 #hero-detail → getElementById 返回 null，需自建
+  if (!overlay) {
+    overlay = doc.createElement("div");
+    overlay._id = "hero-detail";           // 桩环境 getElementById 依据 _id
+    try { overlay.id = "hero-detail"; } catch (e0) { /* 真实 DOM 设 id */ }
+  }
+  const panel = doc.createElement("div");
+  panel.className = "hero-detail-panel";
+  overlay.className = "hero-detail-overlay hidden";
+  overlay.appendChild(panel);
+  overlay.onclick = (e) => {
+    // 点遮罩空白（非面板内）关闭；桩下无 closest 时退化为不处理
+    if (e && e.target && e.target.classList && e.target.classList.contains("hero-detail-overlay")) {
+      UI.closeHeroDetail();
+    }
+  };
+  overlay._heroDetailReady = true;
+  // 真实 DOM / 桩环境：未挂载则 append 到 body，保证能被 getElementById 再次取回
+  // （20.7 修复：新建对象 _parent 为 undefined，原 `=== null` 判断恒 false → 永不挂载 → 详情层打不开）
+  if (!overlay._parent && doc.body && doc.body.appendChild) {
+    try { doc.body.appendChild(overlay); } catch (e2) { /* 挂载失败忽略 */ }
+  }
+  return overlay;
+};
+
+/* ============================================================
+ * 主城 12 角立绘升级区块结束
+ * ============================================================ */

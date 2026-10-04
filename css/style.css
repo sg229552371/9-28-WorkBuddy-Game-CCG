@@ -881,3 +881,80 @@ body.portrait .meta-card .meta-lv { width:100%; align-items:stretch; }
 body.portrait .perf-row { flex-direction: column; align-items: flex-start; gap: 0; }
 body.portrait .perf-v { text-align: left; }
 /* ---------- 20.5 性能护栏 结束 ---------- */
+
+/* ============================================================
+ * 主城 12 角立绘升级（图鉴放大立绘 + 英雄详情层）
+ * ------------------------------------------------------------
+ * 图鉴英雄卡改为「放大立绘」卡片：竖屏 2~3 列自适应，立绘高 150px，
+ * 未解锁沿用剪影置灰语义；点击卡片弹出 #hero-detail 大图详情层（立绘近满屏宽）。
+ * ============================================================ */
+/* 图鉴网格：窄屏（竖屏）2 列，宽屏 3 列（对齐卡片 ~140px 宽 + 放大的立绘） */
+#codex-heroes.codex-grid { gap: 10px; }
+.codex-card.portrait-card {
+  width: 140px; padding: 8px 8px 10px; text-align: center;
+  /* 20.7 修复：竖屏媒体查询（L712）把 .codex-card 改成 flex 横排（为旧小头像卡设计），
+     立绘卡的 wrap/名称/简介被挤成一行导致文字竖排——此处以更高优先级恢复纵向堆叠 */
+  display: block;
+}
+/* 立绘容器：深色舞台底，圆角 + 内阴影提升质感；立绘等比居中 */
+.portrait-card .portrait-wrap {
+  position: relative; width: 100%; height: 150px; overflow: hidden;
+  border-radius: 8px; border: 1px solid #2b3d59;
+  background: radial-gradient(120% 90% at 50% 15%, #223149 0%, #16202f 70%, #101823 100%);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.portrait-card .codex-portrait { display: block; width: 120px; height: 150px; }
+.portrait-card .portrait-lock {
+  position: absolute; right: 6px; top: 6px; font-size: 14px; opacity: .85;
+}
+.portrait-card b { display: block; font-size: 13px; margin-top: 6px; color: #cfe0ff; }
+.portrait-card .portrait-role { height: 18px; margin-top: 2px; }
+.portrait-card small { color: #8ba0bd; font-size: 10px; line-height: 1.4; display: block; margin-top: 2px; }
+/* 未解锁：整体降饱和 + 立绘剪影已由 canvas 染黑，边框虚线提示 */
+.codex-card.portrait-card.locked { opacity: .72; border-style: dashed; }
+.codex-card.portrait-card.locked b { color: #6d7c94; }
+
+/* ---------- 英雄详情层（惰性创建 #hero-detail） ---------- */
+.hero-detail-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(6, 10, 18, .78); padding: 16px;
+}
+.hero-detail-overlay.hidden { display: none; }
+.hero-detail-panel {
+  position: relative; width: min(520px, 94vw); max-height: 90vh; overflow-y: auto;
+  background: linear-gradient(180deg, #1e2c42 0%, #141d2c 100%);
+  border: 1px solid #33486b; border-radius: 14px; padding: 16px; text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .6);
+}
+.hero-detail-portrait {
+  width: 100%; border-radius: 10px; overflow: hidden; margin-bottom: 10px;
+  background: radial-gradient(120% 90% at 50% 12%, #223149 0%, #16202f 70%, #101823 100%);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.hero-detail-portrait .codex-portrait { display: block; width: 300px; height: 360px; }
+.hero-detail-panel h3 { margin: 6px 0; font-size: 18px; color: #e6f0ff; }
+.hero-detail-panel h3 small { color: #6d7c94; font-size: 12px; margin-right: 6px; }
+.hero-detail-desc { color: #9fb4d4; font-size: 13px; margin: 4px 0 10px; }
+.hero-detail-stats { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 10px; }
+.hero-detail-stats span {
+  background: #1d2a3d; border: 1px solid #33486b; border-radius: 8px;
+  padding: 3px 10px; font-size: 12px; color: #cfe0ff;
+}
+.hero-detail-line { font-size: 12px; color: #8ba0bd; margin: 4px 0; line-height: 1.5; text-align: left; }
+.hero-detail-close {
+  position: absolute; right: 10px; top: 10px; width: 30px; height: 30px;
+  border-radius: 50%; border: 1px solid #33486b; background: #1d2a3d; color: #cfe0ff;
+  font-size: 14px; cursor: pointer;
+}
+.hero-detail-back { margin-top: 10px; }
+
+/* 竖屏（390×844）：图鉴 2 列、详情立绘占满可用宽且不溢出 */
+@media (orientation: portrait) {
+  #codex-heroes.codex-grid { flex-direction: row; flex-wrap: wrap; }
+  .codex-card.portrait-card { width: calc(50% - 5px); }
+  .hero-detail-portrait .codex-portrait { width: 78vw; height: 44vh; max-height: 380px; }
+}
+body.portrait .codex-card.portrait-card { width: calc(50% - 5px); }
+body.portrait .hero-detail-portrait .codex-portrait { width: 78vw; height: 44vh; max-height: 380px; }
+/* ---------- 主城 12 角立绘升级 结束 ---------- */
