@@ -6,19 +6,48 @@
 > 换设备不会同步 —— 所以关键知识一律沉淀到本文件与 `G_docs/` 内。
 
 **线上试玩（手机浏览器直接打开）：** https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
+**当前线上预览（沙箱发布，始终最新）：** https://ae6c0d4fb9b5c352d.app.workbuddy.host
+
+> ⚠️ **代码以 `/workspace/9-28-WorkBuddy-Game-CCG` 工作区为准，不要假设 GitHub 是最新的。**
+> 原因与处理见 §0.1。
 
 ---
 
 ## 0. 手机端远程开发（电脑关机场景）
 
-### 0.1 拿到仓库
+### 0.1 拿到代码（⚠️ 优先用工作区，不要直接 clone）
+
+> **【2026-10-05 重要修正】GitHub 版本可能严重落后！**
+> 本项目长期在沙箱工作区迭代，而沙箱**连不上 GitHub（网络受限）**，导致提交只留在工作区。
+> 实测：GitHub 上停在约 20.8，而工作区已到 21.1（差 5 轮、约 2000 行改动）。
+> **新会话务必按下面的顺序取代码。**
+
+**首选：直接用沙箱工作区（它就是最新的）**
+
+```bash
+cd /workspace/9-28-WorkBuddy-Game-CCG    # 持久化目录，跨会话保留，无需 clone
+git log --oneline -3                     # 确认 HEAD 是最新（应为下方基线表里的版本）
+bash run_tests.sh                        # 确认全绿再开工
+```
+
+工作区是**跨会话持久**的：上一个会话的提交、`git` 状态、`node_modules` 全都还在。
+新会话开场只需要一句话：
+
+> 「读 `/workspace/9-28-WorkBuddy-Game-CCG/G_docs/dev_guide.md` 恢复上下文，代码用工作区，继续开发」
+
+**备选：从 GitHub clone（仅当工作区不存在时）**
 
 ```bash
 git clone https://github.com/sg229552371/9-28-WorkBuddy-Game-CCG.git
 cd 9-28-WorkBuddy-Game-CCG
 ```
+仓库是 **PUBLIC**，clone 无需凭据。但**必须用最新 patch 补齐**（否则拿到的是旧版）：
 
-仓库是 **PUBLIC**，clone 无需凭据。**推送才需要凭据**，见 0.4。
+```bash
+git am /workspace/0022-all-in-one-v16.patch    # 全量补齐到 21.1
+```
+
+**推送（需要凭据，只能在本机做）**：沙箱无法推送，见 0.4 与根目录 `推送指南.md`。
 
 ### 0.2 跑测试
 
