@@ -530,10 +530,11 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .levelup-card.lu-v2:hover { transform:translateY(-4px); border-color:#ffd76a; background:#fff8ea; }
 /* 21.4：v2 卡标题栏已含卡名（c.name || kindLabel），旧 .lu-kind 行冗余且无样式可见性差 → 隐藏（旧结构保留兼容） */
 .levelup-card.lu-v2 .lu-kind { display:none; }
-/* 顶部彩色标题栏（参考图青绿底 + 深字）：底色 = 归属英雄定位色（JS 内联写入） */
+/* 顶部彩色标题栏（参考图红底 + 白字）：底色 = 归属英雄定位色（JS 内联写入） */
 .levelup-card .lu-head {
   display:block; padding:8px 10px; border-radius:10px 10px 0 0;
-  font-size:15px; font-weight:bold; color:#123; text-shadow:0 1px 0 rgba(255,255,255,.35);
+  /* 21.5：统一白字（参考图红底白字）；原 #123 深字在红/绿底上对比不足且与推荐卡观感不一致 */
+  font-size:15px; font-weight:bold; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.35);
   text-align:center;
 }
 /* 推荐角标（参考图右上绿标） */
@@ -587,6 +588,9 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   .levelup-card.lu-v2 { min-width:0; max-width:none; min-height:206px; }
   .levelup-card .lu-ico { width:60px; height:60px; font-size:28px; }
   .lu-reroll { padding:12px 30px; font-size:17px; min-height:64px; }   /* 触屏 ≥64px */
+  /* 21.5：竖屏 2×2 卡太高 → 整面板滚动时刷新按钮被推出视口（实测 bottom 888 > vh 844）。
+   * sticky 贴底 + 深色底衬：无论滚到哪按钮都悬浮可见可点。 */
+  .levelup-panel .lu-foot { position:sticky; bottom:0; z-index:3; margin-top:10px; padding:8px 0 2px; background:linear-gradient(transparent, rgba(9,12,20,.94) 38%); }
 }
 
 /* ===== 结算 / 死亡 ===== */
@@ -859,13 +863,20 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   .levelup-cards.grid-portrait ~ .lu-foot .lu-reroll {
     padding: 12px 30px; font-size: 17px; min-height: 64px;
   }
+  /* 21.5：与上方 @media 块同步——刷新按钮 sticky 贴底（三处规则铁律） */
+  body.portrait .levelup-panel .lu-foot,
+  .levelup-cards.grid-portrait ~ .lu-foot {
+    position: sticky; bottom: 0; z-index: 3; margin-top: 10px; padding: 8px 0 2px;
+    background: linear-gradient(transparent, rgba(9,12,20,.94) 38%);
+  }
   .levelup-panel { width: 96vw; padding: 18px 14px; }
 
   /* ---- 工匠工坊（20.10 竖屏单屏三段）：页签在顶、搜刮背包居中、武器栏+芯片背包在下 ----
    * 注意：本块会覆盖上方主规则，改主规则必须同步此处（旧版曾因 3 列旧规则盖 6 列主规则踩坑）。
    * 三段锁进一屏：.art-panel 最大高度 calc(100dvh - 16px)、内部 flex 纵向、溢出隐藏（无整面板滚动条）。
-   * --art-cell 把网格格子从 46 缩到 30，JS _renderGrid/_dropTarget 读同一变量，缩格不断拖拽。 */
-  .art-panel { --art-cell: 30px; width:96vw; max-height:calc(100dvh - 16px); padding:8px 8px max(10px, env(safe-area-inset-bottom)); }
+   * --art-cell 把网格格子从 46 缩到 40（21.5 方案 B，原 30 触屏点不准），JS _renderGrid/_dropTarget 读同一变量，缩格不断拖拽。 */
+  /* 21.5 方案 B：格子 30→40px（触屏 44px 推荐值的 91%，30px 只有 68% 点不准）；配套 .art-grids 放开纵向滚动 */
+  .art-panel { --art-cell: 40px; width:96vw; max-height:calc(100dvh - 16px); padding:8px 8px max(10px, env(safe-area-inset-bottom)); }
   .art-panel .bp-head { margin-bottom:6px; gap:8px; }
   .art-panel .bp-head h2 { font-size:15px; }
   .art-layout { flex-direction:column; gap:6px; overflow:hidden; min-height:0; }
@@ -873,7 +884,7 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   .art-side { width:100%; flex:none; max-height:200px; overflow-y:auto; overscroll-behavior:contain; }
   .art-side .tip { font-size:10px; margin-top:4px; }
   /* 中下段：背包单元（搜刮背包居中 / 武器槽 + 芯片背包在下 / 物品信息最底） */
-  .art-grids { width:100%; flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+  .art-grids { width:100%; flex:1; min-height:0; display:flex; flex-direction:column; overflow-y:auto; }   /* 21.5 方案 B：格子放大后允许纵向滚动（单屏锁保留在面板外壳） */
   .art-grids .bp-body { display:flex; flex-direction:column; flex-wrap:nowrap; gap:5px; align-items:stretch; flex:1; min-height:0; overflow:hidden; }
   .art-grids .grid-zone { width:100%; min-width:0; }
   .art-grids .grid-zone h3 { font-size:10px; margin:0 0 3px; color:#9fb4d4; font-weight:600; }
@@ -942,7 +953,7 @@ body.portrait #hud-br { right: calc(var(--sa-right) + 12px); top: calc(var(--sa-
 body.portrait .bp-body { flex-direction: column; flex-wrap: nowrap; }
 body.portrait .art-layout { flex-direction: column; }
 /* 20.10 竖屏工匠单屏三段（与媒体查询双写；JS 钩子路径同样锁死高度、消灭滚动条） */
-body.portrait .art-panel { --art-cell: 30px; max-height: calc(100dvh - 16px); padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+body.portrait .art-panel { --art-cell: 40px; max-height: calc(100dvh - 16px); padding-bottom: max(10px, env(safe-area-inset-bottom)); }   /* 21.5 方案 B：30→40px，与媒体查询块同步 */
 body.portrait .art-side { width: 100%; flex: none; max-height: 200px; overflow-y: auto; }
 body.portrait .art-grids { width: 100%; flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 body.portrait .art-grids .bp-body { display: flex; flex-direction: column; flex-wrap: nowrap; gap: 5px; flex: 1; min-height: 0; overflow: hidden; }

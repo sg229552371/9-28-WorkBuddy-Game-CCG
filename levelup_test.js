@@ -513,8 +513,9 @@ const driver = `
     Game.skipIntroFreeze();
     const hid = G.heroDef.id;
     const ov = buildLevelUpCandidates(hid, ["M001", "M002"]);
-    check("26. poolOverride 生效：候选仅来自显式池",
-      ov.length === 4 && ov.every(c => c.defId === "M001" || c.defId === "M002"));
+    check("26. poolOverride 生效：候选仅来自显式池（21.5 去重：2 个不同 ID 各出 1 张）",
+      ov.length === 2 && ov.every(c => c.defId === "M001" || c.defId === "M002")
+      && new Set(ov.map(c => c.defId)).size === 2);
     check("26. poolOverride 空数组 → 属性小包兜底",
       buildLevelUpCandidates(hid, []).every(c => c.kind === "statPack"));
   }

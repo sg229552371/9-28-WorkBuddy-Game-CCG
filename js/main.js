@@ -624,11 +624,11 @@ const Game = {
    * 按钮：技能 = 按住等价 Space；交互 = actionE()（主地图撤离提示）/ 工匠面板开关；
    *       背包 = toggleBackpack()。桌面端无触屏不显示，不遮挡键鼠操作。 */
   /* ---------- 移动端虚拟控件（浮动摇杆 + 可配置按钮；参数 CFG.mobile） ----------
-   * 摇杆（21.3 浮动）：左半屏任意处按下 → **该点即为摇杆盘心**（不再是固定左下角），拇指无需找位置；
+   * 摇杆（21.3 浮动 / 21.5 全屏化）：任意处按下 → **该点即为摇杆盘心**（不再是固定左下角），拇指无需找位置；
    *   拖动时摇杆头随手指偏移并输出归一化向量到 G.joy（含死区），Player.update 优先于键盘；
    *   拇指拖出半径时底盘跟随（floatStick.dragBase），杜绝「拇指漂移出盘后失控」；
    *   松手后底盘隐形待命（floatStick.returnOnRelease），下次按下在新位置重新生成。
-   * 事件边界：仅左半屏可召唤；命中交互控件（button/.tbtn/.itm/面板等）一律让位，不劫持按钮与物品格点击；
+   * 事件边界：全屏任意位置可召唤（21.5 zoneRatio=1.0，右半屏不再静默）；命中交互控件（button/.tbtn/.itm/面板等）一律让位，不劫持按钮与物品格点击；
    *   面板打开（G.state 非 playing/city）不起杆；点 NPC 时让位（npcTap 优先）。
    * 按钮：hideTouchButtons 为真则整体隐藏 #touch-btns；否则按 CFG.mobile.buttons 逐项控制。 */
   bindTouch() {
@@ -666,7 +666,7 @@ const Game = {
      *  ③ 无 setPointerCapture → 手指滑出画布即丢事件，摇杆卡在 active 不归零。
      *  ④ 底盘只在按下时定位、拖动中不跟随 → 拇指漂移出盘后失去控制（观感「死死固定」）。
      * 新实现：底盘 position:fixed 脱离 transform 坐标系，圆心直接取 clientX/Y；
-     *  起杆 = 左半屏 且 未命中交互控件（黑名单），不再要求命中 canvas；
+     *  起杆 = 全屏任意点（21.5）且 未命中交互控件（黑名单），不再要求命中 canvas；
      *  拖动超 maxR 时底盘跟随拇指（dragBase），配合 setPointerCapture 抗丢失。 */
     const base = document.getElementById("joy-base");
     const stick = document.getElementById("joy-stick");
@@ -678,7 +678,7 @@ const Game = {
       const zoneRatio = fs.zoneRatio > 0 ? fs.zoneRatio : 0.5;
       const returnOnRelease = fs.returnOnRelease !== false;
       const dragBase = fs.dragBase !== false;          // 默认跟随
-      const stayInZone = fs.stayInZone !== false;      // 默认夹在左半屏
+      const stayInZone = fs.stayInZone !== false;      // 默认夹在召唤区内（zoneRatio=1.0 即全屏）
       const idleOpacity = (typeof fs.idleOpacity === "number") ? fs.idleOpacity : 0;
       let pid = null;
       let capEl = null;    // 持有指针捕获的元素（= 按下时的 e.target），松手时释放
@@ -729,7 +729,7 @@ const Game = {
         if (e.defaultPrevented) return;               // npcTap 已消费 → 让位
         if (hitInteractive(e)) return;                // 按钮/面板/物品格 → 让位
         const vw = window.innerWidth || document.documentElement.clientWidth || 0;
-        if (vw > 0 && e.clientX > vw * zoneRatio) return;   // 仅左半屏可召唤
+        if (vw > 0 && e.clientX > vw * zoneRatio) return;   // zoneRatio=1.0 → 全屏可召唤；调小可收回「仅左半屏」限制
         pid = e.pointerId;
         base.classList.add("joy-on");                 // 显示底盘（待命时隐形）
         placeBase(e.clientX, e.clientY);              // ★ 盘心 = 按下点（浮动摇杆核心）

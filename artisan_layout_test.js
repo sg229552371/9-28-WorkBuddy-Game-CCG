@@ -103,9 +103,9 @@ check("四 竖屏无 .art-grids 旧 3 列网格规则残留（防主规则被覆
 /* 网格缩格变量：--art-cell 在 :root 有默认、竖屏工匠面板内为 30px */
 check("四 :root 定义 --art-cell 默认 46px（桌面不受影响）",
   /:root\s*\{[^}]*--art-cell\s*:\s*46px/.test(cssFlat));
-check("四 竖屏工匠面板把 --art-cell 缩到 30px（含 body.portrait 双写）",
-  /\.art-panel\s*\{[^}]*--art-cell\s*:\s*30px/.test(artPortrait)
-  && /body\.portrait \.art-panel\s*\{[^}]*--art-cell\s*:\s*30px/.test(cssFlat));
+check("四 竖屏工匠面板把 --art-cell 缩到 40px（21.5 方案 B，30px 触屏点不准；含 body.portrait 双写）",
+  /\.art-panel\s*\{[^}]*--art-cell\s*:\s*40px/.test(artPortrait)
+  && /body\.portrait \.art-panel\s*\{[^}]*--art-cell\s*:\s*40px/.test(cssFlat));
 
 /* ============================================================
  * ⑤ CFG_ARTISAN_UI 常量存在且字段完整（js/ui.js 末尾，待合并进 CFG）

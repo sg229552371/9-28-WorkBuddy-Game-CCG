@@ -263,8 +263,8 @@ check("⑤ index.html 仍含 #char-list / #char-detail 节点",
  * ============================================================ */
 check("⑥ .art-panel 仍含 calc(100dvh - 16px) 单屏锁定",
   /\.art-panel\s*\{[^}]*max-height\s*:\s*calc\(100dvh\s*-\s*16px\)/.test(cssFlat));
-check("⑥ .art-panel 竖屏块仍含 --art-cell: 30px 缩格（拖拽步长不被破坏）",
-  pb.indexOf("--art-cell: 30px") >= 0);
+check("⑥ .art-panel 竖屏块仍含 --art-cell: 40px 缩格（21.5 方案 B：30px 触屏点不准；拖拽步长不被破坏）",
+  pb.indexOf("--art-cell: 40px") >= 0);
 check("⑥ body.portrait .art-panel 仍含 dvh 锁定 + 安全区",
   /body\.portrait\s+\.art-panel\s*\{[^}]*calc\(100dvh\s*-\s*16px\)[^}]*env\(safe-area-inset-bottom\)/.test(cssFlat));
 check("⑥ index.html 仍含 #panel-artisan / #art-grids 节点",

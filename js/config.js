@@ -360,7 +360,9 @@ CFG.mobile = {
    * stayInZone  拖动底盘时是否把它夹在可召唤区内（防止底盘跑到右半屏按钮区）；
    * idleOpacity 待命时底盘透明度（0 = 完全隐形，只在按下时出现）。 */
   floatStick: {
-    enabled: true, zoneRatio: 0.5, returnOnRelease: true,
+    enabled: true,
+    zoneRatio: 1.0,               // 21.5：1.0 = 全屏任意位置可召唤（0.5 只认左半屏 → 用户按上半屏右侧/右半屏摇杆静默不出，「时好时坏」根因）。按钮/面板由黑名单让位保护
+    returnOnRelease: true,
     dragBase: true, stayInZone: true, idleOpacity: 0,
   },
 };
@@ -1080,7 +1082,7 @@ CFG.levelUp = {
   choiceCount: 4,                 // 每次升级展示 4 个候选
   pickCount: 1,                   // 选 1
   poolMode: "perHero",            // "perHero" 每英雄独立池（见 CFG.modulePool）
-  allowDuplicateOffer: true,      // 允许多个候选是同一个模块（便于快速堆层数）
+  allowDuplicateOffer: false,     // 21.5：同一次 4 选 1 内去重（重复出现两张完全相同的卡 = 坏体验；同名跨次叠加仍允许）
   weighted: true,                 // 按 CFG.modulePool 的 weight 加权抽取
   rerollFreePerRun: 1,            // 21.4：每局免费刷新 1 次（参考图「刷新 1/1」；0 = 关闭刷新按钮）
   // 升级时同时给予的基础属性成长（原本由属性卡牌提供，卡牌删除后并入此处）

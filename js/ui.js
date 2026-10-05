@@ -135,10 +135,12 @@ const UI = {
       // 数值高亮（21.4 参考图：40%概率炮弹数量+1 → 数字橙色加粗）
       const descHl = String(desc).replace(/([+\-]?\d+(?:\.\d+)?%?)/g, '<b class="lu-num">$1</b>');
       const owner = this._candOwner(c);
-      // 归属 + 槽位（20.3 功能保留，21.4 样式并入参考图结构）：标题栏下的小字行
-      const ownerLine = `<span class="lu-owner" style="border-color:${owner.color};color:${owner.color}">▶ ${owner.name}</span>`;
+      // 归属 + 槽位（20.3 功能保留；21.5 改为仅多英雄局渲染——单英雄局「▶ 猎手」与卡内槽位行同英雄名重复出现，
+      // 且参考图卡面无归属行（归属由标题栏底色表达）；多英雄局归属信息仍有决策价值故保留）
+      const multiHero = !!(G.run && G.run.companions && G.run.companions.length);
+      const ownerLine = multiHero ? `<span class="lu-owner" style="border-color:${owner.color};color:${owner.color}">▶ ${owner.name}</span>` : "";
       let slotLine = "";
-      if (c.kind === "module") {
+      if (multiHero && c.kind === "module") {
         const ownedIdx = this._slotIndexOf(c);
         if (ownedIdx >= 0) {
           slotLine = `<span class="lu-slot">强化已有槽 ${ownedIdx + 1}/${perHero}</span>`;

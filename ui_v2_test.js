@@ -345,6 +345,7 @@ vm.runInContext(`
   // ① meta 存在 → 标题区显示「给 <英雄名> 选择强化」+ 定位色
   //    H002 已用 2 格（heroModules 驱动槽号推导，20.3 起以 cand 归属 heroModules 为准）
   G.run.heroModules = { H002: [{ defId: "M002", lv: 1 }, { defId: "M003", lv: 1 }, null, null] };
+  G.run.companions = [{ heroDef: CFG.heroes[1] }];   // 多英雄局：归属/槽位行有决策价值 → 渲染（21.5 单英雄局不渲染）
   const heroCands = [
     { kind: "module", heroId: "H002", defId: "M001", name: "弹头扩容", desc: "弹道数量 +1", lv: 3, locked: false },
     { kind: "module", heroId: "H002", defId: "M009", name: "增幅器", desc: "伤害 +22%", lv: 1, locked: false },
@@ -357,10 +358,10 @@ vm.runInContext(`
     heroTitle.innerHTML.indexOf("给") >= 0 && heroTitle.innerHTML.indexOf("散弹手") >= 0 && heroTitle.innerHTML.indexOf("选择强化") >= 0);
   check("meta.roleColor → 标题带定位色", heroTitle.innerHTML.indexOf(CFG.heroRoles.output.color) >= 0);
 
-  // ② 候选属于模块槽 → 标注「填入 <英雄名> 的第 N 槽」（20.3：归属 + 槽号）
+  // ② 候选属于模块槽 → 标注「填入 <英雄名> 的第 N 槽」（20.3 归属 + 槽号；21.5 仅多英雄局渲染）
   const luH = get("levelup-cards").children;
   check("候选渲染 4 张（含 1 张置灰）", luH.length === 4);
-  check("模块槽已用 2 → 标注填入第 3 槽（3/4）", luH[0].innerHTML.indexOf("填入") >= 0 && luH[0].innerHTML.indexOf("3/4") >= 0);
+  check("多英雄局：模块槽已用 2 → 标注填入第 3 槽（3/4）", luH[0].innerHTML.indexOf("填入") >= 0 && luH[0].innerHTML.indexOf("3/4") >= 0);
 
   // ③ locked 候选 → 明显禁用视觉（灰度类）且点击无效
   check("locked 候选带禁用类（lu-locked）", luH[2].classList.contains("lu-locked"));
@@ -572,16 +573,18 @@ vm.runInContext(`
   // meta 描述的是「升级者」= H001，与 cand 归属一致（混抽场景下可能不一致，见下）
   UI.onLevelUpChoice(mixedCands, () => {}, { heroId: h1.id, heroName: "猎手", roleColor: roleOut.color, slotUsed: 1 });
   const mc0 = get("levelup-cards").children[0];
-  check("⑪A 候选卡渲染「填入」文案", mc0.innerHTML.indexOf("填入") >= 0);
-  check("⑪A 已用 1 格 → 显示第 2 槽（2/4）", mc0.innerHTML.indexOf("第 2 槽") >= 0 && mc0.innerHTML.indexOf("2/4") >= 0);
-  check("⑪A 归属英雄名 = 猎手", mc0.innerHTML.indexOf("猎手") >= 0);
+  /* 21.5：单英雄局（companions=[]）卡面对齐参考图——归属/槽位行不再渲染（标题栏底色表归属，叠层由胶囊承担） */
+  check("⑪A 单英雄局：卡面不渲染槽位行（21.5）", mc0.innerHTML.indexOf("填入") < 0);
+  check("⑪A 单英雄局：无槽号文本", mc0.innerHTML.indexOf("第 2 槽") < 0);
+  check("⑪A 单英雄局：无归属行（无 ▶ 猎手）", mc0.innerHTML.indexOf("▶") < 0 && mc0.innerHTML.indexOf("猎手") < 0);
   check("⑪A 使用 cand.ownerRoleColor 定位色（左侧色条）",
     mc0.innerHTML.indexOf("lu-bar") >= 0 && mc0.innerHTML.indexOf(roleOut.color) >= 0);
   UI.onLevelUpChoiceClose();
 
-  // 全队混抽：cand 归属 ≠ meta（升级者）→ 必须显示 cand 的归属，而非 meta
+  // 全队混抽：cand 归属 ≠ meta（升级者）→ 必须显示 cand 的归属，而非 meta（21.5：多英雄局渲染归属行）
   const h2 = CFG.heroes[1];
   G.run.heroModules = { [h1.id]: [null, null, null, null], [h2.id]: [null, null, null, null] };
+  G.run.companions = [{ heroDef: h2 }];   // 混抽队伍：归属行有决策价值 → 渲染
   const roleDef = CFG.heroRoles.defense || CFG.heroRoles.recovery || { color: "#6cb2ff" };
   const otherOwnerCands = [
     { kind: "module", heroId: h2.id, defId: "M001", name: "弹头扩容", desc: "弹道数量 +1", lv: 1, locked: false,
@@ -618,7 +621,8 @@ vm.runInContext(`
   check("⑪A G.run=null → 升级弹窗渲染不崩（降级）", degradeNoThrow && !!degradeCard);
   check("⑪A G.run=null → 不显示槽号（无 undefined）",
     degradeCard && degradeCard.innerHTML.indexOf("第 ") < 0 && degradeCard.innerHTML.indexOf("undefined") < 0);
-  check("⑪A G.run=null → 仍显示归属英雄名", degradeCard && degradeCard.innerHTML.indexOf("猎手") >= 0);
+  check("⑪A G.run=null → 无 undefined 且无归属行（21.5 降级不渲染）",
+    degradeCard && degradeCard.innerHTML.indexOf("undefined") < 0 && degradeCard.innerHTML.indexOf("▶") < 0);
   UI.onLevelUpChoiceClose();
   G.run = savedRun;
 
