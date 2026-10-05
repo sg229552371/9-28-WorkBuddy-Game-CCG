@@ -28,6 +28,24 @@ function perfFrameStats(frames, stuckMs) {
   };
 }
 
+/* 纯函数：浮动摇杆坐标换算 —— 手指相对底盘中心的位移 → 归一化方向向量。
+ *   dxi/dyi  手指相对中心的像素位移；maxR 摇杆头可移动半径（= 底盘半径 - 摇杆头半径）；
+ *   deadZone 死区比例。
+ * 返回 { vx, vy, mag, kx, ky }：
+ *   vx/vy 超半径时按矢量方向钳制到 |(vx,vy)| = 1（不超速）；
+ *   mag   钳制后的向量长度（用于死区判定）；
+ *   kx/ky 摇杆头相对底盘左上角的偏移（像素，供 UI 摆放）。
+ * 不修改全局状态，便于单测覆盖。契约：G.joy.dx/dy 仍为归一化向量，Player.update 不变。 */
+function joyVector(dxi, dyi, maxR, deadZone) {
+  const r = maxR > 0 ? maxR : 1;
+  let vx = dxi / r, vy = dyi / r;
+  const l = Math.hypot(vx, vy);
+  if (l > 1) { vx /= l; vy /= l; }            // 钳制在底盘内（保持方向，限制模长）
+  const mag = Math.hypot(vx, vy);
+  const kx = (vx * r) + r, ky = (vy * r) + r; // 相对盘中心的像素偏移 + 中心偏移 = 相对左上角
+  return { vx: vx, vy: vy, mag: mag, kx: kx, ky: ky, dead: mag < deadZone };
+}
+
 /* 帧护栏：滑动窗口采样 + 卡死告警（带冷却）。UI 为可选注入（默认运行时取全局 UI）。 */
 const PerfGuard = {
   WINDOW: 60,       // 滑动窗口：最近 60 帧
@@ -540,6 +558,12 @@ const Game = {
     window.addEventListener("keyup", (e) => { G.keys[e.key.toLowerCase()] = false; });
     // 网格物品拖拽起点（事件委托）
     document.addEventListener("pointerdown", (e) => {
+      // 21.1 NPC 点选（触屏/鼠标通用）：工匠世界内「已站圈解锁 + 点到 NPC 本体」→ 进入工坊。
+      // 放在最前：命中即消费本次点击，避免同时触发拖拽/世界点击等其它逻辑。
+      if (G.state === "playing" && typeof npcTap === "function" && npcTap(e.clientX, e.clientY)) {
+        e.preventDefault();
+        return;
+      }
       const el = e.target.closest && e.target.closest(".itm");
       if (el && G.run && !UI.drag) {
         const uid = Number(el.dataset.uid);
@@ -588,6 +612,13 @@ const Game = {
    * 摇杆：G.joy = {active, dx, dy}，归一化向量带死区，Player.update 优先于键盘。
    * 按钮：技能 = 按住等价 Space；交互 = actionE()（主地图撤离提示）/ 工匠面板开关；
    *       背包 = toggleBackpack()。桌面端无触屏不显示，不遮挡键鼠操作。 */
+  /* ---------- 移动端虚拟控件（浮动摇杆 + 可配置按钮；参数 CFG.mobile） ----------
+   * 摇杆（21.1 浮动）：左半屏（floatStick.zoneRatio）任意处按下 → 按下点即摇杆中心，拇指无需找固定位；
+   *   拖动时摇杆头随手指偏移并输出归一化向量到 G.joy（含死区），Player.update 优先于键盘；
+   *   松手后若 floatStick.returnOnRelease 为真则底盘回到默认锚点（#joy-zone 原位），否则停留。
+   * 事件边界：仅在画布空闲区（#touch-controls 自身且 e.target 为 canvas）起杆，绝不劫持按钮/面板/网格点击；
+   *   面板打开（G.state 非 playing/city 或存在可见 overlay）时不起杆；点 NPC 时让位（npcTap 优先）。
+   * 按钮：hideTouchButtons 为真则整体隐藏 #touch-btns；否则按 CFG.mobile.buttons 逐项控制。 */
   bindTouch() {
     const mob = CFG.mobile || {};
     if (!mob.autoShow) return;
@@ -599,48 +630,97 @@ const Game = {
     if (tc) tc.classList.remove("hidden");
     if (document.body) document.body.classList.add("touch-mode");
 
-    // --- 虚拟摇杆 ---
+    // --- 下方三按钮可见性（配置驱动，不写死 CSS；改 CFG.mobile 即可恢复） ---
+    const btns = document.getElementById("touch-btns");
+    if (btns) {
+      const map = { "btn-touch-skill": "skill", "btn-touch-act": "interact", "btn-touch-bag": "backpack" };
+      const flags = mob.buttons || {};
+      const hideAll = !!mob.hideTouchButtons;
+      // 整体隐藏开关 + 逐项开关：任一命中即加 .hidden（DOM 与事件绑定保留，仅视觉效果）
+      for (const id in map) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        const hideThis = hideAll || flags[map[id]] === false;
+        if (el.classList) hideThis ? el.classList.add("hidden") : el.classList.remove("hidden");
+      }
+      if (btns.classList) hideAll ? btns.classList.add("hidden") : btns.classList.remove("hidden");
+    }
+
+    // --- 浮动摇杆 ---
+    const zone = document.getElementById("joy-zone");
     const base = document.getElementById("joy-base");
     const stick = document.getElementById("joy-stick");
-    if (base && stick) {
+    if (zone && base && stick) {
       const jc = mob.joystick || {};
+      const fs = mob.floatStick || {};
       const size = jc.size || 132, knob = jc.knob || 56;
       const dead = jc.deadZone || 0.18, maxR = size / 2 - knob / 2;
+      const zoneRatio = fs.zoneRatio > 0 ? fs.zoneRatio : 0.5;
+      const returnOnRelease = fs.returnOnRelease !== false;
       let pid = null;
+      // 摇杆头相对底盘左上角的摆位（size/2-knob/2 为居中偏移）
       const setKnob = (vx, vy) => {
         stick.style.left = (size / 2 - knob / 2 + vx * maxR) + "px";
         stick.style.top = (size / 2 - knob / 2 + vy * maxR) + "px";
       };
+      // 底盘移动：以按下点为盘心（把 #joy-base 从 #joy-zone 内偏离到随屏幕坐标）
+      const moveBase = (clientX, clientY) => {
+        const zr = zone.getBoundingClientRect();
+        base.style.left = (clientX - zr.left - size / 2) + "px";
+        base.style.top = (clientY - zr.top - size / 2) + "px";
+      };
+      const resetBase = () => {
+        base.style.left = "";   // 清空内联 → 回到 CSS 默认锚点（左下角原位）
+        base.style.top = "";
+        setKnob(0, 0);
+      };
+      // 空闲画布区判定：仅当触点落在 canvas 本体上才起杆（按钮/面板/网格/HUD 均非 canvas）
+      const isFreeCanvas = (e) => {
+        const t = e.target;
+        return !!t && (t.id === "game-canvas" || t.tagName === "CANVAS");
+      };
+      // 面板打开时不起杆（playing=战斗、city=主城；其余态如结算/背包流程一律让位）
+      const uiBusy = () => G.state !== "playing" && G.state !== "city";
       const apply = (e) => {
         const rect = base.getBoundingClientRect();
         const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-        let vx = (e.clientX - cx) / maxR, vy = (e.clientY - cy) / maxR;
-        const l = Math.hypot(vx, vy);
-        if (l > 1) { vx /= l; vy /= l; }   // 钳制在底盘内
-        setKnob(vx, vy);
-        const mag = Math.hypot(vx, vy);
-        if (mag < dead) { G.joy.dx = 0; G.joy.dy = 0; }   // 死区：视为静止
-        else { G.joy.dx = vx; G.joy.dy = vy; }
+        const v = joyVector(e.clientX - cx, e.clientY - cy, maxR, dead);
+        setKnob(v.vx, v.vy);
+        if (v.dead) { G.joy.dx = 0; G.joy.dy = 0; }   // 死区：视为静止
+        else { G.joy.dx = v.vx; G.joy.dy = v.vy; }
       };
-      base.addEventListener("pointerdown", (e) => {
+      const begin = (e) => {
+        if (pid !== null) return;                     // 已有活动触点
+        if (uiBusy() || !isFreeCanvas(e)) return;     // 面板打开 / 非画布 → 让位（不劫持按钮/面板/网格）
+        // 让位 NPC 点选（21.1 npcTap）：主会话 document 监听先于本监听注册，命中 NPC 时已 preventDefault；
+        // 这里不重复调用 npcTap（避免二次消费其内部状态），仅据 defaultPrevented 让位。
+        if (e.defaultPrevented) return;
+        // 仅左半屏（zoneRatio）可召唤；越界不起杆
+        const vw = (window.innerWidth || document.documentElement.clientWidth || 0);
+        if (vw > 0 && e.clientX > vw * zoneRatio) return;
         pid = e.pointerId;
-        try { base.setPointerCapture(pid); } catch (err) { /* 桩/旧浏览器忽略 */ }
+        moveBase(e.clientX, e.clientY);               // 底盘移动到按下点（浮动摇杆核心）
         G.joy.active = true;
         apply(e);
-        e.preventDefault();
-      });
-      base.addEventListener("pointermove", (e) => { if (G.joy.active && e.pointerId === pid) apply(e); });
+        e.preventDefault();                           // 起杆后阻止后续默认手势（滚动等）
+      };
+      const move = (e) => { if (G.joy.active && e.pointerId === pid) apply(e); };
       const release = (e) => {
         if (e.pointerId !== pid) return;
         pid = null; G.joy.active = false; G.joy.dx = 0; G.joy.dy = 0;
-        setKnob(0, 0);
+        if (returnOnRelease) resetBase();             // 回默认锚点
+        else setKnob(0, 0);                           // 停留：清头但底盘不归位
       };
-      base.addEventListener("pointerup", release);
-      base.addEventListener("pointercancel", release);
+      // 关键：文档级监听（画布与 #touch-controls 是兄弟节点，挂 #touch-controls 收不到画布事件）。
+      // 用 isFreeCanvas(e.target===canvas) 白名单，只有命中画布空闲区才起杆 → 绝不劫持按钮/面板点击；
+      // 且本监听在 bindInput 的 npcTap 监听之后注册，NPC 命中时 defaultPrevented 已置位 → 摇杆让位。
+      document.addEventListener("pointerdown", begin);
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", release);
+      window.addEventListener("pointercancel", release);
     }
 
-    // --- 动作按钮 ---
-    const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener("pointerdown", fn); };
+    // --- 动作按钮（DOM 与绑定保留；隐藏仅由上方配置驱动） ---
     const btn = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
     const skill = document.getElementById("btn-touch-skill");
     if (skill) {

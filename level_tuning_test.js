@@ -79,24 +79,31 @@ if (CFG) {
     for (const r of hzRows) {
       const t = curve.hazardTiers[r.hazard];
       if (!t) { hzKeys = false; continue; }
-      if (!(t.dmgPerTick > 0 && t.dmgPerTick < 15)) hzSane = false;                 // 单次伤害 < 基准血量 15%
+      // 21.1 口径：伤害 = 最大生命固定比例（dmgPercent），不再用绝对值 dmgPerTick 结算
+      if (!(t.dmgPercent > 0 && t.dmgPercent <= 0.05)) hzSane = false;              // 单口不超过最大生命 5%
       if (!(t.tickInterval > 0 && t.tickInterval <= 5)) hzSane = false;             // 收缩扣血间隔为正
       if (!(t.startDelay >= 12 && t.startDelay <= 20)) hzSane = false;              // 预警期 12~20s（走位/撤离准备）
       if (!(t.minRadius > 0 && t.minRadius < 960)) hzSane = false;
-      const ttk = Math.ceil(HP_BASE / t.dmgPerTick) * t.tickInterval;               // 满血站毒致命秒数
-      if (!(ttk >= 8 - 1e-9 && ttk <= 15 + 1e-9)) hzSane = false;                   // 8~15s 可承受压力带
+      // 满血站毒致命秒数：每 tick 扣 dmgPercent，故 ttk = (1/dmgPercent) × tickInterval
+      const ttk = (1 / t.dmgPercent) * t.tickInterval;
+      if (!(ttk >= 60 - 1e-9 && ttk <= 120 + 1e-9)) hzSane = false;                 // 60~120s 可承受压力带
       // 关卡覆盖与曲线档位一致（单一事实源核对）
       const L = CFG.levels[r.lv - 1], ov = L.hazard || {};
       if (!(ov.startDelay === t.startDelay && ov.shrinkDuration === t.shrinkDuration
         && ov.minRadius === t.minRadius && ov.tickInterval === t.tickInterval
-        && ov.dmgPerTick === t.dmgPerTick)) hzSync = false;
+        && ov.dmgPercent === t.dmgPercent)) hzSync = false;
     }
     check("四 毒圈档位 key 全部存在", hzKeys);
-    check("四 毒圈参数在合理区间（伤害>0 且<15、间隔>0、预警期 12~20s）", hzSane);
-    check("四 毒圈满血站毒落在 8~15s 压力带（L5 15.0s → L10 8.0s）",
-      hzRows.every((r) => { const t = curve.hazardTiers[r.hazard]; const ttk = Math.ceil(HP_BASE / t.dmgPerTick) * t.tickInterval; return ttk >= 8 - 1e-9 && ttk <= 15 + 1e-9; }));
-    const dpsList = hzRows.map((r) => curve.hazardTiers[r.hazard].dmgPerTick / curve.hazardTiers[r.hazard].tickInterval);
-    check("四 毒圈 DPS 随关卡严格递增（" + dpsList.join("→") + "）", dpsList.every((d, i) => i === 0 || d > dpsList[i - 1]));
+    check("四 毒圈参数在合理区间（单口≤5%最大生命、间隔>0、预警期 12~20s）", hzSane);
+    check("四 毒圈满血站毒落在 60~120s 压力带（按 1% 比例口径）",
+      hzRows.every((r) => { const t = curve.hazardTiers[r.hazard]; const ttk = (1 / t.dmgPercent) * t.tickInterval; return ttk >= 60 - 1e-9 && ttk <= 120 + 1e-9; }));
+    // 21.1：各档 dmgPercent 统一 1%，压力靠 tickInterval 拉开 → 每秒比例「非递减」（允许相等，不允许回退）
+    const dpsList = hzRows.map((r) => curve.hazardTiers[r.hazard].dmgPercent / curve.hazardTiers[r.hazard].tickInterval);
+    check("四 毒圈每秒伤害比例随关卡非递减（" + dpsList.map(d => (d * 100).toFixed(2) + "%").join("→") + "）",
+      dpsList.every((d, i) => i === 0 || d >= dpsList[i - 1] - 1e-9));
+    check("四 毒圈末档压力强于首档（终局比教学更狠）", dpsList[dpsList.length - 1] > dpsList[0]);
+    check("四 毒圈各档统一 1% 固定扣血（用户口径：与血量/防御无关）",
+      hzRows.every((r) => curve.hazardTiers[r.hazard].dmgPercent === 0.01));
     check("四 毒圈预警期/终圈随关卡收紧（压迫感递增）",
       hzRows.every((r, i) => i === 0 || (curve.hazardTiers[r.hazard].startDelay <= curve.hazardTiers[hzRows[i - 1].hazard].startDelay
         && curve.hazardTiers[r.hazard].minRadius <= curve.hazardTiers[hzRows[i - 1].hazard].minRadius)));
@@ -118,11 +125,11 @@ if (CFG) {
         // 失衡检查：全关补给池（count×pct×血量）不得超过 90 秒毒伤总量
         const hzT = curve.hazardTiers[r.hazard];
         if (hzT) {
-          const dps = hzT.dmgPerTick / hzT.tickInterval;
+          const dps = hzT.dmgPercent / hzT.tickInterval;   // 每秒扣最大生命的比例（21.1 比例口径）
           const pool = t.count * ef.pct * HP_BASE;
-          poolList.push(pool / dps);
-          if (pool > dps * 90) spSane = false;
-          if (ef.pct * HP_BASE > dps * 30) spSane = false;                          // 单点回血 ≤ 30s 毒伤
+          poolList.push(pool / (dps * HP_BASE));
+          if (pool > dps * HP_BASE * 90) spSane = false;   // 全关补给池 ≤ 90 秒毒伤
+          if (ef.pct * HP_BASE > dps * HP_BASE * 30) spSane = false;   // 单点回血 ≤ 30s 毒伤
         }
       } else if (ef.type === "buff") {
         if (!(CFG[ef.buffPool + "Buffs"] && CFG[ef.buffPool + "Buffs"].length)) spSane = false;
@@ -169,17 +176,17 @@ if (CFG) {
     check("六 宝箱高阶（divine+mythic）占比随关卡单调抬升（3%→16%）", ctMono);
 
     /* ---- 七、既有字段名完整性（game.js 依赖面回归锁定） ---- */
-    const hzFields = ["enabled", "startDelay", "shrinkDuration", "minRadius", "tickInterval", "dmgPerTick", "cx", "cy", "color"];
+    const hzFields = ["enabled", "startDelay", "shrinkDuration", "minRadius", "tickInterval", "dmgPercent", "cx", "cy", "color"];
     const spFields = ["enabled", "count", "radius", "channelSeconds", "effect", "color"];
     check("七 CFG.hazard 全局字段逐项存在（" + hzFields.join("/") + "）", hzFields.every((f) => f in CFG.hazard));
     check("七 CFG.supply 全局字段逐项存在（" + spFields.join("/") + "）", spFields.every((f) => f in CFG.supply));
-    const hzLvFields = ["startDelay", "shrinkDuration", "minRadius", "tickInterval", "dmgPerTick"];
+    const hzLvFields = ["startDelay", "shrinkDuration", "minRadius", "tickInterval", "dmgPercent"];
     check("七 各关 hazard 覆盖字段完整（LEVEL_005/006/008/009/010）",
       CFG.levels.every((L) => !L.hazard || hzLvFields.every((f) => f in L.hazard)));
     check("七 各关 supply 覆盖含 count/channelSeconds/effect",
       CFG.levels.every((L) => !L.supply || ("count" in L.supply && "channelSeconds" in L.supply && !!L.supply.effect)));
     check("七 LEVEL_006 hazard 覆盖仍≠全局默认（level_content_test 前提保持）",
-      CFG.levels[5].hazard && CFG.levels[5].hazard.dmgPerTick !== CFG.hazard.dmgPerTick);
+      CFG.levels[5].hazard && CFG.levels[5].hazard.startDelay !== CFG.hazard.startDelay);
     check("七 LEVEL_005 为首个毒圈/补给关（首个机制关口径不变）",
       CFG.levels.findIndex((L) => L.hazardEnabled) === 4 && CFG.levels.findIndex((L) => L.supplyEnabled) === 4);
     check("七 无机制关卡（L1~L4/L7）不携带 hazard/supply 覆盖（等价性契约）",

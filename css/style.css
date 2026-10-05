@@ -219,7 +219,9 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 #weight-line.over { color:#ff5b5b; font-weight:bold; }
 #weight-pen { font-size:12px; color:#ff9a5b; }
 
-#hud-br { position:absolute; right:20px; bottom:18px; display:flex; gap:10px; }
+/* 右下角 HUD：21.1 起 autofight/风格选择器 + 背包按钮垂直堆叠于此（右对齐，不遮挡左下浮动摇杆） */
+#hud-br { position:absolute; right:20px; bottom:18px; display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+#hud-br #autofight-styles { margin-top:0; justify-content:flex-end; }
 
 /* ===== 全队技能栏（19.12：底部居中；每人一条 [技能图标+冷却环][模块槽 ×4]） ===== */
 .party-skillbar {
@@ -480,7 +482,6 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   #hud-br { bottom:8px; }
   .bar.exp { width:120px; }
 }
-
 /* ===== 升级 4 选 1 暂停弹窗（19.4 方案 7：全屏暗化 + 4 张大卡；手机端按钮 ≥64px 高） ===== */
 /* 20.10：dvh 单屏锁定 + 底部安全区（.overlay 宿主无顶部避让 → -16px 档） */
 .levelup-panel { width:min(1000px, 96vw); max-height:calc(100dvh - 16px); padding-bottom:max(10px, env(safe-area-inset-bottom)); overflow:auto; text-align:center; }
@@ -754,7 +755,7 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   .ps-row { flex-wrap: nowrap; }             /* 单行排布：窄屏下 [图标][名字][4 槽] ≈ 330px，390px 宽可容纳 */
   .ps-slot { width: 46px; height: 42px; }
 
-  /* 负重：左上信息列（#hud-tl 之下）；背包按钮：右上（#hud-tr 之下） */
+  /* 负重：左上信息列（#hud-tl 之下）；背包 / 自动战斗按钮：右上（#hud-tr 之下） */
   #hud-bl { left: calc(var(--sa-left) + 12px); top: calc(var(--sa-top) + 204px); bottom: auto; font-size: 12px; }
   #hud-br { right: calc(var(--sa-right) + 12px); top: calc(var(--sa-top) + 122px); bottom: auto; }
 
@@ -866,6 +867,9 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 /* body.portrait 同步（JS 钩子；与上面媒体查询等效，作双保险） */
 body.portrait .party-skillbar { bottom: calc(var(--sa-bottom) + 170px); }
 body.portrait #hud-tl { top: calc(var(--sa-top) + 82px); }
+/* 21.1：浮动摇杆默认锚点 / 右下按钮区 / 顶栏信息区（与竖屏媒体查询同步，JS 路径双保险） */
+body.portrait #joy-zone { left: calc(var(--sa-left) + 16px); bottom: calc(var(--sa-bottom) + 28px); }
+body.portrait #hud-br { right: calc(var(--sa-right) + 12px); top: calc(var(--sa-top) + 122px); bottom: auto; }
 body.portrait .bp-body { flex-direction: column; flex-wrap: nowrap; }
 body.portrait .art-layout { flex-direction: column; }
 /* 20.10 竖屏工匠单屏三段（与媒体查询双写；JS 钩子路径同样锁死高度、消灭滚动条） */

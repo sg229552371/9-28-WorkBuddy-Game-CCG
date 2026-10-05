@@ -200,13 +200,6 @@ var APP_VERSION = "20261003";
   <div id="hud" class="hidden">
     <div id="city-avatar-bar" class="hidden-in-battle"></div>
     <div id="hud-tl">
-      <!-- 自动战斗开关固定在左上角首位：位置不被 Buff 图标增减挤动，且避开移动端右下虚拟按钮 -->
-      <button id="btn-autofight" class="btn ghost">自动战斗：关</button>
-      <div id="autofight-styles" class="hidden">
-        <button class="af-style" data-style="berserk" title="贴脸输出，只预判冲锋与Boss大招，血线再低也不退">疯狂</button>
-        <button class="af-style" data-style="balanced" title="中距离风筝，躲密集弹幕与预警技能，血量40%以下拉开">平衡</button>
-        <button class="af-style" data-style="cautious" title="最远距离风筝，见弹就躲，血量过半即拉开距离">冷静</button>
-      </div>
       <!-- 技能冷却环（19.3：能量条退役 → 冷却制）。冷却中就绪比例填充，就绪时常亮显示 READY -->
       <div id="hud-skill-cd" class="ready" title="主动技能冷却（冷却中就绪比例填充 / 就绪时 READY）">
         <svg viewBox="0 0 80 80"><circle class="cd-track" cx="40" cy="40" r="34"/><circle id="skill-cd-arc" class="cd-arc" cx="40" cy="40" r="34"/></svg>
@@ -234,6 +227,13 @@ var APP_VERSION = "20261003";
     <!-- 全队技能栏（19.12）：底部居中；每人一条 [主动技能图标 + 冷却环][模块槽 ×4]（存升级所选武器模块） -->
     <div id="party-skillbar" class="party-skillbar"></div>
     <div id="hud-br">
+      <!-- 21.1：自动战斗开关与风格选择器移至右下角，与背包按钮垂直堆叠（在 #hud-br 内，不遮挡左下浮动摇杆） -->
+      <button id="btn-autofight" class="btn ghost">自动战斗：关</button>
+      <div id="autofight-styles" class="hidden">
+        <button class="af-style" data-style="berserk" title="贴脸输出，只预判冲锋与Boss大招，血线再低也不退">疯狂</button>
+        <button class="af-style" data-style="balanced" title="中距离风筝，躲密集弹幕与预警技能，血量40%以下拉开">平衡</button>
+        <button class="af-style" data-style="cautious" title="最远距离风筝，见弹就躲，血量过半即拉开距离">冷静</button>
+      </div>
       <button id="btn-backpack" class="btn">背包 (B)</button>
     </div>
     <div id="channel-wrap" class="hidden">

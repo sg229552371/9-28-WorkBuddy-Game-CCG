@@ -1257,9 +1257,10 @@ class Player {
     else if (res.kind === "trap") UI.toast(`${s.name}！已布设（本人地雷 ${res.n}/${res.cap}，留原地待敌）`, "gold");
     else UI.toast(`${s.name}！`, "gold");
   }
-  takeDamage(w, dmg) {
+  takeDamage(w, dmg, ignoreDef) {
     const st = computeStats();
-    const real = Math.max(1, Math.round(dmg - st.def));
+    // ignoreDef = true（21.1 毒圈比例伤害）：按最大生命的固定比例扣，不受防御影响
+    const real = ignoreDef ? Math.max(1, Math.round(dmg)) : Math.max(1, Math.round(dmg - st.def));
     G.run.hp -= real;
     spawnFloat(this.x, this.y - 30, `-${real}`, "#ff7b7f");
     SFX.play("hurt");
@@ -1319,7 +1320,7 @@ function judgeChannel(j, x, y, radius, dt, channel, pKey, hKey, decay) {
   }
   return false;
 }
-function heroTakeDamage(w, h, dmg) {
+function heroTakeDamage(w, h, dmg, ignoreDef) {
   // 受击打断：撤离读条归零（雕像保留）；裂缝返回信标读条归零
   const r = G.run;
   if (r && r.extractChanneling) {
@@ -1327,8 +1328,9 @@ function heroTakeDamage(w, h, dmg) {
     UI.toast("撤离读条被打断！（雕像仍在原地，重新站回圈内即可继续）", "bad");
   }
   if (w && w.kind === "rift" && w.returnProgress > 0) { w.returnProgress = 0; UI.toast("返回信标读条被打断！", "bad"); }
-  if (h === G.player) { G.player.takeDamage(w, dmg); return; }
-  const real = Math.max(1, Math.round(dmg - companionStats(h).def));   // 含武器栏装备的防御加成（16.5）
+  if (h === G.player) { G.player.takeDamage(w, dmg, ignoreDef); return; }
+  // ignoreDef = true（21.1 毒圈比例伤害）：不走防御减免，扣血量即传入值
+  const real = ignoreDef ? Math.max(1, Math.round(dmg)) : Math.max(1, Math.round(dmg - companionStats(h).def));
   h.hp -= real;
   if (G.run.stats) G.run.stats.dmgTaken += real;
   spawnFloat(h.x, h.y - 30, `-${real}`, "#ff9a7f");
@@ -3059,12 +3061,20 @@ class World {
     for (const a of this.altars.slice()) {
       if (judgeChannel(a, a.x, a.y, a.cfg.radius, dt, a.cfg.channel)) this.triggerAltar(a);
     }
-    // 工匠世界交互（同规则：**任一成员**在圈内即可，不限队长；触发后需先离开圈再重新进入，同一判定不重复触发）
+    // 工匠世界 NPC 交互（21.1 手机化改造）：**进圈 1 秒解锁** → 由玩家**点击 NPC 本体**确认（见 npcTap）。
+    // 原实现是站桩 1 秒读完自动开面板，触屏上等于「走进去就被弹窗」，无法预判也易误触；
+    // 改为「解锁 + 手动点击」两步。解锁态由本函数维护（不依赖 judgeChannel 的 progress，因其完成即清零）。
     if (!this.isMain && this.kind === "artisan") {
       const nearNpc = !!heroInCircle(this.npc.x, this.npc.y, 90);
-      const fired = judgeChannel(this, this.npc.x, this.npc.y, 90, dt, 1.0, "npcProgress", "npcHolder");
-      if (fired && !this._npcBlocked) { this._npcBlocked = true; EventBus.emit("openArtisanUI"); }
-      if (!nearNpc) this._npcBlocked = false;
+      if (nearNpc) {
+        this.npcDwell = (this.npcDwell || 0) + dt;
+        if (this.npcDwell >= 1.0 && !this.npcReady) {
+          this.npcReady = true;
+          UI.toast("已对准「工匠」，点击它进入工坊", "gold");
+        }
+      } else {
+        this.npcDwell = 0; this.npcReady = false;   // 离圈即收起，避免隔屏误点
+      }
       if (judgeChannel(this, this.exitBeacon.x, this.exitBeacon.y, 100, dt, 3.0, "exitProgress", "exitHolder"))
         EventBus.emit("returnToMain");
     }
@@ -3405,6 +3415,7 @@ function render() {
   }
   renderHazard(ctx, w);   // 毒圈收缩（B 线独立区块）：边界环 + 环外渐暗
   renderSupply(ctx, w);   // 补给点（B 线独立区块）：绿色发光圈 + 补给图标
+  renderNpcTapHint(ctx, w);   // 21.1 NPC 点选提示环（锁定时灰虚线圈 / 解锁后金环 + 「点击进入」）
   // 祭坛
   for (const a of w.altars) {
     ctx.beginPath(); ctx.arc(a.x, a.y, 26, 0, Math.PI * 2);
@@ -4248,13 +4259,28 @@ function updateHazard(w, dt) {
     const k = Math.min(1, hz.shrinkT / dur);
     hz.curR = hz.maxR - (hz.maxR - cfg.minRadius) * k;   // 线性收缩
   }
-  // 圈外扣血：任意存活英雄在圈外累计 tickInterval → 扣血
+  // 圈外扣血：任意存活英雄在圈外累计 tickInterval → 按最大生命的固定比例扣血（21.1 比例口径）
   hz.tick += dt;
   if (hz.tick >= (cfg.tickInterval || 1)) {
     hz.tick -= (cfg.tickInterval || 1);
     const outside = aliveHeroes().filter(h => U.dist(h.x, h.y, hz.cx, hz.cy) > hz.curR);
-    for (const h of outside) heroTakeDamage(w, h, cfg.dmgPerTick || 0);
+    for (const h of outside) hazardDamage(w, h, cfg);
   }
+}
+
+/** 毒圈伤害入口（21.1 新增·比例口径）：扣除**最大生命**的固定比例，与当前血量/防御/成长无关。
+ *  与 heroTakeDamage 的区别：不走防御减免、不触发「受击打断撤离」以外的队友规则差异——
+ *  但保留打断语义（站毒圈里读条被毒打断是设计预期），走同一套打断清理。
+ *  hpMax 取值防抖：G.run.hpMax 由玩家 update 维护（game.js:1210），而毒圈与本更新可能早于首个玩家帧；
+ *  故按 hpMax → hp → CFG 基准值 三级回退，任何一级可用即不会产生 NaN。 */
+function hazardDamage(w, h, cfg) {
+  const pct = (cfg && typeof cfg.dmgPercent === "number") ? cfg.dmgPercent : 0.01;
+  const base = (h && isFinite(h.hpMax) && h.hpMax > 0) ? h.hpMax
+    : (G.run && isFinite(G.run.hpMax) && G.run.hpMax > 0) ? G.run.hpMax
+    : (G.run && isFinite(G.run.hp) && G.run.hp > 0) ? G.run.hp
+    : 100;
+  const dmg = Math.max(1, Math.round(base * pct));   // 至少 1 点，避免高血/低比例下取整为 0
+  heroTakeDamage(w, h, dmg, true);                   // 第 4 参 true = 本次伤害跳过防御减免（比例伤害）
 }
 
 /** 某点是否在毒圈外（供渲染/测试查询；未激活时返回 false，即尚未出现不扣）。 */
@@ -4734,4 +4760,75 @@ function publishCrystalReport(kills, bossDefeated, extracted, boss) {
   if (typeof Meta !== "undefined" && Meta) Meta.lastReport = rep;
   if (typeof G !== "undefined" && G) G.lastSettleReport = rep;
   return rep;
+}
+
+/* ========== 21.1 触屏交互区（NPC 点选）——纯函数 + 单一入口 ==========
+ * 铁律 §5.45：新增逻辑集中本区块，现有函数只插单行调用。
+ * 背景：工匠世界 NPC 由「站圈自动开面板」改为「进圈 1 秒解锁 → 点击 NPC 本体」，
+ * 需要把屏幕点击坐标换算回世界坐标（相机 zoom + camX/camY 平移，与 render 完全同口径）。 */
+
+/* 屏幕坐标(clientX/Y) → 世界坐标：与 renderWorld 的相机变换严格对称。
+ * 渲染侧：ctx.scale(zoom) → ctx.translate(-camX,-camY)，故反变换为 world = (screen/zoomScale/canvasScale) + cam。 */
+function screenToWorld(clientX, clientY) {
+  var cv = G.canvas;
+  if (!cv) return null;
+  var rect = cv.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+  // 画布内比例坐标 → 画布像素坐标（G.W × G.H 逻辑坐标系）
+  var px = (clientX - rect.left) * (G.W / rect.width);
+  var py = (clientY - rect.top) * (G.H / rect.height);
+  var zoom = (CFG.camera && CFG.camera.zoom) || 1;
+  var w = G.world;
+  if (!w) return { x: px / zoom, y: py / zoom };      // 无世界（主城等）时退化为纯缩放逆变换
+  var viewW = G.W / zoom, viewH = G.H / zoom;
+  var camX = w.w <= viewW ? (w.w - viewW) / 2 : U.clamp(G.player.x - viewW / 2, 0, w.w - viewW);
+  var camY = w.h <= viewH ? (w.h - viewH) / 2 : U.clamp(G.player.y - viewH / 2, 0, w.h - viewH);
+  return { x: px / zoom + camX, y: py / zoom + camY };
+}
+
+/* 点击屏幕 → 命中可交互 NPC 则开面板。
+ * 门槛三重：① 工匠世界 ② npcReady（已在圈内站满 1 秒）③ 点击点落在 NPC 半径 tapRadius 内。
+ * 返回 true 表示本次点击已被消费（调用方可据此吞掉后续逻辑）。 */
+function npcTap(clientX, clientY) {
+  var w = G.world;
+  var cfg = CFG.mobile && CFG.mobile.npcTap;
+  if (!w || w.isMain || w.kind !== "artisan" || !w.npc) return false;
+  if (!w.npcReady) return false;                      // 未解锁：不响应（避免隔屏误点）
+  var pt = screenToWorld(clientX, clientY);
+  if (!pt) return false;
+  var r = (cfg && cfg.tapRadius) || 110;              // 点选判定半径（略大于视觉半径，照顾手指精度）
+  if (U.dist(pt.x, pt.y, w.npc.x, w.npc.y) > r) return false;
+  w.npcReady = false; w.npcDwell = 0;                 // 消费：关面板后需重新站圈解锁
+  EventBus.emit("openArtisanUI");
+  return true;
+}
+
+/* NPC 点选提示环渲染（解锁后高亮脉冲，告诉玩家"现在可以点了"）。
+ * 只在 npcReady 时绘制；未解锁时画暗环表示"还需要站一会儿"。 */
+function renderNpcTapHint(ctx, w) {
+  var n = w && w.npc;
+  if (!n || w.isMain || w.kind !== "artisan") return;
+  var cfg = CFG.mobile && CFG.mobile.npcTap;
+  var r = (cfg && cfg.hintRadius) || 104;
+  var ready = !!w.npcReady;
+  var pulse = 0.5 + 0.5 * Math.sin(G.time * (ready ? 6 : 2.5));
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+  ctx.strokeStyle = ready ? "rgba(255,215,106," + (0.55 + 0.45 * pulse) + ")" : "rgba(120,150,190,.35)";
+  ctx.lineWidth = ready ? 4 : 2;
+  ctx.setLineDash(ready ? [] : [10, 8]);
+  ctx.stroke();
+  ctx.restore();
+  // 解锁后附一行浮动提示（复用既有 float 文本管线，避免新增 UI 层）
+  if (ready) {
+    ctx.save();
+    ctx.font = "bold 26px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(255,215,106," + (0.7 + 0.3 * pulse) + ")";
+    ctx.strokeStyle = "rgba(0,0,0,.75)"; ctx.lineWidth = 4;
+    ctx.strokeText("点击进入", n.x, n.y - r - 14);
+    ctx.fillText("点击进入", n.x, n.y - r - 14);
+    ctx.restore();
+  }
 }

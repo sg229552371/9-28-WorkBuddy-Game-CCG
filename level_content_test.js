@@ -175,7 +175,7 @@ const driver = `
     check("存在开启毒圈的关卡（" + hzLevels.map(l => l.id).join(",") + "）", hzLevels.length > 0);
     check("CFG.hazard 全局默认字段齐全",
       typeof CFG.hazard === "object" && CFG.hazard.startDelay > 0 && CFG.hazard.shrinkDuration > 0
-      && CFG.hazard.minRadius > 0 && CFG.hazard.tickInterval > 0 && CFG.hazard.dmgPerTick > 0);
+      && CFG.hazard.minRadius > 0 && CFG.hazard.tickInterval > 0 && CFG.hazard.dmgPercent > 0);
 
     // 4.2 初始化：开启关卡的主世界有 hazard 且 curR == maxR（尚未收缩）
     const idx = CFG.levels.findIndex(l => l.hazardEnabled);
@@ -294,10 +294,10 @@ const driver = `
     } catch (e) { threw = true; }
     check("无机制关卡调用新机制函数不抛异常（no-op 等价性）", !threw);
 
-    // 关卡级覆盖：LEVEL_006 的 hazard.dmgPerTick 应来自关卡覆盖而非全局默认
+    // 关卡级覆盖：LEVEL_006 的 hazard.dmgPercent 应来自关卡覆盖而非全局默认（21.1 比例口径）
     const lv6 = CFG.levels[5];
-    check("LEVEL_006 hazard 覆盖全局（dmgPerTick=" + lv6.hazard.dmgPerTick + " ≠ 默认 " + CFG.hazard.dmgPerTick + "）",
-      lv6.hazard && lv6.hazard.dmgPerTick !== CFG.hazard.dmgPerTick);
+    check("LEVEL_006 hazard 覆盖全局（startDelay=" + lv6.hazard.startDelay + " ≠ 默认 " + CFG.hazard.startDelay + "）",
+      lv6.hazard && lv6.hazard.startDelay !== CFG.hazard.startDelay);
     check("LEVEL_006 supply 覆盖全局（count=" + lv6.supply.count + "）", lv6.supply && lv6.supply.count > 0);
   }
 

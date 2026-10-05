@@ -77,7 +77,7 @@ CFG.levels = [
     // 首个毒圈关（曲线档 HZ1）：预警期 20 秒让玩家看懂机制；收缩最慢（85s），
     // 圈外每 1.0 秒扣 7 点——满血 100 可站约 15 秒（8~15s 压力带最温和端，走位即可规避，不劝退）
     hazardEnabled: true,
-    hazard: { startDelay: 20, shrinkDuration: 85, minRadius: 380, tickInterval: 1.0, dmgPerTick: 7 },
+    hazard: { startDelay: 20, shrinkDuration: 85, minRadius: 380, tickInterval: 1.0, dmgPercent: 0.01, dmgPerTick: 7 },
     // 补给最慷慨（曲线档 SP1）：3 个点、读条仅 2.5 秒、单点回血 25%——教学期鼓励学习「进圈回血」节奏
     supplyEnabled: true,
     supply: { count: 3, channelSeconds: 2.5, effect: { type: "heal", pct: 0.25 } },
@@ -94,7 +94,7 @@ CFG.levels = [
     progressGoal: 132, timeLimit: 300, artisanAtKills: 40,
     // 毒圈进阶档（HZ2）：预警期 -2s、收缩提速到 75s，圈外每 1.0 秒扣 8 点（满血约 12.5 秒）
     hazardEnabled: true,
-    hazard: { startDelay: 18, shrinkDuration: 75, minRadius: 350, tickInterval: 1.0, dmgPerTick: 8 },
+    hazard: { startDelay: 18, shrinkDuration: 75, minRadius: 350, tickInterval: 1.0, dmgPercent: 0.01, dmgPerTick: 8 },
     // 补给转增益型（SP2）：数量降到 2、读条 3 秒——治疗变少（回复压力开始显现），改发战前增益
     supplyEnabled: true,
     supply: { count: 2, channelSeconds: 3.0, effect: { type: "buff", buffPool: "war", duration: 20 } },
@@ -122,7 +122,7 @@ CFG.levels = [
     progressGoal: 168, timeLimit: 360, artisanAtKills: 48,
     // 毒圈压迫档（HZ3）：tick 缩到 0.8s（DPS 10，满血约 10.4 秒），预警 16s、终圈 330
     hazardEnabled: true,
-    hazard: { startDelay: 16, shrinkDuration: 65, minRadius: 330, tickInterval: 0.8, dmgPerTick: 8 },
+    hazard: { startDelay: 16, shrinkDuration: 65, minRadius: 330, tickInterval: 0.8, dmgPercent: 0.01, dmgPerTick: 8 },
     // 补给回血回落（SP3）：单点 20%、读条 3 秒——比 L5 明显变抠，毒圈压力开始占上风
     supplyEnabled: true,
     supply: { count: 2, channelSeconds: 3.0, effect: { type: "heal", pct: 0.20 } },
@@ -139,7 +139,7 @@ CFG.levels = [
     progressGoal: 184, timeLimit: 390, artisanAtKills: 52,
     // 毒圈高压档（HZ4）：预警 14s、终圈 310，DPS 11.25（满血约 9.6 秒）
     hazardEnabled: true,
-    hazard: { startDelay: 14, shrinkDuration: 60, minRadius: 310, tickInterval: 0.8, dmgPerTick: 9 },
+    hazard: { startDelay: 14, shrinkDuration: 60, minRadius: 310, tickInterval: 0.8, dmgPercent: 0.01, dmgPerTick: 9 },
     // 补给转经济型（SP4）：不回血改发结晶 50——毒伤走高后回血性价比下降，改为资源补偿
     supplyEnabled: true,
     supply: { count: 2, channelSeconds: 3.5, effect: { type: "crystal", amount: 50 } },
@@ -156,7 +156,7 @@ CFG.levels = [
     progressGoal: 200, timeLimit: 420, artisanAtKills: 56,
     // 毒圈终局档（HZ5）：预警 12s、终圈 290、收缩 55s——DPS 12.5（满血 8 秒，压力带最紧端）
     hazardEnabled: true,
-    hazard: { startDelay: 12, shrinkDuration: 55, minRadius: 290, tickInterval: 0.8, dmgPerTick: 10 },
+    hazard: { startDelay: 12, shrinkDuration: 55, minRadius: 290, tickInterval: 0.8, dmgPercent: 0.01, dmgPerTick: 10 },
     // 补给最稀缺（SP5）：仅 1 个点、读条 4 秒、回血 15%——终局生存靠走位而非站桩奶
     supplyEnabled: true,
     supply: { count: 1, channelSeconds: 4.0, effect: { type: "heal", pct: 0.15 } },
@@ -194,7 +194,12 @@ CFG.hazard = {
   shrinkDuration: 85,       // 从满图收缩到 minRadius 所需秒数
   minRadius: 380,           // 最终安全圈半径（收缩到位后保持）
   tickInterval: 1.0,        // 圈外扣血间隔（秒）
-  dmgPerTick: 7,            // 每次扣除血量（已扣防御口径）；满血 100 约可站 15 秒（设计压力带 8~15 秒）
+  dmgPercent: 0.01,         // ★ 21.1 权威口径：每 tick 扣除**最大生命**的固定比例（1% = 0.01）
+                            //   与角色当前血量、防御、等级成长全部无关 —— 满血 100 级站毒恒 100 秒致命。
+                            //   设计意图：毒圈是「离场压力」而非「等级惩罚」，后期高血角色不会因绝对伤害
+                            //   被稀释成无威胁，也不会被秒杀；各档位只靠 tickInterval 调密度。
+  dmgPerTick: 7,            // ⚠️ 遗留字段（旧绝对值口径，仅兼容旧配置/旧测试读取）；
+                            //   扣血逻辑自 21.1 起只读 dmgPercent，本字段不参与结算。
   cx: 0.5, cy: 0.5,         // 毒圈圆心（地图宽/高的比例，默认正中）
   color: "#ff3b3b",         // 边界色（红色系）
 };
@@ -338,6 +343,17 @@ CFG.mobile = {
   autoShow: true,
   joystick: { size: 132, knob: 56, deadZone: 0.18, maxVec: 1.0 },
   buttons: { skill: true, interact: true, backpack: true },
+  /* 21.1 手机化改造：下方三个圆钮（背包/交互/技能）全部隐藏，只保留方向盘。
+   * 依据：主动技能本就是「全自动释放」（见 game.js 玩家更新注释），技能钮仅模拟空格键、属冗余；
+   *       背包改走右上角 HUD 按钮；交互改走「站圈 1 秒 + 点击 NPC 本体」。
+   * 本表控制触屏控件可见性，改 true 可逐个恢复（便于回退/排查）。 */
+  hideTouchButtons: true,
+  /* 工匠世界 NPC 点选（21.1）：进圈 dwellSeconds 秒解锁 → 点击 NPC 本体进入工坊。
+   * tapRadius 略大于视觉半径以容纳手指精度；hintRadius 为提示环绘制半径。 */
+  npcTap: { dwellSeconds: 1.0, tapRadius: 110, hintRadius: 104 },
+  /* 浮动摇杆（21.1）：左半屏按下即把该点作为摇杆中心，拇指无需找固定位置。
+   * zoneRatio 为「可召唤区」占屏宽比例；returnOnRelease 松手后摇杆是否回到默认锚点。 */
+  floatStick: { enabled: true, zoneRatio: 0.5, returnOnRelease: true },
 };
 
 /* ---------- 游戏主城（Hub，流程：首页 → 主城 → 传送门 → 选角 → 关卡） ----------
@@ -1636,14 +1652,17 @@ CFG.levelCurve = {
   ],
 
   /* ---- 毒圈档位（值 = 关卡 hazard 覆盖的权威来源）----
-   * dps = dmgPerTick / tickInterval；ttk = 满血 100 站毒致命秒数（ceil 量化）。
-   * 设计意图逐档：预警期 -2s/档、收缩提速、终圈收紧，DPS 7→12.5 严格递增。 */
+   * 21.1 口径变更：伤害改为**最大生命的固定比例**（dmgPercent，全部档位统一 1%），
+   * 档位间差异只体现在 tickInterval（扣血频率）与收缩节奏 —— 即「同样每口 1%，但咬得更勤」。
+   * ttk = 满血站毒致命秒数 = 100 / (dmgPercent × 100 / tickInterval)。
+   * 设计意图逐档：预警期 -2s/档、收缩提速、终圈收紧，DPS 1%/s → 1.25%/s 严格递增。
+   * dmgPerTick 为遗留字段（旧绝对值口径），保留供旧配置/旧测试读取，不参与结算。 */
   hazardTiers: {
-    HZ1: { name: "教学档", startDelay: 20, shrinkDuration: 85, minRadius: 380, tickInterval: 1.0, dmgPerTick: 7 },   // dps 7.0   ttk 15.0s
-    HZ2: { name: "进阶档", startDelay: 18, shrinkDuration: 75, minRadius: 350, tickInterval: 1.0, dmgPerTick: 8 },   // dps 8.0   ttk 13.0s
-    HZ3: { name: "压迫档", startDelay: 16, shrinkDuration: 65, minRadius: 330, tickInterval: 0.8, dmgPerTick: 8 },   // dps 10.0  ttk 10.4s
-    HZ4: { name: "高压档", startDelay: 14, shrinkDuration: 60, minRadius: 310, tickInterval: 0.8, dmgPerTick: 9 },   // dps 11.25 ttk 9.6s
-    HZ5: { name: "终局档", startDelay: 12, shrinkDuration: 55, minRadius: 290, tickInterval: 0.8, dmgPerTick: 10 },  // dps 12.5  ttk 8.0s
+    HZ1: { name: "教学档", startDelay: 20, shrinkDuration: 85, minRadius: 380, tickInterval: 1.0, dmgPercent: 0.01, dmgPerTick: 7 },   // 1.00%/s  ttk 100s
+    HZ2: { name: "进阶档", startDelay: 18, shrinkDuration: 75, minRadius: 350, tickInterval: 1.0, dmgPercent: 0.01, dmgPerTick: 8 },   // 1.00%/s  ttk 100s
+    HZ3: { name: "压迫档", startDelay: 16, shrinkDuration: 65, minRadius: 330, tickInterval: 0.8, dmgPercent: 0.01, dmgPerTick: 8 },   // 1.25%/s  ttk  80s
+    HZ4: { name: "高压档", startDelay: 14, shrinkDuration: 60, minRadius: 310, tickInterval: 0.8, dmgPercent: 0.01, dmgPerTick: 9 },   // 1.25%/s  ttk  80s
+    HZ5: { name: "终局档", startDelay: 12, shrinkDuration: 55, minRadius: 290, tickInterval: 0.8, dmgPercent: 0.01, dmgPerTick: 10 },  // 1.25%/s  ttk  80s
   },
 
   /* ---- 补给档位（值 = 关卡 supply 覆盖的权威来源）----
@@ -1705,19 +1724,20 @@ CFG._validateLevelCurve = function () {
       if (!num(t.shrinkDuration) || t.shrinkDuration < 10 || t.shrinkDuration > 300) issues.push(key + " shrinkDuration 超界: " + t.shrinkDuration);
       if (!num(t.minRadius) || t.minRadius < 50 || t.minRadius > 960) issues.push(key + " minRadius 超界: " + t.minRadius);
       if (!num(t.tickInterval) || t.tickInterval < 0.1 || t.tickInterval > 5) issues.push(key + " tickInterval 超界: " + t.tickInterval);
-      if (!num(t.dmgPerTick) || t.dmgPerTick < 0.5 || t.dmgPerTick > 30) issues.push(key + " dmgPerTick 超界（0/负数/天文数字）: " + t.dmgPerTick);
-      const dps = t.dmgPerTick / t.tickInterval;
-      const ttk = Math.ceil(100 / t.dmgPerTick) * t.tickInterval;   // 满血 100（不计防御，安全侧）
-      if (dps < 1 || dps > 25) issues.push(key + " 毒圈 DPS 超界: " + dps);
-      if (ttk < 8 - 1e-9 || ttk > 15 + 1e-9) issues.push(key + " 满血站毒 " + ttk.toFixed(1) + "s 出 8~15s 压力带");
-      if (dps < prevDps) issues.push("毒圈 DPS 未随关卡递增: 第" + i + "档→" + key);
+      // 21.1 口径：dmgPercent 为权威（每 tick 扣最大生命的比例）；dmgPerTick 为遗留字段仅保留结构
+      if (!num(t.dmgPercent) || t.dmgPercent <= 0 || t.dmgPercent > 0.05) issues.push(key + " dmgPercent 超界（应为 0~5% 之间的正数）: " + t.dmgPercent);
+      const dps = t.dmgPercent / t.tickInterval;                    // 每秒扣最大生命的比例
+      const ttk = (1 / t.dmgPercent) * t.tickInterval;              // 满血站毒致命秒数（与血量无关）
+      if (dps < 0.005 || dps > 0.05) issues.push(key + " 毒圈每秒比例超界: " + dps);
+      if (ttk < 60 - 1e-9 || ttk > 120 + 1e-9) issues.push(key + " 满血站毒 " + ttk.toFixed(1) + "s 出 60~120s 压力带");
+      if (dps < prevDps) issues.push("毒圈每秒比例未随关卡递增: 第" + i + "档→" + key);
       if (t.startDelay > prevDelay) issues.push("毒圈预警期未随关卡缩短: " + key);
       if (t.minRadius > prevMinR) issues.push("毒圈终圈未随关卡收紧: " + key);
       prevDps = dps; prevDelay = t.startDelay; prevMinR = t.minRadius;
       // 与 CFG.levels 覆盖逐字段核对（合并全局缺省后比对）
       const m = {};
       const base = CFG.hazard || {}, ov = L.hazard || {};
-      const fields = ["startDelay", "shrinkDuration", "minRadius", "tickInterval", "dmgPerTick"];
+      const fields = ["startDelay", "shrinkDuration", "minRadius", "tickInterval", "dmgPercent"];
       for (const f of fields) m[f] = ov[f] != null ? ov[f] : base[f];
       for (const f of fields) if (m[f] !== t[f]) issues.push("第" + (i + 1) + "关 hazard." + f + "=" + m[f] + " 与档位 " + key + " 不一致（应同步曲线表）");
     }
@@ -1746,7 +1766,8 @@ CFG._validateLevelCurve = function () {
       // 失衡检查：单点回血 ≤ 30s 毒伤、全关补给池 ≤ 90s 毒伤（毒圈未开时跳过）
       const hzKey = r.hazard;
       if (healAmt > 0 && hzKey && HZ[hzKey]) {
-        const dps = HZ[hzKey].dmgPerTick / HZ[hzKey].tickInterval;
+        // 21.1 比例口径：dps 为每秒扣最大生命的比例 → 转成「每秒绝对值」再与回血比较（等价于按基准血量 HP100）
+        const dps = HZ[hzKey].dmgPercent / HZ[hzKey].tickInterval * 100;
         if (healAmt > dps * 30) issues.push(key + " 单点回血 " + healAmt + " 超过 30s 毒伤（站撸失衡）");
         if (t.count * healAmt > dps * 90) issues.push(key + " 全关补给池超 90s 毒伤（无限奶失衡）");
       }
@@ -1785,7 +1806,7 @@ CFG._validateLevelCurve = function () {
 
     // ---- 5. 全局缺省（CFG.hazard / CFG.supply）兜底区间 ----
     const gh = CFG.hazard || {};
-    if (!num(gh.dmgPerTick) || gh.dmgPerTick < 0.5 || gh.dmgPerTick > 30) issues.push("CFG.hazard.dmgPerTick 超界: " + gh.dmgPerTick);
+    if (!num(gh.dmgPercent) || gh.dmgPercent <= 0 || gh.dmgPercent > 0.05) issues.push("CFG.hazard.dmgPercent 超界（应为 0~5% 正数）: " + gh.dmgPercent);
     if (!num(gh.tickInterval) || gh.tickInterval < 0.1 || gh.tickInterval > 5) issues.push("CFG.hazard.tickInterval 超界: " + gh.tickInterval);
     const gs = CFG.supply || {};
     if (!num(gs.count) || gs.count < 1 || gs.count > 3) issues.push("CFG.supply.count 超界: " + gs.count);
