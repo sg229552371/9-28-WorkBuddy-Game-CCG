@@ -1082,7 +1082,7 @@ CFG.levelUp = {
   poolMode: "perHero",            // "perHero" 每英雄独立池（见 CFG.modulePool）
   allowDuplicateOffer: true,      // 允许多个候选是同一个模块（便于快速堆层数）
   weighted: true,                 // 按 CFG.modulePool 的 weight 加权抽取
-  rerollFreePerRun: 0,            // 升级选模块不提供刷新（保持节奏紧凑；如需可调）
+  rerollFreePerRun: 1,            // 21.4：每局免费刷新 1 次（参考图「刷新 1/1」；0 = 关闭刷新按钮）
   // 升级时同时给予的基础属性成长（原本由属性卡牌提供，卡牌删除后并入此处）
   baseStatGain: { hp: 6, atk: 1.5, def: 0.5 },
 

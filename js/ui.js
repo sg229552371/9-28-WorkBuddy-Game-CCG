@@ -112,50 +112,65 @@ const UI = {
   },
   _renderLevelUp() {
     this._renderLevelUpHeader();
+    this._renderLevelUpRerollBtn();
     const box = document.getElementById("levelup-cards");
     if (!box) return;
     box.innerHTML = "";
     const list = this.levelUpCandidates || [];
     const m = this.levelUpMeta || {};
     const perHero = (CFG.moduleSlot && CFG.moduleSlot.perHero) || 4;
+    // 推荐角标（21.4 参考图「推荐」绿标）：品质最高的非锁定候选（同品质取序号靠前）
+    let recIdx = -1;
+    list.forEach((c, i) => {
+      if (c.locked) return;
+      if (recIdx < 0 || (c.itemQ || 0) > (list[recIdx].itemQ || 0)) recIdx = i;
+    });
     list.forEach((c, i) => {
       const locked = !!c.locked;
       const card = document.createElement("div");
-      card.className = "levelup-card" + (locked ? " lu-locked" : "");
-      // 卡片内容：按候选类型渲染（module = 武器模块叠加 / statPack = 属性小包）
+      card.className = "levelup-card lu-v2" + (locked ? " lu-locked" : "");
+      if (i === recIdx) card.classList.add("lu-rec");
       const kindLabel = c.kind === "module" ? "武器模块" : (c.kind === "statPack" ? "属性小包" : (c.kind || ""));
       const desc = c.kind === "statPack" ? `+${c.value}` : (c.desc || "");
-      // 归属英雄（20.3 任务一）：全队混抽后每个 cand 有自己的 heroId → 显示 cand 的归属，而非 meta（升级者）。
-      //   用该英雄定位色做视觉标识（左侧色条 + 归属标签底色）。
+      // 数值高亮（21.4 参考图：40%概率炮弹数量+1 → 数字橙色加粗）
+      const descHl = String(desc).replace(/([+\-]?\d+(?:\.\d+)?%?)/g, '<b class="lu-num">$1</b>');
       const owner = this._candOwner(c);
-      // 模块候选：标注「→ 填入 <英雄名> 的第 N 槽」（N = 该英雄已用槽位数 + 1）。
-      //   已持有 → 走「强化已有槽 N」（N = 该模块所在格）；拿不到槽位信息 → 降级只显示归属英雄。
+      // 归属 + 槽位（20.3 功能保留，21.4 样式并入参考图结构）：标题栏下的小字行
+      const ownerLine = `<span class="lu-owner" style="border-color:${owner.color};color:${owner.color}">▶ ${owner.name}</span>`;
       let slotLine = "";
       if (c.kind === "module") {
         const ownedIdx = this._slotIndexOf(c);
         if (ownedIdx >= 0) {
-          const lvLine = c.lv ? ` · 入槽 LV${c.lv}` : "";
-          slotLine = `<span class="lu-slot">强化已有槽 ${ownedIdx + 1}/${perHero}${lvLine}</span>`;
+          slotLine = `<span class="lu-slot">强化已有槽 ${ownedIdx + 1}/${perHero}</span>`;
         } else if (owner.slotKnown) {
           const n = Math.min(owner.slotUsed + 1, perHero);
-          const lvLine = c.lv ? ` · 入槽 LV${c.lv}` : "";
-          slotLine = `<span class="lu-slot">→ 填入 <b style="color:${owner.color}">${owner.name}</b> 的第 ${n} 槽（${n}/${perHero}）${lvLine}</span>`;
+          slotLine = `<span class="lu-slot">→ 填入 <b style="color:${owner.color}">${owner.name}</b> 第 ${n} 槽（${n}/${perHero}）</span>`;
         } else {
-          // 兜底降级：拿不到槽位 → 只标归属英雄名，不显示槽号（避免 undefined）
           slotLine = `<span class="lu-slot">→ 填入 <b style="color:${owner.color}">${owner.name}</b></span>`;
         }
       }
-      // 槽位将满警示：该英雄已用满 last-1 格（本次选中即填满）→ 黄色警告；其实已满（locked）→ 红色锁定行。
+      // 槽位将满警示（20.3 保留）：本次选中即填满 → 黄色
       const fullWarn = (!locked && c.kind === "module" && owner.slotKnown && owner.slotUsed === perHero - 1);
       card.classList.toggle("lu-will-full", fullWarn);
       const warnLine = fullWarn ? `<span class="lu-full">⚠ 该队友槽位将满（${perHero}/${perHero}）</span>` : "";
-      const lockLine = locked ? `<span class="lu-lock">🚫 槽位已满 · 不可选</span>` : "";
-      // 归属标签底色 = 定位色（半透明叠底 + 定位色文字）。
-      const ownerLine = `<span class="lu-owner" style="border-color:${owner.color};color:${owner.color}">👤 ${owner.name}</span>`;
-      card.innerHTML = `<span class="lu-bar" style="background:${owner.color}"></span>` +
-        `<span class="lu-kind">${kindLabel}</span>
-        <span class="lu-name">${c.name || ""}</span>
-        <span class="lu-desc">${desc}</span>${ownerLine}${slotLine}${warnLine}${lockLine}`;
+      // 顶部彩色标题栏（21.4 参考图）：底色 = 归属英雄定位色（无归属 → 品质色）
+      const q = CFG.itemQualities && CFG.itemQualities[c.itemQ] ? CFG.itemQualities[c.itemQ] : null;
+      const headColor = owner.color || (q ? q.color : "#7aa0dc");
+      // 大图标（21.4 参考图中央立绘位）：程序化占位 = 品质色底 + 词条符号
+      const ico = this._levelUpIcon(c, q);
+      // 底部进度胶囊（21.4 参考图「量子护盾 (0/3)」）：本局该类已叠层数 / 上限
+      const chip = this._levelUpChip(c, owner, perHero);
+      card.innerHTML =
+        `<span class="lu-bar" style="background:${owner.color}"></span>` +
+        `<span class="lu-head" style="background:${headColor}">${c.name || kindLabel}</span>` +
+        (i === recIdx ? `<span class="lu-rec-badge">推荐</span>` : "") +
+        `<span class="lu-kind">${kindLabel}</span>` +
+        `<div class="lu-icon">${ico}</div>` +
+        `<div class="lu-desc">${descHl}</div>` +
+        /* 20.3 功能保留：归属英雄 + 槽位 + 将满警示（测试 ⑪A 契约，漏拼即 9 项失败） */
+        ownerLine + slotLine + warnLine +
+        `<div class="lu-chip">${chip}</div>` +
+        (locked ? `<div class="lu-lock">✕ 槽位已满 · 不可选</div>` : "");
       if (!locked) {
         card.onclick = () => {
           const cb = this.levelUpOnPick;
@@ -165,6 +180,57 @@ const UI = {
       }
       box.appendChild(card);
     });
+  },
+  /* 升级候选大图标（21.4 参考图中央立绘位）：程序化占位 = 品质色圆底 + 词条单字。
+   * 用汉字而非 emoji：headless/老机型无 emoji 字体会显示空方框（实机踩过）；单字与项目程序化美术基调一致。 */
+  _levelUpIcon(c, q) {
+    const TAG_ICONS = {
+      "伤害": "伤", "冷却": "冷", "弹道数量": "弹", "弹速": "速", "穿透": "穿",
+      "范围": "围", "弹射次数": "弹", "召唤物": "召", "陷阱": "阱",
+    };
+    let sym = "强";
+    if (c.kind === "module") {
+      const def = CFG.moduleDefs && c.defId ? CFG.moduleDefs.find(d => d.id === c.defId) : null;
+      const tag = def && def.affix ? def.affix.tag : null;
+      sym = (tag && TAG_ICONS[tag]) || "强";
+    } else if (c.kind === "statPack") sym = "属";
+    const color = q ? q.color : "#7aa0dc";
+    return `<span class="lu-ico" style="border-color:${color};color:${color};box-shadow:0 0 0 2px ${color}33, 0 4px 14px ${color}22">${sym}</span>`;
+  },
+  /* 升级候选进度胶囊（21.4 参考图底部「量子护盾 (0/3)」）：
+   * module 已持有 → 「LV n/9」（本局该模块当前等级 / 上限，CFG.moduleLevel.maxLv）；
+   * module 未持有 → 「新模块」；statPack → 「属性包」；locked → 红色锁定文案。
+   * 图标一律汉字/ASCII：headless 与老机型无 emoji 字体会渲染成空方框（实机踩过）。 */
+  _levelUpChip(c, owner, perHero) {
+    const maxLv = (CFG.moduleLevel && CFG.moduleLevel.maxLv) || 9;
+    if (c.kind === "module") {
+      const ownedIdx = this._slotIndexOf(c);
+      if (ownedIdx >= 0) {
+        const slots = (owner.heroId && G.run && G.run.heroModules && G.run.heroModules[owner.heroId]) || [];
+        const cur = slots[ownedIdx];
+        const lv = (cur && cur.lv) || 1;
+        return `<span class="lu-chip-in">LV ${lv}/${maxLv}</span>`;
+      }
+      return `<span class="lu-chip-in">新模块</span>`;
+    }
+    if (c.kind === "statPack") return `<span class="lu-chip-in">属性包</span>`;
+    return `<span class="lu-chip-in">${c.kind || "?"}</span>`;
+  },
+  /* 刷新按钮（21.4 参考图底部「刷新 1/1」）：显示剩余次数，用尽/关闭 → 禁用/隐藏。 */
+  _renderLevelUpRerollBtn() {
+    const btn = document.getElementById("btn-lu-reroll");
+    if (!btn) return;
+    const per = (CFG.levelUp && CFG.levelUp.rerollFreePerRun) || 0;
+    const left = (G.run && typeof G.run.levelUpRerollsLeft === "number")
+      ? G.run.levelUpRerollsLeft : per;
+    const cnt = document.getElementById("lu-reroll-count");
+    if (cnt) cnt.textContent = `${left}/${per}`;
+    btn.classList.toggle("hidden", per <= 0);        // 配置 0 → 整个按钮不显示
+    btn.disabled = left <= 0;
+    btn.onclick = () => {
+      if (typeof levelUpReroll === "function") levelUpReroll();
+      else this.toast("刷新暂不可用", "bad");
+    };
   },
   /* 候选归属英雄（20.3 任务一）：返回 { heroId, name, color, slotUsed, slotKnown }。
    * 优先取 cand.heroId + cand.ownerName / cand.ownerRoleColor（战斗侧全队混抽后已带）；

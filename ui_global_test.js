@@ -274,6 +274,70 @@ check("⑥ 图鉴立绘卡 .portrait-card 竖屏 display:block 未被破坏（�
   /body\.portrait\s+\.codex-card\.portrait-card\s*\{[^}]*display\s*:\s*block/.test(cssFlat));
 
 /* ============================================================
+ * ⑧ 21.4 升级 4 选 1 改版存在性（对齐参考图：丝带标题 + 推荐角标 + 数值高亮 + 进度胶囊 + 刷新按钮）
+ * 目的：锁住新结构，防将来被误改回退；纯静态扫描（读 CSS/HTML/JS 文本）不依赖运行时 DOM。
+ * ============================================================ */
+const uiSrc = fs.readFileSync(path.join(root, "js", "ui.js"), "utf8");
+const gameSrc = fs.readFileSync(path.join(root, "js", "game.js"), "utf8");
+
+/* ⑧-1 丝带标题「增益选择」 */
+check("⑧ index.html 含 .lu-banner 丝带标题「增益选择」",
+  /<div class="lu-banner">[\s\S]*?增益选择[\s\S]*?<\/div>/.test(htmlSrc));
+check("⑧ .lu-banner 用 clip-path 做切角丝带",
+  /\.lu-banner\s*\{[^}]*clip-path/.test(cssFlat));
+
+/* ⑧-2 推荐角标：唯一 + 取品质最高（非锁定） */
+check("⑧ ui.js 渲染 .lu-rec-badge「推荐」角标",
+  uiSrc.indexOf('lu-rec-badge">推荐') >= 0);
+check("⑧ 推荐位取品质最高（recIdx 与 itemQualities 权重比较）",
+  /recIdx/.test(uiSrc) && /itemQualities/.test(uiSrc));
+
+/* ⑧-3 数值高亮 .lu-num（描述里的 +N / N% 被包成橙色粗体） */
+check("⑧ ui.js 数值高亮正则产出 .lu-num",
+  /replace\([\s\S]{0,80}lu-num/.test(uiSrc));
+check("⑧ .lu-num 存在且为橙色系高亮",
+  /\.lu-num\s*\{[^}]*color\s*:/.test(cssFlat));
+
+/* ⑧-4 大图标：汉字图标表（无 emoji 依赖） */
+check("⑧ ui.js 含 _levelUpIcon 汉字图标表",
+  uiSrc.indexOf("_levelUpIcon") >= 0 && /"伤害"\s*:\s*"伤"/.test(uiSrc));
+check("⑧ 升级卡图标区不再依赖 emoji（.lu-chip-in 内无 emoji 字符）",
+  !/lu-chip-in">[\s\S]{0,4}[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(uiSrc));
+
+/* ⑧-5 进度胶囊 .lu-chip（LV n/上限 或 新模块 / 属性包） */
+check("⑧ ui.js 含 _levelUpChip 进度胶囊",
+  uiSrc.indexOf("_levelUpChip") >= 0 && /lu-chip-in/.test(uiSrc));
+check("⑧ 胶囊叠层文案用 CFG.moduleLevel.maxLv 上限",
+  /moduleLevel/.test(uiSrc) && /maxLv/.test(uiSrc));
+check("⑧ .lu-chip 样式存在",
+  /\.lu-chip\s*\{/.test(cssFlat));
+
+/* ⑧-6 刷新按钮：结构 + 次数文案 + 禁用逻辑 + 配置开关 */
+check("⑧ index.html 含 #btn-lu-reroll 与 #lu-reroll-count",
+  htmlSrc.indexOf('id="btn-lu-reroll"') >= 0 && htmlSrc.indexOf('id="lu-reroll-count"') >= 0);
+check("⑧ index.html 刷新按钮文字为「刷新」",
+  /lu-reroll-body">刷新/.test(htmlSrc));
+check("⑧ CSS 刷新次数高亮选择器与 HTML class 一致（.lu-reroll-body，防选择器错位）",
+  /\.lu-reroll \.lu-reroll-body\s+b\s*\{/.test(cssFlat) &&
+  htmlSrc.indexOf('class="lu-reroll-body"') >= 0);
+check("⑧ CFG.levelUp.rerollFreePerRun 已定义（默认每局免费 1 次）",
+  /rerollFreePerRun\s*:\s*1/.test(fs.readFileSync(path.join(root, "js", "config.js"), "utf8")));
+check("⑧ ui.js 刷新按钮按剩余次数置 disabled",
+  /_renderLevelUpRerollBtn/.test(uiSrc) && /btn\.disabled\s*=\s*left\s*<=\s*0/.test(uiSrc));
+
+/* ⑧-7 换血逻辑（game.js levelUpReroll）：就地改数组、引用不变、次数扣减可回滚 */
+check("⑧ game.js 含 levelUpReroll 函数",
+  gameSrc.indexOf("function levelUpReroll") >= 0);
+check("⑧ levelUpReroll 就地换血（length=0 + push，保持候选数组引用）",
+  /levelUpCandidates\.length\s*=\s*0/.test(gameSrc) && /levelUpCandidates\.push/.test(gameSrc));
+check("⑧ levelUpReroll 扣除局内次数",
+  /levelUpRerollsLeft--/.test(gameSrc));
+
+/* ⑧-8 竖屏 2×2 网格（4 卡两行两列） */
+check("⑧ 升级卡竖屏块为 2 列网格",
+  /(\.levelup-cards|body\.portrait\s+\.levelup-cards)[^{]*\{[^}]*grid-template-columns\s*:\s*repeat\(\s*2\s*,/.test(cssFlat));
+
+/* ============================================================
  * ⑦ index.html 关键界面节点仍在
  * ============================================================ */
 for (const id of ["screen-main", "screen-level", "screen-codex", "screen-chip-codex", "screen-settings",

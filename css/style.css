@@ -504,42 +504,89 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .levelup-panel { width:min(1000px, 96vw); max-height:calc(100dvh - 16px); padding-bottom:max(10px, env(safe-area-inset-bottom)); overflow:auto; text-align:center; }
 .levelup-panel h2 { color:#ffd76a; }
 .levelup-panel .tip { margin-bottom:16px; }
+/* ===== 21.4 参考图改版：丝带横幅标题 + 竖版大卡（彩色标题栏/推荐角标/大图标/数值高亮）+ 进度胶囊 + 刷新按钮 ===== */
+/* 丝带横幅（参考图顶部「增益选择」蓝紫丝带）：两端切角 + 中央金字 */
+.lu-banner {
+  position:relative; display:inline-block; margin:2px auto 10px; padding:8px 34px;
+  background:linear-gradient(180deg,#5a6cff,#4353d8); color:#ffe9a8;
+  font-size:20px; font-weight:bold; letter-spacing:6px;
+  clip-path:polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%);
+  text-shadow:0 2px 4px rgba(0,0,0,.45);
+}
 /* 归属英雄标题（19.12 任务一）：告诉玩家本次强化的对象 */
 .levelup-hero { font-size:20px; font-weight:bold; color:#e8ecf2; margin:2px 0 6px; }
 .levelup-hero:empty { display:none; }
 .levelup-hero b { font-size:23px; }
+/* 卡片网格（21.4）：横屏 4 张单行；竖屏媒体查询改 2×2（见下方三处同步） */
 .levelup-cards { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; }
-.levelup-card {
-  position:relative; flex:1 1 200px; min-width:160px; min-height:150px; padding:18px 16px;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
-  background:#1d2a3d; border:2px solid #33486b; border-radius:12px; cursor:pointer;
+/* 竖版大卡（21.4 参考图）：顶部彩色标题栏 + 图标区 + 描述 + 底部胶囊 */
+.levelup-card.lu-v2 {
+  position:relative; flex:1 1 200px; min-width:158px; max-width:230px; min-height:238px;
+  padding:0 0 10px; overflow:hidden;
+  display:flex; flex-direction:column; align-items:stretch; gap:8px;
+  background:#f4efe4; border:2px solid #33486b; border-radius:12px; cursor:pointer;
   transition:transform .12s, border-color .12s, background .12s;
 }
-.levelup-card:hover { transform:translateY(-4px); border-color:#ffd76a; background:#25344c; }
-.levelup-card .lu-name { font-size:16px; font-weight:bold; color:#fff; }
-.levelup-card .lu-desc { font-size:12px; color:#8ba0bd; line-height:1.6; }
-.levelup-card .lu-kind { font-size:11px; color:#c79bff; }
-/* 归属英雄左侧色条（20.3 任务一：用该英雄定位色标识「会填进谁的槽」） */
-.levelup-card .lu-bar { position:absolute; left:0; top:0; bottom:0; width:6px; border-radius:11px 0 0 11px; }
-/* 归属标签：定位色描边 + 文字（底色用定位色低透明度叠加） */
-.levelup-card .lu-owner {
-  font-size:11px; padding:2px 8px; border:1px solid; border-radius:10px;
-  background:rgba(255,255,255,.05);
+.levelup-card.lu-v2:hover { transform:translateY(-4px); border-color:#ffd76a; background:#fff8ea; }
+/* 21.4：v2 卡标题栏已含卡名（c.name || kindLabel），旧 .lu-kind 行冗余且无样式可见性差 → 隐藏（旧结构保留兼容） */
+.levelup-card.lu-v2 .lu-kind { display:none; }
+/* 顶部彩色标题栏（参考图青绿底 + 深字）：底色 = 归属英雄定位色（JS 内联写入） */
+.levelup-card .lu-head {
+  display:block; padding:8px 10px; border-radius:10px 10px 0 0;
+  font-size:15px; font-weight:bold; color:#123; text-shadow:0 1px 0 rgba(255,255,255,.35);
+  text-align:center;
 }
-/* 模块槽标注（19.12）：第 N/4 格 */
-.levelup-card .lu-slot { font-size:11px; color:#6cb2ff; text-align:center; }
-/* 槽位将满警示（20.3 任务一）：本次选中即填满该队友 → 黄色告警样式 */
-.levelup-card.lu-will-full { border-color:#ffb84d; box-shadow:0 0 0 1px rgba(255,184,77,.4) inset; }
-.levelup-card .lu-full { font-size:11px; color:#ffcf7a; font-weight:bold; }
-/* 禁用视觉（19.12 任务一）：槽满候选置灰 + 不可点（灰度滤镜 + 无 hover 抬升） */
-.levelup-card.lu-locked {
-  filter:grayscale(1) brightness(.6); opacity:.55; cursor:not-allowed;
+/* 推荐角标（参考图右上绿标） */
+.levelup-card .lu-rec-badge {
+  position:absolute; top:34px; right:8px; z-index:2;
+  padding:2px 8px; border-radius:9px; background:#3ecf6e; color:#fff;
+  font-size:11px; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,.3);
 }
-.levelup-card.lu-locked:hover { transform:none; border-color:#33486b; background:#1d2a3d; }
-.levelup-card .lu-lock { font-size:11px; color:#ff9a9a; }
+/* 中央大图标（参考图立绘位）：品质色圆底 + 词条符号（JS 内联边框色） */
+.levelup-card .lu-icon { display:flex; align-items:center; justify-content:center; flex:1; min-height:86px; }
+.levelup-card .lu-ico {
+  display:flex; align-items:center; justify-content:center;
+  width:74px; height:74px; border-radius:50%; border:3px solid;
+  font-size:34px; background:rgba(255,255,255,.72);
+}
+/* 描述（参考图）：浅底深字，数值橙色加粗 */
+.levelup-card .lu-desc { font-size:13px; color:#3a4356; line-height:1.55; padding:0 10px; min-height:40px; }
+.levelup-card .lu-desc .lu-num { color:#ff7a3c; font-weight:bold; font-size:14px; }
+/* 底部进度胶囊（参考图紫底白字「量子护盾 (0/3)」） */
+.levelup-card .lu-chip {
+  margin:0 10px; padding:5px 10px; border-radius:14px;
+  background:linear-gradient(180deg,#8a5cff,#6a3ce8); color:#fff;
+  font-size:12px; font-weight:bold; text-align:center;
+  box-shadow:0 2px 6px rgba(106,60,232,.35);
+}
+.levelup-card .lu-chip-in { pointer-events:none; }
+/* 锁定卡（19.12 保留）：灰度 + 不可点 */
+.levelup-card.lu-locked { filter:grayscale(1) brightness(.6); opacity:.55; cursor:not-allowed; }
+.levelup-card.lu-locked:hover { transform:none; border-color:#33486b; background:#f4efe4; }
+.levelup-card .lu-lock { font-size:11px; color:#c0392b; font-weight:bold; padding:0 10px 4px; }
+/* 底部刷新按钮（21.4 参考图绿色大按钮「刷新 1/1」） */
+.lu-foot { display:flex; justify-content:center; margin-top:14px; }
+.lu-reroll {
+  display:flex; align-items:center; gap:10px; padding:10px 26px;
+  border:none; border-radius:14px; cursor:pointer;
+  background:linear-gradient(180deg,#3ecf6e,#28a852); color:#fff;
+  font-size:16px; font-weight:bold; box-shadow:0 4px 12px rgba(40,168,82,.4);
+  transition:transform .12s, filter .12s;
+}
+.lu-reroll:hover { transform:translateY(-2px); filter:brightness(1.08); }
+.lu-reroll:disabled { filter:grayscale(1) brightness(.7); cursor:not-allowed; transform:none; }
+.lu-reroll .lu-reroll-ico { font-size:20px; }
+.lu-reroll .lu-reroll-body b { color:#ffe9a8; margin-left:4px; }
 /* 手机端：单列大按钮，高度 ≥64px 方便点选 */
 @media (max-width: 640px) {
   .levelup-card { flex:1 1 100%; min-height:80px; }
+}
+/* ===== 21.4 竖屏 2×2 网格（CSS 三处规则同步之一：主媒体查询） ===== */
+@media (max-width: 900px) and (orientation: portrait) {
+  .levelup-cards { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+  .levelup-card.lu-v2 { min-width:0; max-width:none; min-height:206px; }
+  .levelup-card .lu-ico { width:60px; height:60px; font-size:28px; }
+  .lu-reroll { padding:12px 30px; font-size:17px; min-height:64px; }   /* 触屏 ≥64px */
 }
 
 /* ===== 结算 / 死亡 ===== */
@@ -795,18 +842,23 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   .grid-zone.side { min-width: 0; }
   #drop-zone { width: 100%; }
 
-  /* ---- 升级 4 选 1：横排 → 2×2 网格（触控目标 ≥64px 高） ---- */
+  /* ---- 升级 4 选 1：21.4 参考图竖版大卡（与上方 @media 块数值严格同步，铁律三处一致） ---- */
   .levelup-cards.grid-portrait,
   body.portrait .levelup-cards {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch;
   }
-  body.portrait .levelup-card,
-  .levelup-cards.grid-portrait .levelup-card {
-    flex: none; min-width: 0; min-height: 96px; padding: 16px 12px;
+  body.portrait .levelup-card.lu-v2,
+  .levelup-cards.grid-portrait .levelup-card.lu-v2 {
+    min-width: 0; max-width: none; min-height: 206px;
   }
-  /* 竖屏：归属标签 / 槽号行收窄，避免 390px 下横向溢出 */
-  .levelup-card .lu-slot, .levelup-card .lu-owner, .levelup-card .lu-full { font-size: 10px; }
-  .levelup-card .lu-slot b { font-size: 10px; }
+  body.portrait .levelup-card .lu-ico,
+  .levelup-cards.grid-portrait .levelup-card .lu-ico {
+    width: 60px; height: 60px; font-size: 28px;
+  }
+  body.portrait .lu-reroll,
+  .levelup-cards.grid-portrait ~ .lu-foot .lu-reroll {
+    padding: 12px 30px; font-size: 17px; min-height: 64px;
+  }
   .levelup-panel { width: 96vw; padding: 18px 14px; }
 
   /* ---- 工匠工坊（20.10 竖屏单屏三段）：页签在顶、搜刮背包居中、武器栏+芯片背包在下 ----

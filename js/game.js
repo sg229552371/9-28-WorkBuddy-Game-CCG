@@ -4832,3 +4832,29 @@ function renderNpcTapHint(ctx, w) {
     ctx.restore();
   }
 }
+
+/* ---------- 21.4 升级刷新（参考图「刷新 1/1」）----------
+ * 每局免费刷新 rerollFreePerRun 次：重抽当前 4 选 1 的候选（锁定卡保持锁定）。
+ * 关键实现：**就地换血**——不清空 UI.levelUpCandidates 的引用，只清空内容再回填，
+ * 这样 presentLevelUpChoice 的 done 闭包（持有同一数组引用）读到的就是新候选，
+ * 无需改动任何现有闭包/契约（铁律 §5.45：现有函数只插单行调用）。 */
+function levelUpReroll() {
+  const ui = (typeof UI !== "undefined") ? UI : null;
+  const r = G.run;
+  if (!ui || !r || !Array.isArray(ui.levelUpCandidates) || !ui.levelUpCandidates.length) return false;
+  // 次数惰性初始化（旧存档 run 没有该字段 → 按 CFG 补齐）
+  const per = (CFG.levelUp && CFG.levelUp.rerollFreePerRun) || 0;
+  if (typeof r.levelUpRerollsLeft !== "number") r.levelUpRerollsLeft = per;
+  if (r.levelUpRerollsLeft <= 0) return false;          // 次数用尽（按钮应已禁用，双保险）
+  const heroId = (ui.levelUpMeta && ui.levelUpMeta.heroId)
+    || (r.heroDef && r.heroDef.id) || null;
+  if (!heroId || typeof buildLevelUpCandidates !== "function") return false;
+  r.levelUpRerollsLeft--;
+  const fresh = buildLevelUpCandidates(heroId);
+  if (!Array.isArray(fresh) || !fresh.length) { r.levelUpRerollsLeft++; return false; }
+  ui.levelUpCandidates.length = 0;                      // ★ 就地换血（引用不变）
+  for (const c of fresh) ui.levelUpCandidates.push(c);
+  if (typeof ui._renderLevelUp === "function") ui._renderLevelUp();
+  if (typeof ui.toast === "function") ui.toast(`已刷新候选（剩余 ${r.levelUpRerollsLeft} 次）`, "gold");
+  return true;
+}
