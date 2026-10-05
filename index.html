@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="app-version" content="20261005">
+<meta name="app-version" content="20261006">
 <title>弹幕射击 Roguelike × 背包肉鸽 — HTML 原型</title>
 <script>
 /* ====== 缓存自愈：静态资源统一版本号 + 旧版自动强刷（必须先于其他脚本执行） ======
@@ -11,7 +11,7 @@
  * 机制：所有 js/css 引用统一带 ?v=版本号；localStorage.app_version 与当前版本不一致
  * （说明刚从旧版升上来）时，强制 location.reload 重拉一次（sessionStorage 标记防死循环）。
  * 整段包裹 try/catch：隐私模式 / 存储被禁时静默降级，绝不阻断页面加载。 */
-var APP_VERSION = "20261005";
+var APP_VERSION = "20261006";
 (function () {
   try {
     var alreadyReloaded = sessionStorage.getItem("app_version_reloaded");
@@ -26,7 +26,7 @@ var APP_VERSION = "20261005";
   } catch (e) { /* 存储不可用：静默降级，不阻断页面 */ }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261005">
+<link rel="stylesheet" href="css/style.css?v=20261006">
 </head>
 <body>
 <div id="app">
@@ -244,10 +244,9 @@ var APP_VERSION = "20261005";
     </div>
     <!-- 移动端虚拟控件（触屏设备自动显示；CFG.mobile 配置） -->
     <div id="touch-controls" class="hidden">
-      <div id="joy-zone">
-        <div id="joy-base"><div id="joy-stick"></div></div>
-        <span id="joy-hint">移动</span>
-      </div>
+      <!-- 21.3 浮动摇杆：底盘不再固定于左下角，由 JS 在手指按下的位置动态生成（position:fixed + 屏幕坐标）。
+           故 #joy-base 直接挂在 #touch-controls 下，不再嵌套在固定定位的 #joy-zone 中。 -->
+      <div id="joy-base"><div id="joy-stick"></div></div>
       <div id="touch-btns">
         <button id="btn-touch-bag" class="tbtn tbtn-small">背包</button>
         <button id="btn-touch-act" class="tbtn tbtn-small">交互</button>
@@ -442,11 +441,11 @@ var APP_VERSION = "20261005";
   </div>
 </div>
 
-<script src="js/config.js?v=20261005"></script>
-<script src="js/core.js?v=20261005"></script>
-<script src="js/game.js?v=20261005"></script>
-<script src="js/ui.js?v=20261005"></script>
-<script src="js/main.js?v=20261005"></script>
+<script src="js/config.js?v=20261006"></script>
+<script src="js/core.js?v=20261006"></script>
+<script src="js/game.js?v=20261006"></script>
+<script src="js/ui.js?v=20261006"></script>
+<script src="js/main.js?v=20261006"></script>
 <!-- 20.6 JS 未加载兜底：main.js 之后立刻执行；若 window.Game 未定义（脚本全部/部分加载失败）
      则直接显示兜底面板。面板与按钮由 main.js 的 BootGuard.ensure() 建成（本行也可能在
      main.js 未执行时运行，故此处再自查一次并按需补按钮）。 -->

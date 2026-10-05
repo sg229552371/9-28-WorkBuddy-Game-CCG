@@ -127,12 +127,14 @@ check("CSS 主规则 #hud-br 为纵向堆叠（flex-direction:column）",
   /#hud-br\s*\{[^}]*flex-direction\s*:\s*column/i.test(css));
 check("CSS 竖屏块含 #hud-br 锚点（右上信息区）",
   /@media\s*\(orientation:\s*portrait\)[\s\S]*?#hud-br\s*\{[^}]*top\s*:/i.test(css));
-check("CSS 竖屏块含 #joy-zone 锚点（左下默认位）",
-  /@media\s*\(orientation:\s*portrait\)[\s\S]*?#joy-zone\s*\{[^}]*left\s*:/i.test(css));
 check("CSS 竖屏块含 #hud-tl 锚点（顶栏之下左对齐）",
   /@media\s*\(orientation:\s*portrait\)[\s\S]*?#hud-tl\s*\{[^}]*top\s*:/i.test(css));
 check("body.portrait 钩子同步 #hud-tl（双保险）", /body\.portrait\s+#hud-tl/i.test(css));
-check("body.portrait 钩子同步 #joy-zone（双保险）", /body\.portrait\s+#joy-zone/i.test(css) || /body\.portrait\s+#touch-btns/i.test(css));
+// 21.3：摇杆改浮动（触点即盘心），#joy-zone 固定锚点已移除 → 不再要求该旧锚点存在
+check("21.3 已移除 #joy-zone 固定锚点（浮动摇杆无固定位）", !/#joy-zone\s*\{/.test(css));
+check("21.3 #joy-base 为 fixed 浮动定位 + 待命隐形",
+  /#joy-base\s*\{[^}]*position\s*:\s*fixed/i.test(css) && /#joy-base\s*\{[^}]*opacity\s*:\s*0/i.test(css));
+check("21.3 #joy-base.joy-on 浮现规则存在", /#joy-base\.joy-on\s*\{[^}]*opacity\s*:\s*1/i.test(css));
 // 关键陷阱：#touch-btns 不得在 CSS 里被硬写 display:none（必须由 JS 读配置加 .hidden）
 check("CSS 未对 #touch-btns 硬写 display:none（隐藏走 JS 配置驱动）",
   !/#touch-btns\s*\{[^}]*display\s*:\s*none/i.test(css));
@@ -148,7 +150,29 @@ check("js/main.js 对 #touch-btns 应用 .hidden（DOM 保留，仅视觉）",
 check("js/main.js 保留 btn-touch-skill / bag / act 的 DOM 绑定（未删除）",
   /btn-touch-skill/.test(mainSrc) && /btn-touch-bag/.test(mainSrc) && /btn-touch-act/.test(mainSrc));
 check("js/main.js 读取 CFG.mobile.floatStick（浮动摇杆开关）", /floatStick/.test(mainSrc) && /zoneRatio/.test(mainSrc));
-check("js/main.js 摇杆起杆仅限画布（isFreeCanvas 判定 e.target 为 canvas）", /isFreeCanvas/.test(mainSrc));
+// 21.3：起杆条件从「必须命中 canvas」改为「左半屏 + 未命中交互控件黑名单」。
+//   旧写法 target===canvas 与摇杆盘 pointer-events:auto 冲突，导致按在盘上永不生效（就是本次要修的 bug）。
+check("21.3 摇杆起杆不再要求命中 canvas（旧 isFreeCanvas 已废弃）", !/isFreeCanvas/.test(mainSrc));
+check("21.3 摇杆起杆有交互控件黑名单（button/.tbtn/.itm/面板等）",
+  /INTERACTIVE\s*=/.test(mainSrc) && /closest\(\s*INTERACTIVE\s*\)/.test(mainSrc));
+check("21.3 摇杆盘心取按下点 clientX/Y（浮动核心）", /placeBase\(\s*e\.clientX\s*,\s*e\.clientY\s*\)/.test(mainSrc));
+check("21.3 摇杆使用 setPointerCapture（防手指滑出丢事件）", /setPointerCapture/.test(mainSrc));
+check("21.3 摇杆监听 lostpointercapture（防卡死）", /lostpointercapture/.test(mainSrc));
+check("21.3 摇杆底盘跟随拇指（dragBase 超出半径时拖盘心）", /dragBase/.test(mainSrc) && /placeBase\(\s*cx\s*\+/.test(mainSrc));
+/* 21.3 两个「摇杆不能用」的真根因，必须锁死防回归：
+ *  ① 全局缺 touch-action:none → 画布拖动被判为页面滚动 → 浏览器发 pointercancel 打断摇杆；
+ *  ② setPointerCapture 挂到 pointer-events:none 的 #joy-base 上 → 立即失败并触发 lostpointercapture。 */
+check("21.3 游戏区 touch-action:none（防 pointercancel 打断摇杆）",
+  /#app\s*,\s*#game-canvas\s*,\s*#touch-controls\s*\{[^}]*touch-action\s*:\s*none/i.test(css)
+  && /overscroll-behavior\s*:\s*none/i.test(css));
+check("21.3 setPointerCapture 挂在 e.target 而非 base（base 为 pointer-events:none）",
+  /setPointerCapture/.test(mainSrc) && !/base\.setPointerCapture/.test(mainSrc));
+check("21.3 lostpointercapture 监听在 window（base 收不到该事件）",
+  /window\.addEventListener\(\s*["']lostpointercapture["']/.test(mainSrc));
+/* 排除注释行后再判断（注释里会提到这个反面写法作为说明）。 */
+const mainCode = mainSrc.split("\n").filter(l => !/^\s*(\/\/|\*|\/\*)/.test(l)).join("\n");
+check("21.3 未把 opacity 写成 base 内联样式（会压住 .joy-on 导致底盘不浮现）",
+  !/base\.style\.opacity/.test(mainCode));
 check("js/main.js 保留 npcTap 让位逻辑（不改动主会话点选代码）", /typeof\s+npcTap\s*===\s*["']function["']/.test(mainSrc));
 
 /* ============ 行为 E：joyVector 纯函数（坐标换算 / 钳制 / 死区） ============ */
@@ -181,11 +205,11 @@ vm.runInContext(`
 `, ctx, { filename: "joyvec_check" });
 
 /* ============ 行为 F：bindTouch 依配置隐藏（真跑一遍初始化） ============ */
-// 预置触屏控件元素（桩不解析 HTML），并造 canvas 供起杆判定
+// 预置触屏控件元素（桩不解析 HTML）。21.3：#joy-zone 已删，摇杆只需 joy-base/joy-stick。
 getEl("game-canvas", "canvas");
 getEl("touch-controls");
 getEl("touch-btns");
-getEl("joy-zone"); getEl("joy-base"); getEl("joy-stick");
+getEl("joy-base"); getEl("joy-stick");
 getEl("btn-touch-skill", "button"); getEl("btn-touch-bag", "button"); getEl("btn-touch-act", "button");
 ctx.JoyVector = vm.runInContext("joyVector", ctx);
 vm.runInContext(`

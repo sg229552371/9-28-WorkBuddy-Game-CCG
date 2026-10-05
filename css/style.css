@@ -1,9 +1,18 @@
 /* ===== 全局 ===== */
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+/* 21.3：禁止浏览器手势接管游戏区触摸。
+ * ⚠️ touch-action 不继承、且只在「手势起始目标」上生效，所以必须打在**画布与浮层**上，
+ *    只写 html,body 是无效的（#app/canvas 仍是 auto）。缺了这条，在画布上拖动会被判为页面
+ *    滚动，浏览器随即发 pointercancel 把摇杆打断——表现就是「按住一拖就松手，摇杆没法用」。
+ * 需要原生滚动的面板正文单独放行（见下方 .scrollable 等）。 */
+#app, #game-canvas, #touch-controls { touch-action:none; }
+html, body { overscroll-behavior:none; }   /* 抑制下拉刷新/橡皮筋，避免打断战斗 */
 html,body { width:100%; height:100%; overflow:hidden; background:#0b0e14; }
 body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 #app { position:relative; width:100vw; height:100vh; }
 .hidden { display:none !important; }
+/* 需要纵向滚动的容器（面板正文/列表）：放行原生滚动，其余区域一律禁止手势 */
+.scrollable, .panel, .screen, .help-cols, .codex-grid, .art-side { touch-action:pan-y; }
 
 /* ===== 22.1 手机端毛刺：键盘快捷键标注（(B)/(E)）=====
  * 默认隐藏；仅在「支持悬停 + 精确指针」设备（桌面鼠标）显示。
@@ -452,23 +461,24 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 /* ===== 移动端虚拟控件（触屏设备显示；CFG.mobile 配置） ===== */
 #touch-controls { position:absolute; inset:0; pointer-events:none; }
 #touch-controls.hidden { display:none; }
-#joy-zone {
-  position:absolute; left:28px; bottom:64px; width:160px; height:160px;
-  pointer-events:none;
-}
+/* 21.3：摇杆改为「浮动」——不再有固定的 #joy-zone 底盘区域，去掉 zone/hint 相关规则。
+ * 手指在左半屏按下即在触点生成底盘；#joy-base 用 position:fixed + JS 写入的屏幕坐标定位。 */
 #joy-base {
-  position:absolute; left:14px; top:14px; width:132px; height:132px; border-radius:50%;
-  background:rgba(20,30,50,.35); border:2px solid rgba(122,160,220,.45);
-  pointer-events:auto; touch-action:none; cursor:grab;
+  /* 圆心 = 手指按下点（JS 写 left/top）。待命时 opacity:0 隐形，按下加 .joy-on 才浮现。
+   * 默认 left/top 给屏外安全值，避免加载瞬间在左上角闪一下。 */
+  position:fixed; left:-9999px; top:-9999px; width:132px; height:132px; border-radius:50%;
+  background:rgba(20,30,50,.42); border:2px solid rgba(122,160,220,.55);
+  box-shadow:0 0 0 1px rgba(0,0,0,.25), 0 6px 18px rgba(0,0,0,.35);
+  pointer-events:none; touch-action:none; opacity:var(--joy-idle, 0); z-index:60;
+  transition:opacity .12s ease;   /* 21.3：按下浮现 / 松手隐形的过渡（JS 只切 .joy-on） */
 }
+/* 起杆时浮现：用 !important 以外的手段保证优先级——.joy-on 与基础规则同为 id 选择器，
+   靠「后出现 + 更高优先级」胜出（基础规则里的 opacity 用 var() 且无内联覆盖）。 */
+#joy-base.joy-on { opacity:1 !important; }
 #joy-stick {
   position:absolute; left:38px; top:38px; width:56px; height:56px; border-radius:50%;
   background:rgba(140,180,240,.55); border:2px solid rgba(200,220,255,.7);
   pointer-events:none;
-}
-#joy-hint {
-  position:absolute; left:0; right:0; bottom:-22px; text-align:center;
-  font-size:11px; color:#8ba0bd; text-shadow:0 1px 2px #000;
 }
 #touch-btns {
   position:absolute; right:24px; bottom:56px;
@@ -484,7 +494,6 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .tbtn-big { width:86px; height:86px; font-size:17px; color:#ffe9a8; }
 /* 小屏（手机横竖屏）：控件随视口缩放，HUD 边距收紧 */
 @media (max-width: 900px) {
-  #joy-zone { left:16px; bottom:52px; transform:scale(.88); transform-origin:left bottom; }
   #touch-btns { right:14px; bottom:44px; transform:scale(.88); transform-origin:right bottom; }
   #hud-bl { bottom:8px; }
   #hud-br { bottom:8px; }
@@ -769,8 +778,7 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   #hud-bl { left: calc(var(--sa-left) + 12px); top: calc(var(--sa-top) + 204px); bottom: auto; font-size: 12px; }
   #hud-br { right: calc(var(--sa-right) + 12px); top: calc(var(--sa-top) + 122px); bottom: auto; }
 
-  /* 虚拟摇杆左下、按钮右下，与技能栏错层 */
-  #joy-zone { left: calc(var(--sa-left) + 16px); bottom: calc(var(--sa-bottom) + 28px); transform: scale(.92); transform-origin: left bottom; }
+  /* 虚拟摇杆浮动（无固定锚点），按钮右下，与技能栏错层 */
   #touch-btns { right: calc(var(--sa-right) + 16px); bottom: calc(var(--sa-bottom) + 40px); transform: scale(.92); transform-origin: right bottom; }
 
   /* 中央提示 / 读条圈 / Toast：顶部信息区之下居中，避开底部控件带 */
@@ -877,8 +885,7 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 /* body.portrait 同步（JS 钩子；与上面媒体查询等效，作双保险） */
 body.portrait .party-skillbar { bottom: calc(var(--sa-bottom) + 170px); }
 body.portrait #hud-tl { top: calc(var(--sa-top) + 82px); }
-/* 21.1：浮动摇杆默认锚点 / 右下按钮区 / 顶栏信息区（与竖屏媒体查询同步，JS 路径双保险） */
-body.portrait #joy-zone { left: calc(var(--sa-left) + 16px); bottom: calc(var(--sa-bottom) + 28px); }
+/* 21.3：浮动摇杆无固定锚点（触点即盘心），故不再需要 #joy-zone 定位规则；右下按钮区 / 顶栏信息区保留 */
 body.portrait #hud-br { right: calc(var(--sa-right) + 12px); top: calc(var(--sa-top) + 122px); bottom: auto; }
 body.portrait .bp-body { flex-direction: column; flex-wrap: nowrap; }
 body.portrait .art-layout { flex-direction: column; }

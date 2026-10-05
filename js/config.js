@@ -353,7 +353,16 @@ CFG.mobile = {
   npcTap: { dwellSeconds: 1.0, tapRadius: 110, hintRadius: 104 },
   /* 浮动摇杆（21.1）：左半屏按下即把该点作为摇杆中心，拇指无需找固定位置。
    * zoneRatio 为「可召唤区」占屏宽比例；returnOnRelease 松手后摇杆是否回到默认锚点。 */
-  floatStick: { enabled: true, zoneRatio: 0.5, returnOnRelease: true },
+  /* 浮动摇杆（21.3 重写）：左半屏任意处按下 → 摇杆**在该点生成**（不是固定左下角）。
+   * zoneRatio   「可召唤区」占屏宽比例（0.5 = 左半屏）；
+   * returnOnRelease 松手后是否把底盘归位到待命锚点（true = 隐形待命，下次按下重新生成）；
+   * dragBase    拇指拖动超过 maxR 时，底盘是否跟着拇指走（true = 经典浮动摇杆手感，防止拇指漂移出盘）；
+   * stayInZone  拖动底盘时是否把它夹在可召唤区内（防止底盘跑到右半屏按钮区）；
+   * idleOpacity 待命时底盘透明度（0 = 完全隐形，只在按下时出现）。 */
+  floatStick: {
+    enabled: true, zoneRatio: 0.5, returnOnRelease: true,
+    dragBase: true, stayInZone: true, idleOpacity: 0,
+  },
 };
 
 /* ---------- 游戏主城（Hub，流程：首页 → 主城 → 传送门 → 选角 → 关卡） ----------
