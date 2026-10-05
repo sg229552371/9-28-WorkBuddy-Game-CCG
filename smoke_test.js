@@ -98,16 +98,16 @@ vm.runInContext(`
   // 9) 局外元进度：结晶 / 局外等级 / 出战加成
   console.assert(typeof Meta.data.crystals === "number", "Meta 默认数据");
   Meta.data.crystals = 0;
-  console.assert(Meta.awardRun(10, true, true) === 30, "撤离结晶 = 仅Boss结晶30（19.8 小怪击杀退役）, got " + Meta.awardRun(0, false, true));
-  console.assert(Meta.data.crystals === 30, "结晶入账 30, got " + Meta.data.crystals);
-  console.assert(Meta.awardRun(10, true, false) === 9, "死亡结晶 30% = 9");
+  console.assert(Meta.awardRun(10, true, true) === 60, "撤离结晶 = 仅Boss结晶60（20.10 配平）, got " + Meta.awardRun(0, false, true));
+  console.assert(Meta.data.crystals === 60, "结晶入账 60, got " + Meta.data.crystals);
+  console.assert(Meta.awardRun(10, true, false) === 18, "死亡结晶 30% = 18");
   console.assert(Meta.levelUpCost("H001") === 50, "LV1→2 消耗 50");
   Meta.data.crystals = 0;
   console.assert(!Meta.levelUp("H001"), "结晶不足不能升级");
   Meta.data.crystals = 100;
   console.assert(Meta.levelUp("H001"), "升级成功");
   console.assert(Meta.heroLevel("H001") === 2, "局外等级 2");
-  console.assert(Meta.levelUpCost("H001") === 90, "LV2→3 消耗 90");
+  console.assert(Meta.levelUpCost("H001") === 65, "LV2→3 消耗 65");
   const boosted = applyOutLevel(CFG.heroes[0]);
   console.assert(boosted.hp === CFG.heroes[0].hp + 8 && boosted.atk === CFG.heroes[0].atk + 2
     && boosted.def === CFG.heroes[0].def + 1 && boosted.outLevel === 2, "局外加成生效");

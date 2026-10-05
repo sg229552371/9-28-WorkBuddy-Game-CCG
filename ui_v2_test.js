@@ -135,8 +135,8 @@ const requiredIds = [
   "levelup-overlay", "levelup-cards", "levelup-hero",
   // ④ 背包三段布局
   "grid-backpack", "grid-chip", "module-slots", "bp-grid-unit", "bp-panel-main",
-  // ⑤ 芯片工坊
-  "art-tab-forge", "art-page-forge", "forge-list",
+  // ⑤ 芯片工坊（19.7；20.10 起 forge 页签并入「商店·工坊」，#forge-list 保留在 art-page-shop 内）
+  "forge-list",
   // ⑥ 芯片图鉴
   "screen-chip-codex", "chip-codex-value", "chip-codex-behavior", "btn-home-chip-codex", "btn-chip-codex-back",
   // ⑦ 全队技能栏（19.12 底部居中：每人一条 [技能图标+冷却环][4 模块槽]）
@@ -309,10 +309,11 @@ vm.runInContext(`
   check("chipForge 返回 ok:true → toast 成功信息", forgeToast.indexOf("合成成功") >= 0);
   UI.toast = origToast;
 
-  // 工坊服务列表渲染（读 CFG.chipForge.services）
+  // 工坊服务列表渲染（读 CFG.chipForge.services；20.10：forge 并入「商店·工坊」→ 切 shop 页签，
+  // renderArtisan 的 shop 分支会同时渲染 #shop-list 与 #forge-list）
   G.run.coin = 999;
   UI.renderArtisan();
-  UI.setArtisanTab("forge");
+  UI.setArtisanTab("shop");
   const forgeRows = get("forge-list").children;
   check("工坊服务列表渲染 3 项", forgeRows.length === 3);
   check("工坊行含服务描述与价格", forgeRows[0].innerHTML.indexOf(CFG.chipForge.services.merge.cost) >= 0

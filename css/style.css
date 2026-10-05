@@ -30,37 +30,40 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 
 /* ===== 关卡 / 角色选择 ===== */
 /* 选关面板：flex 纵向三段（头部固定 / 列表滚动 / 底部返回固定）。
- * 高度锁定 min(92vh, 844px)，保证 390×844 下不超出视口 → 返回按钮始终可见。 */
+ * 高度锁定 calc(100dvh - 16px)（20.10 苹果风单屏锁定：dvh 动态视口，避开手机地址栏）。
+ * 底部 padding 加 safe-area-inset-bottom，返回按钮永不贴手势条。 */
 .level-panel {
   width:min(560px, 94vw);
-  max-height:min(92vh, 844px);
+  max-height:calc(100dvh - 16px);
+  padding-bottom:max(10px, env(safe-area-inset-bottom));
   display:flex; flex-direction:column;
 }
 .level-head { flex-shrink:0; }
-.level-head h2 { margin-bottom:4px; }
-.level-head .tip { margin-top:0; margin-bottom:10px; }
-/* 关卡列表：2 列紧凑网格；10 关 5 行。flex:1 占满中间，超高时才自身滚动（头顶/底部按钮不动）。 */
+.level-head h2 { margin-bottom:3px; font-size:15px; }
+.level-head .tip { margin-top:0; margin-bottom:7px; font-size:10px; }
+/* 关卡列表：3 列紧凑网格（20.10 苹果风小而美：卡片 15px 大字 → 10px 小字，一屏看更多）。
+ * flex:1 占满中间，超高时才自身滚动（头顶/底部按钮不动）。 */
 #level-list {
   flex:1; min-height:0; overflow-y:auto;
-  display:grid; grid-template-columns:1fr 1fr; gap:8px;
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;
   align-content:start; padding:2px;
 }
-.level-foot { flex-shrink:0; margin-top:12px; }
+.level-foot { flex-shrink:0; margin-top:8px; }
 .level-card {
-  background:#1d2a3d; border:1px solid #33486b; border-radius:10px;
-  padding:9px 12px; cursor:pointer; transition:.15s; line-height:1.35;
+  background:#1d2a3d; border:1px solid #33486b; border-radius:8px;
+  padding:5px 8px; cursor:pointer; transition:.15s; line-height:1.25;
   display:flex; flex-direction:column; justify-content:center;
 }
 .level-card:hover { border-color:#ffd76a; background:#25344c; }
 .level-card.locked { opacity:.4; cursor:not-allowed; }
-.level-card .lv-no { font-size:11px; color:#8ba0bd; letter-spacing:1px; }
-.level-card .lv-name { font-size:15px; font-weight:bold; color:#eaf1fb; margin:1px 0 3px;
+.level-card .lv-no { font-size:9px; color:#8ba0bd; letter-spacing:.5px; }
+.level-card .lv-name { font-size:10px; font-weight:bold; color:#eaf1fb; margin:0 0 1px;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.level-card .lv-meta { font-size:11px; color:#9fb4cc; }
+.level-card .lv-meta { font-size:9px; color:#9fb4cc; }
 .level-card .lv-meta.lock { color:#e0a24c; }
-.level-card .lv-boss { font-size:11px; color:#e79aa0; margin-top:1px;
+.level-card .lv-boss { font-size:9px; color:#e79aa0; margin-top:0;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.level-card b { font-size:17px; }
+.level-card b { font-size:12px; }
 .level-card small { color:#8ba0bd; }
 .btn {
   background:#2b3c58; color:#e8ecf2; border:1px solid #44608c; border-radius:8px;
@@ -319,7 +322,8 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   position:absolute; inset:0; z-index:30;
   background:rgba(5,8,14,.72); display:flex; align-items:center; justify-content:center;
 }
-.bp-panel { width:min(1100px,94vw); max-height:92vh; overflow:auto; }
+#panel-backpack { z-index:52; }
+.bp-panel { width:min(1100px,94vw); max-height:calc(100dvh - 16px); overflow:auto; padding-bottom:max(10px, env(safe-area-inset-bottom)); }
 .bp-head { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
 .bp-head h2 { margin:0; flex:1; }
 .warn { color:#ff9a5b; font-size:12px; }
@@ -376,35 +380,45 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .module-slot .ms-lv { font-size:11px; font-weight:bold; color:#ffd76a; }
 .module-slot.filled { border-color:#b06cff; }
 
-/* ===== 工匠开箱（三页签：开宝箱 / 抽卡牌 / 购买·服务 + 右侧背包/武器栏） ===== */
-.art-panel { width:min(1220px,96vw); max-height:94vh; overflow:auto; }
-.art-tabs { display:flex; gap:8px; margin-bottom:14px; }
+/* ===== 工匠世界（20.10 竖屏单屏化：两页签 + 上中下三段，锁一屏不滚动） =====
+ * 苹果风小而美：小字号（9~12px）、细边框（1px）、小圆角（8~10px）、克制选中高亮。
+ * overflow:auto 已消灭 —— 面板改为 flex 纵向 + 高度锁定（max-height calc(100dvh - 16px)）。 */
+.art-panel {
+  width:min(1220px,96vw);
+  max-height:calc(100dvh - 16px);
+  display:flex; flex-direction:column; min-height:0;
+  padding-bottom:max(10px, env(safe-area-inset-bottom));
+}
+.art-tabs { display:flex; gap:6px; margin-bottom:8px; flex:none; }
 .art-tab {
-  flex:1; padding:10px 0; font-size:14px; font-weight:bold; color:#9fb4d4; cursor:pointer;
-  background:#1d2a3d; border:1px solid #33486b; border-radius:9px; transition:background .12s, color .12s;
+  flex:1; padding:6px 0; font-size:11px; font-weight:bold; color:#9fb4d4; cursor:pointer;
+  background:#1d2a3d; border:1px solid #33486b; border-radius:9px; transition:background .12s, color .12s, border-color .12s;
 }
 .art-tab:hover { color:#cfe0ff; }
-.art-tab.active { color:#0e1522; background:linear-gradient(90deg,#d29a3a,#ffd76a); border-color:#ffd76a; }
-.art-layout { display:flex; gap:24px; align-items:flex-start; }
-.art-side { width:300px; flex:none; }
-.art-side h3 { margin:0 0 8px; font-size:13px; color:#9fb4d4; }
-.art-grids { flex:1; min-width:0; }
-#chest-list { margin-bottom:14px; }
+/* 克制选中高亮：细边框 + 轻光晕（不要粗边框大色块） */
+.art-tab.active { color:#ffd76a; background:#25344c; border-color:#ffd76a; box-shadow:0 0 0 1px rgba(255,215,106,.25); }
+.art-layout { display:flex; gap:16px; align-items:flex-start; min-height:0; flex:1; }
+.art-side { width:280px; flex:none; min-height:0; }
+.art-side h3 { margin:0 0 6px; font-size:11px; color:#9fb4d4; }
+.art-side h3.art-sec-h { margin-top:10px; padding-top:8px; border-top:1px solid #24334a; }
+.art-grids { flex:1; min-width:0; min-height:0; }
+#chest-list { margin-bottom:8px; }
 #pending-area { margin-bottom:6px; }
 .chest-row {
-  display:flex; align-items:center; gap:14px; background:#1d2a3d;
-  border:1px solid #33486b; border-radius:10px; padding:10px 14px; margin-bottom:8px; cursor:pointer;
+  display:flex; align-items:center; gap:10px; background:#1d2a3d;
+  border:1px solid #33486b; border-radius:9px; padding:6px 10px; margin-bottom:5px; cursor:pointer;
 }
-.chest-row.selected { border-color:#ffd76a; background:#25344c; }
+/* 克制选中：细边框 + 轻光晕 */
+.chest-row.selected { border-color:#ffd76a; background:#25344c; box-shadow:0 0 0 1px rgba(255,215,106,.22); }
 /* 只读行（如工匠世界的武器/技能等级展示）：不可点击 */
 .chest-row.readonly { cursor:default; }
-.chest-row .sw { width:34px; height:34px; border-radius:6px; }
-.chest-row b { font-size:14px; }
-.chest-row small { color:#8ba0bd; margin-left:auto; }
+.chest-row .sw { width:20px; height:20px; border-radius:5px; flex:none; }
+.chest-row b { font-size:12px; font-weight:600; }
+.chest-row small { color:#8ba0bd; font-size:10px; margin-left:auto; }
 .art-right { flex:1; }
-#pending-area { display:flex; flex-wrap:wrap; gap:8px; min-height:110px; background:#131b29; border:2px dashed #2e3d55; border-radius:8px; padding:8px; }
-.pending-item { width:64px; height:64px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:grab; font-size:11px; color:#fff; text-align:center; text-shadow:0 1px 2px #000; position:relative; box-shadow:0 2px 8px rgba(0,0,0,.4); }
-.pending-item .giveup { position:absolute; top:-7px; right:-7px; width:18px; height:18px; border-radius:50%; background:#a03030; color:#fff; font-size:11px; line-height:18px; text-align:center; cursor:pointer; }
+#pending-area { display:flex; flex-wrap:wrap; gap:6px; min-height:60px; background:#131b29; border:1px dashed #2e3d55; border-radius:8px; padding:6px; }
+.pending-item { width:42px; height:42px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:grab; font-size:9px; color:#fff; text-align:center; text-shadow:0 1px 2px #000; position:relative; box-shadow:0 2px 8px rgba(0,0,0,.4); }
+.pending-item .giveup { position:absolute; top:-6px; right:-6px; width:15px; height:15px; border-radius:50%; background:#a03030; color:#fff; font-size:9px; line-height:15px; text-align:center; cursor:pointer; }
 
 /* ===== 属性卡牌（工匠面板内） ===== */
 .card-sec { margin-top:14px; border-top:1px solid #2e3d55; padding-top:12px; }
@@ -468,7 +482,8 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 }
 
 /* ===== 升级 4 选 1 暂停弹窗（19.4 方案 7：全屏暗化 + 4 张大卡；手机端按钮 ≥64px 高） ===== */
-.levelup-panel { width:min(1000px, 96vw); max-height:94vh; overflow:auto; text-align:center; }
+/* 20.10：dvh 单屏锁定 + 底部安全区（.overlay 宿主无顶部避让 → -16px 档） */
+.levelup-panel { width:min(1000px, 96vw); max-height:calc(100dvh - 16px); padding-bottom:max(10px, env(safe-area-inset-bottom)); overflow:auto; text-align:center; }
 .levelup-panel h2 { color:#ffd76a; }
 .levelup-panel .tip { margin-bottom:16px; }
 /* 归属英雄标题（19.12 任务一）：告诉玩家本次强化的对象 */
@@ -510,14 +525,20 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 }
 
 /* ===== 结算 / 死亡 ===== */
-.settle-panel, .death-panel { width:min(760px,92vw); max-height:90vh; overflow:auto; }
-.stats { display:flex; flex-wrap:wrap; gap:22px; font-size:14px; color:#cfe0ff; margin-bottom:6px; }
-.stats > span[style] { flex-basis:100%; color:#8ba0bd; font-size:12px; }
-.stats b { color:#ffd76a; font-size:18px; }
-.items-list, #settle-chests { display:flex; flex-wrap:wrap; gap:8px; }
+/* 20.10 苹果风单屏：面板锁 calc(100dvh - 16px)（dvh 避开地址栏），底部安全区防手势条遮挡确认按钮。 */
+.settle-panel, .death-panel {
+  width:min(760px,92vw);
+  max-height:calc(100dvh - 16px);
+  padding-bottom:max(10px, env(safe-area-inset-bottom));
+  display:flex; flex-direction:column;
+}
+.stats { display:flex; flex-wrap:wrap; gap:12px; font-size:12px; color:#cfe0ff; margin-bottom:4px; }
+.stats > span[style] { flex-basis:100%; color:#8ba0bd; font-size:11px; }
+.stats b { color:#ffd76a; font-size:14px; }
+.items-list, #settle-chests { display:flex; flex-wrap:wrap; gap:6px; }
 .items-list .chip, #settle-chests .chip {
   background:#1d2a3d; border:1px solid #33486b; border-radius:6px;
-  padding:5px 10px; font-size:12px;
+  padding:3px 9px; font-size:11px;
 }
 .items-list.lost .chip { border-color:#6b3030; background:#2a1d1d; color:#ff9a9a; text-decoration:line-through; }
 .death-panel h2 { color:#ff5b5b; }
@@ -532,16 +553,17 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 }
 
 /* ===== 主菜单 ===== */
-.main-panel { display:flex; flex-direction:column; gap:14px; width:320px; }
-.btn.big { padding:14px 24px; font-size:16px; letter-spacing:2px; }
+.main-panel { display:flex; flex-direction:column; gap:8px; width:280px; max-height:calc(100dvh - 16px); padding-bottom:max(8px, env(safe-area-inset-bottom)); }
+.btn.big { padding:9px 18px; font-size:13px; letter-spacing:1px; }
 .btn:disabled { opacity:.4; cursor:not-allowed; }
 
 /* ===== 局外成长界面（主菜单入口） ===== */
 .meta-panel {
-  width:min(880px, 94vw); max-height:92vh;
+  width:min(880px, 94vw); max-height:calc(100dvh - 16px);
+  padding-bottom:max(10px, env(safe-area-inset-bottom));
   display:flex; flex-direction:column;
 }
-.meta-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.meta-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
 .meta-head h2 { margin:0; }
 .meta-crystals { color:#cfe0ff; font-size:14px; }
 .meta-crystals b { color:#c79bff; font-size:19px; margin-left:4px; }
@@ -633,15 +655,15 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .title-row.locked { opacity:.5; cursor:default; }
 
 /* ===== 帮助 / 设置 / 图鉴 / 告别 ===== */
-.help-panel { width:min(880px,94vw); }
-.help-cols { display:flex; gap:26px; text-align:left; }
+.help-panel { width:min(880px,94vw); max-height:calc(100dvh - 16px); padding-bottom:max(10px, env(safe-area-inset-bottom)); display:flex; flex-direction:column; }
+.help-cols { display:flex; gap:20px; text-align:left; overflow-y:auto; min-height:0; }
 .help-cols > div { flex:1; }
-.help-cols h3 { color:#ffd76a; font-size:14px; margin:10px 0 6px; }
-.help-cols p { font-size:12px; color:#9fb4d4; margin:6px 0; }
+.help-cols h3 { color:#ffd76a; font-size:12px; margin:8px 0 4px; }
+.help-cols p { font-size:11px; color:#9fb4d4; margin:4px 0; line-height:1.5; }
 .help-cols b { color:#cfe0ff; }
-.settings-panel { width:min(520px,94vw); text-align:left; }
-.set-row { display:flex; align-items:center; gap:14px; margin:16px 0; font-size:14px; color:#cfe0ff; }
-.set-row > span { width:150px; }
+.settings-panel { width:min(520px,94vw); max-height:calc(100dvh - 16px); padding-bottom:max(10px, env(safe-area-inset-bottom)); display:flex; flex-direction:column; text-align:left; }
+.set-row { display:flex; align-items:center; gap:12px; margin:10px 0; font-size:12px; color:#cfe0ff; }
+.set-row > span { width:140px; }
 .set-row input[type=range] { flex:1; accent-color:#ffd76a; }
 #set-touch.on { border-color:#7de08a; color:#7de08a; }
 
@@ -655,21 +677,21 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .af-style:hover { border-color:#ffd76a; color:#cfe0ff; }
 .af-style.selected { background:#25344c; border-color:#ffd76a; color:#ffd76a; font-weight:bold; }
 #btn-autofight.on { border-color:#7de08a; color:#7de08a; }
-.codex-panel { width:min(880px,94vw); max-height:82vh; overflow-y:auto; text-align:left; }
-.codex-panel h3 { color:#9fb4d4; font-size:13px; margin:12px 0 8px; }
-.codex-grid { display:flex; flex-wrap:wrap; gap:8px; }
+.codex-panel { width:min(880px,94vw); max-height:calc(100dvh - 16px); display:flex; flex-direction:column; padding-bottom:max(10px, env(safe-area-inset-bottom)); text-align:left; }
+.codex-panel h3 { color:#9fb4d4; font-size:12px; margin:8px 0 6px; }
+.codex-grid { display:flex; flex-wrap:wrap; gap:6px; overflow-y:auto; min-height:0; }
 .codex-card {
-  width:120px; padding:8px; border-radius:8px; background:#1d2a3d;
-  border:1px solid #33486b; text-align:center; font-size:11px; color:#cfe0ff;
+  width:96px; padding:5px; border-radius:8px; background:#1d2a3d;
+  border:1px solid #33486b; text-align:center; font-size:10px; color:#cfe0ff;
 }
-.codex-card.small { width:104px; }
-.codex-card b { display:block; font-size:12px; margin-top:4px; }
-.codex-card small { color:#8ba0bd; font-size:10px; line-height:1.4; display:block; }
-.codex-card .codex-face { width:56px; height:56px; }
-.codex-card.small .codex-face { width:44px; height:44px; }
+.codex-card.small { width:84px; }
+.codex-card b { display:block; font-size:11px; margin-top:2px; }
+.codex-card small { color:#8ba0bd; font-size:9px; line-height:1.35; display:block; }
+.codex-card .codex-face { width:48px; height:48px; }
+.codex-card.small .codex-face { width:38px; height:38px; }
 .codex-card.locked { border-style:dashed; border-color:#2e3d55; }
 .codex-card.locked b { color:#6d7c94; }
-.goodbye-panel { width:min(460px,94vw); }
+.goodbye-panel { width:min(460px,94vw); max-height:calc(100dvh - 16px); padding-bottom:max(10px, env(safe-area-inset-bottom)); }
 
 /* ============================================================
  * 竖屏优先布局（20.x）——用户拍板：默认按竖屏设计，横屏为兼容分支
@@ -691,6 +713,7 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   --sa-bottom: env(safe-area-inset-bottom, 0px);
   --sa-left: env(safe-area-inset-left, 0px);
   --sa-right: env(safe-area-inset-right, 0px);
+  --art-cell: 46px;   /* 背包/芯片网格格子边长；竖屏工匠面板内由媒体查询缩到 30px */
 }
 /* 全屏界面层避让安全区（首页 / 选关 / 结算 等） */
 .screen { padding: var(--sa-top) var(--sa-right) var(--sa-bottom) var(--sa-left); }
@@ -744,8 +767,8 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   #channel-wrap { top: calc(var(--sa-top) + 236px); bottom: auto; }
   #toast-area { top: calc(var(--sa-top) + 244px); }
 
-  /* ---- 背包面板：三段并排 → 上下堆叠 ---- */
-  .bp-panel { width: 96vw; max-height: 88vh; padding: 16px 14px; }
+  /* ---- 背包面板：三段并排 → 上下堆叠（20.10：单屏锁定 + 底部安全区，不再 88vh 旧锁高） ---- */
+  .bp-panel { width: 96vw; max-height: calc(100dvh - 16px); padding: 16px 14px max(10px, env(safe-area-inset-bottom)); }
   body.portrait .bp-body,
   .bp-body { flex-direction: column; flex-wrap: nowrap; gap: 16px; align-items: stretch; }
   .bp-body .grid-zone { width: 100%; }
@@ -767,30 +790,69 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   .levelup-card .lu-slot b { font-size: 10px; }
   .levelup-panel { width: 96vw; padding: 18px 14px; }
 
-  /* ---- 工匠工坊：左右布局 → 单列滚动 ---- */
-  .art-panel { width: 96vw; max-height: 90vh; padding: 16px 14px; }
-  .art-layout { flex-direction: column; gap: 16px; }
-  .art-side { width: 100%; }
-  .art-grids { width: 100%; }
-  #pending-area { min-height: 88px; }
+  /* ---- 工匠工坊（20.10 竖屏单屏三段）：页签在顶、搜刮背包居中、武器栏+芯片背包在下 ----
+   * 注意：本块会覆盖上方主规则，改主规则必须同步此处（旧版曾因 3 列旧规则盖 6 列主规则踩坑）。
+   * 三段锁进一屏：.art-panel 最大高度 calc(100dvh - 16px)、内部 flex 纵向、溢出隐藏（无整面板滚动条）。
+   * --art-cell 把网格格子从 46 缩到 30，JS _renderGrid/_dropTarget 读同一变量，缩格不断拖拽。 */
+  .art-panel { --art-cell: 30px; width:96vw; max-height:calc(100dvh - 16px); padding:8px 8px max(10px, env(safe-area-inset-bottom)); }
+  .art-panel .bp-head { margin-bottom:6px; gap:8px; }
+  .art-panel .bp-head h2 { font-size:15px; }
+  .art-layout { flex-direction:column; gap:6px; overflow:hidden; min-height:0; }
+  /* 上段：页签内容区（开宝箱 / 商品售卖 / 芯片工坊信息）——限高 + 内部可滚动 */
+  .art-side { width:100%; flex:none; max-height:200px; overflow-y:auto; overscroll-behavior:contain; }
+  .art-side .tip { font-size:10px; margin-top:4px; }
+  /* 中下段：背包单元（搜刮背包居中 / 武器槽 + 芯片背包在下 / 物品信息最底） */
+  .art-grids { width:100%; flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+  .art-grids .bp-body { display:flex; flex-direction:column; flex-wrap:nowrap; gap:5px; align-items:stretch; flex:1; min-height:0; overflow:hidden; }
+  .art-grids .grid-zone { width:100%; min-width:0; }
+  .art-grids .grid-zone h3 { font-size:10px; margin:0 0 3px; color:#9fb4d4; font-weight:600; }
+  /* 中段：搜刮背包（占据剩余空间，靠上对齐；min-height 防被挤成 0） */
+  .art-grids .zone-backpack { flex:1 1 auto; min-height:120px; }
+  /* 下段：武器槽 + 芯片背包同排（左右两列） */
+  .art-grids .zone-slots { flex:none; }
+  .art-grids .zone-chip { flex:none; }
+  .art-grids .zone-info { flex:none; }
+  .art-grids .zone-slots .module-slots { flex-direction:row; flex-wrap:wrap; gap:4px; }
+  .art-grids .module-slot { min-width:0; flex:1 1 46%; padding:4px 7px; border-radius:8px; border-width:1px; }
+  .art-grids .module-slot .ms-name { font-size:10px; }
+  .art-grids .module-slot .ms-lv { font-size:9px; }
+  .art-grids .module-slot .ms-name.empty { font-size:10px; }
+  /* 网格缩格：--art-cell 30 + gap 4 + padding 6（步长 34 = 30+4；JS _renderGrid/_dropTarget 同口径，
+   * gap/padding 不改、只缩格与边框，避免物品定位与拖拽命中坐标失配） */
+  .art-grids .grid { gap:4px; padding:6px; border-width:1px; }
+  .art-grids .grid .cell { width:var(--art-cell); height:var(--art-cell); }
+  .art-grids .grid .itm { border-width:1px; }
+  .art-grids .grid .itm .nm { font-size:8px; }
+  .art-grids .grid .itm .ct { font-size:9px; }
+  #drop-zone { height:24px; font-size:10px; margin-top:3px; }
+  .art-grids .tags { font-size:10px; line-height:1.4; margin-top:3px; }
+  .art-grids .item-info { font-size:10px; line-height:1.4; min-width:0; max-height:40px; overflow:hidden; }
+  /* 开箱结果（pending 方块）同步缩小 */
+  .art-panel .pending-item { width:38px; height:38px; font-size:8px; }
+  .art-panel .pending-item .giveup { top:-5px; right:-5px; width:13px; height:13px; font-size:8px; line-height:13px; }
 
-  /* ---- 芯片图鉴 / 图鉴：单列滚动、卡片铺满 ---- */
-  .codex-panel { width: 96vw; max-height: 88vh; }
+  /* ---- 芯片图鉴 / 图鉴：单列滚动、卡片铺满（20.10：dvh 锁高，去掉旧 88vh） ---- */
+  .codex-panel { width: 96vw; max-height: calc(100dvh - 16px); }
   .codex-grid { flex-direction: column; align-items: stretch; }
   .codex-card, .codex-card.small { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; }
   .codex-card .codex-face, .codex-card.small .codex-face { flex: none; }
   .codex-card b { margin-top: 0; }
 
   /* ---- 主菜单 / 关卡选择 / 角色选择：按钮铺满宽度、不横向溢出 ---- */
-  .main-panel { width: 100%; max-width: 480px; }
-  .btn.big { width: 100%; padding: 16px 18px; }
-  .level-panel { width: 96vw; max-height: 94vh; }
-  .level-card { gap: 6px; }
+  .main-panel { width: 100%; max-width: 480px; max-height: calc(100dvh - 16px); }
+  .btn.big { width: 100%; padding: 10px 18px; }
+  /* 20.10：选关面板统一 dvh 单屏锁定（旧 94vh 会被地址栏吃掉 → 改为 calc(100dvh - 16px)） */
+  .level-panel { width: 96vw; max-height: calc(100dvh - 16px); }
+  .level-card { gap: 4px; }
   /* 竖屏：12 宫格头像用 6 列（每格 ≈52px 宽，20.9 苹果风小而美），12 角一屏看完不滚动。 */
   #char-list { grid-template-columns: repeat(6, 1fr); }
-  .char-panel { width: 96vw; max-height: 94vh; }
+  .char-panel { width: 96vw; max-height: calc(100dvh - 16px); }
   .panel { width: 96vw; max-width: 96vw; }
-  .settings-panel, .help-panel, .goodbye-panel, .settle-panel, .death-panel, .meta-panel { width: 96vw; max-width: 96vw; }
+  /* 20.10：各界面面板统一 dvh 单屏锁定 + 底部安全区（覆盖旧 94vh/96vw 硬编码） */
+  .settings-panel, .help-panel, .goodbye-panel, .settle-panel, .death-panel, .meta-panel {
+    width: 96vw; max-width: 96vw; max-height: calc(100dvh - 16px);
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
   .btn-row { flex-wrap: wrap; }
   .btn-row .btn { flex: 1 1 auto; }
   .help-cols { flex-direction: column; gap: 12px; }
@@ -806,8 +868,38 @@ body.portrait .party-skillbar { bottom: calc(var(--sa-bottom) + 170px); }
 body.portrait #hud-tl { top: calc(var(--sa-top) + 82px); }
 body.portrait .bp-body { flex-direction: column; flex-wrap: nowrap; }
 body.portrait .art-layout { flex-direction: column; }
+/* 20.10 竖屏工匠单屏三段（与媒体查询双写；JS 钩子路径同样锁死高度、消灭滚动条） */
+body.portrait .art-panel { --art-cell: 30px; max-height: calc(100dvh - 16px); padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+body.portrait .art-side { width: 100%; flex: none; max-height: 200px; overflow-y: auto; }
+body.portrait .art-grids { width: 100%; flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+body.portrait .art-grids .bp-body { display: flex; flex-direction: column; flex-wrap: nowrap; gap: 5px; flex: 1; min-height: 0; overflow: hidden; }
+body.portrait .art-grids .zone-slots .module-slots { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+body.portrait .art-grids .module-slot { min-width: 0; flex: 1 1 46%; }
+body.portrait .art-grids .grid .cell { width: var(--art-cell); height: var(--art-cell); }
 body.portrait .codex-grid { flex-direction: column; align-items: stretch; }
 body.portrait #char-list { grid-template-columns: repeat(6, 1fr); }
+/* 20.10 全局苹果风单屏：JS 钩子路径同样锁死各界面面板高度（消灭旧 94vh/88vh 覆盖）
+ * 两档：.screen 宿主 -44（含 28px 顶部避让）；.overlay 宿主 -16 */
+body.portrait .main-panel,
+body.portrait .level-panel,
+body.portrait .codex-panel,
+body.portrait .settings-panel,
+body.portrait .help-panel,
+body.portrait .goodbye-panel,
+body.portrait .settle-panel,
+body.portrait .death-panel { max-height: calc(100dvh - 44px); }
+body.portrait .bp-panel,
+body.portrait .meta-panel { max-height: calc(100dvh - 16px); }
+body.portrait .settings-panel,
+body.portrait .help-panel,
+body.portrait .goodbye-panel,
+body.portrait .settle-panel,
+body.portrait .death-panel,
+body.portrait .meta-panel,
+body.portrait .level-panel,
+body.portrait .bp-panel,
+body.portrait .codex-panel,
+body.portrait .main-panel { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
 
 /* 横屏：显式确认沿用原布局（不改动任何既有规则，仅作可读性声明） */
 body.landscape #hud-tl { flex-direction: column; }
@@ -991,7 +1083,8 @@ body.portrait .perf-v { text-align: left; }
 }
 .hero-detail-overlay.hidden { display: none; }
 .hero-detail-panel {
-  position: relative; width: min(520px, 94vw); max-height: 90vh; overflow-y: auto;
+  position: relative; width: min(520px, 94vw); max-height: calc(100dvh - 16px);
+  padding-bottom: max(16px, env(safe-area-inset-bottom)); overflow-y: auto;
   background: linear-gradient(180deg, #1e2c42 0%, #141d2c 100%);
   border: 1px solid #33486b; border-radius: 14px; padding: 16px; text-align: center;
   box-shadow: 0 12px 40px rgba(0, 0, 0, .6);
@@ -1018,12 +1111,179 @@ body.portrait .perf-v { text-align: left; }
 }
 .hero-detail-back { margin-top: 10px; }
 
-/* 竖屏（390×844）：图鉴 2 列、详情立绘占满可用宽且不溢出 */
+/* 竖屏（390×844）：图鉴 2 列、详情立绘占满可用宽且不溢出
+ * 20.10 注意：通用 .codex-card 竖屏 flex 横排规则会覆盖 .portrait-card 的纵向堆叠，
+ * 故此处必须用 display:block 显式保住立绘卡「立绘在上、文字在下」的布局（不要改成 flex）。 */
 @media (orientation: portrait) {
   #codex-heroes.codex-grid { flex-direction: row; flex-wrap: wrap; }
-  .codex-card.portrait-card { width: calc(50% - 5px); }
+  .codex-card.portrait-card { width: calc(50% - 5px); display: block; }
   .hero-detail-portrait .codex-portrait { width: 78vw; height: 44vh; max-height: 380px; }
 }
-body.portrait .codex-card.portrait-card { width: calc(50% - 5px); }
+body.portrait .codex-card.portrait-card { width: calc(50% - 5px); display: block; }
 body.portrait .hero-detail-portrait .codex-portrait { width: 78vw; height: 44vh; max-height: 380px; }
 /* ---------- 主城 12 角立绘升级 结束 ---------- */
+
+/* ============================================================
+ * 20.10 全局苹果风 · 小而美 + 单屏化（各界面统一）
+ * ------------------------------------------------------------
+ * 用户诉求（手机 390×844 竖屏为主）：
+ *   ① 所有 UI 尽量一屏内展示完，不做上下滑动；
+ *   ② 向苹果学习「小而优美」：小字号、细边框、小圆角、紧凑内边距。
+ * 对齐已完成改造的「角色选择」标准：名字 9px / 次要 11px；border 1px；radius 8~10px；
+ *   padding 收紧；面板 max-height: calc(100dvh - 16px)；底部 max(10px, safe-area-inset-bottom)。
+ *
+ * 本区块为「末尾追加 + 覆盖」：只覆盖与上面段落冲突/需微调的最终值，
+ *   不改动 .char-* / #char-list（20.9 锁）与 .art-* / #panel-artisan（20.10 锁）。
+ * 面板高度统一走 dvh（动态视口），避免旧 94vh/92vh/88vh/90vh/82vh 被手机地址栏吃掉。
+ * ============================================================ */
+
+/* ---- ① 单屏锁定（dvh）+ 底部安全区：所有关键面板统一 ----
+ * 两档高度：.screen 宿主页带 28px 顶部刘海避让（20.1b）→ 面板锁 calc(100dvh - 44px)；
+ *           .overlay 宿主无顶部避让 → 锁 calc(100dvh - 16px)。
+ * 统一 dvh 动态视口，避免旧 94vh/92vh/88vh/90vh/82vh 被手机地址栏吃掉。 */
+.main-panel,
+.level-panel,
+.codex-panel,
+.settings-panel,
+.help-panel,
+.goodbye-panel,
+.settle-panel,
+.death-panel { max-height: calc(100dvh - 44px); }
+
+.bp-panel,
+.meta-panel { max-height: calc(100dvh - 16px); }
+
+.level-panel,
+.codex-panel,
+.bp-panel,
+.settings-panel,
+.help-panel,
+.goodbye-panel,
+.settle-panel,
+.death-panel,
+.meta-panel { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+
+/* 面板内部纵向 flex：头/脚固定，中段滚动 → 整面板不滚（消灭面板级滚动条） */
+.codex-panel { display: flex; flex-direction: column; min-height: 0; }
+.settle-panel, .death-panel { display: flex; flex-direction: column; min-height: 0; }
+.settings-panel { display: flex; flex-direction: column; min-height: 0; }
+.help-panel { display: flex; flex-direction: column; min-height: 0; }
+.codex-panel .bp-head,
+.codex-panel h3,
+.settle-panel h2, .settle-panel h3,
+.death-panel h2, .death-panel h3,
+.settings-panel h2, .help-panel h2 { flex: none; }
+
+/* ---- ② 全局字阶收敛（小而美；不影响 .char-* / .art-* 已锁规则） ---- */
+.panel h2 { font-size: 15px; margin-bottom: 8px; }
+.panel h3 { font-size: 12px; margin: 8px 0 5px; }
+.panel .tip { font-size: 10px; margin-top: 6px; line-height: 1.5; }
+.btn { padding: 7px 16px; font-size: 12px; border-radius: 8px; }
+.btn.small { padding: 4px 10px; font-size: 11px; }
+.btn-row { gap: 8px; margin-top: 10px; }
+
+/* ---- ③ 关卡选择：3 列小而美网格（逐界面显式声明，防止竖屏块旧 2/1 列覆盖） ---- */
+.level-head h2 { font-size: 15px; margin-bottom: 3px; }
+.level-head .tip { font-size: 10px; margin-bottom: 7px; }
+#level-list { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.level-card { padding: 5px 8px; border-radius: 8px; line-height: 1.25; font-size: 11px; }
+.level-card .lv-name { font-size: 10px; }
+.level-card .lv-no, .level-card .lv-meta, .level-card .lv-boss { font-size: 9px; }
+
+/* ---- ④ 图鉴：小卡片（.portrait-card 立绘卡单独保留，勿动） ---- */
+.codex-panel h3 { font-size: 12px; margin: 8px 0 6px; }
+.codex-grid { gap: 6px; }
+.codex-card { width: 96px; padding: 5px; font-size: 10px; border-radius: 8px; }
+.codex-card.small { width: 84px; }
+.codex-card b { font-size: 11px; }
+.codex-card small { font-size: 9px; }
+.codex-card .codex-face { width: 48px; height: 48px; }
+.codex-card.small .codex-face { width: 38px; height: 38px; }
+
+/* ---- ⑤ 主菜单：按钮紧凑，一屏看完（窄屏 100% 宽） ---- */
+.main-panel { gap: 8px; }
+.btn.big { padding: 9px 18px; font-size: 13px; letter-spacing: 1px; }
+
+/* ---- ⑥ 结算 / 死亡：数字与列表收紧，确认按钮屏内 ---- */
+.stats { gap: 12px; font-size: 12px; margin-bottom: 4px; }
+.stats b { font-size: 14px; }
+.items-list, #settle-chests { gap: 6px; }
+.items-list .chip, #settle-chests .chip { padding: 3px 9px; font-size: 11px; }
+
+/* ---- ⑦ 设置 / 帮助 / 告别 / 资料：行距与字号收敛 ---- */
+.set-row { margin: 10px 0; font-size: 12px; gap: 12px; }
+.set-row > span { width: 140px; }
+.help-cols { gap: 20px; }
+.help-cols h3 { font-size: 12px; margin: 8px 0 4px; }
+.help-cols p { font-size: 11px; margin: 4px 0; line-height: 1.5; }
+.profile-rename { margin-bottom: 10px; }
+.skin-tile { padding: 6px 12px; min-width: 78px; }
+.skin-tile b { font-size: 12px; }
+.title-row { padding: 6px 10px; margin-bottom: 5px; }
+.title-row b { font-size: 12px; }
+
+/* ---- ⑧ 背包面板：格子/槽位/物品信息紧凑（保持拖拽步长数学：cell+gap 不变） ---- */
+.grid .cell { width: 42px; height: 42px; }
+.grid .itm .nm { font-size: 9px; }
+.grid .itm .ct { font-size: 10px; }
+.module-slot { padding: 6px 9px; border-width: 1px; border-radius: 8px; min-width: 130px; }
+.module-slot .ms-name { font-size: 11px; }
+.module-slot .ms-lv { font-size: 10px; }
+#item-info.item-info { min-width: 160px; font-size: 11px; line-height: 1.6; }
+.bp-head { margin-bottom: 10px; gap: 10px; }
+.bp-body { gap: 14px; }
+
+/* ---- ⑨ 竖屏（媒体查询块）同步：显式终值，杜绝旧硬编码（94vh/88vh/2列 等）覆盖 ---- */
+@media (orientation: portrait) {
+  /* 单屏锁定：dvh 两档（.screen 宿主 -44 含 28px 顶部避让；.overlay 宿主 -16）
+   * 覆盖本块上方 .level-panel 94vh / .codex-panel 88vh 等旧值 */
+  .main-panel,
+  .level-panel,
+  .codex-panel,
+  .settings-panel,
+  .help-panel,
+  .goodbye-panel,
+  .settle-panel,
+  .death-panel { width: 96vw; max-height: calc(100dvh - 44px); }
+  .bp-panel,
+  .meta-panel { width: 96vw; max-height: calc(100dvh - 16px); }
+  .level-panel,
+  .codex-panel,
+  .bp-panel,
+  .settings-panel,
+  .help-panel,
+  .goodbye-panel,
+  .settle-panel,
+  .death-panel,
+  .meta-panel { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+
+  /* 关卡：3 列小而美 */
+  #level-list { grid-template-columns: repeat(3, 1fr); }
+  .level-card { padding: 5px 8px; }
+
+  /* 图鉴小卡片：横向滚动条数（显式 96px，防止竖屏 flex 竖排覆盖） */
+  .codex-card { width: 96px; padding: 5px; }
+  .codex-card.small { width: 84px; }
+
+  /* 主菜单示例按钮 */
+  .btn.big { padding: 10px 18px; }
+
+  /* 帮助三栏：超高时中段滚动而非整面板滚 */
+  .help-cols { overflow-y: auto; min-height: 0; }
+
+  /* 设置：诊断区与按钮行不被裁切 */
+  .settings-panel .set-row { margin: 9px 0; }
+  .settings-panel .set-row > span { width: 120px; }
+  .perf-row { font-size: 11px; }
+
+  /* 背包：格子缩到 40，保持 cell+gap 步长一致（拖拽坐标不错位） */
+  .grid .cell { width: 40px; height: 40px; }
+}
+
+/* body.portrait 钩子同步（JS 路径双保险） */
+body.portrait .codex-card { width: 96px; padding: 5px; }
+body.portrait .codex-card.small { width: 84px; }
+body.portrait #level-list { grid-template-columns: repeat(3, 1fr); }
+body.portrait .grid .cell { width: 40px; height: 40px; }
+
+/* ---------- 20.10 全局苹果风 结束 ---------- */

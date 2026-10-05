@@ -16,6 +16,10 @@ team_trigger_test artisan_test ui_flow_test rift_test extract_test shop_test \
 skill_table_test autofight_test mobile_test boss_test bugfix_test grant_test freeze_test exp_test \
 ui_v2_test levelup_test chip_test laser_test chip_behavior_test content_test \
 level_content_test meta_growth_test audio_sprite_test hero_roster_test unlock_ui_test sprite_view_test perf_asset_test perf_guard_test boot_guard_test cache_version_test level_tuning_test low_quality_test hero_portrait_test ui_layout_test camera_view_test special_monster_test \
+artisan_layout_test \
+out_level_flow_test \
+ui_global_test \
+settle_crystal_test \
 perf_test"
 
 # --- 选 node：优先 PATH 里的 node，其次本机 WorkBuddy 托管运行时 ---

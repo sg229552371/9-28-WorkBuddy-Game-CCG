@@ -43,8 +43,8 @@ check("静态：默认选中受进入选人界面语义（charSel）约束", uiS
 // ③ CSS：选人宫格 + 选关紧凑网格
 check("静态：CSS 存在选人 6 列宫格（#char-list grid 6 列，20.9 缩小 50%）",
   /#char-list\s*\{[^}]*grid-template-columns\s*:\s*repeat\(\s*6/.test(cssFlat));
-check("静态：CSS 存在选关紧凑网格（#level-list 2 列 grid）",
-  /#level-list\s*\{[^}]*grid-template-columns\s*:\s*1fr\s+1fr/.test(cssFlat));
+check("静态：CSS 存在选关紧凑网格（#level-list 3 列 grid，20.10 苹果风小而美）",
+  /#level-list\s*\{[^}]*grid-template-columns\s*:\s*repeat\(\s*3\s*,\s*1fr\s*\)/.test(cssFlat));
 check("静态：CSS 详情区 #char-detail 固定高度（max-height）", /\.char-detail\s*\{[^}]*max-height/.test(cssFlat));
 check("静态：CSS 选关/选人面板锁定单屏（max-height 视口约束）",
   /\.char-panel\s*\{[^}]*max-height\s*:\s*(min\([^)]*844px|calc\(100dvh[^)]*\))/.test(cssFlat));

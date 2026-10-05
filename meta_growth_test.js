@@ -25,8 +25,8 @@ let ok = true;
 const check = (name, cond) => { console.log((cond ? "PASS" : "FAIL") + " " + name); if (!cond) ok = false; };
 
 /* ============ 一、升级花费曲线（指数递增 + 兼容回落 + 边界） ============ */
-check("一1 LV1→2 花费 = costBase（50，与旧曲线前级等价）", outLevelCost("H001") === 50);
-check("一2 LV2→3 花费 = round(50×1.8) = 90（与旧曲线前级等价）", (() => { Meta.data.heroes.H001 = { level: 2 }; return Meta.levelUpCost("H001"); })() === 90);
+check("一1 LV1→2 花费 = costBase（50）", outLevelCost("H001") === 50);
+check("一2 LV2→3 花费 = round(50×1.3) = 65（20.10 曲线 1.3，与配平口径同源）", (() => { Meta.data.heroes.H001 = { level: 2 }; return Meta.levelUpCost("H001"); })() === 65);
 let prev = 0, mono = true, sum = 0;
 for (let lv = 1; lv < CFG.outLevel.maxLevel; lv++) {
   Meta.data.heroes.H001 = { level: lv };
@@ -35,8 +35,8 @@ for (let lv = 1; lv < CFG.outLevel.maxLevel; lv++) {
   prev = c; sum += c;
 }
 check("一3 曲线随等级严格单调递增（LV1→9 每级花费递增）", mono);
-check("一4 满级总花费 " + sum + " 在合理区间 [8000, 20000]（旧线性仅 2300，明显放缓）", sum >= 8000 && sum <= 20000);
-check("一5 满级总花费 > 旧线性 2300 的 3 倍（解决升级太快）", sum > 2300 * 3);
+check("一4 满级总花费 " + sum + " 在合理区间 [1000, 2500]（20.10 配平：≈21 局升满，见 out_level_flow_test）", sum >= 1000 && sum <= 2500);
+check("一5 满级总花费仍显著高于旧线性前 3 级累加（曲线有指数感）", sum > 50 + 90 + 130);
 Meta.data.heroes.H001 = { level: CFG.outLevel.maxLevel };
 check("一6 边界：满级（LV10）花费 = 0（不可再升）", outLevelCost("H001") === 0);
 check("一7 边界：满级 Meta.levelUp 返回 false 且不扣结晶", (() => { Meta.data.crystals = 99999; const r = Meta.levelUp("H001"); return !r && Meta.heroLevel("H001") === CFG.outLevel.maxLevel; })());
@@ -120,14 +120,14 @@ check("三13 全解锁条件满足 + unlockedHeroes() 最终 = 12 角全开", ((
   return Meta.unlockedHeroes().length === 12;
 })());
 
-/* ============ 四、结晶口径回归（19.8：crystalKill 退役 / crystalBoss / deathRatio 不变） ============ */
+/* ============ 四、结晶口径回归（20.10：crystalKill 退役 / crystalBoss 重新配平 60 / deathRatio 不变） ============ */
 check("四1 CFG.outLevel.crystalKill 配置口径不变（=1，仅存档兼容，逻辑不引用）", CFG.outLevel.crystalKill === 1);
-check("四2 CFG.outLevel.crystalBoss 口径不变（=30）", CFG.outLevel.crystalBoss === 30);
+check("四2 CFG.outLevel.crystalBoss 配平值（20.10：=60，与折算源同量级）", CFG.outLevel.crystalBoss === 60);
 check("四3 CFG.outLevel.deathRatio 口径不变（=0.3）", CFG.outLevel.deathRatio === 0.3);
 Meta.data.crystals = 0;
 check("四4 awardRun：999 杀无 BOSS → 0 结晶（小怪击杀退役）", Meta.awardRun(999, false, true) === 0);
-check("四5 awardRun：999 杀 + BOSS 撤离 → 仅 crystalBoss（30）", Meta.awardRun(999, true, true) === 30);
-check("四6 awardRun：死亡（打过 BOSS）→ floor(30×0.3) = 9", Meta.awardRun(999, true, false) === 9);
+check("四5 awardRun：999 杀 + BOSS 撤离 → 仅 crystalBoss（60）", Meta.awardRun(999, true, true) === 60);
+check("四6 awardRun：死亡（打过 BOSS）→ floor(60×0.3) = 18", Meta.awardRun(999, true, false) === 18);
 check("四7 awardRun：死亡且无 BOSS → 0", Meta.awardRun(999, false, false) === 0);
 check("四8 升级扣款 = levelUpCost 动态一致（LV1→2 扣 50）", (() => {
   Meta.data.heroes.H002 = { level: 1 }; Meta.data.crystals = 1000;

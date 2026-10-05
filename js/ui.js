@@ -1384,8 +1384,11 @@ const UI = {
   },
   _renderGrid(gridId, inv) {
     const g = document.getElementById(gridId);
-    g.style.gridTemplateColumns = `repeat(${inv.cols}, 46px)`;
-    g.style.gridTemplateRows = `repeat(${inv.rows}, 46px)`;
+    // 20.10：格子边长走 CSS 变量 --art-cell（竖屏工匠单屏化时缩到 30px；默认 46px）。
+    // 拖拽命中测试 _dropTarget 同步读取同一变量，保证「缩格不断拖拽」。
+    const cell = this._cellPx();
+    g.style.gridTemplateColumns = `repeat(${inv.cols}, ${cell}px)`;
+    g.style.gridTemplateRows = `repeat(${inv.rows}, ${cell}px)`;
     g.innerHTML = "";
     for (let i = 0; i < inv.cols * inv.rows; i++) {
       const c = document.createElement("div");
@@ -1393,17 +1396,33 @@ const UI = {
       c.dataset.x = i % inv.cols; c.dataset.y = Math.floor(i / inv.cols);
       g.appendChild(c);
     }
+    const pad = cell + 4;   // 格 + 间隙 4 = 步长（与 CSS .grid gap:4px 对齐）
     for (const it of inv.items) {
       const el = document.createElement("div");
       el.className = `itm q${it.kind === "chest" ? this._chestQIdx(it.chestQ) : it.itemQ}`;
-      el.style.left = it.x * 50 + 6 + "px"; el.style.top = it.y * 50 + 6 + "px";   // +6 = grid padding（.itm 相对 padding box 定位）
-      el.style.width = it.shape[0] * 50 - 4 + "px"; el.style.height = it.shape[1] * 50 - 4 + "px";
+      el.style.left = it.x * pad + 6 + "px"; el.style.top = it.y * pad + 6 + "px";   // +6 = grid padding（.itm 相对 padding box 定位）
+      el.style.width = it.shape[0] * pad - 4 + "px"; el.style.height = it.shape[1] * pad - 4 + "px";
       el.innerHTML = `<span class="nm">${it.name}</span>` +
         (it.kind === "chest" || it.kind === "insurance" ? `<span class="ct">×${it.count}</span>`
           : (it.kind === "module" && (it.lv || 1) > 1 ? `<span class="ct">LV${it.lv}</span>` : ""));
       el.dataset.uid = it.uid;
       g.appendChild(el);
     }
+  },
+  /* 格子边长（px）：优先读工匠面板 .art-panel 上的 --art-cell，其次读 :root，
+   * 都没有时回落 46。竖屏时 CSS 把 .art-panel 的 --art-cell 设为 30，
+   * 从而「单屏塞下 6×5 芯片背包」，且拖拽命中测试 _dropTarget 同口径不失配。 */
+  _cellPx() {
+    const doc = (typeof document !== "undefined") ? document : null;
+    if (!doc || typeof doc.getElementById !== "function") return 46;
+    if (typeof getComputedStyle !== "function") return 46;
+    const readVar = (el) => {
+      if (!el) return 0;
+      try { const n = parseFloat(getComputedStyle(el).getPropertyValue("--art-cell")); return n > 0 ? n : 0; }
+      catch (e) { return 0; }
+    };
+    const panel = doc.querySelector ? doc.querySelector("#panel-artisan .art-panel") : null;
+    return readVar(panel) || readVar(doc.documentElement) || 46;
   },
   _chestQIdx(q) { return { normal: 0, advanced: 1, epic: 2 }[q]; },
   renderItemInfo() {
@@ -1421,20 +1440,19 @@ const UI = {
     }
   },
 
-  /* ---------- 工匠合并界面：三页签（开宝箱 / 抽卡牌 / 购买·服务）+ 背包/武器栏 ----------
-   * 页签切换只换左侧功能区，背包/武器栏网格常驻右侧；功能入口清晰、手机端也可单手操作。 */
+  /* ---------- 工匠合并界面：两页签（开宝箱 / 商店·工坊）+ 背包/武器栏 ----------
+   * 20.10 重排（竖屏单屏化）：页签 4 → 2 ——
+   *   ① 「抽卡牌」页签随属性卡牌系统整体废弃而移除（CFG.cardPool.removed，逻辑侧不再读取）；
+   *      注意 renderCards 函数本体保留（避免其他引用炸），只是不再有页签入口。
+   *   ② 「购买·服务」与「芯片工坊」合并为一页，id 复用 shop（减少改动面），
+   *      页面内 #shop-list（购买·服务）+ #forge-list（芯片工坊）上下排列。 */
   ART_TABS: [
     { id: "chest", btn: "art-tab-chest", page: "art-page-chest" },
-    { id: "cards", btn: "art-tab-cards", page: "art-page-cards" },
     { id: "shop",  btn: "art-tab-shop",  page: "art-page-shop"  },
-    { id: "forge", btn: "art-tab-forge", page: "art-page-forge" },
   ],
   artTab: "chest",
   setArtisanTab(t) {
     if (!this.ART_TABS.some(x => x.id === t)) return;
-    // 芯片工坊页签（19.7）在 ui.js 侧惰性绑定：main.js 未绑定该按钮时补上（幂等，避免重复 toast）
-    const forgeBtn = document.getElementById("art-tab-forge");
-    if (forgeBtn && typeof forgeBtn.onclick !== "function") forgeBtn.onclick = () => this.setArtisanTab("forge");
     this.artTab = t;
     for (const tab of this.ART_TABS) {
       const btn = document.getElementById(tab.btn);
@@ -1465,9 +1483,8 @@ const UI = {
     if (!r) return;
     // 开宝箱页（待分配区 / 背包网格渲染与页签无关，始终刷新保证数据同步）
     if (this.artTab === "chest") this._renderChestList();
-    else if (this.artTab === "cards") this.renderCards();
-    else if (this.artTab === "shop") this._renderShopList();
-    else if (this.artTab === "forge") this._renderForgeList();
+    // 商店·工坊合并页（20.10）：同一页内上下两块，均需渲染
+    else if (this.artTab === "shop") { this._renderShopList(); this._renderForgeList(); }
     this._renderPendingArea();
     this.renderBackpack();   // 同步网格显示
   },
@@ -1935,7 +1952,11 @@ const UI = {
         : (gridEl.id === "grid-weapon" && G.run.weaponInv) ? G.run.weaponInv
         : this._chipInv();
       const rect = gridEl.getBoundingClientRect();
-      const pad = 8, cell = 50;   // 边框2 + 内边距6；格宽46 + 间隙4 = 50
+      const cell = this._cellPx() + 4;   // 步长 = 格宽 + 间隙 4（与 _renderGrid、CSS .grid gap:4px 同口径）
+      // 内边距 = 网格边框宽 + padding 6（竖屏工匠把边框 2 → 1，动态读取避免 1px 级偏移累积）
+      let bb = 2;
+      try { if (typeof getComputedStyle === "function") bb = parseFloat(getComputedStyle(gridEl).borderLeftWidth) || 2; } catch (e) { /* 桩环境回落 */ }
+      const pad = bb + 6;
       const x = U.clamp(Math.floor((e.clientX - rect.left - pad) / cell), 0, inv.cols - 1);
       const y = U.clamp(Math.floor((e.clientY - rect.top - pad) / cell), 0, inv.rows - 1);
       return { type: "grid", inv, x, y };
@@ -1950,7 +1971,8 @@ const UI = {
     const cv = r.settleConv || { chest: 0, gear: 0, item: 0, card: 0, total: 0 };
     document.getElementById("settle-stats").innerHTML =
       `<span>击杀 <b>${r.kills}</b></span><span>达到等级 <b>LV ${r.lv}</b></span><span>货币 <b>${r.coin}</b></span><span>◆ 结晶 <b>+${crystals}</b></span>` +
-      `<span style="flex-basis:100%;opacity:.85">资源折算（统一口径 价值×${CFG.settleConvert.valueRate}）：宝箱→◆${cv.chest} · 装备/武器模块→◆${cv.gear} · 道具→◆${cv.item} · 卡牌→◆${cv.card}（合计 ◆${cv.total}）</span>`;
+      this._crystalReportLine() +
+      `<span style="flex-basis:100%;opacity:.85">资源折算（统一口径 价值×${CFG.settleConvert.valueRate}）：宝箱→◆${cv.chest} · 装备/武器模块→◆${cv.gear} · 道具→◆${cv.item}（合计 ◆${cv.total}）</span>`;
     document.getElementById("settle-chests").innerHTML =
       `<div class="chip">${this._statsLine(r)}</div><div class="chip">背包内物品不作为物品带出，按各自固定价值统一折算为结晶（双层等级体系闭环）；局内经验与金币归零、不折算</div>`;
     const items = [...(r.weaponInv ? r.weaponInv.items : []), ...r.backpack.items];
@@ -1958,6 +1980,15 @@ const UI = {
       ? items.map(it => `<span class="chip">${it.name}${it.kind === "chest" ? " ×" + it.count : ""}（${it.kind === "chest" ? "宝箱" : CFG.itemQualities[it.itemQ].name}）</span>`).join("")
       : `<span class="chip">（无装备/武器模块保留）</span>`;
     document.getElementById("screen-settle").classList.remove("hidden");
+  },
+  /* 结晶获取明细行（20.10 产出可见化）：读 G.lastSettleReport（game.js publishCrystalReport 写入），
+   * 把 lines 逐行拼成带换行的说明；无报告（老存档/异常路径）返回空串，不报错、不占位。 */
+  _crystalReportLine() {
+    const rep = G.lastSettleReport;
+    if (!rep || !Array.isArray(rep.lines) || !rep.lines.length) return "";
+    const body = rep.lines.slice(0, -1).join(" · ");
+    const total = rep.lines[rep.lines.length - 1];
+    return `<span style="flex-basis:100%;color:#ffd76a">结晶获取：${body}　<b>${total}</b></span>`;
   },
   _statsLine(r) {
     const s = r.stats || {};
@@ -1968,7 +1999,9 @@ const UI = {
   showDeath(penalty, crystals = 0) {
     const r = G.run;
     document.getElementById("death-stats").innerHTML =
-      `<span>击杀 <b>${r.kills}</b></span><span>等级 <b>LV ${r.lv}</b></span><span>损失价值 <b>${Math.round(penalty.lostValue)}</b> / ${Math.round(penalty.totalValue + penalty.lostValue)}</span><span>◆ 结晶 <b>+${crystals}</b>（死亡保留30%）</span><span>保险契约 <b>${penalty.contractsUsed || 0}</b> 份已生效（保护 ${(penalty.kept || []).filter(i => i.byInsurance).length} 件）</span><span style="flex-basis:100%">${this._statsLine(r)}</span>`;
+      `<span>击杀 <b>${r.kills}</b></span><span>等级 <b>LV ${r.lv}</b></span><span>损失价值 <b>${Math.round(penalty.lostValue)}</b> / ${Math.round(penalty.totalValue + penalty.lostValue)}</span><span>◆ 结晶 <b>+${crystals}</b>（死亡保留30%）</span><span>保险契约 <b>${penalty.contractsUsed || 0}</b> 份已生效（保护 ${(penalty.kept || []).filter(i => i.byInsurance).length} 件）</span>` +
+      this._crystalReportLine() +
+      `<span style="flex-basis:100%">${this._statsLine(r)}</span>`;
     document.getElementById("death-lost").innerHTML = penalty.lost.length
       ? penalty.lost.map(it => `<span class="chip">${it.name}${it.kind === "chest" ? " ×" + it.count : ""}</span>`).join("")
       : `<span class="chip">（无损失）</span>`;
@@ -2292,3 +2325,26 @@ UI._getHeroDetailEl = function () {
 /* ============================================================
  * 主城 12 角立绘升级区块结束
  * ============================================================ */
+
+/* ============================================================
+ * 20.10 工匠世界 · 竖屏单屏化 UI 布局常量（追加区块，末置）
+ * ------------------------------------------------------------
+ * 目的：工匠面板在 390×844 竖屏下单屏展示，不出现整面板滚动条。
+ * 项目铁律：数值一律进 CFG —— 但 js/config.js 本轮有其他代理在改，
+ *   故此处先落局部常量 CFG_ARTISAN_UI，【待合并进 CFG】后再收敛。
+ * 约定：panelMaxVh 面板高度上限（dvh）、safePadBottom 底部安全区兜底、
+ *   tabCount 页签数期望值、gap 各段间距、gridFits 单屏允许的格子边长上限。
+ * ============================================================ */
+var CFG_ARTISAN_UI = {
+  tabCount: 2,          // 页签数（开宝箱 / 商店·工坊）——测试断言用，页面已无「抽卡牌」
+  panelMaxVh: 100,      // 面板 max-height 以 dvh 计（calc(100dvh - 16px) 的 100 部分）
+  panelMaxGapPx: 16,    // 面板 max-height 从视口减去的固定像素（上下各 8px 呼吸位）
+  safePadBottomPx: 10,  // padding-bottom 下限：max(10px, env(safe-area-inset-bottom))
+  tabFontPx: 11,        // 页签字号（苹果风小而美，原 14px）
+  tabPadYPx: 6,         // 页签纵向内边距（原 10px）
+  rowFontPx: 12,        // 服务行主文案字号（原 14px）
+  rowPadYPx: 6,         // 服务行纵向内边距（原 10px）
+  pendingSizePx: 42,    // 开箱结果方块边长（原 64px）
+  radiusPx: 9,          // 小圆角（8~10px 区间）
+  borderPx: 1           // 细边框（苹果风：1px）
+};

@@ -301,7 +301,7 @@ var APP_VERSION = "20261003";
     </div>
   </div>
 
-  <!-- ====== 背包 / 芯片背包 / 模块槽面板（三段横排；工匠模式下 bp-grid-unit 整体移入工匠面板） ====== -->
+  <!-- ====== 背包管理（局内 B 键：三段横排；工匠模式下 #bp-grid-unit 整体移入工匠面板复用） ====== -->
   <div id="panel-backpack" class="overlay hidden">
     <div class="panel bp-panel" id="bp-panel-main">
       <div class="bp-head">
@@ -309,22 +309,26 @@ var APP_VERSION = "20261003";
         <span id="bp-lock-hint" class="warn hidden">⚔ 战斗进行中，仅可查看（工匠世界内可操作）</span>
         <button id="btn-bp-close" class="btn ghost small">关闭 (B)</button>
       </div>
+      <!-- 竖屏工匠单屏三段用：本单元在原地/工匠面板复用，CSS 按 zone 类区分排布 -->
       <div class="bp-body" id="bp-grid-unit">
-        <div class="grid-zone">
-          <h3>搜刮背包（仓储 / 战利品）6×4</h3>
+        <!-- 中段：搜刮背包 -->
+        <div class="grid-zone zone-backpack">
+          <h3>搜刮背包 6×4</h3>
           <div id="grid-backpack" class="grid w64"></div>
           <div id="drop-zone">拖到此处丢弃</div>
         </div>
-        <div class="grid-zone">
-          <h3>芯片背包（只放大主动技能）6×5</h3>
-          <div id="grid-chip" class="grid w65"></div>
-        </div>
-        <div class="grid-zone slot-zone">
+        <!-- 下段：武器模块槽（每英雄 4 格）+ 芯片背包 -->
+        <div class="grid-zone slot-zone zone-slots">
           <h3>武器模块槽（每英雄 4 格）</h3>
           <div id="module-slots" class="module-slots"></div>
           <div id="weapon-tags" class="tags"></div>
         </div>
-        <div class="grid-zone side">
+        <div class="grid-zone zone-chip">
+          <h3>芯片背包 6×5</h3>
+          <div id="grid-chip" class="grid w65"></div>
+        </div>
+        <!-- 最底：物品信息（小尺寸单行展示） -->
+        <div class="grid-zone side zone-info">
           <h3>物品信息</h3>
           <div id="item-info" class="item-info">选中或悬停物品查看详情</div>
         </div>
@@ -332,7 +336,9 @@ var APP_VERSION = "20261003";
     </div>
   </div>
 
-  <!-- ====== 工匠世界：三页签（开宝箱 / 抽卡牌 / 购买·服务）+ 背包/武器栏 ====== -->
+  <!-- ====== 工匠世界：竖屏单屏三段（上页签 / 中搜刮背包 / 下武器栏+芯片背包） ======
+       20.10 重排：页签 4 → 3（开宝箱 / 商店·工坊 / 芯片工坊已并入商店·工坊）；
+       「抽卡牌」页签随属性卡牌系统整体废弃而移除（CFG.cardPool.removed）。 -->
   <div id="panel-artisan" class="overlay hidden">
     <div class="panel art-panel">
       <div class="bp-head">
@@ -341,9 +347,7 @@ var APP_VERSION = "20261003";
       </div>
       <div class="art-tabs" id="art-tabs">
         <button class="art-tab active" id="art-tab-chest">开宝箱</button>
-        <button class="art-tab" id="art-tab-cards">抽卡牌</button>
-        <button class="art-tab" id="art-tab-shop">购买·服务</button>
-        <button class="art-tab" id="art-tab-forge">芯片工坊</button>
+        <button class="art-tab" id="art-tab-shop">商店·工坊</button>
       </div>
       <div class="art-layout">
         <div class="art-side">
@@ -354,29 +358,14 @@ var APP_VERSION = "20261003";
             <h3>开箱结果（拖入网格）</h3>
             <div id="pending-area"></div>
           </div>
-          <!-- 页签②：抽卡牌 -->
-          <div id="art-page-cards" class="hidden">
-            <div class="card-sec">
-              <div class="card-sec-head">
-                <h3>属性卡牌 <span id="card-assets" class="card-assets">×0</span></h3>
-                <button id="btn-card-refresh" class="btn ghost small">刷新候选（剩 2）</button>
-              </div>
-              <div id="card-candidates"></div>
-              <div id="card-applied" class="card-applied"></div>
-            </div>
-            <p class="tip" style="margin-top:10px">升级获得属性卡牌资产，仅可在工匠世界使用；生效后<b>对小队全体成员</b>生效；同一属性使用后本局不再出现。</p>
-          </div>
-          <!-- 页签③：购买·服务 -->
+          <!-- 页签②：商店·工坊（原「购买·服务」+「芯片工坊」合并为一页，上下排列） -->
           <div id="art-page-shop" class="hidden">
-            <h3>工匠商店（局内金币）</h3>
+            <h3>购买·服务（局内金币）</h3>
             <div id="shop-list"></div>
-            <p class="tip" style="margin-top:10px">「强化品质 / 洗词缀」需先在右侧背包中<b>点击选中</b>装备或武器模块。</p>
-          </div>
-          <!-- 页签④：芯片工坊（19.7：合成 / 重铸 / 定向合成，调用 Game.chipForge） -->
-          <div id="art-page-forge" class="hidden">
-            <h3>芯片工坊（局内金币）</h3>
+            <p class="tip" style="margin-top:6px">「强化品质 / 洗词缀」需先在下方背包中<b>点击选中</b>装备或武器模块。</p>
+            <h3 class="art-sec-h">芯片工坊（局内金币）</h3>
             <div id="forge-list"></div>
-            <p class="tip" style="margin-top:10px">合成 / 升级 / 重铸芯片；卡牌强化服务整体下线。</p>
+            <p class="tip" style="margin-top:6px">合成 / 升级 / 重铸芯片。</p>
           </div>
         </div>
         <div id="art-grids" class="art-grids"><!-- 背包/武器栏单元在此处与背包面板间移动 --></div>

@@ -496,6 +496,7 @@ const Meta = {
     if (!extracted) v = Math.floor(v * CFG.outLevel.deathRatio);
     this.data.crystals += v;
     this.commit();
+    publishCrystalReport(kills, bossDefeated, extracted, v);   // 单行挂点：生成并广播本局结晶明细（方向3 产出可见化）
     return v;
   },
 };
@@ -4681,4 +4682,56 @@ function lqShouldDrawParticle(i) {
   if (!isLowQuality()) return true;
   var d = LQ_PARTICLE_DRAW_DIV < 1 ? 1 : Math.floor(LQ_PARTICLE_DRAW_DIV);
   return (i % d) === 0;
+}
+
+/* ================= 方向 3：局外成长闭环收口（结晶产出可见化 + 配平自检——纯函数区块） =================
+ * 铁律 §5.45：新增逻辑集中本区块，现有函数（Meta.awardRun）只插单行调用。
+ * --------------------------------------------------------------------------------------------
+ * 背景：结晶只剩两个来源（① 击杀 BOSS=CFG.outLevel.crystalBoss；② 撤离折算=CFG.settleConvert.valueRate），
+ *       但玩家打完一局看不到「拿了多少、怎么来的」。本区块把结算明细算成一份**纯数据报告**。
+ *
+ * ⚠️ 渲染归属：结算界面 DOM 在 js/ui.js（另一代理维护，本代理禁改）。因此这里**只产出数据**并挂到
+ *    G.lastSettleReport，**需要 UI 侧配合渲染该字段**（主会话收口）——把 lines 逐行、total 作为总计渲染即可。
+ *    挂点：Meta.awardRun 结束时单行调用 publishCrystalReport（awardRun 是唯一结晶发放入口，天然收口）。
+ */
+
+// 本局结算报告（纯函数，无副作用，入参可为部分字段——测试/沙箱无 G 环境时不抛错）：
+//   result = { kills, bossDefeated, extracted, convertTotal, boss }
+//     boss         = 该局 BOSS 结晶**到手**数（死亡已按 deathRatio 打折；缺省按配置现算）
+//     convertTotal = 撤离折算结晶（来源②；未撤离恒 0）
+// 返回 { total, boss, convertTotal, extracted, died, lines: [中文文案…] }
+function buildCrystalReport(result) {
+  var r = result || {};
+  var o = CFG.outLevel, sc = CFG.settleConvert;
+  var extracted = !!r.extracted;
+  var bossDef = !!r.bossDefeated;
+  var boss = (typeof r.boss === "number") ? r.boss
+    : (bossDef ? (extracted ? o.crystalBoss : Math.floor(o.crystalBoss * o.deathRatio)) : 0);
+  var conv = extracted ? (r.convertTotal || 0) : 0;   // 死亡不折算（来源②不发生）
+  var lines = [];
+  if (extracted) {
+    if (boss > 0) lines.push("击杀首领 +" + boss);
+    if (conv > 0) lines.push("物资折算 +" + conv);
+    if (!lines.length) lines.push("本局无结晶产出（未击杀首领 · 无可折算物资）");
+  } else {
+    lines.push("阵亡 · 仅保留 " + Math.round(o.deathRatio * 100) + "%");
+    if (bossDef) lines.push("击杀首领 +" + o.crystalBoss + " → 保留 +" + boss);
+    else lines.push("本局无结晶产出（未击杀首领）");
+  }
+  var total = boss + conv;
+  lines.push("本局合计 +" + total + " 结晶");
+  return { total: total, boss: boss, convertTotal: conv, extracted: extracted, died: !extracted, lines: lines };
+}
+
+// 生成并广播结算报告：写 Meta.lastReport（可持久层读取）+ G.lastSettleReport（供 UI 渲染）。
+// 折算值取 G.run.settleConv（main.js 在调用 awardRun **之前**已写入），无则按 0。
+function publishCrystalReport(kills, bossDefeated, extracted, boss) {
+  var conv = 0;
+  if (typeof G !== "undefined" && G && G.run && G.run.settleConv && extracted) {
+    conv = G.run.settleConv.total || 0;
+  }
+  var rep = buildCrystalReport({ kills: kills, bossDefeated: bossDefeated, extracted: extracted, convertTotal: conv, boss: boss });
+  if (typeof Meta !== "undefined" && Meta) Meta.lastReport = rep;
+  if (typeof G !== "undefined" && G) G.lastSettleReport = rep;
+  return rep;
 }

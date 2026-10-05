@@ -1415,8 +1415,9 @@ CFG.deathPenalty = { loseRatio: 0.7 };
 CFG.outLevel = {
   maxLevel: 10,
   costBase: 50, costStep: 40,          // 旧线性公式（兼容回落值）：LV n→n+1 = costBase + (n-1)*costStep
-  growthRate: 1.8,                     // 新指数曲线：LV n→n+1 = round(costBase * growthRate^(n-1))；缺省回落旧线性
-                                       //   取 1.8 使 LV1→2=50、LV2→3=90（与旧曲线前两级等价，平滑过渡）
+  growthRate: 1.3,                     // 指数曲线（20.10 重新配平）：LV n→n+1 = round(costBase * growthRate^(n-1))；缺省回落旧线性
+                                       //   1.3 使满级累计 1602 结晶（旧 1.8 为 12336，过陡）。
+                                       //   取 1.3 的目标：升满一个角色 ≈ 21 局（见「配平口径」注释）。
   growth: { hp: 8, atk: 2, def: 1 },   // 旧线性每级成长（兼容回落值；也是 growthByRole 缺定位时的默认）
   growthTable: [                       // 分段加速表（方向3 新增）：升到 LV n 的每级成长 = 定位成长 × 该段 mul
     { upTo: 3, mul: 1.0 },             //   LV1~3 平缓期 ×1.0
@@ -1429,9 +1430,18 @@ CFG.outLevel = {
     recovery: { hp: 10, atk: 2, def: 1 },
   },
   crystalKill: 1,                      // 🔴 已退役（19.8）：小怪击杀不给结晶，保留值仅为兼容现有逻辑
-  crystalBoss: 30,                     // ✅ 保留（19.8 已定）：来源①，击杀 BOSS 直接得结晶
+  crystalBoss: 60,                     // ✅ 来源①：击杀 BOSS 直接得结晶（20.10 30→60，配平后与折算源同量级）
   deathRatio: 0.3,                     // 死亡仅保留 30% 本局结晶（沿用原规则，逻辑阶段统一结算）
 };
+/* ---------- 配平口径（20.10 重新配平，产出与花费同源） ----------
+ * 结晶**来源**（唯一入口 Meta.awardRun + 撤离折算，无散落魔法数字）：
+ *   ① crystalBoss = 60        —— 击杀 BOSS（一局通常 1 只）
+ *   ② settleConvert.valueRate —— 撤离把剩余物资价值折算为结晶（典型剩余 ≈ 30 价值）
+ *   ③ 死亡：BOSS 结晶 × deathRatio（0.3），折算不发生
+ * **单局预期产出** = crystalBoss + 30 价值 × valueRate = 60 + 15 = 75 结晶。
+ * **满级累计花费** = Σ outLevelCost(1..9) = 1602 结晶（growthRate 1.3 / costBase 50）。
+ * **升满预期局数** = 1602 / 75 ≈ 21 局（落在设计目标 15~25 局的舒适区）。
+ * 任一数值改动都会使 out_level_flow_test.js 的「配平自检」报警。 */
 
 /* ---------- 属性卡牌（8.3：升级获得资产、仅工匠世界使用、池内同属性去重） ----------
  * 🔴 **已废弃（第十九章 19.7：属性卡牌整体删除）**——保留本表仅为避免运行时引用报错，
@@ -1471,7 +1481,8 @@ CFG.cardPool = {
  * 未开封宝箱同样不带出本体，但价值照常折算（它就在背包里，占 1 格）。
  * **局内经验与金币一律归零、不参与折算**（死亡时同样不折算，见 6.5）。 */
 CFG.settleConvert = {
-  valueRate: 0.5,         // 统一折算率：物品固定价值 × 本率 = 结晶（全类别一致，2 价值 = 1 结晶）
+  valueRate: 0.5,         // 统一折算率（= 结晶来源②）：物品固定价值 × 本率 = 结晶（全类别一致，2 价值 = 1 结晶）
+                          //   配平口径见 CFG.outLevel 末尾注释：典型单局剩余物资 ≈ 30 价值 → 15 结晶
   cardValue: 4,           // 🔴 已废弃（第十九章 19.7）：属性卡牌删除，本项不再参与折算
   chipValue: 0,           // 🔴 芯片不折算（CFG.chips.carryOut = false，出局直接消失）
 };
