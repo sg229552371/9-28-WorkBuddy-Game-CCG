@@ -938,3 +938,50 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
     铺量；③ 属性卡池；④ 美术接入（BGM/素材）；⑤ Godot 4.7.2 迁移评估。
 - **待确认**：主城商人新位置 `(0.14, 0.62)`；竖屏视野变窄是刻意行为（如需全宽需竖版布局）；
   第十九章 19.9 的 2 条待确认项（七项方案已全部确认，见 19.9 表）。
+
+---
+
+## 10. 第二十~二十一章速查（20.5 → 21.1，会话压缩前的最后 10 轮）
+
+> 新会话必读本节。章节号 = git 提交序号，细节看对应 commit message（`git log`）。
+
+### 10.1 基线（2026-10-05）
+
+- **门禁：46 项测试 2081 断言全绿 bad=0**；git 21 提交，最新 `450c3c0`（21.1）
+- 全部历史 patch 在 /workspace（增量 `00NN-increment-*` + 全量 `00NN-all-in-one-vNN`）
+- 线上发布：WorkBuddy「发布为应用」skill，链接恒定 `https://ae6c0d4fb9b5c352d.app.workbuddy.host`
+  （每次发布覆盖同链接；GitHub 仍是 `git am` + push，见 推送指南.md）
+
+### 10.2 每轮一句话
+
+| 轮次 | 内容 |
+|---|---|
+| 20.5 | 加载卡顿修复：fit() 代理图分帧 + PerfGuard 帧护栏 + 诊断面板 |
+| 20.6 | BootGuard 首屏看门狗 + 错误面板 + 版本自愈；**删 favicon 探针**（「无法开始游戏」根因） |
+| 20.7 | 低画质实装（DPR 封顶/粒子×0.4/网格减半）+ 图鉴 12 角立绘（修 `_parent===null` 恒假 bug） |
+| 20.8 | UI 单屏化 + 相机视野 +25%（**viewH 才是旋钮，zoom 单改无效**）+ 4 只冲锋怪 NM0027~30 |
+| 20.9 | 选人界面苹果风：12 宫格 3 列→6 列（卡片 47×62） |
+| 20.10/21.0 | 工匠世界三段式重排（4 页签并 3、删废弃卡牌页签）+ 结晶闭环（`growthRate 1.3`/BOSS 60、升满 1602≈21 局）+ 结算明细行 + 全局苹果风（选关 3 列/全面板 100dvh 单屏锁+安全区） |
+| 21.1 | 毒圈改 **dmgPercent 1% 比例口径**（`dmgPerTick` 是遗留字段**不参与结算**）+ 移动端只留摇杆（三按钮 `CFG.mobile.hideTouchButtons` 隐藏，技能本就全自动释放）+ 摇杆浮动 + autofight 挪右下 + NPC 点选 |
+
+### 10.3 新会话必须知道的坑（血泪浓缩）
+
+1. **CSS 三处规则覆盖**：主规则 / `@media (max-width:720px|900px)` 竖屏块 / `body.portrait` 钩子——**改布局必须三处同步**，否则改动静默无效（20.9 踩过：6 列被旧 3 列覆盖）。
+2. **面板单屏锁**：统一 `max-height:calc(100dvh - 16px)`（overlay 宿主）/ `-44px`（screen 宿主）+ `padding-bottom:max(10px,env(safe-area-inset-bottom))`；禁 `overflow:auto` 整面板滚动。
+3. **Playwright 调试**：全局 `const` **不挂 window**，用裸标识符访问；chromium 需 `--no-sandbox --disable-gpu`；本地预览 `python3 -m http.server 8123`。
+4. **门禁 bad 口径**：PASS 文案**不能含英文 "error"**（用中文「错误」）；pass 计数按行首 `^PASS `。
+5. **文件所有权并行切分**（多代理开发）：每代理独占文件集；新增逻辑一律**文件末尾独立区块**，现有函数只插单行调用（§5.45）。
+6. **相机**：视野旋钮是 `viewH`（竖屏 `portraitViewH`），`zoom` 与之乘积配平、单改无效。
+7. **技能全自动释放**：冷却好即放，`autoFight` 开关只管走位托管；Space/技能钮均冗余。
+8. **毒圈**：`hazardDamage()` 读 `dmgPercent`（1% 最大生命，跳防御），hpMax 三级回退防 NaN；ttk 压力带 60~120s。
+9. **NPC 点选**：进圈 1 秒解锁 → 点击本体。三函数在 game.js 末尾区块：`screenToWorld`（逆相机变换）/`npcTap`（四重门槛）/`renderNpcTapHint`（提示环）。主城 NPC 仍是旧的进圈即弹（未改）。
+10. **结晶闭环**：来源=BOSS 60 + 撤离折算（`settleConvert.valueRate 0.5`）；死亡保留 30%；`outLevelCost` 指数曲线 `50×1.3^(n-1)`，满级累计 1602。产出明细走 `G.lastSettleReport`（`buildCrystalReport`/`publishCrystalReport`）。
+11. **移动端**：下方三按钮隐藏不删 DOM（回退开关 `CFG.mobile.buttons`）；摇杆浮动（左半屏按下即中心）；`#btn-autofight` 已移入 `#hud-br`。
+12. **战斗开场提示仍是键盘话术**（「WASD 移动·B 背包」）——待改成触屏话术（下一轮顺手项）。
+
+### 10.4 下一步候选
+
+- L5-L10 实战手感调参（需真人试玩反馈）
+- 战斗开场提示触屏化（小活）
+- 赛季玩法雏形（99 关通关后循环）
+- 美术/音频接入、Godot 4.7.2 迁移评估
