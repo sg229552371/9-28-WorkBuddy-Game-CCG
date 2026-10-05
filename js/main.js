@@ -276,7 +276,12 @@ const Game = {
     if (typeof UI.updateAutoFightBtn === "function") UI.updateAutoFightBtn();   // 每局按钮重置为关（run.autoFight 默认 false；测试 UI 桩缺该方法时跳过）
     const hud = document.getElementById("hud");
     if (hud) hud.classList.remove("city-mode");
-    UI.toast(`进入 ${G.levelCfg.name} · 局外 LV${G.heroDef.outLevel} · WASD 移动 · 技能自动释放 · B 背包`, "gold");
+    // 开场提示：按设备区分操作话术（手机无 WASD/B 键；触屏走摇杆+右下背包）
+    const touchDev = isTouchDevice();
+    const enterHint = touchDev
+      ? `进入 ${G.levelCfg.name} · 局外 LV${G.heroDef.outLevel} · 左下摇杆移动 · 技能自动释放 · 右下背包`
+      : `进入 ${G.levelCfg.name} · 局外 LV${G.heroDef.outLevel} · WASD 移动 · 技能自动释放 · B 背包`;
+    UI.toast(`${enterHint}`, "gold");
   },
   /* 跳过当前世界的开场冻结（仅测试/调试用）。
    * 主关卡与裂缝进场都有 3 秒冻结（CFG.levelFreeze / CFG.rift.freezeTime），
@@ -568,6 +573,12 @@ const Game = {
       if (el && G.run && !UI.drag) {
         const uid = Number(el.dataset.uid);
         const it = [...G.run.backpack.items, ...G.run.weaponInv.items].find(i => i.uid === uid);
+        // 22.1 触屏点选选中：手机无悬停（pointerover 不可靠），点选物品同时写 UI.hoverItem 并刷新详情，
+        // 使工匠「强化品质 / 洗词缀」在触屏可用；鼠标端此路径同样成立（点了即选中，不影响 hover 行为）。
+        if (it) {
+          UI.hoverItem = it;
+          if (typeof UI.renderItemInfo === "function") UI.renderItemInfo();
+        }
         if (it) UI.startDrag(e, { item: it, fromPending: false });
       }
     });
@@ -622,9 +633,8 @@ const Game = {
   bindTouch() {
     const mob = CFG.mobile || {};
     if (!mob.autoShow) return;
-    // 触屏检测（桩测试环境下无 navigator/ontouchstart，取值前先判能力）
-    const isTouch = (typeof window.ontouchstart !== "undefined") ||
-      (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
+    // 触屏检测（统一走 isTouchDevice，桩环境安全）
+    const isTouch = isTouchDevice();
     if (!isTouch) return;
     const tc = document.getElementById("touch-controls");
     if (tc) tc.classList.remove("hidden");
@@ -1190,3 +1200,16 @@ const BootGuard = {
 /* 脚本加载即就绪：挂错误监听 + 注入样式。
  * 无 DOM 时 ensure 内部直接 return，桩测试完全不受影响。 */
 try { BootGuard.ensure(); } catch (e) { }
+
+/* ============================================================
+ * 22.1 手机端毛刺清理·共享工具（新增区块，尾部追加；§5.45）
+ * ============================================================ */
+
+/* 触屏能力检测（统一口径）：供开场提示话术、bindTouch 门控共用。
+ * 优先 maxTouchPoints（pointer 事件覆盖更广），退回 window.ontouchstart。
+ * 桩/无 navigator 环境一律返回 false，不影响无头测试的行为假设。 */
+function isTouchDevice() {
+  if (typeof navigator !== "undefined" && typeof navigator.maxTouchPoints === "number" && navigator.maxTouchPoints > 0) return true;
+  if (typeof window !== "undefined" && typeof window.ontouchstart !== "undefined") return true;
+  return false;
+}

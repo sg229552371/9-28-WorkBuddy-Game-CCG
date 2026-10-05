@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="app-version" content="20261003">
+<meta name="app-version" content="20261005">
 <title>弹幕射击 Roguelike × 背包肉鸽 — HTML 原型</title>
 <script>
 /* ====== 缓存自愈：静态资源统一版本号 + 旧版自动强刷（必须先于其他脚本执行） ======
@@ -11,7 +11,7 @@
  * 机制：所有 js/css 引用统一带 ?v=版本号；localStorage.app_version 与当前版本不一致
  * （说明刚从旧版升上来）时，强制 location.reload 重拉一次（sessionStorage 标记防死循环）。
  * 整段包裹 try/catch：隐私模式 / 存储被禁时静默降级，绝不阻断页面加载。 */
-var APP_VERSION = "20261003";
+var APP_VERSION = "20261005";
 (function () {
   try {
     var alreadyReloaded = sessionStorage.getItem("app_version_reloaded");
@@ -26,7 +26,7 @@ var APP_VERSION = "20261003";
   } catch (e) { /* 存储不可用：静默降级，不阻断页面 */ }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261003">
+<link rel="stylesheet" href="css/style.css?v=20261005">
 </head>
 <body>
 <div id="app">
@@ -64,18 +64,19 @@ var APP_VERSION = "20261003";
       <h2>操作说明</h2>
       <div class="help-cols">
         <div>
-          <h3>键盘 / 鼠标</h3>
+          <h3>触屏（手机 · 推荐）</h3>
+          <p><b>左下摇杆</b> — 移动（左半屏按下即为中心，灵敏度可在设置里调）</p>
+          <p><b>技能 / 背包 / 交互</b> — 右下按钮（技能自动释放）</p>
+          <p><b>长按物品</b> — 弹出 TIPS 详情；点选物品 — 查看详情并选中（供工匠强化）</p>
+          <p><b>拖动物品</b> — 整理背包 / 装备武器模块</p>
+        </div>
+        <div>
+          <h3>桌面端操作（键盘 / 鼠标）</h3>
           <p><b>WASD / 方向键</b> — 移动（队长带队，队友蛇形跟随）</p>
           <p><b>主动技能</b> — 冷却与能量就绪后自动释放（19.1 移除普攻，技能即唯一输出；无需按键）</p>
           <p><b>B</b> — 打开 / 关闭背包与武器栏</p>
           <p><b>E</b> — 撤离点查看进度 / 工匠世界开关面板</p>
           <p><b>鼠标悬停</b> — 物品 TIPS 详情；拖拽整理背包</p>
-        </div>
-        <div>
-          <h3>触屏</h3>
-          <p><b>左下摇杆</b> — 移动（灵敏度可在设置里调）</p>
-          <p><b>技能 / 背包 / 交互</b> — 右下按钮</p>
-          <p><b>长按物品</b> — 查看 TIPS 详情；拖动整理背包</p>
         </div>
         <div>
           <h3>核心循环</h3>
@@ -230,11 +231,13 @@ var APP_VERSION = "20261003";
       <!-- 21.1：自动战斗开关与风格选择器移至右下角，与背包按钮垂直堆叠（在 #hud-br 内，不遮挡左下浮动摇杆） -->
       <button id="btn-autofight" class="btn ghost">自动战斗：关</button>
       <div id="autofight-styles" class="hidden">
+        <!-- 手机端无 tooltip：风格说明改为可见小字提示行（title 仅桌面保留作补充） -->
+        <div id="af-style-hint" class="af-hint">疯狂=贴脸 · 平衡=中距风筝 · 冷静=远距风筝（见血线说明）</div>
         <button class="af-style" data-style="berserk" title="贴脸输出，只预判冲锋与Boss大招，血线再低也不退">疯狂</button>
         <button class="af-style" data-style="balanced" title="中距离风筝，躲密集弹幕与预警技能，血量40%以下拉开">平衡</button>
         <button class="af-style" data-style="cautious" title="最远距离风筝，见弹就躲，血量过半即拉开距离">冷静</button>
       </div>
-      <button id="btn-backpack" class="btn">背包 (B)</button>
+      <button id="btn-backpack" class="btn">背包<span class="kbd-hint"> (B)</span></button>
     </div>
     <div id="channel-wrap" class="hidden">
       <div id="channel-circle"><svg viewBox="0 0 80 80"><circle id="channel-arc" cx="40" cy="40" r="34"/></svg><span id="channel-txt"></span></div>
@@ -307,7 +310,7 @@ var APP_VERSION = "20261003";
       <div class="bp-head">
         <h2>背包管理</h2>
         <span id="bp-lock-hint" class="warn hidden">⚔ 战斗进行中，仅可查看（工匠世界内可操作）</span>
-        <button id="btn-bp-close" class="btn ghost small">关闭 (B)</button>
+        <button id="btn-bp-close" class="btn ghost small">关闭<span class="kbd-hint"> (B)</span></button>
       </div>
       <!-- 竖屏工匠单屏三段用：本单元在原地/工匠面板复用，CSS 按 zone 类区分排布 -->
       <div class="bp-body" id="bp-grid-unit">
@@ -330,7 +333,7 @@ var APP_VERSION = "20261003";
         <!-- 最底：物品信息（小尺寸单行展示） -->
         <div class="grid-zone side zone-info">
           <h3>物品信息</h3>
-          <div id="item-info" class="item-info">选中或悬停物品查看详情</div>
+          <div id="item-info" class="item-info">点选物品查看详情</div>
         </div>
       </div>
     </div>
@@ -343,7 +346,7 @@ var APP_VERSION = "20261003";
     <div class="panel art-panel">
       <div class="bp-head">
         <h2>工匠 · 工坊</h2>
-        <button id="btn-artisan-close" class="btn ghost small">关闭 (E)</button>
+        <button id="btn-artisan-close" class="btn ghost small">关闭<span class="kbd-hint"> (E)</span></button>
       </div>
       <div class="art-tabs" id="art-tabs">
         <button class="art-tab active" id="art-tab-chest">开宝箱</button>
@@ -439,11 +442,11 @@ var APP_VERSION = "20261003";
   </div>
 </div>
 
-<script src="js/config.js?v=20261003"></script>
-<script src="js/core.js?v=20261003"></script>
-<script src="js/game.js?v=20261003"></script>
-<script src="js/ui.js?v=20261003"></script>
-<script src="js/main.js?v=20261003"></script>
+<script src="js/config.js?v=20261005"></script>
+<script src="js/core.js?v=20261005"></script>
+<script src="js/game.js?v=20261005"></script>
+<script src="js/ui.js?v=20261005"></script>
+<script src="js/main.js?v=20261005"></script>
 <!-- 20.6 JS 未加载兜底：main.js 之后立刻执行；若 window.Game 未定义（脚本全部/部分加载失败）
      则直接显示兜底面板。面板与按钮由 main.js 的 BootGuard.ensure() 建成（本行也可能在
      main.js 未执行时运行，故此处再自查一次并按需补按钮）。 -->

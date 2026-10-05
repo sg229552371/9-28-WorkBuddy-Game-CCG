@@ -5,6 +5,14 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 #app { position:relative; width:100vw; height:100vh; }
 .hidden { display:none !important; }
 
+/* ===== 22.1 手机端毛刺：键盘快捷键标注（(B)/(E)）=====
+ * 默认隐藏；仅在「支持悬停 + 精确指针」设备（桌面鼠标）显示。
+ * 触屏（粗指针/无悬停）不显示 → 手机按钮只剩中文动作名，去噪。 */
+.kbd-hint { display:none; }
+@media (hover:hover) and (pointer:fine) {
+  .kbd-hint { display:inline; }
+}
+
 #game-canvas {
   position:absolute; left:50%; top:50%;
   transform:translate(-50%,-50%);
@@ -671,6 +679,8 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 /* ===== 自动战斗风格选择器（开启后在左上按钮下方展开；左对齐贴合 HUD 左上角） ===== */
 #autofight-styles { display:flex; gap:6px; justify-content:flex-start; margin-top:6px; }
 #autofight-styles.hidden { display:none; }
+/* 22.1 手机端无 tooltip：风格说明改为可见小字提示（不依赖 title 悬停） */
+.af-hint { font-size:10px; color:#7d8aa0; line-height:1.5; margin-bottom:2px; }
 .af-style {
   padding:4px 12px; border-radius:14px; font-size:11px; cursor:pointer;
   background:#1d2a3d; border:1px solid #33486b; color:#9fb4d4;

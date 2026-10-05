@@ -1292,7 +1292,7 @@ const UI = {
     return text;
   },
 
-  /* ---------- 物品 TIPS 浮窗（悬停/长按；一个渲染函数全场景复用） ---------- */
+  /* ---------- 物品 TIPS 浮窗（桌面悬停 / 移动端长按/点选；一个渲染函数全场景复用） ---------- */
   showTooltip(item, cx, cy) {
     const tp = document.getElementById("tooltip");
     if (!tp || !item) return;
@@ -1428,7 +1428,7 @@ const UI = {
   renderItemInfo() {
     const box = document.getElementById("item-info");
     const it = this.hoverItem;
-    if (!it) { box.innerHTML = "选中或悬停物品查看详情"; return; }
+    if (!it) { box.innerHTML = "选中或点选物品查看详情"; return; }
     box.innerHTML = itemTipHTML(it);
     // 诅咒道具：使用按钮（仅主地图战斗中）
     if (it.kind === "curse") {
@@ -1568,7 +1568,7 @@ const UI = {
       rows.push({ key: "item", shop: true, dim: r.coin < cost,
         html: `<div class="sw" style="background:#7de08a"></div><b>◈ 购买道具</b><small>¥${cost} · ${buyCfg.buyItem.desc}</small>` });
     }
-    // 强化品质 / 洗词缀：需要先悬停选中一件装备或武器模块
+    // 强化品质 / 洗词缀：需要先点选选中一件装备或武器模块（鼠标指针悬停或触屏点选均可）
     const it = hoverIt && (hoverIt.kind === "gear" || hoverIt.kind === "module") ? hoverIt : null;
     if (it && it.kind === "gear" || it && it.kind === "module") {
       const qupOk = it.itemQ < 3;
@@ -1760,7 +1760,7 @@ const UI = {
       this.toast(`购买 ${item.name} ×1`, "gold");
     } else if (key === "qup") {
       const it = this.hoverItem;
-      if (!it || (it.kind !== "gear" && it.kind !== "module")) { this.toast("请先悬停选中一件装备/武器模块", "bad"); return; }
+      if (!it || (it.kind !== "gear" && it.kind !== "module")) { this.toast("请先点选一件装备/武器模块", "bad"); return; }
       if (it.itemQ >= 3) { this.toast("已达金色品质", "bad"); return; }
       const cost = S.qualityUp.costs[it.itemQ];
       if (!pay(cost)) return;
@@ -1780,7 +1780,7 @@ const UI = {
       this.toast(`✦ ${it.name} 强化至 ${CFG.itemQualities[it.itemQ].name}品质`, "gold");
     } else if (key === "reroll") {
       const it = this.hoverItem;
-      if (!it || it.kind !== "module") { this.toast("请先悬停选中一件武器模块", "bad"); return; }
+      if (!it || it.kind !== "module") { this.toast("请先点选一件武器模块", "bad"); return; }
       if (!pay(S.rerollModule.cost)) return;
       const old = affixText(it);
       it.itemQ = U.randInt(0, 3);   // 重掷主词缀档位（保留等级/类型/形状）
