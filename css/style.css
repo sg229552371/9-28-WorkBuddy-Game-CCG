@@ -75,46 +75,47 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .btn-row { display:flex; gap:12px; justify-content:flex-end; margin-top:16px; flex-shrink:0; }
 .char-panel {
   width:min(560px, 94vw);
-  max-height:min(94vh, 844px);   /* 单屏锁定：390×844 下整块不滚出视口 */
+  max-height:calc(100dvh - 16px);   /* 单屏锁定：不滚出视口 */
+  padding-bottom:max(10px, env(safe-area-inset-bottom));   /* 20.9：底部安全区，按钮永不贴边 */
   display:flex; flex-direction:column;
 }
 .char-head { flex-shrink:0; }
-.char-head h2 { margin-bottom:6px; }
-/* 12 宫格头像：3 列 × 4 行，只放头像 + 名字，不塞大段文字（一屏看完 12 角）。 */
+.char-head h2 { margin-bottom:4px; font-size:18px; }
+/* 12 宫格头像：6 列 × 2 行（20.9 缩小 50%：99px→52px，小而美的苹果风），一屏看完 12 角。 */
 #char-list {
   flex-shrink:0;
-  display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;
+  display:grid; grid-template-columns:repeat(6, 1fr); gap:6px;
   padding:2px;
 }
-/* 头像格：立绘 canvas 铺满格子宽度（≥80px），下方一行名字；选中态高亮边框 + 勾角标。 */
+/* 头像格：立绘方形铺满，下方 9px 小字名字；细边框 + 选中轻光晕（克制不喧宾）。 */
 .char-card {
   position:relative; display:flex; flex-direction:column; align-items:center;
   background:linear-gradient(180deg,#1d2a3d 0%,#16202e 100%);
-  border:2px solid #33486b; border-radius:12px;
-  padding:4px; cursor:pointer; transition:.15s; overflow:hidden;
+  border:1px solid #33486b; border-radius:10px;
+  padding:3px; cursor:pointer; transition:.15s; overflow:hidden;
 }
 .char-card:hover { border-color:#6d8fc4; }
-.char-card.selected { border-color:#ffd76a; box-shadow:0 0 0 2px rgba(255,215,106,.35), 0 0 14px rgba(255,215,106,.45); background:linear-gradient(180deg,#2b3a52 0%,#1d2a3d 100%); }
+.char-card.selected { border-color:#ffd76a; box-shadow:0 0 0 1px rgba(255,215,106,.45), 0 0 10px rgba(255,215,106,.30); background:linear-gradient(180deg,#2b3a52 0%,#1d2a3d 100%); }
 .char-card.selected::after {   /* 选中勾角标（右上角） */
-  content:"✓"; position:absolute; top:2px; right:4px; font-size:13px; font-weight:bold;
+  content:"✓"; position:absolute; top:1px; right:3px; font-size:10px; font-weight:bold;
   color:#ffd76a; text-shadow:0 1px 3px rgba(0,0,0,.9);
 }
 .char-card.locked { opacity:.5; cursor:not-allowed; border-style:dashed; border-color:#2e3d55; }
 .char-card.locked:hover { border-color:#2e3d55; }
 /* 立绘舞台：方形，canvas 等比铺满，深底衬托。 */
 .char-card .char-stage {
-  position:relative; width:100%; aspect-ratio:1 / 1; border-radius:9px;
+  position:relative; width:100%; aspect-ratio:1 / 1; border-radius:8px;
   background:radial-gradient(circle at 50% 65%, #2a3b57 0%, #131c2a 75%);
   display:flex; align-items:center; justify-content:center; overflow:hidden;
 }
 .char-card .char-face { width:100%; height:100%; display:block; }
 .char-card .char-name {
-  margin-top:3px; font-size:12px; color:#dbe6f4; font-weight:bold; max-width:100%;
+  margin-top:2px; font-size:9px; color:#c9d6e8; font-weight:bold; max-width:100%;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.char-card .char-lock {   /* 未解锁竖排锁标（浮在立绘上） */
+.char-card .char-lock {   /* 未解锁小锁标（浮在立绘上） */
   position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-  font-size:22px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.9));
+  font-size:13px; filter:drop-shadow(0 1px 3px rgba(0,0,0,.9));
 }
 /* 兼容旧断言：卡片内仍保留定位徽章（隐藏在名字行末端，随选人详情展示）。 */
 .char-card .char-badges { display:none; }
@@ -123,20 +124,20 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 /* 固定高度详情区：切换选中只换内容不改高度 → 布局不跳动。
  * 显示当前选中英雄的角色说明 + 技能说明；文本超长时区域内部滚动。 */
 .char-detail {
-  flex:1; min-height:128px; max-height:190px; margin-top:10px;
+  flex:1; min-height:104px; max-height:170px; margin-top:8px;
   overflow-y:auto;
-  background:rgba(13,20,32,.72); border:1px solid #2a3a55; border-radius:12px;
-  padding:10px 12px;
+  background:rgba(13,20,32,.72); border:1px solid #2a3a55; border-radius:10px;
+  padding:8px 10px;
 }
-.char-detail .cd-empty { color:#6d7c94; font-size:13px; text-align:center; padding-top:34px; }
-.char-detail .cd-title { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:5px; }
-.char-detail .cd-name { font-size:16px; font-weight:bold; color:#fff; }
-.char-detail .cd-id { font-size:11px; color:#8ba0bd; }
-.char-detail .cd-desc { font-size:12px; color:#a9bad2; margin-bottom:5px; line-height:1.5; }
-.char-detail .cd-stats { font-size:12px; color:#9fb4cc; margin-bottom:5px; line-height:1.5; }
-.char-detail .cd-skill { font-size:12px; color:#ffd76a; line-height:1.5; word-break:break-word; }
+.char-detail .cd-empty { color:#6d7c94; font-size:12px; text-align:center; padding-top:28px; }
+.char-detail .cd-title { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
+.char-detail .cd-name { font-size:14px; font-weight:bold; color:#fff; }
+.char-detail .cd-id { font-size:10px; color:#8ba0bd; }
+.char-detail .cd-desc { font-size:11px; color:#a9bad2; margin-bottom:4px; line-height:1.45; }
+.char-detail .cd-stats { font-size:11px; color:#9fb4cc; margin-bottom:4px; line-height:1.45; }
+.char-detail .cd-skill { font-size:11px; color:#ffd76a; line-height:1.45; word-break:break-word; }
 .char-detail .cd-skill b { color:#ffe08a; }
-.char-detail .cd-lock { font-size:12px; color:#e0a24c; margin-top:4px; }
+.char-detail .cd-lock { font-size:11px; color:#e0a24c; margin-top:3px; }
 /* 定位徽章（19.2）：输出红 / 防御蓝 / 恢复绿，颜色由 CFG.heroRoles[name].color 内联注入 */
 .role-badge {
   display:inline-block; margin-left:6px; padding:1px 8px; border-radius:10px;
@@ -785,8 +786,8 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   .btn.big { width: 100%; padding: 16px 18px; }
   .level-panel { width: 96vw; max-height: 94vh; }
   .level-card { gap: 6px; }
-  /* 竖屏：12 宫格头像保持 3 列（每格 ≈110px 宽），不被压成单列纵向堆叠。 */
-  #char-list { grid-template-columns: repeat(3, 1fr); }
+  /* 竖屏：12 宫格头像用 6 列（每格 ≈52px 宽，20.9 苹果风小而美），12 角一屏看完不滚动。 */
+  #char-list { grid-template-columns: repeat(6, 1fr); }
   .char-panel { width: 96vw; max-height: 94vh; }
   .panel { width: 96vw; max-width: 96vw; }
   .settings-panel, .help-panel, .goodbye-panel, .settle-panel, .death-panel, .meta-panel { width: 96vw; max-width: 96vw; }
@@ -806,7 +807,7 @@ body.portrait #hud-tl { top: calc(var(--sa-top) + 82px); }
 body.portrait .bp-body { flex-direction: column; flex-wrap: nowrap; }
 body.portrait .art-layout { flex-direction: column; }
 body.portrait .codex-grid { flex-direction: column; align-items: stretch; }
-body.portrait #char-list { grid-template-columns: repeat(3, 1fr); }
+body.portrait #char-list { grid-template-columns: repeat(6, 1fr); }
 
 /* 横屏：显式确认沿用原布局（不改动任何既有规则，仅作可读性声明） */
 body.landscape #hud-tl { flex-direction: column; }

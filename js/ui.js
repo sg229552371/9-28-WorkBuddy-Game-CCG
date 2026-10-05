@@ -363,7 +363,7 @@ const UI = {
       startBtn.textContent = `开始游戏（${this.selectedChars.length}/${CFG.team.maxSize}）`;
     }
     const metaLine = document.getElementById("meta-line");
-    if (metaLine) metaLine.innerHTML = `◆ 进化结晶 <b>${Meta.data.crystals}</b><small>　撤离/击杀获得 · 死亡仅保留 ${CFG.outLevel.deathRatio * 100}% · 升级请前往主城「强化导师」</small>`;
+    if (metaLine) metaLine.innerHTML = `◆ 结晶 <b>${Meta.data.crystals}</b><small>　撤离/击杀获得 · 升级见主城「强化导师」</small>`;
   },
 
   /* 选人详情区渲染（用户明确要求：下方显示当前选中英雄的「技能说明 + 角色说明」）。

@@ -41,13 +41,13 @@ check("静态：存在默认选中首个已解锁英雄的逻辑",
   /默认选中[\s\S]{0,40}已解锁[\s\S]{0,40}英雄/.test(uiSrc) && /find\(h\s*=>\s*Meta\.isHeroUnlocked/.test(uiSrc));
 check("静态：默认选中受进入选人界面语义（charSel）约束", uiSrc.indexOf('G.state === "charSel"') >= 0);
 // ③ CSS：选人宫格 + 选关紧凑网格
-check("静态：CSS 存在选人 3 列宫格（#char-list grid 3 列）",
-  /#char-list\s*\{[^}]*grid-template-columns\s*:\s*repeat\(\s*3/.test(cssFlat));
+check("静态：CSS 存在选人 6 列宫格（#char-list grid 6 列，20.9 缩小 50%）",
+  /#char-list\s*\{[^}]*grid-template-columns\s*:\s*repeat\(\s*6/.test(cssFlat));
 check("静态：CSS 存在选关紧凑网格（#level-list 2 列 grid）",
   /#level-list\s*\{[^}]*grid-template-columns\s*:\s*1fr\s+1fr/.test(cssFlat));
 check("静态：CSS 详情区 #char-detail 固定高度（max-height）", /\.char-detail\s*\{[^}]*max-height/.test(cssFlat));
-check("静态：CSS 选关/选人面板锁定单屏（max-height min(.*844px)）",
-  /\.char-panel\s*\{[^}]*max-height\s*:\s*min\([^)]*844px/.test(cssFlat));
+check("静态：CSS 选关/选人面板锁定单屏（max-height 视口约束）",
+  /\.char-panel\s*\{[^}]*max-height\s*:\s*(min\([^)]*844px|calc\(100dvh[^)]*\))/.test(cssFlat));
 // 静态：index.html 保留关键 id 且新增 #char-detail
 for (const id of ["char-list", "btn-char-start", "btn-char-back", "level-list", "btn-level-back", "meta-line", "char-detail"]) {
   check("静态：index.html 含 id=" + id, htmlSrc.indexOf('id="' + id + '"') >= 0);
