@@ -144,7 +144,7 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 /* 固定高度详情区：切换选中只换内容不改高度 → 布局不跳动。
  * 显示当前选中英雄的角色说明 + 技能说明；文本超长时区域内部滚动。 */
 .char-detail {
-  flex:1; min-height:104px; max-height:170px; margin-top:8px;
+  flex:1; min-height:104px; max-height:240px; margin-top:8px;   /* 21.9：170→240，未解锁信息公开化后内容变长，裁切改滚动 */
   overflow-y:auto;
   background:rgba(13,20,32,.72); border:1px solid #2a3a55; border-radius:10px;
   padding:8px 10px;

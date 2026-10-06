@@ -204,15 +204,19 @@ vm.runInContext(`
   check("点击未解锁卡 → 不入 selectedChars",
     UI.selectedChars.length === 0 && !UI.selectedChars.some(s => s.id === heroLvLocked.id));
   /* 21.6：点击未解锁 → 详情区持续展示解锁条件（不再只靠 toast 一闪）：
-   * 名字打码 ??? + cd-unlock 金色条件行 + 数值/技能防剧透（与卡片 ??? 口径一致） */
+   * cd-unlock 金色条件行持续可见。
+   * 21.9：未解锁英雄**信息公开化**（用户要求：可查看技能信息、角色属性、解锁条件）——
+   * 取消 21.6 防剧透打码：真名 + 简介 + LV1 基础属性 + LV1 技能描述全部可见。 */
   const cdBox = get("char-detail");
   const cdHtml = cdBox ? cdBox.innerHTML : "";
   check("21.6 点击未解锁 → 详情区渲染解锁条件行（cd-unlock + 条件文案）",
     cdHtml.indexOf("cd-unlock") >= 0 && cdHtml.indexOf(UI._unlockRuleText(heroLvLocked.id)) >= 0);
-  check("21.6 未解锁详情名字打码（??? 且不露真名）",
-    cdHtml.indexOf("???") >= 0 && cdHtml.indexOf(heroLvLocked.name) < 0);
-  check("21.6 未解锁详情不露属性与技能（防剧透：无 cd-stats / cd-skill）",
-    cdHtml.indexOf("cd-stats") < 0 && cdHtml.indexOf("cd-skill") < 0);
+  check("21.9 未解锁详情显示真名（取消 ??? 打码）",
+    cdHtml.indexOf("???") < 0 && cdHtml.indexOf(heroLvLocked.name) >= 0);
+  check("21.9 未解锁详情显示 LV1 基础属性（cd-stats）",
+    cdHtml.indexOf("cd-stats") >= 0 && cdHtml.indexOf("LV1 基础值") >= 0);
+  check("21.9 未解锁详情显示技能信息（cd-skill LV1 描述）",
+    cdHtml.indexOf("cd-skill") >= 0 && cdHtml.indexOf("技能 LV1") >= 0);
   check("21.6 未解锁详情仍显示定位徽章（role-badge 保留）", cdHtml.indexOf("role-badge") >= 0);
 
   /* 21.8：选人详情区 crystal 型解锁入口落地——此前 _unlockCost 定义后全库零调用，
@@ -233,7 +237,7 @@ vm.runInContext(`
   check("21.8 点击解锁 → 扣等额结晶 + unlockExtra 落档",
     Meta.data.crystals === 0 && !!Meta.data.unlockExtra[crystalLocked.id]);
   check("21.8 解锁成功 → toast 提示（gold 同导师）", toastMsg.indexOf("已解锁") >= 0);
-  check("21.8 解锁成功 → 详情区刷新为已解锁态（??? 消失）", (get("char-detail") ? get("char-detail").innerHTML : "").indexOf("???") < 0);
+  check("21.8 解锁成功 → 详情区刷新为已解锁态（显示局外 LV 成长行）", (get("char-detail") ? get("char-detail").innerHTML : "").indexOf("局外 LV") >= 0);
   delete Meta.data.unlockExtra[crystalLocked.id];   // 恢复未解锁态，防影响后续导师分组断言
   Meta.data.crystals = 0;
   UI.renderCharDetail(heroLvLocked);    // heroLv 型：查询式自动解锁，无按钮

@@ -392,12 +392,13 @@ const UI = {
       // 未解锁：锁形标识 + 条件短文案（保留在卡内供旧断言读取，同时竖排锁标浮在立绘上）。
       const lockMsg = this._unlockRuleText(h.id);
       const lockLine = unlocked ? "" : `🔒 未解锁 · ${lockMsg}`;
-      // 头像只放立绘（放大到格子宽度，复用 drawHeroPortrait / Assets.fit 紧贴主体裁剪）。
+      // 21.9：卡片显示真名（取消 ??? 打码——与详情区信息公开化口径一致；锁定感由
+      // 🔒 锁标 + 置灰 + 剪影立绘表达；图鉴/皮肤系统的 ??? 是收集/皮肤语义，不受影响）
       card.innerHTML =
         `<div class="char-stage"><canvas class="char-face" width="128" height="128"></canvas>` +
         (unlocked ? "" : `<span class="char-lock">🔒</span>`) +
         `</div>` +
-        `<div class="char-name">${unlocked ? h.name : "???"}</div>` +
+        `<div class="char-name">${h.name}</div>` +
         `<div class="char-badges">${h.id}${roleBadge}${lockLine}</div>`;
       const cv = card.querySelector(".char-face");
       if (cv) drawHeroPortrait(cv, heroPortraitKey(h), !unlocked, HERO_PORTRAIT_CARD_H);
@@ -405,7 +406,7 @@ const UI = {
         // 未解锁 → 拦截：toast 解锁条件 + 详情区持续展示（21.6 用户要求：未解锁角色可选中查看解锁条件）
         if (!Meta.isHeroUnlocked(h.id)) {
           this.toast(`🔒 ${h.name} 未解锁：${this._unlockRuleText(h.id)}`, "bad");
-          this.renderCharDetail(h);   // 详情区显示 ??? + 定位 + 解锁条件（不靠 toast 一闪而过）
+          this.renderCharDetail(h);   // 21.9：详情区完整信息公开（真名+属性+技能+解锁条件+解锁按钮）
           return;
         }
         // 多角色组队：点击选中/取消，上限 CFG.team.maxSize
@@ -454,12 +455,10 @@ const UI = {
     const roleBadge = role
       ? `<span class="role-badge" style="color:${role.color};border-color:${role.color}">${role.name}</span>`
       : "";
-    /* 21.6：未解锁英雄 → 名字打码 ??? + 只露定位与解锁条件（数值/技能防剧透，与卡片 ??? 口径一致）；
-     * 解锁条件独立成行持续可见（用户要求：选中未解锁角色时提示解锁条件），不再只靠 toast 一闪。
-     * 21.8：补上 crystal 型解锁入口——此前 _unlockCost 定义后全库零调用，有结晶也无法主动解锁
-     * （用户实机反馈：结晶 316 ≥ 300 门槛却永远锁着）。crystal 型 → 渲染「◆ N 解锁」按钮：
-     * 结晶足够可点（Meta.unlockHero 扣款+存档+刷新），不足置灰并显示缺口；
-     * heroLv 型无需按钮（isHeroUnlocked 查询式自动解锁）。 */
+    /* 21.9：未解锁英雄**信息公开化**（用户要求：可查看技能信息、角色属性、解锁条件）——
+     * 取消 21.6 防剧透打码：真名 + 简介 + LV1 基础属性 + LV1 技能描述全部可见；
+     * 局外成长从解锁后才累积（未解锁展示 LV1 基准值，无成长加成）。
+     * 解锁条件行独立可见（21.6）+ crystal 型「◆ N 解锁」按钮（21.8）保留。 */
     const unlocked = Meta.isHeroUnlocked(h.id);
     if (!unlocked) {
       const cost = this._unlockCost(h.id);
@@ -470,11 +469,17 @@ const UI = {
         ? `<button id="btn-unlock-hero" class="cd-unlock-btn" type="button"${canBuy ? "" : " disabled"}>` +
           (canBuy ? `◆ ${cost.cost} 解锁` : `◆ ${cost.cost}（还差 ${cost.cost - cur}）`) + `</button>`
         : "";
+      const wpn = CFG.weapons[h.weapon] || { name: "—", skills: {} };
+      const skLine = this._skillSummary(wpn.skills.skill, 1);
       box.innerHTML =
-        `<div class="cd-title"><span class="cd-name">???</span>` +
+        `<div class="cd-title"><span class="cd-name">${h.name}</span>` +
         `<span class="cd-id">${h.id}</span>${roleBadge}</div>` +
         `<div class="cd-unlock">🔒 未解锁 · ${ruleTxt}</div>` +
         unlockBtn +
+        `<div class="cd-desc">${h.desc}</div>` +
+        `<div class="cd-stats">HP ${h.hp} · 攻击 ${h.atk} · 防御 ${h.def} · 移速 ${h.spd}` +
+        `<span class="cd-id">　（LV1 基础值 · 解锁后随局外等级成长）</span></div>` +
+        `<div class="cd-skill">⚔ <b>${wpn.name}</b> · 技能 LV1（解锁后可升级）<br>${skLine}</div>` +
         `<div class="cd-desc">解锁后可编入队伍出战。${cost ? "点击上方按钮花结晶解锁" : (ruleTxt !== "暂未解锁" ? "达成条件后自动解锁" : "敬请期待后续版本")}</div>`;
       if (canBuy) {
         const btn = document.getElementById("btn-unlock-hero");
