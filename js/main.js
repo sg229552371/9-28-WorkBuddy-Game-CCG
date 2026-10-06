@@ -179,6 +179,14 @@ const Game = {
     if (location.protocol === "file:") {
       UI.toast("本地文件模式：素材抠图被浏览器安全策略禁用（角色/怪物带底色）。建议通过助手预览打开", "", 5000);
     }
+    /* 21.12 性能压测场景：?stress=N 时直达压测，跳过首页/主城。
+     * 无参数 → parseQuery 返回 false，行为逐位不变（正式玩法零影响）。 */
+    if (typeof StressHarness !== "undefined" && StressHarness.parseQuery()) {
+      StressHarness.build();
+      BootGuard.done();             // 压测场景已可交互：同样取消首屏看门狗
+      requestAnimationFrame((t) => this.loop(t));
+      return;
+    }
     G.state = "menu";
     UI.showScreen("screen-main");   // 启动落到游戏首页（→ 主城 → 传送门 → 选关）
     BootGuard.done();               // 20.6 首屏已出现：取消看门狗（正常路径零打扰）
@@ -873,6 +881,15 @@ const Game = {
     const dt = Math.min(0.05, (t - this.lastT) / 1000 || 0.016);
     this.lastT = t;
     G.time += dt;
+    /* 21.12 性能压测场景（?stress=N）：接管更新+渲染，正式玩法零影响（无参数时 isActive 恒 false） */
+    if (typeof StressHarness !== "undefined" && StressHarness.isActive()) {
+      const t0 = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+      StressHarness.update(dt);
+      StressHarness.render();
+      StressHarness.sampleFrame(((typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now()) - t0);
+      PerfGuard.sample(t);
+      return;
+    }
     if (G.state === "playing") {
       recomputeWeapon();
       // 升级 4 选 1 弹窗暂停（19.10.6）：paused=true → 跳过世界/玩家/同伴更新，渲染照常（弹窗覆盖）

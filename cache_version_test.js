@@ -31,15 +31,19 @@ const VER = metaVer || "";
 check("① index.html 含 app-version meta", !!metaVer);
 check("① 版本串为 8 位日期格式", /^\d{8}$/.test(VER));
 
-// 5 个 js 引用 + css 引用全部带 ?v= 且值统一
-for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js", "js/main.js"]) {
+// 全部 js 引用 + css 引用：统一带 ?v= 且值一致
+// 21.12 起新增 js/stress.js（性能压测场景），故改为「清单驱动」避免每次都硬编码数量。
+const VER_ASSETS = ["js/config.js", "js/core.js", "js/game.js", "js/stress.js", "js/ui.js", "js/main.js"];
+for (const f of VER_ASSETS) {
   check("① " + f + " 引用带 ?v=" + VER, html.indexOf('<script src="' + f + "?v=" + VER + '"') >= 0);
 }
 check("① css/style.css 引用带 ?v=" + VER, html.indexOf('href="css/style.css?v=' + VER + '"') >= 0);
 
 // 全文所有 ?v= 值必须与 meta 版本一致（统一版本，禁止混用）
+// 数量口径 = js 引用数 + css 引用数（清单驱动，新增脚本只需改 VER_ASSETS）
 const vValues = [...html.matchAll(/\?v=([\w.-]+)/g)].map(m => m[1]);
-check("① 全部 ?v= 值统一且等于 meta 版本", vValues.length === 6 && vValues.every(v => v === VER));
+const EXPECTED_V_COUNT = VER_ASSETS.length + 1;   // +1 = css/style.css
+check("① 全部 ?v= 值统一且等于 meta 版本", vValues.length === EXPECTED_V_COUNT && vValues.every(v => v === VER));
 
 // 自愈脚本要素：版本比对 / 写回 / 防死循环标记 / 强刷 / try-catch，且先于外部脚本执行
 const inlineIdx = html.indexOf("var APP_VERSION");

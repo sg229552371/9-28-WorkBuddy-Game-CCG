@@ -24,7 +24,8 @@ mobile_polish_test \
 perf_test \
 season_test \
 assets_hook_test \
-levels_11_20_test"
+levels_11_20_test \
+stress_test"
 
 # --- 选 node：优先 PATH 里的 node，其次本机 WorkBuddy 托管运行时 ---
 NODE="${NODE:-}"

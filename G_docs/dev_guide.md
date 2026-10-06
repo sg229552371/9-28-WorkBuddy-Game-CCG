@@ -999,6 +999,10 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 | 21.6 | 选人面板：未解锁可点选（详情区持续展示条件 ??? 打码防剧透）+ 展示序 4 轮循环（`CFG.heroDisplayOrder` **渲染层消费，物理序不动**）+ 赛季占位（SeasonState）+ 美术音频接入层（AssetHooks+manifest+回退）+ 铺关卡 11~20（LEVEL_011~020+BOSS 二周目+levelCurve 20 行） |
 | 21.7 | = 21.6 的关卡铺量提交拆分（f74eaf3） |
 | 21.8 | 四连修复：①crystal 型解锁入口落地（选人详情区「◆N 解锁」按钮——**此前 `_unlockCost` 全库零调用，结晶够也无处解锁**；heroLv 型保持查询式自动解锁）②竖屏 4 选 1 压缩一屏（卡 148px/ico 44px，实测 footBottom=666<844）③移除「给 XXX 选择强化」标题（与轮转绑定矛盾）④候选分配 **§5.48 按队友轮转绑定池**（卡 i 绑定 `teamHeroIds()[i%n]` 单人池，池空随机非空队友兜底，替代 §5.47 全队混抽）+ slotLine 去名 + unlock_btn_check.py 13 项 / lu_final_check.py 6 项 |
+| 21.9 | 未解锁英雄信息公开化（取消 ??? 打码：真名+简介+LV1 属性+LV1 技能+解锁条件+crystal 解锁按钮，锁定感由🔒+置灰表达；图鉴/皮肤 ??? 是收集语义不动）+ 详情区 max-height 170→240（0029） |
+| 21.10 | 手机端主城 NPC 交互修复（双重根因：入口缺失——hideTouchButtons 隐藏按钮后主城只走键盘 E，补 `cityNpcTap`+金环提示；坐标错位——`screenToWorld` 主城无 G.world 落纯缩放分支忽略相机居中平移，补主城相机分支与 renderCity 严格同口径）+ mobile_test 4 断言 + city_npc_check.py 8 项（0030） |
+| 21.11 | 图鉴统一化：芯片图鉴并入图鉴页（首页独立按钮移除，screen-codex 新增 #codex-chips 分区，统计行扩三项）+ 英雄卡 line-clamp 2 行对齐 + 三区统一 grid 语言（英雄 2 列/怪物·芯片 3 列）+ ui_v2_test 适配（0031） |
+| 21.12 | **P1 压测场景落地**（`js/stress.js` 新建）：`?stress=N&bullets=N&mode=full\|dot\|lod&ai=0\|1` 直达压测，无参数零开销（boot/主循环均单行分支 + stress_test 52 契约）。复用真实 World/Monster/Bullet 类铺场（isMain=false+kind="stress" 走空世界；轻量无敌 player 桩补 takeDamage/heal；弹幕可见环铺场+每帧补位维持目标数量）。**真机实测（iPhone12 视口 3000敌+2000弹）：full 帧耗时 8.9ms/drawCall 4090；dot 4.5ms/2；lod 5.0ms/182——LOD drawCall -95.6% 稳超 100fps，目标可达性证实**。cache_version_test 改清单驱动（stress.js 加入 VER_ASSETS）。三档截图 stress_full/dot/lod_3000.png 供拍板群体抽象 |候选分配 **§5.48 按队友轮转绑定池**（卡 i 绑定 `teamHeroIds()[i%n]` 单人池，池空随机非空队友兜底，替代 §5.47 全队混抽）+ slotLine 去名 + unlock_btn_check.py 13 项 / lu_final_check.py 6 项 |
 
 ### 10.3 新会话必须知道的坑（血泪浓缩）
 
@@ -1017,6 +1021,7 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 13. **`heroes[i]` 索引是全库隐性契约**（21.6 血泪）：物理重排 `CFG.heroes` 会让技能解析全链错位（散弹手弹道 3→1 真机回归）——**展示顺序必须放渲染层消费 `CFG.heroDisplayOrder`，数据源顺序不可动**。
 14. **测试桩 `getElementById` 对不存在 id 也返回空壳 FakeEl**（unlock_ui/ui_v2 桩）：「节点已移除」类断言**不能**用 `!get(id)`（恒 false），要用源码级断言（`__htmlSrc.indexOf(...) < 0`）；空壳 `_html=""` → innerHTML 文案断言对按钮类子元素无效，改断 `onclick` 绑定 + 行为。
 15. **解锁双入口语义**（21.8）：heroLv 型 = `isHeroUnlocked` 查询式**被动自动解锁**（无需 UI）；crystal 型 = 必须主动调 `Meta.unlockHero`（导师面板 `_appendLockedGroup` + 选人详情区 `btn-unlock-hero` 双入口），排查「条件达成没解锁」先分清类型。
+16. **压测复用真实类的三件套**（21.12）：① `Bullet` 签名是 `(x,y,ang,spd,dmg,side,...)`——side 是第 6 参不是第 5 参，错位会把 dmg 当 side 静默错乱；② `World` 构造传 `isMain=false, kind="stress"` 才走空世界分支（`isMain=true` 会触发 setupMain 依赖 `G.levelCfg.circles` 直接崩）；③ 轻量 player 桩必须实现 `takeDamage/heal`（ai=1 走真实 World.update 时敌方子弹命中会调，缺法则每帧抛错打崩主循环）。压测弹幕要「可见环铺场 + 每帧补位」——`life=1e9` 挡不住撞墙消亡（出界即 dead）。
 
 ### 10.4 下一步候选
 
