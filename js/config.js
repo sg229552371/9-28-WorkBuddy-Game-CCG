@@ -161,6 +161,129 @@ CFG.levels = [
     supplyEnabled: true,
     supply: { count: 1, channelSeconds: 4.0, effect: { type: "heal", pct: 0.15 } },
   },
+
+  /* ---------- 第 11→20 关铺量（第 11~20 关扩展批）----------
+   * 设计口径：难度沿第 9/10 关斜率继续外推，单调无断崖回落：
+   *   progressGoal 200→440（步长 20~28）、timeLimit 420→720（+30/关）、
+   *   artisanAtKills 56→96（+4/关）、eliteBase 9→15（两小步一档）；
+   *   monsterCap 维持 120（性能红线，与 1~10 关一致）；
+   *   monsterLevel 封顶 10（属性成长口径 ≤10，压力改由 levelCurve 的 countMul/hpMul 外推承载）。
+   * 地图：正方形（smoke 断言 mapW===mapH），1980→2400 随关卡缓增（区间 [1920,3000]）。
+   * Boss：11~20 关按序复用 BS0001~BS0010 组成「二周目」第二轮（每只 Boss 恰好对应 2 关，
+   *   Boss 表覆盖恒 10 只）；第 15 关 BS0005（熔核暴君）、第 20 关 BS0010（终焉·邪神本体，全表最厚血量）。
+   * circles：SC04 被 special_monster_test 锁定仅挂 L8~L10，11~20 关以 SC03 为主力、
+   *   SC02/SC01 搭配，圆总数 15→26 递增，快慢节奏（interval 7.0/6.0/5.5）逐关轮换。
+   * 机制：11~20 关不启用毒圈/补给（levelCurve 新行 hazard/supply = null，机制关总数维持 5 关）。 */
+  {
+    id: "LEVEL_011", name: "第 11 关 · 靛蓝裂隙", theme: "#161a2e",
+    mapW: 1980, mapH: 1980,
+    monsterLevel: 10,
+    eliteBase: 10,
+    elitePool: "ED0001:19/ED0002:34/ED0003:47",
+    boss: "BS0001",
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 7 }, { tpl: "SC02", count: 5 }, { tpl: "SC01", count: 3 }],
+    progressGoal: 220, timeLimit: 450, artisanAtKills: 60,
+  },
+  {
+    id: "LEVEL_012", name: "第 12 关 · 紫晶洞窟", theme: "#1e1426",
+    mapW: 2040, mapH: 2040,
+    monsterLevel: 10,
+    eliteBase: 10,
+    elitePool: "ED0001:18/ED0002:33/ED0003:49",
+    boss: "BS0002",
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 8 }, { tpl: "SC02", count: 5 }, { tpl: "SC01", count: 4 }],
+    progressGoal: 240, timeLimit: 480, artisanAtKills: 64,
+  },
+  {
+    id: "LEVEL_013", name: "第 13 关 · 幽沼泽国", theme: "#101f22",
+    mapW: 2100, mapH: 2100,
+    monsterLevel: 10,
+    eliteBase: 11,
+    elitePool: "ED0001:17/ED0002:33/ED0003:50",
+    boss: "BS0003",
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 8 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 4 }],
+    progressGoal: 262, timeLimit: 510, artisanAtKills: 68,
+  },
+  {
+    id: "LEVEL_014", name: "第 14 关 · 沙金遗迹", theme: "#26201a",
+    mapW: 2160, mapH: 2160,
+    monsterLevel: 10,
+    eliteBase: 11,
+    elitePool: "ED0001:16/ED0002:32/ED0003:52",
+    boss: "BS0004",
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 9 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 4 }],
+    progressGoal: 284, timeLimit: 540, artisanAtKills: 72,
+  },
+  {
+    id: "LEVEL_015", name: "第 15 关 · 熔血祭坛", theme: "#2a1220",
+    mapW: 2220, mapH: 2220,
+    monsterLevel: 10,
+    eliteBase: 12,
+    elitePool: "ED0001:15/ED0002:32/ED0003:53",
+    boss: "BS0005",           // 中盘 BOSS 关：熔核暴君（冲锋践踏 + 熔岩波幕）
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 9 }, { tpl: "SC02", count: 7 }, { tpl: "SC01", count: 5 }],
+    progressGoal: 308, timeLimit: 570, artisanAtKills: 76,
+  },
+  {
+    id: "LEVEL_016", name: "第 16 关 · 寒潮海沟", theme: "#12222a",
+    mapW: 2280, mapH: 2280,
+    monsterLevel: 10,
+    eliteBase: 12,
+    elitePool: "ED0001:14/ED0002:31/ED0003:55",
+    boss: "BS0006",
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 10 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 5 }],
+    progressGoal: 332, timeLimit: 600, artisanAtKills: 80,
+  },
+  {
+    id: "LEVEL_017", name: "第 17 关 · 虚空神殿", theme: "#221a30",
+    mapW: 2340, mapH: 2340,
+    monsterLevel: 10,
+    eliteBase: 13,
+    elitePool: "ED0001:13/ED0002:31/ED0003:56",
+    boss: "BS0007",
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 10 }, { tpl: "SC02", count: 7 }, { tpl: "SC01", count: 5 }],
+    progressGoal: 358, timeLimit: 630, artisanAtKills: 84,
+  },
+  {
+    id: "LEVEL_018", name: "第 18 关 · 瘟疫林海", theme: "#1a2e1a",
+    mapW: 2340, mapH: 2340,
+    monsterLevel: 10,
+    eliteBase: 13,
+    elitePool: "ED0001:12/ED0002:30/ED0003:58",
+    boss: "BS0008",
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 11 }, { tpl: "SC02", count: 7 }, { tpl: "SC01", count: 5 }],
+    progressGoal: 384, timeLimit: 660, artisanAtKills: 88,
+  },
+  {
+    id: "LEVEL_019", name: "第 19 关 · 猩红王庭", theme: "#2e1a1a",
+    mapW: 2400, mapH: 2400,
+    monsterLevel: 10,
+    eliteBase: 14,
+    elitePool: "ED0001:11/ED0002:30/ED0003:59",
+    boss: "BS0009",
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 11 }, { tpl: "SC02", count: 8 }, { tpl: "SC01", count: 6 }],
+    progressGoal: 412, timeLimit: 690, artisanAtKills: 92,
+  },
+  {
+    id: "LEVEL_020", name: "第 20 关 · 终夜之幕", theme: "#0f0f16",
+    mapW: 2400, mapH: 2400,
+    monsterLevel: 10,
+    eliteBase: 15,
+    elitePool: "ED0001:10/ED0002:29/ED0003:61",
+    boss: "BS0010",           // 终局 BOSS 关：终焉·邪神本体（全表最厚血量、三阶段弹幕）
+    monsterCap: 120,
+    circles: [{ tpl: "SC03", count: 12 }, { tpl: "SC02", count: 8 }, { tpl: "SC01", count: 6 }],
+    progressGoal: 440, timeLimit: 720, artisanAtKills: 96,
+  },
 ];
 
 /* ---------- 刷怪圆模板表（表 B） ----------
@@ -1673,6 +1796,20 @@ CFG.levelCurve = {
     { lv: 8,  countMul: 1.95, hpMul: 1.84, hazard: "HZ3", supply: "SP3", chest: "CT3" },
     { lv: 9,  countMul: 2.10, hpMul: 1.96, hazard: "HZ4", supply: "SP4", chest: "CT4" },
     { lv: 10, countMul: 2.25, hpMul: 2.08, hazard: "HZ5", supply: "SP5", chest: "CT4" },
+    /* ---- 11~20 关外推（第 11~20 关扩展批）：沿 9/10 关斜率 countMul +0.15/关、
+     *   hpMul = 1+(lv-1)×0.12 严格对齐 monsterLevel 成长口径；
+     *   11~20 关不启用毒圈/补给（hazard/supply = null，机制关总数维持 5），
+     *   宝箱延续后期档 CT4（高阶占比不回落）。 ---- */
+    { lv: 11, countMul: 2.40, hpMul: 2.20, hazard: null, supply: null, chest: "CT4" },
+    { lv: 12, countMul: 2.55, hpMul: 2.32, hazard: null, supply: null, chest: "CT4" },
+    { lv: 13, countMul: 2.70, hpMul: 2.44, hazard: null, supply: null, chest: "CT4" },
+    { lv: 14, countMul: 2.85, hpMul: 2.56, hazard: null, supply: null, chest: "CT4" },
+    { lv: 15, countMul: 3.00, hpMul: 2.68, hazard: null, supply: null, chest: "CT4" },
+    { lv: 16, countMul: 3.15, hpMul: 2.80, hazard: null, supply: null, chest: "CT4" },
+    { lv: 17, countMul: 3.30, hpMul: 2.92, hazard: null, supply: null, chest: "CT4" },
+    { lv: 18, countMul: 3.45, hpMul: 3.04, hazard: null, supply: null, chest: "CT4" },
+    { lv: 19, countMul: 3.60, hpMul: 3.16, hazard: null, supply: null, chest: "CT4" },
+    { lv: 20, countMul: 3.75, hpMul: 3.28, hazard: null, supply: null, chest: "CT4" },
   ],
 
   /* ---- 毒圈档位（值 = 关卡 hazard 覆盖的权威来源）----
@@ -1719,9 +1856,9 @@ CFG._validateLevelCurve = function () {
   try {
     const num = (v) => typeof v === "number" && isFinite(v);
     const lv = CFG.levels;
-    if (!Array.isArray(lv) || lv.length < 10) { issues.push("CFG.levels 缺失或少于 10 关"); return { ok: false, issues: issues }; }
+    if (!Array.isArray(lv) || lv.length < 20) { issues.push("CFG.levels 缺失或少于 20 关"); return { ok: false, issues: issues }; }
     const curve = CFG.levelCurve;
-    if (!curve || !Array.isArray(curve.rows) || curve.rows.length !== 10) { issues.push("levelCurve.rows 必须为 10 行"); return { ok: false, issues: issues }; }
+    if (!curve || !Array.isArray(curve.rows) || curve.rows.length !== 20) { issues.push("levelCurve.rows 必须为 20 行"); return { ok: false, issues: issues }; }
 
     // ---- 1. 倍率：数值合理 + 单调不减 ----
     let prevCount = 0, prevHp = 0;
@@ -1738,7 +1875,7 @@ CFG._validateLevelCurve = function () {
     // ---- 2. 毒圈档位：数值区间 + 递增压力 + 与关卡覆盖一致 ----
     const HZ = curve.hazardTiers;
     let prevDps = 0, prevDelay = Infinity, prevMinR = Infinity;
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < curve.rows.length; i++) {
       const r = curve.rows[i], L = lv[i], key = r.hazard;
       if (!!L.hazardEnabled !== (key != null)) { issues.push("第" + (i + 1) + "关 hazard 开关与曲线档位不一致"); continue; }
       if (key == null) continue;
@@ -1769,7 +1906,7 @@ CFG._validateLevelCurve = function () {
     // ---- 3. 补给档位：数值区间 + 稀缺化单调 + 与关卡覆盖一致 + 不失衡 ----
     const SP = curve.supplyTiers;
     let prevCnt = Infinity, prevChan = 0, prevHeal = Infinity;
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < curve.rows.length; i++) {
       const r = curve.rows[i], L = lv[i], key = r.supply;
       if (!!L.supplyEnabled !== (key != null)) { issues.push("第" + (i + 1) + "关 supply 开关与曲线档位不一致"); continue; }
       if (key == null) continue;
@@ -1810,7 +1947,7 @@ CFG._validateLevelCurve = function () {
     // ---- 4. 宝箱档位：key 存在 + 权重合法 + 高阶占比单调抬升 ----
     const CT = curve.chestTiers, okKeys = CFG.chestQualities ? Object.keys(CFG.chestQualities) : [];
     let prevHigh = -1;
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < curve.rows.length; i++) {
       const r = curve.rows[i];
       const t = CT[r.chest];
       if (!t) { issues.push("宝箱档位 key 不存在: " + r.chest); continue; }

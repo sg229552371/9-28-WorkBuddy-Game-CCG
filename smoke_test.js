@@ -189,7 +189,8 @@ vm.runInContext(`
   G.inArtisan = false;
   // 11) 批次 B：关卡扩展（关卡配置完整性 + 解锁链）
   // ⚠️ B 线「关卡 3→10 铺量」需求变更：关卡总数由 3 扩为 10，此处期望值同步更新（非放松断言）。
-  console.assert(CFG.levels.length === 10, "10 个关卡");
+  // ⚠️ 第 11~20 关扩展批：关卡总数由 10 扩为 20，期望值同步更新（非放松断言）。
+  console.assert(CFG.levels.length === 20, "20 个关卡");
   for (let i = 1; i < CFG.levels.length; i++) {
     const lv = CFG.levels[i];
     console.assert(lv.mapW > 0 && lv.progressGoal > 0 && lv.timeLimit > 0, "关卡" + (i + 1) + " 基础字段");

@@ -54,7 +54,7 @@ if (CFG) {
     const rows = curve.rows;
 
     /* ---- 三、曲线表结构与单调性 ---- */
-    check("三 rows 共 10 行且 lv=1..10", rows.length === 10 && rows.every((r, i) => r.lv === i + 1));
+    check("三 rows 共 20 行且 lv=1..20（10+10 扩展批）", rows.length === 20 && rows.every((r, i) => r.lv === i + 1));
     let mono = true, inRange = true;
     for (let i = 1; i < rows.length; i++) {
       if (rows[i].countMul < rows[i - 1].countMul || rows[i].hpMul < rows[i - 1].hpMul) mono = false;
@@ -62,9 +62,9 @@ if (CFG) {
     for (const r of rows) {
       if (!(r.countMul > 0 && r.countMul <= 10 && r.hpMul > 0 && r.hpMul <= 10)) inRange = false;
     }
-    check("三 怪物数量倍率单调不减（1.00→" + rows[9].countMul + "）", mono);
+    check("三 怪物数量倍率单调不减（1.00→" + rows[19].countMul + "）", mono);
     check("三 怪物数量倍率全部在 (0,10] 区间", inRange);
-    check("三 怪物血量倍率单调不减（1.00→" + rows[9].hpMul + "）",
+    check("三 怪物血量倍率单调不减（1.00→" + rows[19].hpMul + "）",
       rows.every((r, i) => i === 0 || r.hpMul >= rows[i - 1].hpMul));
     check("三 血量倍率与 monsterLevel 成长口径一致（1+(lv-1)×0.12）",
       rows.every((r, i) => near(r.hpMul, 1 + i * 0.12, 1e-9)));
