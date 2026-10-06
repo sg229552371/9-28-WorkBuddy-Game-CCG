@@ -958,12 +958,11 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   .art-panel .pending-item { width:38px; height:38px; font-size:8px; }
   .art-panel .pending-item .giveup { top:-5px; right:-5px; width:13px; height:13px; font-size:8px; line-height:13px; }
 
-  /* ---- 芯片图鉴 / 图鉴：单列滚动、卡片铺满（20.10：dvh 锁高，去掉旧 88vh） ---- */
+  /* ---- 图鉴（21.11 统一布局）：怪物/芯片 3 列小卡网格；英雄立绘大卡 2 列（见文件末尾 portrait 区块） ---- */
   .codex-panel { width: 96vw; max-height: calc(100dvh - 16px); }
-  .codex-grid { flex-direction: column; align-items: stretch; }
-  .codex-card, .codex-card.small { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; }
-  .codex-card .codex-face, .codex-card.small .codex-face { flex: none; }
-  .codex-card b { margin-top: 0; }
+  .codex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .codex-card, .codex-card.small { width: auto; max-width: none; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .codex-card b { margin-top: 2px; }
 
   /* ---- 主菜单 / 关卡选择 / 角色选择：按钮铺满宽度、不横向溢出 ---- */
   .main-panel { width: 100%; max-width: 480px; max-height: calc(100dvh - 16px); }
@@ -1199,7 +1198,12 @@ body.portrait .perf-v { text-align: left; }
 }
 .portrait-card b { display: block; font-size: 13px; margin-top: 6px; color: #cfe0ff; }
 .portrait-card .portrait-role { height: 18px; margin-top: 2px; }
-.portrait-card small { color: #8ba0bd; font-size: 10px; line-height: 1.4; display: block; margin-top: 2px; }
+/* 21.11：简介裁切修复——卡高参差与文字溢出的根因是描述行数不定，clamp 2 行省略对齐 */
+.portrait-card small {
+  color: #8ba0bd; font-size: 10px; line-height: 1.4; margin-top: 2px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; min-height: 28px;
+}
 /* 未解锁：整体降饱和 + 立绘剪影已由 canvas 染黑，边框虚线提示 */
 .codex-card.portrait-card.locked { opacity: .72; border-style: dashed; }
 .codex-card.portrait-card.locked b { color: #6d7c94; }
@@ -1240,15 +1244,15 @@ body.portrait .perf-v { text-align: left; }
 }
 .hero-detail-back { margin-top: 10px; }
 
-/* 竖屏（390×844）：图鉴 2 列、详情立绘占满可用宽且不溢出
- * 20.10 注意：通用 .codex-card 竖屏 flex 横排规则会覆盖 .portrait-card 的纵向堆叠，
- * 故此处必须用 display:block 显式保住立绘卡「立绘在上、文字在下」的布局（不要改成 flex）。 */
+/* 竖屏（390×844）：图鉴统一网格（21.11）——英雄 2 列大卡 / 怪物·芯片 3 列小卡（主规则在竖屏主块）
+ * 20.10 注意：portrait-card 用 display:block 保住「立绘在上、文字在下」的纵向堆叠（不要改成 flex）。 */
 @media (orientation: portrait) {
-  #codex-heroes.codex-grid { flex-direction: row; flex-wrap: wrap; }
-  .codex-card.portrait-card { width: calc(50% - 5px); display: block; }
+  #codex-heroes.codex-grid { grid-template-columns: repeat(2, 1fr); }
+  .codex-card.portrait-card { width: auto; display: block; }
   .hero-detail-portrait .codex-portrait { width: 78vw; height: 44vh; max-height: 380px; }
 }
-body.portrait .codex-card.portrait-card { width: calc(50% - 5px); display: block; }
+body.portrait #codex-heroes.codex-grid { grid-template-columns: repeat(2, 1fr); }
+body.portrait .codex-card.portrait-card { width: auto; display: block; }
 body.portrait .hero-detail-portrait .codex-portrait { width: 78vw; height: 44vh; max-height: 380px; }
 /* ---------- 主城 12 角立绘升级 结束 ---------- */
 

@@ -1232,7 +1232,33 @@ const UI = {
     const cnt = document.getElementById("codex-count");
     if (cnt) {
       const hm = Object.keys(Meta.data.codex.heroes).length, mm = Object.keys(Meta.data.codex.monsters).length;
-      cnt.textContent = `英雄 ${hm}/${CFG.heroes.length} · 怪物 ${mm}/${Object.keys(CFG.monsters).length}`;
+      /* 21.11：统计行扩展芯片收录（数据口径与 renderChipCodex 的 chipSeen 一致） */
+      const seen = (typeof G !== "undefined" && G.meta && G.meta.chipSeen) ? G.meta.chipSeen : null;
+      const C0 = CFG.chips || {};
+      const chipTotal = (C0.valuePool || []).length + (C0.behaviorPool || []).length;
+      let chipSeenN = 0;
+      for (const def of [...(C0.valuePool || []), ...(C0.behaviorPool || [])]) if (seen && seen[def.id]) chipSeenN++;
+      cnt.textContent = `英雄 ${hm}/${CFG.heroes.length} · 怪物 ${mm}/${Object.keys(CFG.monsters).length} · 芯片 ${chipSeenN}/${chipTotal}`;
+    }
+    /* 21.11：芯片分区并入图鉴页（首页「芯片图鉴」独立入口移除——芯片图鉴属于图鉴的一部分）。
+     * 渲染口径与 renderChipCodex 逐位一致：chipSeen 已见解锁 + 数值蓝/行为紫品质染色。 */
+    const chipBox = document.getElementById("codex-chips");
+    if (chipBox) {
+      chipBox.innerHTML = "";
+      const seen = (typeof G !== "undefined" && G.meta && G.meta.chipSeen) ? G.meta.chipSeen : null;
+      const C = CFG.chips || {};
+      const behaviorIds = {};
+      for (const d of (C.behaviorPool || [])) behaviorIds[d.id] = true;
+      for (const def of [...(C.valuePool || []), ...(C.behaviorPool || [])]) {
+        const unlocked = !!(seen && seen[def.id]);
+        const card = document.createElement("div");
+        card.className = "codex-card small chip-codex-card" + (unlocked ? "" : " locked");
+        const q = unlocked ? (behaviorIds[def.id] ? CFG.itemQualities[2] : CFG.itemQualities[1]) : CFG.itemQualities[0];
+        card.style.borderColor = q.color;
+        card.innerHTML = `<b style="color:${unlocked ? q.color : "#6d7c94"}">${unlocked ? def.name : "？？？"}</b>
+          <small>${unlocked ? (def.desc || chipEffectLine(def, 2)) : "在局内见过后解锁"}</small>`;
+        chipBox.appendChild(card);
+      }
     }
     this.renderCodexHeroPortraits();   // 主城 12 角立绘升级（独立区块追加，见文件末尾）
   },
@@ -1276,10 +1302,8 @@ const UI = {
       cnt.textContent = `已见 ${sv + sb}/${total}`;
     }
   },
-  /* 首页芯片图鉴入口 + 返回按钮惰性绑定（幂等：已绑过则跳过，避免重复事件）。 */
+  /* 首页芯片图鉴入口（21.11 移除独立入口——芯片分区已并入图鉴页 renderCodex）+ 返回按钮惰性绑定。 */
   bindChipCodexEntry() {
-    const entry = document.getElementById("btn-home-chip-codex");
-    if (entry && typeof entry.onclick !== "function") entry.onclick = () => this.showChipCodex();
     const back = document.getElementById("btn-chip-codex-back");
     if (back && typeof back.onclick !== "function") back.onclick = () => { this.updateHomeUser(); this.showScreen("screen-main"); };
   },

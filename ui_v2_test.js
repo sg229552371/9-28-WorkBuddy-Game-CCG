@@ -138,7 +138,8 @@ const requiredIds = [
   // ⑤ 芯片工坊（19.7；20.10 起 forge 页签并入「商店·工坊」，#forge-list 保留在 art-page-shop 内）
   "forge-list",
   // ⑥ 芯片图鉴
-  "screen-chip-codex", "chip-codex-value", "chip-codex-behavior", "btn-home-chip-codex", "btn-chip-codex-back",
+  // ⑤ 芯片图鉴（19.7；21.11 起分区并入图鉴页，独立 screen 保留兼容）
+  "screen-chip-codex", "chip-codex-value", "chip-codex-behavior", "btn-chip-codex-back",
   // ⑦ 全队技能栏（19.12 底部居中：每人一条 [技能图标+冷却环][4 模块槽]）
   "party-skillbar",
 ];
@@ -337,9 +338,19 @@ vm.runInContext(`
 
   // 图鉴入口 / 返回绑定（惰性幂等）
   UI.bindChipCodexEntry();
-  check("首页芯片图鉴入口已绑 onclick", typeof get("btn-home-chip-codex").onclick === "function");
+  /* 21.11：首页「芯片图鉴」独立入口移除（芯片分区并入图鉴页 renderCodex）——
+   * 桩语义：不存在的 id 也返回空壳 FakeEl → 用源码级断言（__htmlSrc）。 */
+  check("21.11 首页芯片图鉴独立按钮已移除", __htmlSrc.indexOf("btn-home-chip-codex") < 0);
   UI.showChipCodex();
   check("芯片图鉴页显示", !get("screen-chip-codex").classList.contains("hidden"));
+  /* 21.11：图鉴页芯片分区（renderCodex 渲染进 #codex-chips，数据口径与 chipSeen 一致） */
+  UI.renderCodex();
+  const codexChipBox = get("codex-chips");
+  const chipTotalAll = (CFG.chips.valuePool || []).length + (CFG.chips.behaviorPool || []).length;
+  check("21.11 图鉴页芯片分区渲染（卡数 = 数值+行为池总数）",
+    !!codexChipBox && codexChipBox.children.length === chipTotalAll,
+    "cards=" + (codexChipBox ? codexChipBox.children.length : 0) + "/" + chipTotalAll);
+  check("21.11 图鉴统计行含芯片收录", get("codex-count").textContent.indexOf("芯片") >= 0);
 
   delete Game.chipForge;   // 清理桩，避免影响后续
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="app-version" content="20261011">
+<meta name="app-version" content="20261012">
 <title>弹幕射击 Roguelike × 背包肉鸽 — HTML 原型</title>
 <script>
 /* ====== 缓存自愈：静态资源统一版本号 + 旧版自动强刷（必须先于其他脚本执行） ======
@@ -11,7 +11,7 @@
  * 机制：所有 js/css 引用统一带 ?v=版本号；localStorage.app_version 与当前版本不一致
  * （说明刚从旧版升上来）时，强制 location.reload 重拉一次（sessionStorage 标记防死循环）。
  * 整段包裹 try/catch：隐私模式 / 存储被禁时静默降级，绝不阻断页面加载。 */
-var APP_VERSION = "20261011";
+var APP_VERSION = "20261012";
 (function () {
   try {
     var alreadyReloaded = sessionStorage.getItem("app_version_reloaded");
@@ -26,7 +26,7 @@ var APP_VERSION = "20261011";
   } catch (e) { /* 存储不可用：静默降级，不阻断页面 */ }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261011">
+<link rel="stylesheet" href="css/style.css?v=20261012">
 </head>
 <body>
 <div id="app">
@@ -51,7 +51,6 @@ var APP_VERSION = "20261011";
       <button id="btn-home-help" class="btn big">操作说明</button>
       <button id="btn-home-settings" class="btn big">设置</button>
       <button id="btn-home-codex" class="btn big">图鉴</button>
-      <button id="btn-home-chip-codex" class="btn big">芯片图鉴</button>
       <button id="btn-home-exit" class="btn big ghost">退出游戏</button>
     </div>
     <div id="home-user-line" class="home-user-line"></div>
@@ -140,6 +139,9 @@ var APP_VERSION = "20261011";
       <div id="codex-heroes" class="codex-grid"></div>
       <h3>怪物（击杀收录）</h3>
       <div id="codex-monsters" class="codex-grid"></div>
+      <!-- 21.11：芯片分区并入图鉴（原首页「芯片图鉴」独立入口移除）——数据口径与 renderChipCodex 一致 -->
+      <h3>芯片（战斗中拾取后收录）</h3>
+      <div id="codex-chips" class="codex-grid"></div>
       <div class="btn-row"><button id="btn-codex-back" class="btn ghost">返回首页</button></div>
     </div>
   </div>
@@ -467,11 +469,11 @@ var APP_VERSION = "20261011";
   </div>
 </div>
 
-<script src="js/config.js?v=20261011"></script>
-<script src="js/core.js?v=20261011"></script>
-<script src="js/game.js?v=20261011"></script>
-<script src="js/ui.js?v=20261011"></script>
-<script src="js/main.js?v=20261011"></script>
+<script src="js/config.js?v=20261012"></script>
+<script src="js/core.js?v=20261012"></script>
+<script src="js/game.js?v=20261012"></script>
+<script src="js/ui.js?v=20261012"></script>
+<script src="js/main.js?v=20261012"></script>
 <!-- 20.6 JS 未加载兜底：main.js 之后立刻执行；若 window.Game 未定义（脚本全部/部分加载失败）
      则直接显示兜底面板。面板与按钮由 main.js 的 BootGuard.ensure() 建成（本行也可能在
      main.js 未执行时运行，故此处再自查一次并按需补按钮）。 -->
