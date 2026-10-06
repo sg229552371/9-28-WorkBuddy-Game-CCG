@@ -370,14 +370,21 @@ const UI = {
     const box = document.getElementById("char-list");
     if (!box) return;
     box.innerHTML = "";
+    /* 21.6 展示顺序：输出/防御/治疗 ×4 轮循环（CFG.heroDisplayOrder）。
+     * 只影响选人界面渲染顺序——CFG.heroes 物理顺序不动（heroes[i] 索引是全库隐性契约）。
+     * 容错：表缺失/缺项时回退 CFG.heroes 原序。 */
+    const dispIds = (typeof CFG.heroDisplayOrder === "object" && CFG.heroDisplayOrder && CFG.heroDisplayOrder.length)
+      ? CFG.heroDisplayOrder : CFG.heroes.map(h => h.id);
+    const ordered = dispIds.map(id => CFG.heroes.find(h => h.id === id)).filter(Boolean);
+    if (ordered.length !== CFG.heroes.length) { ordered.length = 0; for (const h of CFG.heroes) ordered.push(h); }
     // 默认选中第 1 个「已解锁」英雄（用户要求：进入选人界面即默认选第 1 个角色）。
     //   仅在**真正进入选人界面**（G.state === "charSel"，由 Game.enterCharSelect 设置）且空选时补默认；
     //   跳过未解锁英雄；全未解锁 → 保持空选。直接裸调 buildCharList（如既有单测）不改选中态，保持旧行为。
     if (this.selectedChars.length === 0 && typeof G !== "undefined" && G && G.state === "charSel") {
-      const firstUnlocked = CFG.heroes.find(h => Meta.isHeroUnlocked(h.id));
+      const firstUnlocked = ordered.find(h => Meta.isHeroUnlocked(h.id));
       if (firstUnlocked) this.selectedChars = [firstUnlocked];
     }
-    for (const h of CFG.heroes) {
+    for (const h of ordered) {
       // 解锁门槛（方向3）：未解锁英雄置灰 + 锁标 + 条件文案，且不可入选队
       const unlocked = Meta.isHeroUnlocked(h.id);
       const isSel = this.selectedChars.some(s => s.id === h.id);
@@ -402,8 +409,12 @@ const UI = {
       const cv = card.querySelector(".char-face");
       if (cv) drawHeroPortrait(cv, heroPortraitKey(h), !unlocked, HERO_PORTRAIT_CARD_H);
       card.onclick = () => {
-        // 未解锁 → 拦截：toast 解锁条件，不入 selectedChars（不改变选中态）
-        if (!Meta.isHeroUnlocked(h.id)) { this.toast(`🔒 ${h.name} 未解锁：${this._unlockRuleText(h.id)}`, "bad"); return; }
+        // 未解锁 → 拦截：toast 解锁条件 + 详情区持续展示（21.6 用户要求：未解锁角色可选中查看解锁条件）
+        if (!Meta.isHeroUnlocked(h.id)) {
+          this.toast(`🔒 ${h.name} 未解锁：${this._unlockRuleText(h.id)}`, "bad");
+          this.renderCharDetail(h);   // 详情区显示 ??? + 定位 + 解锁条件（不靠 toast 一闪而过）
+          return;
+        }
         // 多角色组队：点击选中/取消，上限 CFG.team.maxSize
         const idx = this.selectedChars.findIndex(s => s.id === h.id);
         if (idx >= 0) this.selectedChars.splice(idx, 1);
@@ -450,6 +461,17 @@ const UI = {
     const roleBadge = role
       ? `<span class="role-badge" style="color:${role.color};border-color:${role.color}">${role.name}</span>`
       : "";
+    /* 21.6：未解锁英雄 → 名字打码 ??? + 只露定位与解锁条件（数值/技能防剧透，与卡片 ??? 口径一致）；
+     * 解锁条件独立成行持续可见（用户要求：选中未解锁角色时提示解锁条件），不再只靠 toast 一闪。 */
+    const unlocked = Meta.isHeroUnlocked(h.id);
+    if (!unlocked) {
+      box.innerHTML =
+        `<div class="cd-title"><span class="cd-name">???</span>` +
+        `<span class="cd-id">${h.id}</span>${roleBadge}</div>` +
+        `<div class="cd-unlock">🔒 未解锁 · ${this._unlockRuleText(h.id)}</div>` +
+        `<div class="cd-desc">解锁后可编入队伍出战。${this._unlockRuleText(h.id) !== "暂未解锁" ? "达成条件后自动解锁" : "敬请期待后续版本"}</div>`;
+      return;
+    }
     const lv = Meta.heroLevel(h.id);
     const g = CFG.outLevel.growth, n = lv - 1;
     const skLv = Meta.weaponLv(h.id);   // 技能等级 = 武器等级
@@ -2048,6 +2070,7 @@ const UI = {
       ? items.map(it => `<span class="chip">${it.name}${it.kind === "chest" ? " ×" + it.count : ""}（${it.kind === "chest" ? "宝箱" : CFG.itemQualities[it.itemQ].name}）</span>`).join("")
       : `<span class="chip">（无装备/武器模块保留）</span>`;
     document.getElementById("screen-settle").classList.remove("hidden");
+    if (typeof SeasonState !== "undefined") SeasonState.addExp(500);   // 21.6 赛季钩子：撤离成功发赛季经验 +500（占位，待迁 CFG）
   },
   /* 结晶获取明细行（20.10 产出可见化）：读 G.lastSettleReport（game.js publishCrystalReport 写入），
    * 把 lines 逐行拼成带换行的说明；无报告（老存档/异常路径）返回空串，不报错、不占位。 */
@@ -2416,3 +2439,53 @@ var CFG_ARTISAN_UI = {
   radiusPx: 9,          // 小圆角（8~10px 区间）
   borderPx: 1           // 细边框（苹果风：1px）
 };
+
+/* ============================================================
+ * ====== 21.6 赛季玩法（占位）—— 赛季大厅 UI ======
+ * ------------------------------------------------------------
+ * UI.showSeason()       渲染赛季大厅（等级/经验条/周任务/返回按钮）
+ * UI.grantSeasonExp(n)  单行薄封装：调 SeasonState.addExp，面板开着时重渲染
+ * 界面节点：index.html #screen-season（本期占位，99 关通关后开放入口）
+ * ============================================================ */
+UI.showSeason = function () {
+  var ss = (typeof SeasonState !== "undefined") ? SeasonState : null;
+  var cfg = (typeof SEASON_CFG !== "undefined") ? SEASON_CFG : { maxLv: 10, expBase: 1000, expStep: 200 };
+  if (!ss) return;
+  // 等级与经验条（L10 封顶：经验条拉满）
+  var lvEl = document.getElementById("season-lv");
+  if (lvEl) lvEl.textContent = "LV " + ss.seasonLv;
+  var curNeed = (ss.seasonLv >= cfg.maxLv)
+    ? (cfg.expBase + (cfg.maxLv - 1) * cfg.expStep)
+    : (cfg.expBase + (ss.seasonLv - 1) * cfg.expStep);
+  var pct = (ss.seasonLv >= cfg.maxLv) ? 100 : Math.min(100, Math.floor(ss.seasonExp / curNeed * 100));
+  var barEl = document.getElementById("season-exp-bar");
+  if (barEl) barEl.style.width = pct + "%";
+  var txtEl = document.getElementById("season-exp-text");
+  if (txtEl) txtEl.textContent = (ss.seasonLv >= cfg.maxLv)
+    ? "已达封顶 LV " + cfg.maxLv
+    : "经验 " + ss.seasonExp + " / " + curNeed;
+  // 周任务列表（占位：只展示进度，不消费奖励）
+  var tasksEl = document.getElementById("season-tasks");
+  if (tasksEl) {
+    var rows = ss.weeklies().map(function (t) {
+      return '<span class="chip">' + t.name + "：" + t.progress + " / " + t.goal + (t.progress >= t.goal ? "（已完成）" : "") + "</span>";
+    });
+    tasksEl.innerHTML = rows.length ? rows.join("") : '<span class="chip">（本周暂无任务）</span>';
+  }
+  // 返回按钮（每次渲染重绑，幂等）
+  var backEl = document.getElementById("btn-season-back");
+  if (backEl) backEl.onclick = function () { UI.showScreen("screen-main"); };
+  // 切屏进大厅
+  UI.showScreen("screen-season");
+};
+
+/* 单行薄封装：外部（结算钩子 / 事件）只需一行发赛季经验；
+ * 若赛季大厅面板正开着（无 hidden），重渲染保持数值新鲜。 */
+UI.grantSeasonExp = function (n) {
+  var ok = (typeof SeasonState !== "undefined") ? SeasonState.addExp(n) : false;
+  var panel = document.getElementById("screen-season");
+  if (panel && panel.classList && !panel.classList.contains("hidden")) UI.showSeason();
+  return ok;
+};
+
+/* 21.6 赛季玩法 UI 区块结束 */

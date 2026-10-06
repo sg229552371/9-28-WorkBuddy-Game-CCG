@@ -4858,3 +4858,74 @@ function levelUpReroll() {
   if (typeof ui.toast === "function") ui.toast(`已刷新候选（剩余 ${r.levelUpRerollsLeft} 次）`, "gold");
   return true;
 }
+
+/* ============================================================
+ * ====== 21.6 赛季玩法（占位）—— SeasonState 数据结构 ======
+ * ------------------------------------------------------------
+ * 定位：99 关主线通关后开放的赛季玩法，本期仅占位实现
+ *   （数据结构 + 经验曲线 + 周任务 + 结算钩子，无独立玩法循环）。
+ * 铁律遵守：数值常量在本区块顶部声明，【待迁入 CFG】（本轮禁止改 config.js）。
+ * 全部接口可被无头测试（season_test.js）直接调用，不依赖 DOM 渲染。
+ * ============================================================ */
+
+/* ---- 赛季配置常量（待迁入 CFG） ---- */
+var SEASON_CFG = {
+  expBase: 1000,        // LV1→LV2 所需经验基数
+  expStep: 200,         // 每级递增量（LV n→n+1 需 1000 + (n-1)*200，n 为当前等级）
+  maxLv: 10,            // 赛季等级封顶（L10 不再累计经验）
+  weeklyKillGoal: 200,  // 周任务①：击杀 N 个敌人
+  weeklyExtractGoal: 3, // 周任务②：成功撤离 N 次
+  weeklyLevelUpGoal: 10 // 周任务③：局内升级 N 次
+};
+
+/* ---- 赛季状态（内存态，占位期不落盘；赛季正式上线再接 Meta 存档） ---- */
+var SeasonState = {
+  seasonLv: 1,          // 赛季等级（从 LV1 起）
+  seasonExp: 0,         // 当前等级内已积累经验
+  _weeklyProgress: {    // 周任务进度（按任务 id 存内存）
+    "weekly-kill": 0,
+    "weekly-extract": 0,
+    "weekly-levelup": 0
+  },
+
+  /* 加赛季经验：升级曲线 每级 1000+n*200（n 从 0 计），L10 封顶后不再累计。
+   * 支持一次跨多级（while 循环逐级结算）；非正数输入直接拒绝。 */
+  addExp: function (n) {
+    if (typeof n !== "number" || !(n >= 0)) return false;   // 非法输入（含 NaN）拒绝
+    if (this.seasonLv >= SEASON_CFG.maxLv) return false;    // 封顶：经验不再涨
+    this.seasonExp += n;
+    while (this.seasonLv < SEASON_CFG.maxLv) {
+      var need = SEASON_CFG.expBase + (this.seasonLv - 1) * SEASON_CFG.expStep;
+      if (this.seasonExp < need) break;
+      this.seasonExp -= need;
+      this.seasonLv++;
+    }
+    if (this.seasonLv >= SEASON_CFG.maxLv) this.seasonExp = 0;   // 升满清零，杜绝残留
+    return true;
+  },
+
+  /* 周任务定义 + 当前进度（3 个占位任务；进度读写存内存）。
+   * 返回内部数组引用：调用方可读 progress，也可经 addWeeklyProgress 累加。 */
+  weeklies: function () {
+    var self = this;
+    return [
+      { id: "weekly-kill",     name: "击杀 " + SEASON_CFG.weeklyKillGoal + " 个敌人", goal: SEASON_CFG.weeklyKillGoal,     progress: self._weeklyProgress["weekly-kill"] },
+      { id: "weekly-extract",  name: "成功撤离 " + SEASON_CFG.weeklyExtractGoal + " 次", goal: SEASON_CFG.weeklyExtractGoal,  progress: self._weeklyProgress["weekly-extract"] },
+      { id: "weekly-levelup",  name: "局内升级 " + SEASON_CFG.weeklyLevelUpGoal + " 次", goal: SEASON_CFG.weeklyLevelUpGoal,  progress: self._weeklyProgress["weekly-levelup"] }
+    ];
+  },
+
+  /* 周任务进度累加（占位钩子：正式接入时由击杀/撤离/升级事件分别调用） */
+  addWeeklyProgress: function (id, n) {
+    if (!(id in this._weeklyProgress) || typeof n !== "number" || !(n > 0)) return false;
+    this._weeklyProgress[id] += n;
+    return true;
+  },
+
+  /* 周重置：三个任务进度归零（每周一刷新，占位期手动调用） */
+  resetWeekly: function () {
+    for (var k in this._weeklyProgress) this._weeklyProgress[k] = 0;
+  }
+};
+
+/* 21.6 赛季玩法区块结束 */

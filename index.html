@@ -420,6 +420,25 @@ var APP_VERSION = "20261007";
     </div>
   </div>
 
+  <!-- ====== 21.6 赛季玩法（占位）：赛季大厅（99 关通关后开放，当前仅占位面板） ====== -->
+  <div id="screen-season" class="screen hidden">
+    <div class="panel">
+      <h2>赛季大厅</h2>
+      <div class="stats">
+        <span>当前赛季等级 <b id="season-lv">LV 1</b>（L10 封顶，99 关通关后开放）</span>
+        <span style="flex-basis:100%">
+          <span style="display:block;height:14px;background:#223;border-radius:7px;overflow:hidden">
+            <span id="season-exp-bar" style="display:block;height:100%;width:0%;background:#4da3ff"></span>
+          </span>
+          <span id="season-exp-text" style="font-size:12px;opacity:.85">经验 0 / 1000</span>
+        </span>
+      </div>
+      <h3>本周任务</h3>
+      <div id="season-tasks" class="items-list"></div>
+      <div class="btn-row"><button id="btn-season-back" class="btn primary">返回主城</button></div>
+    </div>
+  </div>
+
   <!-- 拖拽幽灵 -->
   <div id="drag-ghost" class="hidden"></div>
 

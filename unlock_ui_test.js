@@ -203,6 +203,17 @@ vm.runInContext(`
     toastMsg.indexOf(heroLvLocked.id) >= 0 || toastMsg.indexOf(heroLvLocked.name) >= 0);
   check("点击未解锁卡 → 不入 selectedChars",
     UI.selectedChars.length === 0 && !UI.selectedChars.some(s => s.id === heroLvLocked.id));
+  /* 21.6：点击未解锁 → 详情区持续展示解锁条件（不再只靠 toast 一闪）：
+   * 名字打码 ??? + cd-unlock 金色条件行 + 数值/技能防剧透（与卡片 ??? 口径一致） */
+  const cdBox = get("char-detail");
+  const cdHtml = cdBox ? cdBox.innerHTML : "";
+  check("21.6 点击未解锁 → 详情区渲染解锁条件行（cd-unlock + 条件文案）",
+    cdHtml.indexOf("cd-unlock") >= 0 && cdHtml.indexOf(UI._unlockRuleText(heroLvLocked.id)) >= 0);
+  check("21.6 未解锁详情名字打码（??? 且不露真名）",
+    cdHtml.indexOf("???") >= 0 && cdHtml.indexOf(heroLvLocked.name) < 0);
+  check("21.6 未解锁详情不露属性与技能（防剧透：无 cd-stats / cd-skill）",
+    cdHtml.indexOf("cd-stats") < 0 && cdHtml.indexOf("cd-skill") < 0);
+  check("21.6 未解锁详情仍显示定位徽章（role-badge 保留）", cdHtml.indexOf("role-badge") >= 0);
   // 点击已解锁卡 → 正常入队（回归安全）
   toastMsg = "";
   cardH1.onclick({});
@@ -261,9 +272,10 @@ vm.runInContext(`
   check("导师：点「解锁 ◆" + crystalCost + "」→ 扣等额结晶", Meta.data.crystals === cryBefore - crystalCost);
   check("导师：点「解锁 ◆" + crystalCost + "」→ 该英雄变为已解锁", Meta.isHeroUnlocked(crystalLocked.id));
   check("导师：点「解锁」→ 成功 toast 含英雄名", unlockToast.indexOf("解锁") >= 0 && unlockToast.indexOf(crystalLocked.name) >= 0);
-  check("导师：解锁后面板刷新 → 该英雄进入升级区",
-    !lockedCards(get("outlevel-list")).some(c => c.innerHTML.indexOf(crystalLocked.name) >= 0)
-    && upCardsOf(get("outlevel-list")).some(c => c.innerHTML.indexOf(crystalLocked.name) >= 0));
+  /* 21.6 修正：名字子串会撞锁定区条件文案（H011 条件「医疗兵（H010）局外 LV6」含「医疗兵」），
+   * 改用升级区特有「局外等级」字样做正断言（升级卡独有结构，锁定卡无此文案） */
+  check("导师：解锁后面板刷新 → 该英雄进入升级区（升级区卡含其名 + 「局外等级」结构）",
+    upCardsOf(get("outlevel-list")).some(c => c.innerHTML.indexOf(crystalLocked.name) >= 0 && c.innerHTML.indexOf("局外等级") >= 0));
   UI.toast = oT2;
 
   /* 结晶不足 → 解锁按钮 disabled（复位该英雄为未解锁） */

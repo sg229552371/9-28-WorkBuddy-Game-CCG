@@ -32,7 +32,26 @@ const HERO_FIELDS = ["id", "name", "desc", "sprite", "hp", "def", "atk", "energy
 /* ============ 一、12 英雄全部存在、字段齐全无 undefined（逐字段断言） ============ */
 const ids = CFG.heroes.map(h => h.id);
 check("一1 CFG.heroes 恰 12 个", CFG.heroes.length === 12);
+/* 21.6：物理顺序保持 H001~H012（heroes[i] 索引是全库隐性契约，重排会让技能解析错位——真机回归教训） */
 check("一2 id 序列 = H001~H012 且无重复", ids.join() === "H001,H002,H003,H004,H005,H006,H007,H008,H009,H010,H011,H012" && new Set(ids).size === 12);
+/* 21.6 新契约：选人界面展示顺序 = heroDisplayOrder 组合后 4 轮「输出→防御→治疗」循环，类内 id 升序轮转 */
+{
+  const role = CFG.heroRoles.byHero;
+  const byId = {}; for (const h of CFG.heroes) byId[h.id] = h;
+  const disp = CFG.heroDisplayOrder.map(id => byId[id]);
+  check("一2a heroDisplayOrder 恰含 12 角无重复", disp.length === 12 && new Set(disp.map(h => h.id)).size === 12);
+  const rounds = [0, 1, 2, 3].map(r => disp.slice(r * 3, r * 3 + 3).map(h => role[h.id]));
+  check("一2b 展示顺序 4 轮循环（输出→防御→治疗）",
+    rounds.every(r4 => r4[0] === "output" && r4[1] === "defense" && r4[2] === "recovery"));
+  const idsByRole = { output: [], defense: [], recovery: [] };
+  for (const h of disp) idsByRole[role[h.id]].push(h.id);
+  check("一2c 输出类内 id 升序（H001,H002,H003,H006）", idsByRole.output.join() === "H001,H002,H003,H006");
+  check("一2d 防御类内 id 升序（H004,H005,H008,H009）", idsByRole.defense.join() === "H004,H005,H008,H009");
+  check("一2e 治疗类内 id 升序（H007,H010,H011,H012）", idsByRole.recovery.join() === "H007,H010,H011,H012");
+  check("一2f 物理首角仍 H001（默认队长契约）", CFG.heroes[0].id === "H001");
+  check("一2g unlockOrder 首发逻辑不受影响（前 6 = H001~H006）",
+    CFG.unlockOrder.slice(0, CFG.starterCount).join() === "H001,H002,H003,H004,H005,H006");
+}
 CFG.heroes.forEach(h => {
   const missing = HERO_FIELDS.filter(f => h[f] === undefined || h[f] === null || h[f] === "");
   check("一3 " + h.id + " 字段齐全（缺：" + (missing.join(",") || "无") + "）", missing.length === 0);
@@ -62,7 +81,8 @@ check("二6 全部 12 英雄的武器都在 CFG.weapons 中存在",
 /* ============ 三、unlockOrder 恰 12 项且与 heroes id 集合一致、无重复 ============ */
 check("三1 unlockOrder 恰 12 项", Array.isArray(CFG.unlockOrder) && CFG.unlockOrder.length === 12);
 check("三2 unlockOrder 无重复", new Set(CFG.unlockOrder).size === CFG.unlockOrder.length);
-check("三3 unlockOrder 与 heroes id 集合一致（同序）", CFG.unlockOrder.join() === ids.join());
+/* 21.6：unlockOrder（解锁链序）独立于展示序（输出/防御/治疗循环），物理序恢复后仍同序 */
+check("三3 unlockOrder 与 heroes id 序列一致（同序）", CFG.unlockOrder.join() === ids.join());
 check("三4 starterCount = 6（首发 6 角不变）", CFG.starterCount === 6);
 
 /* ============ 四、unlockRules：H007~H012 全有条目，且条件类型被 isHeroUnlocked 支持（实测） ============ */

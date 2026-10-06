@@ -477,3 +477,82 @@ const BGM = {
  * 纯静态字段赋值，不依赖 document/window —— 测试沙箱可无 DOM 独立加载本文件。 */
 Assets.buildVersion = "20261007";
 try { console.log("[build] " + Assets.buildVersion); } catch (e) { /* 无 console 环境静默跳过 */ }
+
+/* ============================================================
+ * AssetHooks —— 真实资源接入层（有资源就替换、无资源无缝回退占位）
+ * ============================================================
+ * 设计铁律：
+ *   1. 启动时一次性预加载：init() 遍历 AssetManifest（js/assets_manifest.js），
+ *      为每个键建 Image/Audio 并挂 onload/onerror，全部异步、不阻塞启动；
+ *      运行时零网络请求。
+ *   2. 运行时零开销查找：sprite()/audio() 均为对象属性查表 O(1)，
+ *      绝不做文件存在性判断、绝不发请求（性能基线：100 发子弹/80 特效/
+ *      80 角色同屏渲染不受影响）。
+ *   3. 无缝回退：加载成功 → 登记 cache 供渲染/音频侧优先取用；加载失败
+ *      （onerror）→ 静默留空（不写 cache），业务侧取到 null 时走既有
+ *      程序化占位绘制 / WebAudio 合成音效，行为与接入前完全一致。
+ * 本区块为文件末尾独立追加区块，不改动 core.js 任何既有函数。 */
+const AssetHooks = {
+  cache: {},      // key -> Image / Audio（仅加载成功者登记；渲染/音频侧查这张表）
+  _kind: {},      // key -> "sprite" | "audio"（区分查表口径：sprite() 不给音频、audio() 不给图）
+  _status: {},    // key -> "loading" | "ok" | "fail"
+  _total: 0, _loaded: 0, _failed: 0,
+  _jobs: [],      // 全部单资源 Promise（ready() 聚合用；非空即「已 init」幂等标记）
+  /* 启动预加载：遍历 AssetManifest 三分组（sprites → Image；audio/music → Audio）。
+   * 幂等：重复调用直接返回（不重复发请求）。清单未挂载（typeof 未定义）时
+   * 静默跳过 —— 全量走程序化占位回退，游戏行为不变。 */
+  init() {
+    if (this._jobs.length) return;                        // 幂等闸门：只装载一次
+    if (typeof AssetManifest === "undefined") return;     // 清单未挂载 → 全量回退
+    const groups = [["sprites", "sprite"], ["audio", "audio"], ["music", "audio"]];
+    for (const g of groups) {
+      const table = AssetManifest[g[0]] || {};
+      for (const key in table) {
+        this._total++;
+        this._jobs.push(this._loadOne(key, table[key], g[1]));
+      }
+    }
+  },
+  /* 单资源装载：onload 成功 → 登记 cache；onerror → 静默留空（回退占位，零输出）。
+   * Promise 永不 reject（失败也算 settle），保证 ready() 必定 resolve。 */
+  _loadOne(key, src, kind) {
+    const self = this;
+    return new Promise((resolve) => {
+      const el = kind === "sprite" ? new Image() : new Audio();
+      this._status[key] = "loading";
+      el.onload = () => {
+        if (self._status[key] !== "loading") { resolve(); return; }   // 只认首次回调
+        self._status[key] = "ok";
+        self.cache[key] = el; self._kind[key] = kind;
+        self._loaded++;
+        resolve();
+      };
+      el.onerror = () => {
+        if (self._status[key] !== "loading") { resolve(); return; }   // 只认首次回调
+        self._status[key] = "fail"; self._failed++;
+        resolve();
+      };
+      if (kind === "audio") { try { el.preload = "auto"; } catch (e) { /* 桩环境容错 */ } }
+      el.src = src;
+    });
+  },
+  /* 就绪 Promise：全部资源 settle（成功或失败）后 resolve，供启动时序与测试控制 */
+  ready() { return Promise.all(this._jobs); },
+  /* 查表取图：命中返回 Image，未命中/失败/类型不符返回 null（调用方回退占位绘制）。
+   * O(1) 属性查表、无 IO 无请求 —— 可安全用于每帧渲染热路径。 */
+  sprite(key) {
+    const v = this.cache[key];
+    return (v && this._kind[key] === "sprite") ? v : null;
+  },
+  /* 查表取音频：命中返回 Audio 对象，否则 null（调用方回退 WebAudio 合成音效） */
+  audio(key) {
+    const v = this.cache[key];
+    return (v && this._kind[key] === "audio") ? v : null;
+  },
+  /* 调试统计：{ total, loaded, failed }（loaded + failed ≤ total，差额为在途） */
+  stats() { return { total: this._total, loaded: this._loaded, failed: this._failed }; },
+};
+
+/* 启动自举：清单文件已挂载（AssetManifest 存在）则自动一次性预加载（幂等）。
+ * 无清单 / 无 Image 环境的桩沙箱静默跳过，不影响既有测试与程序化占位回退。 */
+try { if (typeof AssetManifest !== "undefined") AssetHooks.init(); } catch (e) { /* 环境不支持时静默 */ }

@@ -211,8 +211,8 @@ vm.runInContext(`
   check("角色卡数量 = 英雄数", charCards.length === CFG.heroes.length);
   const h1Html = charCards[0].innerHTML;
   check("角色卡含定位徽章 HTML + 输出配色", h1Html.indexOf("role-badge") >= 0 && h1Html.indexOf(CFG.heroRoles.output.color) >= 0);
-  // 恢复型英雄卡（H007）
-  const h7Idx = CFG.heroes.findIndex(h => h.id === "H007");
+  // 恢复型英雄卡（H007；21.6 卡片按 heroDisplayOrder 展示序渲染 → 按展示序取卡）
+  const h7Idx = CFG.heroDisplayOrder.indexOf("H007");
   const h7Html = charCards[h7Idx].innerHTML;
   check("恢复型英雄卡含恢复配色（绿）", h7Html.indexOf(CFG.heroRoles.recovery.color) >= 0);
 
