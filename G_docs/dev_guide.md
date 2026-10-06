@@ -992,6 +992,13 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 | 20.9 | 选人界面苹果风：12 宫格 3 列→6 列（卡片 47×62） |
 | 20.10/21.0 | 工匠世界三段式重排（4 页签并 3、删废弃卡牌页签）+ 结晶闭环（`growthRate 1.3`/BOSS 60、升满 1602≈21 局）+ 结算明细行 + 全局苹果风（选关 3 列/全面板 100dvh 单屏锁+安全区） |
 | 21.1 | 毒圈改 **dmgPercent 1% 比例口径**（`dmgPerTick` 是遗留字段**不参与结算**）+ 移动端只留摇杆（三按钮 `CFG.mobile.hideTouchButtons` 隐藏，技能本就全自动释放）+ 摇杆浮动 + autofight 挪右下 + NPC 点选 |
+| 21.2 | 手机端毛刺清理（0023 patch） |
+| 21.3 | 虚拟摇杆修复（0025 patch：浮动召唤时序坑——touchEnd 之后读 `G.joy.active` 恒 false） |
+| 21.4 | 升级 4 选 1 参考图改版：丝带横幅 + 竖版大卡（彩色标题栏/推荐角标/大图标/数值高亮/进度胶囊）+ 刷新按钮（`levelUpReroll` 就地换血）+ 19 条契约断言 + lu_check.py 触屏实测 19 项（0026） |
+| 21.5 | 实机反馈四连：摇杆全屏可召唤（`floatStick.zoneRatio 0.5→1.0`）/ 刷新按钮 sticky 贴底 / 归属行仅多英雄局渲染 + 候选去重（`allowDuplicateOffer=false`）/ 标题白字统一 + 背包格子 40px 方案 B + repro_ui.py 17 项 |
+| 21.6 | 选人面板：未解锁可点选（详情区持续展示条件 ??? 打码防剧透）+ 展示序 4 轮循环（`CFG.heroDisplayOrder` **渲染层消费，物理序不动**）+ 赛季占位（SeasonState）+ 美术音频接入层（AssetHooks+manifest+回退）+ 铺关卡 11~20（LEVEL_011~020+BOSS 二周目+levelCurve 20 行） |
+| 21.7 | = 21.6 的关卡铺量提交拆分（f74eaf3） |
+| 21.8 | 四连修复：①crystal 型解锁入口落地（选人详情区「◆N 解锁」按钮——**此前 `_unlockCost` 全库零调用，结晶够也无处解锁**；heroLv 型保持查询式自动解锁）②竖屏 4 选 1 压缩一屏（卡 148px/ico 44px，实测 footBottom=666<844）③移除「给 XXX 选择强化」标题（与轮转绑定矛盾）④候选分配 **§5.48 按队友轮转绑定池**（卡 i 绑定 `teamHeroIds()[i%n]` 单人池，池空随机非空队友兜底，替代 §5.47 全队混抽）+ slotLine 去名 + unlock_btn_check.py 13 项 / lu_final_check.py 6 项 |
 
 ### 10.3 新会话必须知道的坑（血泪浓缩）
 
@@ -1007,6 +1014,9 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 10. **结晶闭环**：来源=BOSS 60 + 撤离折算（`settleConvert.valueRate 0.5`）；死亡保留 30%；`outLevelCost` 指数曲线 `50×1.3^(n-1)`，满级累计 1602。产出明细走 `G.lastSettleReport`（`buildCrystalReport`/`publishCrystalReport`）。
 11. **移动端**：下方三按钮隐藏不删 DOM（回退开关 `CFG.mobile.buttons`）；摇杆浮动（左半屏按下即中心）；`#btn-autofight` 已移入 `#hud-br`。
 12. **战斗开场提示仍是键盘话术**（「WASD 移动·B 背包」）——待改成触屏话术（下一轮顺手项）。
+13. **`heroes[i]` 索引是全库隐性契约**（21.6 血泪）：物理重排 `CFG.heroes` 会让技能解析全链错位（散弹手弹道 3→1 真机回归）——**展示顺序必须放渲染层消费 `CFG.heroDisplayOrder`，数据源顺序不可动**。
+14. **测试桩 `getElementById` 对不存在 id 也返回空壳 FakeEl**（unlock_ui/ui_v2 桩）：「节点已移除」类断言**不能**用 `!get(id)`（恒 false），要用源码级断言（`__htmlSrc.indexOf(...) < 0`）；空壳 `_html=""` → innerHTML 文案断言对按钮类子元素无效，改断 `onclick` 绑定 + 行为。
+15. **解锁双入口语义**（21.8）：heroLv 型 = `isHeroUnlocked` 查询式**被动自动解锁**（无需 UI）；crystal 型 = 必须主动调 `Meta.unlockHero`（导师面板 `_appendLockedGroup` + 选人详情区 `btn-unlock-hero` 双入口），排查「条件达成没解锁」先分清类型。
 
 ### 10.4 下一步候选
 
