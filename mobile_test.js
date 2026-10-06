@@ -121,6 +121,32 @@ vm.runInContext(`
   check("摇杆斜向移动（分量归一化）", p.y > y4);
   G.joy.active = false; G.joy.dx = 0; G.joy.dy = 0;
 
+  /* ---- 21.10 主城 NPC 点选（手机端交互缺口修复）：函数存在 + 主城态可命中 + 面板触发 ---- */
+  check("21.10 cityNpcTap / renderCityNpcTapHint 函数已定义",
+    typeof cityNpcTap === "function" && typeof renderCityNpcTapHint === "function");
+  (() => {
+    Game.enterCity();
+    const w = G.activeWorld, n = w.cityNpcs[0];
+    G.cityAvatar.x = n.x; G.cityAvatar.y = n.y + 10;
+    updateCityWorld(0.016);                       // 推进一帧 → cityNpcNear 命中
+    check("21.10 站进圈 → cityNpcNear 命中", !!G.cityNpcNear && G.cityNpcNear.id === n.id);
+    // 屏幕坐标 → 世界坐标反算点击点（与 renderCity / screenToWorld 21.10 修复版严格互逆：小地图居中 / 大地图跟 avatar）
+    const rect = G.canvas.getBoundingClientRect();
+    const zoom = (CFG.camera && CFG.camera.zoom) || 1;
+    const viewW = G.W / zoom, viewH = G.H / zoom;
+    const camX = w.w <= viewW ? (w.w - viewW) / 2 : Math.max(0, Math.min(G.cityAvatar.x - viewW / 2, w.w - viewW));
+    const camY = w.h <= viewH ? (w.h - viewH) / 2 : Math.max(0, Math.min(G.cityAvatar.y - viewH / 2, w.h - viewH));
+    const cx = rect.left + (n.x - camX) * zoom * (rect.width / G.W);
+    const cy = rect.top + (n.y - camY) * zoom * (rect.height / G.H);
+    const hit = cityNpcTap(cx, cy);
+    check("21.10 点击 NPC 本体 → 消费并置 cityNpcOpen", hit === true && G.cityNpcOpen && G.cityNpcOpen.id === n.id);
+    check("21.10 圈外点击不响应（防隔屏误点）", (() => {
+      G.cityAvatar.x = 40; G.cityAvatar.y = 40; updateCityWorld(0.016);
+      return cityNpcTap(cx, cy) === false;
+    })());
+    Game.enterCity();                             // 复位（离圈关闭由 updateCityWorld 维护）
+  })();
+
   Game.backToMenu();
 `, ctx, { filename: "driver" });
 

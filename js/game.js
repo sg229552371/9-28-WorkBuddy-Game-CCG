@@ -3373,11 +3373,14 @@ function renderCity() {
     ctx.fillStyle = n.color; ctx.fillText(n.name, n.x, n.y - 52);
     ctx.font = "11px sans-serif"; ctx.fillStyle = "#9fb4d4";
     ctx.fillText(n.desc, n.x, n.y + 58);
-    if (isNear && !isOpen) {   // 圈内提示按键
+    if (isNear && !isOpen) {   // 圈内提示（21.10：触屏设备显示「点击进入」，桌面保留「按 E 互动」）
       ctx.font = "bold 13px sans-serif"; ctx.fillStyle = "#ffd76a";
-      ctx.fillText("按 E 互动", n.x, n.y + 74);
+      const touchOnly = (typeof isTouchDevice === "function") && isTouchDevice()
+        && !!(CFG.mobile && CFG.mobile.hideTouchButtons);
+      ctx.fillText(touchOnly ? "点击进入" : "按 E 互动", n.x, n.y + 74);
     }
   }
+  renderCityNpcTapHint(ctx, w);   // 21.10 主城 NPC 点选提示环（金环脉冲 + 「点击进入」浮动文案）
   // 出征传送门：读条环 + 涟漪动画
   const pt = w.portal;
   ctx.beginPath(); ctx.arc(pt.x, pt.y, 34 + 3 * Math.sin(G.time * 3), 0, Math.PI * 2);
@@ -4816,7 +4819,23 @@ function screenToWorld(clientX, clientY) {
   var py = (clientY - rect.top) * (G.H / rect.height);
   var zoom = (CFG.camera && CFG.camera.zoom) || 1;
   var w = G.world;
-  if (!w) return { x: px / zoom, y: py / zoom };      // 无世界（主城等）时退化为纯缩放逆变换
+  if (!w) {
+    /* 21.10：主城相机分支（此前缺失）。主城无 G.world（战斗世界变量），旧代码落到
+     * 「无世界纯缩放」退化分支、忽略相机平移——而 renderCity 对小于视口的地图做居中
+     * （camX 为负偏移），导致主城点击换算整体错位、NPC 点选必 miss（手机端 NPC 无法
+     * 交互的深层根因之一）。此处与 renderCity 严格同口径：小地图居中 / 大地图跟 avatar。 */
+    var cw = G.activeWorld;
+    if (cw && cw.kind === "city") {
+      var cviewW = G.W / zoom, cviewH = G.H / zoom;
+      var a = G.cityAvatar;
+      var ccamX = cw.w <= cviewW ? (cw.w - cviewW) / 2
+        : U.clamp(((a && a.x) || cw.w / 2) - cviewW / 2, 0, cw.w - cviewW);
+      var ccamY = cw.h <= cviewH ? (cw.h - cviewH) / 2
+        : U.clamp(((a && a.y) || cw.h / 2) - cviewH / 2, 0, cw.h - cviewH);
+      return { x: px / zoom + ccamX, y: py / zoom + ccamY };
+    }
+    return { x: px / zoom, y: py / zoom };            // 其余无世界场景维持旧退化行为
+  }
   var viewW = G.W / zoom, viewH = G.H / zoom;
   var camX = w.w <= viewW ? (w.w - viewW) / 2 : U.clamp(G.player.x - viewW / 2, 0, w.w - viewW);
   var camY = w.h <= viewH ? (w.h - viewH) / 2 : U.clamp(G.player.y - viewH / 2, 0, w.h - viewH);
@@ -4966,3 +4985,54 @@ var SeasonState = {
 };
 
 /* 21.6 赛季玩法区块结束 */
+
+/* ================= 21.10 主城 NPC 点选（手机端交互缺口修复，独立区块 =================
+ * 问题：CFG.mobile.hideTouchButtons = true（21.1 隐藏触屏三按钮）后，主城 NPC 的
+ *        唯一入口 actionE()（键盘 E）在手机上不可达 —— 21.1 的 npcTap 只实现在工匠世界
+ *        （w.kind !== "artisan" 直接 return），主城从未接入点选，导致「手机端 NPC 无法交互」。
+ * 方案：与工匠世界 npcTap 同款范式（站进判定圈 → 点击 NPC 本体），复用 screenToWorld
+ *        逆相机变换；门槛三重：① G.state === "city" ② G.cityNpcNear 已命中（进圈即解锁，
+ *        无需 dwell）③ 点击点落在 NPC 半径 tapRadius 内。
+ * 返回 true = 本次点击已消费（调用方吞掉后续逻辑，与 npcTap 契约一致）。
+ * 无机制等价性：桌面端行为不变（键盘 E 路径原样保留，两条路径互不干扰）。 */
+function cityNpcTap(clientX, clientY) {
+  if (G.state !== "city") return false;
+  const near = G.cityNpcNear;
+  if (!near) return false;                            // 圈外：不响应（避免隔屏误点）
+  const pt = screenToWorld(clientX, clientY);
+  if (!pt) return false;
+  const cfg = CFG.mobile && CFG.mobile.npcTap;
+  const r = (cfg && cfg.tapRadius) || 110;            // 点选判定半径（略大于视觉半径，照顾手指精度）
+  if (U.dist(pt.x, pt.y, near.x, near.y) > r) return false;
+  if (G.cityNpcOpen && G.cityNpcOpen.id === near.id) { UI.closeNpcPanels(); return true; }  // 再点 = 关闭
+  G.cityNpcOpen = near;
+  SFX.play("altar");
+  EventBus.emit("cityNpcPanel", near);
+  return true;
+}
+
+/* 主城 NPC 触屏提示（手机无「按 E」键 → 圈内提示改为「点击进入」）。
+ * 与 renderNpcTapHint（工匠世界）同款视觉：金环脉冲 + 浮动文案；由 renderCity 单行调用。 */
+function renderCityNpcTapHint(ctx, w) {
+  if (!w || w.kind !== "city") return;
+  const near = G.cityNpcNear;
+  if (!near || (G.cityNpcOpen && G.cityNpcOpen.id === near.id)) return;   // 圈内且未打开才提示
+  const cfg = CFG.mobile && CFG.mobile.npcTap;
+  const r = (cfg && cfg.hintRadius) || 104;
+  const pulse = 0.5 + 0.5 * Math.sin(G.time * 6);
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(near.x, near.y, r, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(255,215,106," + (0.55 + 0.45 * pulse) + ")";
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  ctx.font = "bold 26px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(255,215,106," + (0.7 + 0.3 * pulse) + ")";
+  ctx.strokeStyle = "rgba(0,0,0,.75)"; ctx.lineWidth = 4;
+  ctx.strokeText("点击进入", near.x, near.y - r - 14);
+  ctx.fillText("点击进入", near.x, near.y - r - 14);
+  ctx.restore();
+}
+
+/* 21.10 主城 NPC 点选区块结束 */

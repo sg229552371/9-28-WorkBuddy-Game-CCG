@@ -569,6 +569,12 @@ const Game = {
         e.preventDefault();
         return;
       }
+      // 21.10 主城 NPC 点选（手机端交互缺口修复）：站进判定圈 + 点到 NPC 本体 → 弹面板。
+      // 与桌面键盘 E（actionE）双路径并存；命中即消费，避免起杆/世界点击串扰。
+      if (G.state === "city" && typeof cityNpcTap === "function" && cityNpcTap(e.clientX, e.clientY)) {
+        e.preventDefault();
+        return;
+      }
       const el = e.target.closest && e.target.closest(".itm");
       if (el && G.run && !UI.drag) {
         const uid = Number(el.dataset.uid);
