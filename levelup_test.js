@@ -301,7 +301,7 @@ const driver = `
   }
 
   /* ============ 十四、断言 17：升级只写入「候选所属英雄」的槽，其余英雄槽不受影响 ============
-   * 注（§5.47 全队混抽）：升级不再必然强化升级者本人，故不再断言「一定写队长槽」；
+   * 注（§5.48 按队友轮转绑定池）：升级不再必然强化升级者本人，故不再断言「一定写队长槽」；
    * 改为断言「入槽者 === 被选中候选的 heroId，且仅该英雄槽 +1，另一英雄槽不被污染」。 */
   {
     Game.startRun([CFG.heroes[0], CFG.heroes[1]]);
@@ -368,14 +368,16 @@ const driver = `
   }
 
   /* ============================================================================
-   * 十八、全队混抽（§5.47）：升级候选从「全队所有英雄专属池汇总」抽，
-   *       候选带归属队友（heroId/ownerName/ownerRoleColor），入槽按候选所属英雄。
+   * 十八、按队友轮转绑定池（§5.48）：第 i 张候选绑定第 i 个在场英雄的可用模块池
+   *       （ids[i % ids.length] 轮转回绕），候选带归属队友（heroId/ownerName/ownerRoleColor），
+   *       入槽按候选所属英雄。绑定英雄不可用则随机换到其他可用队友池。
    * ============================================================================ */
 
-  /* 断言 19：全队 2 人时，候选来源跨越两人（不是集中在升级者一个人身上）。
-   * 证明方式（确定性 + 统计双保险）：
-   *  ① 汇总池 teamModuleOfferPool() 同时含 {hid:A} 与 {hid:B} 两条来源 → 抽取范围确实跨人；
-   *  ② 反复混抽多次，出现过来自队友 B 与来自队长 A 的候选（旧实现只出 A，必红）。 */
+  /* 断言 19：全队 2 人 → 轮转绑定：卡 0 = 队长，卡 1 = 队友（循环）。
+   * 证明方式（确定性 + 汇总池双保险）：
+   *  ① 汇总池 teamModuleOfferPool() 同时含 {hid:A} 与 {hid:B} 两条来源 → 池跨人；
+   *  ② 2 人队 n=4 → 卡 0/2 绑 A、卡 1/3 绑 B（去重下池不抽干，绑定确定）；
+   *  ③ 反复抽取多次，出现过来自队友 B 与来自队长 A 的候选。 */
   {
     Game.startRun([CFG.heroes[0], CFG.heroes[1]]);
     Game.skipIntroFreeze();
@@ -385,7 +387,17 @@ const driver = `
     const src = teamModuleOfferPool();
     check("19. 汇总池含队长来源", src.some(s => s.hid === mainId));
     check("19. 汇总池含队友来源（跨两人）", src.some(s => s.hid === mateId));
-    // 统计：混抽 40 次，两侧来源都应出现
+    // 轮转确定性：2 人队卡 0/2 绑队长 A，卡 1/3 绑队友 B
+    for (let g = 0; g < 20; g++) {
+      const cs = buildLevelUpCandidates(mainId).filter(c => c.kind === "module");
+      if (cs.length !== 4) continue;
+      check("19. 2 人队轮转：卡 0 归属队长 A", cs[0].heroId === mainId);
+      check("19. 2 人队轮转：卡 1 归属队友 B", cs[1].heroId === mateId);
+      check("19. 2 人队轮转：卡 2 归属队长 A（循环）", cs[2].heroId === mainId);
+      check("19. 2 人队轮转：卡 3 归属队友 B（循环）", cs[3].heroId === mateId);
+      break;
+    }
+    // 统计：多次抽取两侧来源都应出现
     let sawMain = false, sawMate = false;
     for (let g = 0; g < 40 && !(sawMain && sawMate); g++) {
       for (const c of buildLevelUpCandidates(mainId)) {
@@ -394,10 +406,47 @@ const driver = `
         if (c.heroId === mateId) sawMate = true;
       }
     }
-    check("19. 混抽多次出现过来自队长的候选", sawMain);
-    check("19. 混抽多次出现过来自队友的候选（不集中在升级者身上）", sawMate);
+    check("19. 多次抽取出现过来自队长的候选", sawMain);
+    check("19. 多次抽取出现过来自队友的候选", sawMate);
     gainExp(G.run.expNext + 1);
     check("19. 单次升级候选数量恰为 4", captured[0] && captured[0].cands.length === 4);
+  }
+
+  /* 断言 19b（§5.48 核心）：3 人队轮转绑定 —— 卡 0/1/2 = 队首/第二/第三队友，卡 3 回绕队首 */
+  {
+    Game.startRun([CFG.heroes[0], CFG.heroes[1], CFG.heroes[2]]);
+    Game.skipIntroFreeze();
+    const ids = teamHeroIds();                         // [队长, 队友1, 队友2]
+    // 各人池均有 6 项、去重下 4 张卡最多每人 2 张 → 池不抽干，绑定确定
+    const cs = buildLevelUpCandidates(ids[0]).filter(c => c.kind === "module");
+    check("19b. 3 人队候选数量 = 4（各人池充裕）", cs.length === 4);
+    check("19b. 卡 0 绑定队首英雄", cs[0] && cs[0].heroId === ids[0]);
+    check("19b. 卡 1 绑定第二队友", cs[1] && cs[1].heroId === ids[1]);
+    check("19b. 卡 2 绑定第三队友", cs[2] && cs[2].heroId === ids[2]);
+    check("19b. 卡 3 回绕绑定队首英雄（循环轮转）", cs[3] && cs[3].heroId === ids[0]);
+  }
+
+  /* 断言 19c（§5.48）：满格队友跳过 —— 第二队友 4 槽塞满 → 该队友不出现在候选 owner 中，
+   * 其名下候选落到其他队友（轮转遇不可用绑定则随机换）。 */
+  {
+    Game.startRun([CFG.heroes[0], CFG.heroes[1], CFG.heroes[2]]);
+    Game.skipIntroFreeze();
+    const ids = teamHeroIds();
+    const bId = ids[1];
+    const bPool = (CFG.modulePool.perHero[bId] || CFG.modulePool.default).slice();
+    for (let i = 0; i < 4; i++) G.run.heroModules[bId][i] = { defId: bPool[i], lv: 1 };  // B 4 格满
+    check("19c. 第二队友已满格（heroHasEmptySlot=false）", heroHasEmptySlot(bId) === false);
+    let sawB = false;
+    for (let g = 0; g < 40; g++) {
+      const cs = buildLevelUpCandidates(ids[0]);
+      if (cs.some(c => c.kind === "module" && c.heroId === bId)) { sawB = true; break; }
+    }
+    check("19c. 满格队友 B 不出现在候选 owner 中", sawB === false);
+    // B 本该拿卡 1/3 的绑定，跳过 B 后这些卡应落到 A 或 C
+    const cs = buildLevelUpCandidates(ids[0]).filter(c => c.kind === "module");
+    const others = ids.filter(x => x !== bId);
+    check("19c. 所有模块候选 owner 均落在未满队友（A/C）",
+      cs.length > 0 && cs.every(c => others.indexOf(c.heroId) >= 0));
   }
 
   /* 断言 20：每个候选都带 heroId，且属于在场英雄之一 */
@@ -431,7 +480,7 @@ const driver = `
       const cs = buildLevelUpCandidates(aId);
       bCand = cs.find(c => c.kind === "module" && c.heroId === bId);
     }
-    check("21. 能从全队混抽候选里取到归属队友 B 的候选", !!bCand);
+    check("21. 能从轮转候选里取到归属队友 B 的候选", !!bCand);
     const ok21 = applyLevelUpPick(aId, bCand);         // 升级者是 A，候选归属是 B
     const c1 = G.run.heroModules[bId].filter(s => s !== null);
     check("21. 选中队友 B 的模块 → 写入 B 的槽（B 槽出现该 defId）",
@@ -454,7 +503,7 @@ const driver = `
       const cs = buildLevelUpCandidates(aId);
       if (cs.some(c => c.kind === "module" && c.heroId === bId)) { sawB = true; break; }
     }
-    check("22. 队友 B 4 格满 → 混抽 60 次均不出 B 的候选", sawB === false);
+    check("22. 队友 B 4 格满 → 抽取 60 次均不出 B 的候选", sawB === false);
     check("22. B 4 格满但仍有可叠层模块：B 整体被排除（不因可叠层而保留）",
       heroHasEmptySlot(bId) === false);
     // 候选应全部来自 A（唯一未满的成员）
@@ -520,7 +569,7 @@ const driver = `
       buildLevelUpCandidates(hid, []).every(c => c.kind === "statPack"));
   }
 
-  /* 断言 27：全队都满 / 池空 → 属性小包兜底（混抽路径） */
+  /* 断言 27：全队都满 / 池空 → 属性小包兜底（轮转路径） */
   {
     Game.startRun([CFG.heroes[0], CFG.heroes[1]]);
     Game.skipIntroFreeze();
@@ -535,7 +584,7 @@ const driver = `
         else { const e = G.run.heroModules[id].find(s => s === null); if (e) { e.defId = pid; e.lv = 9; } }
       }
     }
-    // 队长池过滤后为空（全满级）→ 混抽退化为属性小包
+    // 队长池过滤后为空（全满级）→ 轮转退化为属性小包
     const cs = buildLevelUpCandidates(G.heroDef.id);
     check("27. 全队池空 → 属性小包兜底 4 选 1",
       cs.length === 4 && cs.every(c => c.kind === "statPack"));

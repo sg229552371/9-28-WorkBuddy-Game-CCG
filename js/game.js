@@ -2175,10 +2175,12 @@ function teamHeroIds() {
   for (const h of (G.team || [])) if (h && h.id && ids.indexOf(h.id) < 0) ids.push(h.id);
   return ids;
 }
-/** 全队池汇总（§5.47「全队混抽」）：
+/** 全队池汇总（§5.48 起主路径改「按队友轮转绑定池」，此函数保留给单人池复用）：
  *  遍历在场英雄（队长 + 队友），对每人跑 offerModuleIds(hid)；
  *  **该英雄 4 格已满则整体跳过**（不出他的候选，避免选了装不上）；
  *  汇总为 [{hid, defId}] 候选源（每条带归属英雄，选中后装到该 hid 身上）。
+ *  注：主路径不再直接用它混抽，轮转逻辑见 buildLevelUpCandidates；此处保留函数供
+ *  单人池（singleHeroId）与既有引用/测试使用。
  *  @param singleHeroId 可选：仅汇总该英雄（poolOverride/单人退化场景，不跨队友） */
 function teamModuleOfferPool(singleHeroId) {
   const ids = singleHeroId ? [singleHeroId] : teamHeroIds();
@@ -2189,12 +2191,14 @@ function teamModuleOfferPool(singleHeroId) {
   }
   return src;
 }
-/** 构造 4 选 1 候选（19.10.6 契约；§5.47 改为**全队池混抽**）：
+/** 构造 4 选 1 候选（19.10.6 契约；§5.48 改为**按队友轮转绑定池**）：
+ *  第 i 张候选绑定第 i 个在场英雄的可用模块池（ids[i % ids.length] 轮转），
+ *  卡数多于队友数时循环回绕；绑定英雄不可用（满格/池抽干）则随机换到其他可用队友池。
  *  - 模块候选 = { kind:"module", heroId, defId, name, desc, lv, locked, ownerName, ownerRoleColor }
  *    heroId = 候选**所属队友**（选中后装到他身上，见 applyLevelUpPick）
  *    ownerName / ownerRoleColor = 归属展示（界面线 B 契约）
  *    locked = 该英雄槽满且未持有 → UI 置灰（禁止选取，不静默销毁，见 19.10.3）
- *  - 兜底 = 汇总池为空（全队都满 / 池空）→ 改出属性小包 4 选 1
+ *  - 兜底 = 无可用队友池（全队都满 / 池空）→ 改出属性小包 4 选 1
  *  @param heroId 升级者英雄 ID（仅用于 poolOverride 回退与兜底归属，不再决定抽取范围）
  *  @param poolOverride 可选，显式指定可用 ID 池（测试/降级用）→ 仅从升级者本人抽取 */
 function buildLevelUpCandidates(heroId, poolOverride) {
@@ -2209,7 +2213,20 @@ function buildLevelUpCandidates(heroId, poolOverride) {
     const roleDef = (ui && ui.heroRole && hid) ? ui.heroRole(hid) : null;
     return { ownerName: heroDefNameOf(hid), ownerRoleColor: roleDef ? roleDef.color : null };
   };
-  // 出候选：从给定候选源 [{hid, defId}] 抽 n 个（带归属 + 槽位状态 + 置灰）
+  // 单卡构造（19.10.3 槽位状态 + 置灰语义，逐位与旧版一致）
+  const makeCard = (hid, defId) => {
+    const d = defs.find(m => m.id === defId);
+    const slots = (G.run && G.run.heroModules && G.run.heroModules[hid]) || [];
+    const owned = slots.find(s => s && s.defId === defId);
+    const lv = owned ? Math.min(9, owned.lv + 1) : 1;   // 入槽后等级（UI 展示）
+    // 置灰边界（19.10.3）：仅「未持有 + 无空槽」置灰；已持有 lv<9 永不置灰
+    const locked = !owned && !heroHasEmptySlot(hid);
+    const o = ownerOf(hid);
+    return { kind: "module", heroId: hid, defId, name: d ? d.name : defId,
+      desc: d ? affixPreview(d) : "", lv, locked,
+      ownerName: o.ownerName, ownerRoleColor: o.ownerRoleColor };
+  };
+  // 出候选：从给定候选源 [{hid, defId}] 抽 n 个（poolOverride 分支复用，语义不变）
   const buildFrom = (src) => {
     const out = [];
     for (let i = 0; i < n; i++) {
@@ -2221,16 +2238,7 @@ function buildLevelUpCandidates(heroId, poolOverride) {
         pick = src.find(s => s.defId === chosenId) || src[U.randInt(0, src.length - 1)];
       } else pick = src[U.randInt(0, src.length - 1)];
       const hid = pick.hid, defId = pick.defId;
-      const d = defs.find(m => m.id === defId);
-      const slots = (G.run && G.run.heroModules && G.run.heroModules[hid]) || [];
-      const owned = slots.find(s => s && s.defId === defId);
-      const lv = owned ? Math.min(9, owned.lv + 1) : 1;   // 入槽后等级（UI 展示）
-      // 置灰边界（19.10.3）：仅「未持有 + 无空槽」置灰；已持有 lv<9 永不置灰
-      const locked = !owned && !heroHasEmptySlot(hid);
-      const o = ownerOf(hid);
-      out.push({ kind: "module", heroId: hid, defId, name: d ? d.name : defId,
-        desc: d ? affixPreview(d) : "", lv, locked,
-        ownerName: o.ownerName, ownerRoleColor: o.ownerRoleColor });
+      out.push(makeCard(hid, defId));
       if (!dup) { const k = src.findIndex(s => s.defId === defId && s.hid === hid); if (k >= 0) src.splice(k, 1); }
     }
     return out;
@@ -2244,12 +2252,41 @@ function buildLevelUpCandidates(heroId, poolOverride) {
     if (out.length && out.every(c => c.locked)) return statPackCandidates();
     return out;
   }
-  // 全队混抽（§5.47）：汇总各在场英雄可用模块 → 混抽 n 个
-  const src = teamModuleOfferPool();
-  if (!src.length) return statPackCandidates();
-  const out = buildFrom(src);
+  // 按队友轮转绑定池（§5.48）：第 i 张卡绑第 i 个在场英雄的池，循环回绕，绑定不可用则随机换
+  const ids = teamHeroIds();
+  const avail = ids.filter(hid => heroHasEmptySlot(hid) && offerModuleIds(hid).length > 0);
+  if (!avail.length) return statPackCandidates();
+  const taken = new Set();   // "hid|defId"，dup=false 时防重
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    // a. 轮转绑定：第 i 张卡 → 第 i 个在场英雄（ids 空则无绑定）
+    let hid = ids.length ? ids[i % ids.length] : null;
+    // b. 绑定英雄不可用（无空槽 / 池空）→ 从可用集合随机换一个
+    if (!hid || avail.indexOf(hid) < 0) hid = avail[U.randInt(0, avail.length - 1)];
+    // c. 取该英雄可抽项（dup=false 时剔除已抽过的 hid|defId）
+    const candsOf = (h) => offerModuleIds(h).filter(defId => dup || !taken.has(h + "|" + defId));
+    let cands = candsOf(hid);
+    // d. 候选被去重抽干 → 从 avail 随机换一个「还有未抽过项」的英雄；仍无 → 结束出卡
+    if (!cands.length) {
+      const remain = avail.filter(h => candsOf(h).length > 0);
+      if (!remain.length) break;
+      hid = remain[U.randInt(0, remain.length - 1)];
+      cands = candsOf(hid);
+    }
+    // e. 从 cands 抽 1 个 defId（weighted 启用时仅在本候选集上加权，否则随机）
+    let defId;
+    if (weighted) {
+      const w = {}; for (const id of cands) w[id] = weights[id] != null ? weights[id] : 1;
+      defId = String(U.weightedPick(w));
+      if (cands.indexOf(defId) < 0) defId = cands[U.randInt(0, cands.length - 1)];
+    } else defId = cands[U.randInt(0, cands.length - 1)];
+    // f. 记去重 + 构造候选卡（复用单卡构造，逐位同旧版）
+    taken.add(hid + "|" + defId);
+    out.push(makeCard(hid, defId));
+  }
+  if (!out.length) return statPackCandidates();
   // 极端保险：若候选全部被置灰，降级为属性小包
-  if (out.length && out.every(c => c.locked)) return statPackCandidates();
+  if (out.every(c => c.locked)) return statPackCandidates();
   return out;
 }
 /** 模块主词缀预览文案（供弹窗 desc）。 */

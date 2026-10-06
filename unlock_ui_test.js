@@ -214,6 +214,33 @@ vm.runInContext(`
   check("21.6 未解锁详情不露属性与技能（防剧透：无 cd-stats / cd-skill）",
     cdHtml.indexOf("cd-stats") < 0 && cdHtml.indexOf("cd-skill") < 0);
   check("21.6 未解锁详情仍显示定位徽章（role-badge 保留）", cdHtml.indexOf("role-badge") >= 0);
+
+  /* 21.8：选人详情区 crystal 型解锁入口落地——此前 _unlockCost 定义后全库零调用，
+   * 结晶足够（用户实机 316 ≥ 300）也在选人面板无处解锁。按钮行为与导师 _doUnlockHero 对齐：
+   * 足够 → Meta.unlockHero 扣款 + toast + 列表/详情刷新；不足 → disabled 显示缺口；heroLv 型无按钮。 */
+  const costC = CFG.unlockRules[crystalLocked.id].crystal;
+  UI.renderCharDetail(crystalLocked);   // 默认结晶 0 → 不足
+  const cdC1 = get("char-detail") ? get("char-detail").innerHTML : "";
+  check("21.8 crystal 型详情区渲染解锁按钮（btn-unlock-hero + ◆N）",
+    cdC1.indexOf("btn-unlock-hero") >= 0 && cdC1.indexOf("◆ " + costC) >= 0);
+  check("21.8 结晶不足 → 按钮 disabled + 显示「还差」缺口", cdC1.indexOf("disabled") >= 0 && cdC1.indexOf("还差") >= 0);
+  Meta.data.crystals = costC;           // 精确到门槛值 → 足够
+  UI.renderCharDetail(crystalLocked);
+  const btnU = get("btn-unlock-hero");
+  // 桩语义：getElementById 返回独立空壳 FakeEl（_html 为空），「可点」等价断言 = 无 disabled + 已绑定 onclick（行为由下一条扣款断言验证）
+  check("21.8 结晶足够 → 按钮可点（无 disabled + 已绑定回调）", !!btnU && !btnU.disabled && typeof btnU.onclick === "function");
+  btnU.onclick({});
+  check("21.8 点击解锁 → 扣等额结晶 + unlockExtra 落档",
+    Meta.data.crystals === 0 && !!Meta.data.unlockExtra[crystalLocked.id]);
+  check("21.8 解锁成功 → toast 提示（gold 同导师）", toastMsg.indexOf("已解锁") >= 0);
+  check("21.8 解锁成功 → 详情区刷新为已解锁态（??? 消失）", (get("char-detail") ? get("char-detail").innerHTML : "").indexOf("???") < 0);
+  delete Meta.data.unlockExtra[crystalLocked.id];   // 恢复未解锁态，防影响后续导师分组断言
+  Meta.data.crystals = 0;
+  UI.renderCharDetail(heroLvLocked);    // heroLv 型：查询式自动解锁，无按钮
+  const cdLv1 = get("char-detail") ? get("char-detail").innerHTML : "";
+  check("21.8 heroLv 型不渲染解锁按钮（达成条件自动解锁）", cdLv1.indexOf("btn-unlock-hero") < 0);
+  check("21.8 heroLv 型详情区文案含「自动解锁」", cdLv1.indexOf("自动解锁") >= 0);
+
   // 点击已解锁卡 → 正常入队（回归安全）
   toastMsg = "";
   cardH1.onclick({});

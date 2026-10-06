@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="app-version" content="20261008">
+<meta name="app-version" content="20261009">
 <title>弹幕射击 Roguelike × 背包肉鸽 — HTML 原型</title>
 <script>
 /* ====== 缓存自愈：静态资源统一版本号 + 旧版自动强刷（必须先于其他脚本执行） ======
@@ -11,7 +11,7 @@
  * 机制：所有 js/css 引用统一带 ?v=版本号；localStorage.app_version 与当前版本不一致
  * （说明刚从旧版升上来）时，强制 location.reload 重拉一次（sessionStorage 标记防死循环）。
  * 整段包裹 try/catch：隐私模式 / 存储被禁时静默降级，绝不阻断页面加载。 */
-var APP_VERSION = "20261008";
+var APP_VERSION = "20261009";
 (function () {
   try {
     var alreadyReloaded = sessionStorage.getItem("app_version_reloaded");
@@ -26,7 +26,7 @@ var APP_VERSION = "20261008";
   } catch (e) { /* 存储不可用：静默降级，不阻断页面 */ }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261008">
+<link rel="stylesheet" href="css/style.css?v=20261009">
 </head>
 <body>
 <div id="app">
@@ -380,8 +380,7 @@ var APP_VERSION = "20261008";
     <div class="panel levelup-panel">
       <!-- 丝带横幅标题（21.4）：参考图「增益选择」样式 -->
       <div class="lu-banner"><span class="lu-banner-txt">增益选择</span></div>
-      <!-- 归属英雄标题（19.12）：运行时由 _renderLevelUp 填充「给 <英雄名> 选择强化」（带定位色） -->
-      <div id="levelup-hero" class="levelup-hero"></div>
+      <!-- 21.8：原归属英雄标题宿主节点已移除（归属由每张卡的 lu-owner 徽章表达） -->
       <p class="tip">战斗已暂停 · 点选一张卡牌继续（不倒计时）</p>
       <div id="levelup-cards" class="levelup-cards"></div>
       <!-- 刷新按钮（21.4）：参考图底部绿色大按钮；次数由 CFG.levelUp.rerollFreePerRun 驱动 -->
@@ -468,11 +467,11 @@ var APP_VERSION = "20261008";
   </div>
 </div>
 
-<script src="js/config.js?v=20261008"></script>
-<script src="js/core.js?v=20261008"></script>
-<script src="js/game.js?v=20261008"></script>
-<script src="js/ui.js?v=20261008"></script>
-<script src="js/main.js?v=20261008"></script>
+<script src="js/config.js?v=20261009"></script>
+<script src="js/core.js?v=20261009"></script>
+<script src="js/game.js?v=20261009"></script>
+<script src="js/ui.js?v=20261009"></script>
+<script src="js/main.js?v=20261009"></script>
 <!-- 20.6 JS 未加载兜底：main.js 之后立刻执行；若 window.Game 未定义（脚本全部/部分加载失败）
      则直接显示兜底面板。面板与按钮由 main.js 的 BootGuard.ensure() 建成（本行也可能在
      main.js 未执行时运行，故此处再自查一次并按需补按钮）。 -->

@@ -99,19 +99,10 @@ const UI = {
     this.levelUpOnPick = null;
     this.levelUpMeta = null;
   },
-  /* 归属英雄标题（19.12）：meta 缺失时清空标题（旧行为），不报错。 */
-  _renderLevelUpHeader() {
-    const el = document.getElementById("levelup-hero");
-    if (!el) return;
-    const m = this.levelUpMeta;
-    if (!m || (!m.heroId && !m.heroName)) { el.innerHTML = ""; el.classList.remove("has-hero"); return; }
-    const name = m.heroName || m.heroId;
-    const color = m.roleColor || "#ffd76a";
-    el.classList.add("has-hero");
-    el.innerHTML = `给 <b style="color:${color}">${name}</b> 选择强化`;
-  },
+  /* 21.8：移除归属英雄标题渲染（原 19.12 的 header 宿主节点同步删除）。
+   * 理由：§5.48 起候选按队友轮转绑定池（每张卡归属可能不同），单一标题与卡面归属矛盾；
+   * 归属信息已由每张卡的 lu-owner 徽章 + lu-bar 色条表达，标题冗余。 */
   _renderLevelUp() {
-    this._renderLevelUpHeader();
     this._renderLevelUpRerollBtn();
     const box = document.getElementById("levelup-cards");
     if (!box) return;
@@ -137,6 +128,8 @@ const UI = {
       const owner = this._candOwner(c);
       // 归属 + 槽位（20.3 功能保留；21.5 改为仅多英雄局渲染——单英雄局「▶ 猎手」与卡内槽位行同英雄名重复出现，
       // 且参考图卡面无归属行（归属由标题栏底色表达）；多英雄局归属信息仍有决策价值故保留）
+      // 21.8：slotLine 去掉英雄名——ownerLine「▶ 名字」已含归属，两行同名重复（用户实机反馈）；
+      // 槽位行只保留槽位数字信息。 */
       const multiHero = !!(G.run && G.run.companions && G.run.companions.length);
       const ownerLine = multiHero ? `<span class="lu-owner" style="border-color:${owner.color};color:${owner.color}">▶ ${owner.name}</span>` : "";
       let slotLine = "";
@@ -146,9 +139,9 @@ const UI = {
           slotLine = `<span class="lu-slot">强化已有槽 ${ownedIdx + 1}/${perHero}</span>`;
         } else if (owner.slotKnown) {
           const n = Math.min(owner.slotUsed + 1, perHero);
-          slotLine = `<span class="lu-slot">→ 填入 <b style="color:${owner.color}">${owner.name}</b> 第 ${n} 槽（${n}/${perHero}）</span>`;
+          slotLine = `<span class="lu-slot">→ 填入第 ${n} 槽（${n}/${perHero}）</span>`;
         } else {
-          slotLine = `<span class="lu-slot">→ 填入 <b style="color:${owner.color}">${owner.name}</b></span>`;
+          slotLine = `<span class="lu-slot">→ 填入空槽</span>`;
         }
       }
       // 槽位将满警示（20.3 保留）：本次选中即填满 → 黄色
@@ -462,14 +455,39 @@ const UI = {
       ? `<span class="role-badge" style="color:${role.color};border-color:${role.color}">${role.name}</span>`
       : "";
     /* 21.6：未解锁英雄 → 名字打码 ??? + 只露定位与解锁条件（数值/技能防剧透，与卡片 ??? 口径一致）；
-     * 解锁条件独立成行持续可见（用户要求：选中未解锁角色时提示解锁条件），不再只靠 toast 一闪。 */
+     * 解锁条件独立成行持续可见（用户要求：选中未解锁角色时提示解锁条件），不再只靠 toast 一闪。
+     * 21.8：补上 crystal 型解锁入口——此前 _unlockCost 定义后全库零调用，有结晶也无法主动解锁
+     * （用户实机反馈：结晶 316 ≥ 300 门槛却永远锁着）。crystal 型 → 渲染「◆ N 解锁」按钮：
+     * 结晶足够可点（Meta.unlockHero 扣款+存档+刷新），不足置灰并显示缺口；
+     * heroLv 型无需按钮（isHeroUnlocked 查询式自动解锁）。 */
     const unlocked = Meta.isHeroUnlocked(h.id);
     if (!unlocked) {
+      const cost = this._unlockCost(h.id);
+      const cur = (Meta.data && Meta.data.crystals) || 0;
+      const canBuy = !!(cost && cur >= cost.cost);
+      const ruleTxt = this._unlockRuleText(h.id);
+      const unlockBtn = cost
+        ? `<button id="btn-unlock-hero" class="cd-unlock-btn" type="button"${canBuy ? "" : " disabled"}>` +
+          (canBuy ? `◆ ${cost.cost} 解锁` : `◆ ${cost.cost}（还差 ${cost.cost - cur}）`) + `</button>`
+        : "";
       box.innerHTML =
         `<div class="cd-title"><span class="cd-name">???</span>` +
         `<span class="cd-id">${h.id}</span>${roleBadge}</div>` +
-        `<div class="cd-unlock">🔒 未解锁 · ${this._unlockRuleText(h.id)}</div>` +
-        `<div class="cd-desc">解锁后可编入队伍出战。${this._unlockRuleText(h.id) !== "暂未解锁" ? "达成条件后自动解锁" : "敬请期待后续版本"}</div>`;
+        `<div class="cd-unlock">🔒 未解锁 · ${ruleTxt}</div>` +
+        unlockBtn +
+        `<div class="cd-desc">解锁后可编入队伍出战。${cost ? "点击上方按钮花结晶解锁" : (ruleTxt !== "暂未解锁" ? "达成条件后自动解锁" : "敬请期待后续版本")}</div>`;
+      if (canBuy) {
+        const btn = document.getElementById("btn-unlock-hero");
+        btn.onclick = () => {
+          if (Meta.unlockHero(h.id)) {
+            this.toast(`🎉 已解锁 ${h.name}！`, "gold");   // 与导师 _doUnlockHero 同款 toast（gold 类）
+            this.buildCharList();      // 列表卡片置灰/锁标刷新
+            this.renderCharDetail(h);  // 详情区刷新为已解锁完整态
+          } else {
+            this.toast("解锁失败：结晶不足", "bad");
+          }
+        };
+      }
       return;
     }
     const lv = Meta.heroLevel(h.id);

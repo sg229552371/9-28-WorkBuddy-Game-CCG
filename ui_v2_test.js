@@ -131,8 +131,8 @@ const htmlIds = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map(m => m[1]));
 const requiredIds = [
   // ① HUD 技能冷却环
   "hud-skill-cd", "skill-cd-arc", "skill-cd-txt", "skill-cd-name",
-  // ③ 升级 4 选 1 弹窗（含 19.12 归属英雄标题：给 <英雄名> 选择强化 / 模块槽 N/4）
-  "levelup-overlay", "levelup-cards", "levelup-hero",
+  // ③ 升级 4 选 1 弹窗（21.8：归属标题宿主 #levelup-hero 已移除，归属由卡面 lu-owner 表达）
+  "levelup-overlay", "levelup-cards",
   // ④ 背包三段布局
   "grid-backpack", "grid-chip", "module-slots", "bp-grid-unit", "bp-panel-main",
   // ⑤ 芯片工坊（19.7；20.10 起 forge 页签并入「商店·工坊」，#forge-list 保留在 art-page-shop 内）
@@ -157,6 +157,8 @@ for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js", "js/mai
 // ⑩ 静态核对需要读源码：在沙箱内 fs/__dirname 不可用，故先读出并以变量形式注入
 ctx.__citySrc = fs.readFileSync(path.join(__dirname, "js", "main.js"), "utf8");
 ctx.__cssSrc = fs.readFileSync(path.join(__dirname, "css", "style.css"), "utf8");
+ctx.__htmlSrc = html;                                                     // 21.8：断言标题宿主移除用
+ctx.__uiSrc = fs.readFileSync(path.join(__dirname, "js", "ui.js"), "utf8"); // 21.8：断言标题渲染代码移除用
 
 vm.runInContext(`
   const get = (id) => document.getElementById(id);
@@ -353,10 +355,11 @@ vm.runInContext(`
     { kind: "statPack", heroId: "H002", packId: "pack_atk", name: "强攻包", stat: "atk", value: 3 },
   ];
   UI.onLevelUpChoice(heroCands, () => {}, { heroId: "H002", heroName: "散弹手", roleColor: CFG.heroRoles.output.color, slotUsed: 2 });
-  const heroTitle = get("levelup-hero");
-  check("meta 存在 → 弹窗标题显示「给 散弹手 选择强化」",
-    heroTitle.innerHTML.indexOf("给") >= 0 && heroTitle.innerHTML.indexOf("散弹手") >= 0 && heroTitle.innerHTML.indexOf("选择强化") >= 0);
-  check("meta.roleColor → 标题带定位色", heroTitle.innerHTML.indexOf(CFG.heroRoles.output.color) >= 0);
+  /* 21.8：归属标题宿主 #levelup-hero 已移除——归属由每张卡的 lu-owner 徽章 + lu-bar 色条表达，
+   * 单一「给 <英雄名> 选择强化」标题与 §5.48 轮转绑定（每卡归属可能不同）矛盾（用户实机反馈）。
+   * 桩语义：getElementById 对不存在 id 也返回空壳 FakeEl → 用源码级断言（__htmlSrc/__uiSrc）。 */
+  check("21.8 标题宿主 #levelup-hero 已从 index.html 移除", __htmlSrc.indexOf("levelup-hero") < 0);
+  check("21.8 ui.js 不再渲染「选择强化」标题", __uiSrc.indexOf("选择强化") < 0);
 
   // ② 候选属于模块槽 → 标注「填入 <英雄名> 的第 N 槽」（20.3 归属 + 槽号；21.5 仅多英雄局渲染）
   const luH = get("levelup-cards").children;
@@ -374,14 +377,13 @@ vm.runInContext(`
   check("locked 候选点击不被选取（仍停留弹窗）", window.__lockedPick === -1 && !get("levelup-overlay").classList.contains("hidden"));
   UI.onLevelUpChoiceClose();
 
-  // ④ 向后兼容：meta 缺失 → 不崩、不显示英雄标题（旧 2 参调用）
+  // ④ 向后兼容：meta 缺失 → 不崩（21.8 标题逻辑已整体移除，旧行为回归点 = 渲染 4 卡无异常）
   UI.onLevelUpChoice(cands, () => {});
-  check("meta 缺失时仍渲染 4 卡（向后兼容）", get("levelup-cards").children.length === 4);
-  check("meta 缺失时不显示英雄标题（无 heroId）", heroTitle.innerHTML.indexOf("选择强化") < 0);
+  check("meta 缺失时仍渲染 4 卡（向后兼容，标题逻辑移除后不崩）", get("levelup-cards").children.length === 4);
   UI.onLevelUpChoiceClose();
-  // meta 存在但 heroName 缺失 → 回落到 heroId，不崩
+  // meta 存在但 heroName 缺失 → 回落到 heroId 不崩（21.8 起仅用于卡面归属，无标题渲染路径）
   UI.onLevelUpChoice(heroCands, () => {}, { heroId: "H002" });
-  check("meta 只给 heroId → 标题回落显示 heroId 不崩", heroTitle.innerHTML.indexOf("H002") >= 0);
+  check("meta 只给 heroId → 渲染不崩（标题逻辑已移除）", get("levelup-cards").children.length === 4);
   UI.onLevelUpChoiceClose();
 
   /* ============ ⑧ 全队技能栏（19.12 任务二，底部居中） ============ */

@@ -156,6 +156,18 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .char-detail .cd-desc { font-size:11px; color:#a9bad2; margin-bottom:4px; line-height:1.45; }
 /* 21.6：未解锁英雄详情区解锁条件行（金色高亮持续可见，替代一闪而过的 toast） */
 .char-detail .cd-unlock { font-size:12px; font-weight:bold; color:#ffd76a; background:rgba(255,215,106,.08); border:1px dashed rgba(255,215,106,.45); border-radius:8px; padding:7px 10px; margin-bottom:5px; }
+/* 21.8：crystal 型解锁按钮（选人详情区）——此前解锁逻辑无 UI 入口（_unlockCost 零调用）；
+ * 结晶足够金色可点，不足置灰（JS disabled + 显示缺口） */
+.char-detail .cd-unlock-btn {
+  display:block; width:100%; margin:6px 0 2px; padding:10px 14px;
+  border:none; border-radius:10px; cursor:pointer;
+  background:linear-gradient(180deg,#f0b429,#d9902a); color:#fff;
+  font-size:14px; font-weight:bold; text-align:center;
+  box-shadow:0 3px 10px rgba(217,144,42,.35);
+  transition:transform .12s, filter .12s;
+}
+.char-detail .cd-unlock-btn:hover { transform:translateY(-2px); filter:brightness(1.08); }
+.char-detail .cd-unlock-btn:disabled { filter:grayscale(1) brightness(.72); cursor:not-allowed; transform:none; box-shadow:none; }
 .char-detail .cd-stats { font-size:11px; color:#9fb4cc; margin-bottom:4px; line-height:1.45; }
 .char-detail .cd-skill { font-size:11px; color:#ffd76a; line-height:1.45; word-break:break-word; }
 .char-detail .cd-skill b { color:#ffe08a; }
@@ -515,10 +527,7 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   clip-path:polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%);
   text-shadow:0 2px 4px rgba(0,0,0,.45);
 }
-/* 归属英雄标题（19.12 任务一）：告诉玩家本次强化的对象 */
-.levelup-hero { font-size:20px; font-weight:bold; color:#e8ecf2; margin:2px 0 6px; }
-.levelup-hero:empty { display:none; }
-.levelup-hero b { font-size:23px; }
+/* 21.8：.levelup-hero 标题规则已随 #levelup-hero 节点移除（归属改由卡面 lu-owner 徽章表达） */
 /* 卡片网格（21.4）：横屏 4 张单行；竖屏媒体查询改 2×2（见下方三处同步） */
 .levelup-cards { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; }
 /* 竖版大卡（21.4 参考图）：顶部彩色标题栏 + 图标区 + 描述 + 底部胶囊 */
@@ -585,10 +594,20 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   .levelup-card { flex:1 1 100%; min-height:80px; }
 }
 /* ===== 21.4 竖屏 2×2 网格（CSS 三处规则同步之一：主媒体查询） ===== */
+/* 21.8：竖屏整体压缩（与 body.portrait 钩子块数值严格同步）——
+ * 用户反馈 4 卡 + 横幅 + 提示 + 刷新按钮在 390×844 一屏放不下：卡 206→148、icon 60→44、
+ * gap/内边距/横幅/提示行全部收紧，目标整面板内容高 ≤ 828px（= 100dvh - 16px）。 */
 @media (max-width: 900px) and (orientation: portrait) {
-  .levelup-cards { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
-  .levelup-card.lu-v2 { min-width:0; max-width:none; min-height:206px; }
-  .levelup-card .lu-ico { width:60px; height:60px; font-size:28px; }
+  .levelup-cards { display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; }
+  .levelup-card.lu-v2 { min-width:0; max-width:none; min-height:148px; gap:6px; }
+  .levelup-card .lu-icon { min-height:52px; }
+  .levelup-card .lu-ico { width:44px; height:44px; font-size:20px; }
+  .levelup-card .lu-head { padding:6px 8px; font-size:14px; }
+  .levelup-card .lu-desc { min-height:20px; font-size:12px; line-height:1.4; }
+  .levelup-card .lu-chip { padding:3px 8px; font-size:11px; }
+  .lu-banner { font-size:16px; padding:5px 24px; letter-spacing:4px; margin:0 auto 6px; }
+  .levelup-panel .tip { margin-bottom:6px; font-size:11px; }
+  .levelup-panel { width:96vw; padding:10px 12px; }
   .lu-reroll { padding:12px 30px; font-size:17px; min-height:64px; }   /* 触屏 ≥64px */
   /* 21.5：竖屏 2×2 卡太高 → 整面板滚动时刷新按钮被推出视口（实测 bottom 888 > vh 844）。
    * sticky 贴底 + 深色底衬：无论滚到哪按钮都悬浮可见可点。 */
@@ -848,22 +867,46 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   .grid-zone.side { min-width: 0; }
   #drop-zone { width: 100%; }
 
-  /* ---- 升级 4 选 1：21.4 参考图竖版大卡（与上方 @media 块数值严格同步，铁律三处一致） ---- */
+  /* ---- 升级 4 选 1：21.4 参考图竖版大卡（与上方 @media 块数值严格同步，铁律三处一致） ----
+   * 21.8：竖屏整体压缩（数值与上方 @media (max-width:900px)+portrait 块严格一致）：
+   * 卡 206→148、icon 60→44、gap 10→8、横幅/提示/内边距收紧，整面板一屏（≤828px）放下。 */
   .levelup-cards.grid-portrait,
   body.portrait .levelup-cards {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch;
   }
   body.portrait .levelup-card.lu-v2,
   .levelup-cards.grid-portrait .levelup-card.lu-v2 {
-    min-width: 0; max-width: none; min-height: 206px;
+    min-width: 0; max-width: none; min-height: 148px; gap: 6px;
+  }
+  body.portrait .levelup-card .lu-icon,
+  .levelup-cards.grid-portrait .levelup-card .lu-icon {
+    min-height: 52px;
   }
   body.portrait .levelup-card .lu-ico,
   .levelup-cards.grid-portrait .levelup-card .lu-ico {
-    width: 60px; height: 60px; font-size: 28px;
+    width: 44px; height: 44px; font-size: 20px;
+  }
+  body.portrait .levelup-card .lu-head,
+  .levelup-cards.grid-portrait .levelup-card .lu-head {
+    padding: 6px 8px; font-size: 14px;
+  }
+  body.portrait .levelup-card .lu-desc,
+  .levelup-cards.grid-portrait .levelup-card .lu-desc {
+    min-height: 20px; font-size: 12px; line-height: 1.4;
+  }
+  body.portrait .levelup-card .lu-chip,
+  .levelup-cards.grid-portrait .levelup-card .lu-chip {
+    padding: 3px 8px; font-size: 11px;
+  }
+  body.portrait .lu-banner {
+    font-size: 16px; padding: 5px 24px; letter-spacing: 4px; margin: 0 auto 6px;
+  }
+  body.portrait .levelup-panel .tip {
+    margin-bottom: 6px; font-size: 11px;
   }
   body.portrait .lu-reroll,
   .levelup-cards.grid-portrait ~ .lu-foot .lu-reroll {
-    padding: 12px 30px; font-size: 17px; min-height: 64px;
+    padding: 12px 30px; font-size: 17px; min-height: 64px;   /* 触屏 ≥64px 不动 */
   }
   /* 21.5：与上方 @media 块同步——刷新按钮 sticky 贴底（三处规则铁律） */
   body.portrait .levelup-panel .lu-foot,
@@ -871,7 +914,7 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
     position: sticky; bottom: 0; z-index: 3; margin-top: 10px; padding: 8px 0 2px;
     background: linear-gradient(transparent, rgba(9,12,20,.94) 38%);
   }
-  .levelup-panel { width: 96vw; padding: 18px 14px; }
+  .levelup-panel { width: 96vw; padding: 10px 12px; }
 
   /* ---- 工匠工坊（20.10 竖屏单屏三段）：页签在顶、搜刮背包居中、武器栏+芯片背包在下 ----
    * 注意：本块会覆盖上方主规则，改主规则必须同步此处（旧版曾因 3 列旧规则盖 6 列主规则踩坑）。
