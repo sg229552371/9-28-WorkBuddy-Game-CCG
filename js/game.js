@@ -3574,10 +3574,14 @@ function render() {
   }
   // 怪物
   const szMul = CFG.monsterSizeMul || 1;
-  // 低画质：视野外剔除（margin 160 = 精灵/血条最大外扩；正常画质不剔除，逐位不变）
-  const lqCull = isLowQuality();
+  /* 视野外剔除（21.13 常态化）：margin = 精灵/血条/光环最大外扩 + 预警圈余量。
+   * 视野外的怪物对画面零贡献（看不见），跳过可省 drawImage + 血条 + 光环 + 预警判定。
+   * 21.12 压测实测：3000 只时约 55% 在视野外，剔除后 drawCall 大幅下降。
+   * ⚠️ 必须给足 margin：Boss 爆炸预警圈/弹幕电报可达半径 200+，预留 260 防"预警圈被裁掉半圈"。 */
+  const cullMargin = 260;
   for (const m of w.monsters) {
-    if (lqCull && (m.x + 160 < camX || m.x - 160 > camX + viewW || m.y + 160 < camY || m.y - 160 > camY + viewH)) continue;
+    if (m.x + cullMargin < camX || m.x - cullMargin > camX + viewW ||
+        m.y + cullMargin < camY || m.y - cullMargin > camY + viewH) continue;
     const img = m.sprite;
     const size = (m.d.type === "boss" ? 130 : 48) * szMul * (m.isElite ? CFG.elites.sizeMul : 1);
     // 精英光环 + 词缀名
@@ -3668,14 +3672,29 @@ function render() {
     ctx.fill();
     if (b.isSkill) { if (!(LQ_SKIP_GLOW && isLowQuality())) { ctx.strokeStyle = "#6cb2ff66"; ctx.beginPath(); ctx.arc(b.x, b.y, b.aoe * 0.4, 0, Math.PI * 2); ctx.stroke(); } }   // 低画质：跳过技能弹范围描边（子弹本体填充保留）
   }
-  for (const b of w.enemyBullets) {
-    if (b.boss) {          // Boss 弹幕：更亮更大（"读得清才躲得开"），与小怪弹一眼可分
-      ctx.fillStyle = "#e6f4ff";
-      ctx.beginPath(); ctx.arc(b.x, b.y, 6, 0, Math.PI * 2); ctx.fill();
-      if (!(LQ_SKIP_GLOW && isLowQuality())) { ctx.strokeStyle = "rgba(160,220,255,.75)"; ctx.lineWidth = 1.5; ctx.stroke(); }   // 低画质：跳过弹幕描边外圈（填充已够辨识）
-    } else {
-      ctx.fillStyle = "#c79bff";
-      ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); ctx.fill();
+  /* 敌方弹幕（21.13 批绘重构）：按「外观等价类」分三桶，每桶单 Path 一次 fill。
+   * 重构前：每发子弹 3 次 canvas 调用（beginPath + arc + fill）——2000 发 = 6000 次/帧。
+   * 重构后：3 桶 × 3 次 = 9 次/帧（与弹幕总量无关）。视觉逐位等价（同色同半径的圆，Path 合并后
+   * 填充结果完全一致，仅描边类需独占，故 boss 弹拆两支）。
+   * ⚠️ moveTo 必须逐个写：不写会让相邻弹幕被直线连起来（大面积三角填充色块）。 */
+  const ebBoss = [], ebSmall = [];
+  for (const b of w.enemyBullets) (b.boss ? ebBoss : ebSmall).push(b);
+  // 小怪弹：纯色圆填充
+  if (ebSmall.length) {
+    ctx.fillStyle = "#c79bff";
+    ctx.beginPath();
+    for (const b of ebSmall) { ctx.moveTo(b.x + 5, b.y); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); }
+    ctx.fill();
+  }
+  // Boss 弹：亮色圆填充（描边另起一支，保持"一眼可分"的辨识度）
+  if (ebBoss.length) {
+    ctx.fillStyle = "#e6f4ff";
+    ctx.beginPath();
+    for (const b of ebBoss) { ctx.moveTo(b.x + 6, b.y); ctx.arc(b.x, b.y, 6, 0, Math.PI * 2); }
+    ctx.fill();
+    if (!(LQ_SKIP_GLOW && isLowQuality())) {          // 低画质：跳过弹幕描边外圈（填充已够辨识）
+      ctx.strokeStyle = "rgba(160,220,255,.75)"; ctx.lineWidth = 1.5;
+      for (const b of ebBoss) { ctx.beginPath(); ctx.arc(b.x, b.y, 6, 0, Math.PI * 2); ctx.stroke(); }
     }
   }
   renderLasers(ctx, w);   // Boss 激光（17.7 第 3 步）：预警细线 + 激活粗光柱
