@@ -757,6 +757,18 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .set-row input[type=range] { flex:1; accent-color:#ffd76a; }
 #set-touch.on { border-color:#7de08a; color:#7de08a; }
 
+/* ===== 23.x 画质三档分段控件（设置页内；低/中/高） =====
+ * 竖屏下与 .set-row 一起换行（见下方媒体查询 + body.portrait 三处同步），宽度自适应不溢出。 */
+.quality-seg { display:flex; gap:0; border:1px solid #33486b; border-radius:8px; overflow:hidden; }
+.quality-seg .seg-btn {
+  flex:1; min-width:44px; padding:6px 10px; font-size:12px; cursor:pointer;
+  background:#1d2a3d; border:0; border-right:1px solid #33486b; color:#9fb4d4;
+}
+.quality-seg .seg-btn:last-child { border-right:0; }
+.quality-seg .seg-btn:hover { color:#cfe0ff; }
+.quality-seg .seg-btn.selected { background:#25344c; color:#ffd76a; font-weight:bold; }
+.set-hint { font-size:11px; color:#8ba0bd; margin:2px 0 8px; min-height:14px; line-height:1.4; }
+
 /* ===== 自动战斗风格选择器（开启后在左上按钮下方展开；左对齐贴合 HUD 左上角） ===== */
 #autofight-styles { display:flex; gap:6px; justify-content:flex-start; margin-top:6px; }
 #autofight-styles.hidden { display:none; }
@@ -984,6 +996,8 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   .help-cols { flex-direction: column; gap: 12px; }
   .set-row > span { width: 96px; }
   .set-row { flex-wrap: wrap; }
+  /* 23.x 画质分段控件：竖屏铺满整行（与 .set-row 换行后独占），不溢出设置页 */
+  .set-row .quality-seg { flex: 1 1 100%; }
 
   /* 自动战斗风格选择器：竖屏下按钮换行不致溢出 */
   #autofight-styles { flex-wrap: wrap; }
@@ -1006,6 +1020,9 @@ body.portrait .art-grids .module-slot { min-width: 0; flex: 1 1 46%; }
 body.portrait .art-grids .grid .cell { width: var(--art-cell); height: var(--art-cell); }
 body.portrait .codex-grid { flex-direction: column; align-items: stretch; }
 body.portrait #char-list { grid-template-columns: repeat(6, 1fr); }
+/* 23.x 画质分段控件：竖屏铺满整行（与媒体查询块数值严格同步，避免 JS/纯 CSS 两条路径不一致） */
+body.portrait .set-row { flex-wrap: wrap; }
+body.portrait .set-row .quality-seg { flex: 1 1 100%; }
 /* 20.10 全局苹果风单屏：JS 钩子路径同样锁死各界面面板高度（消灭旧 94vh/88vh 覆盖）
  * 两档：.screen 宿主 -44（含 28px 顶部避让）；.overlay 宿主 -16 */
 body.portrait .main-panel,

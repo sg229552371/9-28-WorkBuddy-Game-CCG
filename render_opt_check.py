@@ -110,8 +110,20 @@ with sync_playwright() as p:
         pg.wait_for_timeout(1600)
         inj = pg.evaluate(INJECT, {"n": n, "m": m})
         pg.wait_for_timeout(400)
-        durs = pg.evaluate(SAMPLE, {"n": 100})
-        s = stats(durs)
+        # 多轮采样取中位数。
+        # ⚠️ 踩坑（21.14）：必须**先丢弃预热轮**！V8 对 render() 的 JIT 优化需要数千帧才
+        #    稳定，而 3000 敌规模下单帧工作量大、预热期更长。实测「前 5 轮」p50 5.6~5.7ms、
+        #    p95 峰值 13ms，稳定后 p50 4.7ms / p95 6ms —— 若不预热会把 JIT 冷启动
+        #    误判成「性能回归」。故：先跑 WARMUP 轮丢弃，再采样 ROUNDS 轮取 p95 中位。
+        WARMUP, ROUNDS = 3, 5
+        for _ in range(WARMUP):
+            pg.evaluate(SAMPLE, {"n": 100})
+        rounds = []
+        for _ in range(ROUNDS):
+            durs = pg.evaluate(SAMPLE, {"n": 100})
+            rounds.append(stats(durs))
+        rounds.sort(key=lambda r: r["p95"])
+        s = rounds[len(rounds) // 2]
         print(f"{label:<20}{s['p50']:>10.2f}{s['p95']:>10.2f}{s['avg']:>10.2f}{s['max']:>10.2f}{s['n']:>8}")
         results.append({"label": label, "injected": inj, **s, "errors": list(errs)})
         if errs:

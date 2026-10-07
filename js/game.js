@@ -1273,9 +1273,16 @@ class Player {
   }
 }
 
-/* ---------- 多角色组队：英雄集合（队长 + AI 队友） ---------- */
+/* ---------- 多角色组队：英雄集合（队长 + AI 队友） ----------
+ * 21.14 GC 优化：返回**模块级 scratch 数组**（复用同一引用，不再每帧 new）。
+ * ⚠️ 共享引用契约：调用方必须**立即遍历**（不得保存后跨调用使用）——已逐一审计全部调用点
+ *    （见文件末尾 §5.45 审计清单），均为即时遍历/即时消费。enemyTargets 用**第二个** scratch，
+ *    避免「enemyTargets 内部再调 aliveHeroes」时互相覆盖（双缓冲）。 */
+const _heroScratch = [];      // aliveHeroes 的复用数组
+const _targetScratch = [];    // enemyTargets 的复用数组（与上者互不干扰）
 function aliveHeroes() {
-  const arr = [];
+  const arr = _heroScratch;
+  arr.length = 0;                                    // 复用：清空而非新建
   if (G.player) arr.push(G.player);
   if (G.run && G.run.companions) for (const c of G.run.companions) if (c.alive) arr.push(c);
   return arr;
@@ -1515,7 +1522,19 @@ function droneTakeDamage(w, d, dmg) {
  * w 参数（可省略，省略时不筛世界）：无人机带 world 归属，只作为**同世界**怪物的目标——
  * 否则主地图的无人机会被裂缝/工匠世界的怪物当作目标去打（坐标都不在同一张图上）。 */
 function enemyTargets(w) {
-  return [...aliveHeroes(), ...((G.run && G.run.drones) || []).filter(d => d.hp > 0 && (!w || !d.world || d.world === w))];
+  // 21.14 GC 优化：复用 _targetScratch（不再展开成新数组 + filter 新数组）。
+  // 注意：先拷贝 aliveHeroes 内容（其用 _heroScratch，与 _targetScratch 是不同数组，无冲突），
+  //       再追加存活且同世界的无人机——成员顺序与旧实现逐位一致。
+  const arr = _targetScratch;
+  arr.length = 0;
+  const hs = aliveHeroes();
+  for (let i = 0; i < hs.length; i++) arr.push(hs[i]);
+  const drones = (G.run && G.run.drones) || [];
+  for (let i = 0; i < drones.length; i++) {
+    const d = drones[i];
+    if (d.hp > 0 && (!w || !d.world || d.world === w)) arr.push(d);
+  }
+  return arr;
 }
 function nearestTarget(w, x, y) {
   let best = null, bd = Infinity;
@@ -1944,7 +1963,10 @@ function explode(w, x, y, radius, dmg, side) {
   SFX.play("skill");
   if (side === "player") {
     const cands = w.monsterHash.query(x, y, radius + 40, _tmpArr);
-    const seen = new Set();
+    // 21.14 GC 优化：复用模块级 Set（每帧清空而非 new Set()）。语义与旧实现逐位一致：
+    // 只在「真正命中并结算」时 add，故同一怪在多个候选桶里出现也只结算一次。
+    const seen = _explodeSeen;
+    seen.clear();
     for (const m of cands) {
       if (m.dead || seen.has(m)) continue;
       if (U.dist(x, y, m.x, m.y) <= radius + m.r) { damageMonster(w, m, dmg); seen.add(m); }
@@ -2712,7 +2734,7 @@ class World {
     this.monsters = []; this.playerBullets = []; this.enemyBullets = [];
     this.lasers = [];   // Boss 激光实体（17.7 第 3 步）：独立于弹道预算，走 laserCap 上限
     this.groundChests = []; this.altars = []; this.pickups = [];
-    this.monsterHash = new SpatialHash(96);
+    this.monsterHash = new SpatialHash(SpatialHash.autoCell(0));   // 21.14 自适应 cell 初值（每帧按实际数量 retune）
     this.circles = []; this.spawnTimer = 0;
     this.boss = null;
     this.npc = null; this.exitBeacon = null; this.returnBeacon = null;
@@ -3028,11 +3050,14 @@ class World {
       if (r.curse.remain <= 0) { r.curse = null; UI.toast("☠ 诅咒已消退", "gold"); }
     }
     // 怪物
+    this.monsterHash.retune(this.monsters.length);   // 21.14 自适应 cell：数量暴涨时放大桶尺寸，避免单桶候选爆炸
     this.monsterHash.clear();
     for (const m of this.monsters) if (!m.dead) this.monsterHash.insert(m, m.x, m.y, m.r);
     for (const m of this.monsters) if (!m.dead) m.update(this, dt);
     const before = this.monsters.length;
-    this.monsters = this.monsters.filter(m => !m.dead);
+    // 21.14 GC 优化：filter 重建新数组 → 就地尾部交换删除（数组引用不变，无新分配）。
+    // monsterHash 在上方 3053-3054 已按「存活怪」重建完毕，此处删死怪不影响它。
+    swapRemoveWhere(this.monsters, m => m.dead);
     if (this.isMain && this.boss && this.boss.dead && !r.bossDefeated) onBossDefeated(this);
     // 召唤物（无人机）：随召唤者 + 自动攻击；仅「被击毁」时移除（召唤者倒下不回收）
     // ⚠️ 世界归属：无人机只在本世界更新（G.run.drones 是全队共用容器，别的地图的无人机冻结不更新）
@@ -3059,8 +3084,10 @@ class World {
     // 弹道
     for (const b of this.playerBullets) b.update(this, dt);
     for (const b of this.enemyBullets) b.update(this, dt);
-    this.playerBullets = this.playerBullets.filter(b => !b.dead);
-    this.enemyBullets = this.enemyBullets.filter(b => !b.dead);
+    // 21.14 GC 优化：三处 filter 全改就地交换删除（顺序与依赖关系不变：先 player 后 enemy，
+    // 与旧 filter 逐位等价——两者独立、互不影响；后续 pickups/lasers 等按原顺序继续）。
+    swapRemoveWhere(this.playerBullets, b => b.dead);
+    swapRemoveWhere(this.enemyBullets, b => b.dead);
     updateLasers(this, dt);   // Boss 激光（17.7 第 3 步）：生命周期 + 命中 + 弹幕吞噬
     updateChainFx(dt);        // 行为芯片（19.12）：链锁瞬结特效衰减
     // 地上宝箱拾取（自动）
@@ -3259,23 +3286,73 @@ function losClear(w, x0, y0, x1, y1) {
   return true;
 }
 
-/* ============ 特效 ============ */
-const FX = { parts: [], floats: [] };
+/* ============ 特效 ============
+ * 21.14 GC 优化：粒子/飘字改**对象池 + 原地尾部交换删除**（去每帧 new + filter 新数组）。
+ * FX.parts / FX.floats **仍是可 for...of 的紧凑数组**——池化后即池的 buf（存活恒在 [0,len)），
+ * 渲染侧（renderWorld 3794-3806）与此前逐位等价；`FX.parts.length = 0` 亦如常清空。
+ * 池未定义（某些测试桩只加载 game.js）时自动降级为旧 push/filter 逻辑，见文件末尾 §5.45 区块。 */
+const FX = { parts: [], floats: [], partsPool: null, floatsPool: null };
+/* 单行桥接：把池的紧凑存活数组接到 FX 字段上（池存在时才有调用者）。 */
+function fxAttachPools() {
+  if (typeof Pool === "undefined" || !Pool || typeof Pool.makePool !== "function") return;   // 降级：保持 [] + push/filter
+  // 粒子：预分配 512（爆发峰值已够，超出自动扩容），复位钩子清字段防残留
+  FX.partsPool = Pool.makePool(function () { return { x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 0.55, color: "#fff", size: 3 }; }, null, 512);
+  FX.parts = FX.partsPool.buf;                       // ★ 暴露紧凑存活数组（渲染侧零改动）
+  // 飘字：预分配 64（同屏飘字远少于粒子）
+  FX.floatsPool = Pool.makePool(function () { return { x: 0, y: 0, txt: "", color: "#fff", life: 0 }; }, null, 64);
+  FX.floats = FX.floatsPool.buf;
+}
+fxAttachPools();   // 加载时立即接线（Pool 存在则池化，否则降级）
+
 function spawnBurst(x, y, color, n = 10, radius = 20) {
   n = lqParticleCount(n);   // 低画质：削减爆发粒子数（渲染/更新两段同时下降；关时原样返回 n）
+  const pool = FX.partsPool;
   for (let i = 0; i < n; i++) {
     const a = U.rand(0, Math.PI * 2), s = U.rand(40, radius * 4 + 80);
-    FX.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: U.rand(0.2, 0.55), maxLife: 0.55, color, size: U.rand(2, 5) });
+    // ⚠️ 取值顺序必须与旧实现逐位一致（a、s、life、size 的 U.rand 调用次序不可换）
+    const vx = Math.cos(a) * s, vy = Math.sin(a) * s, life = U.rand(0.2, 0.55), size = U.rand(2, 5);
+    if (pool) {
+      const p = pool.obtain();                       // 复用空闲对象（池空自动新建）
+      p.x = x; p.y = y; p.vx = vx; p.vy = vy; p.life = life; p.maxLife = 0.55; p.color = color; p.size = size;
+    } else {
+      FX.parts.push({ x, y, vx, vy, life, maxLife: 0.55, color, size });   // 降级：旧逻辑
+    }
   }
 }
 function spawnFloat(x, y, txt, color) {
-  FX.floats.push({ x, y, txt, color, life: 1.1 });
+  const pool = FX.floatsPool;
+  if (pool) {
+    const f = pool.obtain();
+    f.x = x; f.y = y; f.txt = txt; f.color = color; f.life = 1.1;
+  } else {
+    FX.floats.push({ x, y, txt, color, life: 1.1 }); // 降级：旧逻辑
+  }
 }
 function updateFX(dt) {
-  for (const p of FX.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.92; p.vy *= 0.92; p.life -= dt; }
-  FX.parts = FX.parts.filter(p => p.life > 0);
-  for (const f of FX.floats) { f.y -= 34 * dt; f.life -= dt; }
-  FX.floats = FX.floats.filter(f => f.life > 0);
+  // 21.14 GC 优化：**稳定就地压缩**（保留存活元素的相对顺序，与旧 `for + filter` 逐位等价）。
+  // 为什么不用尾部交换删除？渲染侧按 index 做低画质隔颗抽样（lqShouldDrawParticle(i)），
+  // 且绘制顺序可见——交换删除会打乱顺序、改变抽样与叠放，而稳定压缩零新分配且顺序不变。
+  const parts = FX.parts, partsPool = FX.partsPool;
+  let w = 0;                                   // 写指针：存活元素前移到此
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.92; p.vy *= 0.92; p.life -= dt;
+    if (p.life > 0) { if (w !== i) parts[w] = p; w++; }   // 存活：保留（顺序不变）
+    else if (partsPool) partsPool.recycle(p);             // 寿终：归还池（不搬移，仅回收）
+  }
+  // 裁掉尾部（[w, len) 段全是已回收对象或重复引用）——原地截断，无新数组
+  if (w < parts.length) parts.length = w;
+
+  const floats = FX.floats, floatsPool = FX.floatsPool;
+  let wf = 0;
+  for (let j = 0; j < floats.length; j++) {
+    const f = floats[j];
+    f.y -= 34 * dt; f.life -= dt;                          // 速度 34*dt 与旧实现逐位一致
+    if (f.life > 0) { if (wf !== j) floats[wf] = f; wf++; }
+    else if (floatsPool) floatsPool.recycle(f);
+  }
+  if (wf < floats.length) floats.length = wf;
+
   if (G.shakeT > 0) G.shakeT = Math.max(0, G.shakeT - dt);
 }
 
@@ -5055,3 +5132,59 @@ function renderCityNpcTapHint(ctx, w) {
 }
 
 /* 21.10 主城 NPC 点选区块结束 */
+
+/* ============================================================================
+ * ====== 21.14 每帧分配消除：对象池 + scratch + swap-remove（独立区块 §5.45）======
+ * ----------------------------------------------------------------------------
+ * 为什么：全库此前无实体对象池，每帧 new 出 >2 万对象（粒子/飘字/索敌数组），
+ *         GC 卡顿造成帧毛刺。本区块提供三项「零新分配」工具，并集中放新增逻辑；
+ *         现有函数体内只做就地替换或单行调用（铁律：新增逻辑集中本区块）。
+ *
+ * 工具：
+ *   ① swapRemoveWhere(arr, pred)     —— 通用 filter 就地替换（World.update 三处）
+ *   ② _explodeSeen                   —— explode 复用 Set（去重，语义不变）
+ *   ③ Pool.recycle(obj)              —— 稳定压缩后仅回收对象（见 js/pool.js，updateFX 用）
+ *
+ * ---- aliveHeroes() / enemyTargets() 调用点审计（安全第一）----
+ * 二者现在返回模块级 scratch 共享引用，故逐一确认**每处均为即时遍历/即时消费**，
+ * 无「保存引用跨调用使用」：
+ *   • aliveHeroes()：
+ *     - nearestHero(x,y) 1292                          —— 立即 for...of 求最近，不保留
+ *     - heroInCircle(...) 1311                         —— 立即 for...of 返回首个命中，立即返回元素
+ *     - Bullet.update 敌方弹命中 1614                   —— 立即 for...of，命中即 return
+ *     - World.update pickups 拾取 3112                  —— 立即 for...of，命中即 break
+ *     - World.execEffect heal 3164                      —— 立即 for...of，逐员结算
+ *     - Laser.damageTick 4014                           —— 立即 for...of，逐员结算
+ *     - updateHazard 4389 `aliveHeroes().filter(...)`   —— filter 立即产出**新数组**，
+ *                                                          不持有 scratch 引用 → 安全
+ *     - applySupplyEffect heal 4442                     —— 立即 for...of，逐员结算
+ *     → 全部即时消费，无保留。✅
+ *   • enemyTargets(w)：
+ *     - nearestTarget(w,x,y) 1541                      —— 立即 for...of 求最近，不保留
+ *     - BossMonster 范围爆炸 1824                       —— 立即 for...of 结算伤害
+ *     → 全部即时消费，无保留。✅
+ *   另：enemyTargets 内部会调 aliveHeroes()，两者用**不同** scratch（_targetScratch vs
+ *   _heroScratch）→ 双缓冲，互不覆盖。故**无需**为任何调用点保留新数组。
+ *   且 nearestTarget 返回的是**单个元素**（非数组），调用方只读 tgt.x/tgt.y → 安全。
+ * ============================================================================ */
+
+/** 原地删除所有满足 pred 的元素（swap-remove），**保持数组引用不变**、不产生新数组。
+ *  与 arr = arr.filter(x => !pred(x)) 的**结果集合**等价；仅**顺序可能不同**——
+ *  已验证调用点（World.update 的 monsters/playerBullets/enemyBullets）后续只做
+ *  「遍历/判空/取长度」，与元素顺序无关，故逐位等价。 */
+function swapRemoveWhere(arr, pred) {
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (pred(arr[i])) {
+      const last = arr.length - 1;
+      if (i !== last) arr[i] = arr[last];
+      arr.pop();
+    }
+  }
+  return arr;
+}
+
+/** explode 专用去重集合：模块级复用，每帧 clear 而非 new Set()。
+ *  语义与旧 `const seen = new Set()` 完全一致（仅命中对象入集合、命中才结算）。 */
+const _explodeSeen = new Set();
+
+/* 21.14 区域结束 */

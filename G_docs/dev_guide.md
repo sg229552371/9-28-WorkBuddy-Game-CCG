@@ -1004,6 +1004,7 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 | 21.11 | 图鉴统一化：芯片图鉴并入图鉴页（首页独立按钮移除，screen-codex 新增 #codex-chips 分区，统计行扩三项）+ 英雄卡 line-clamp 2 行对齐 + 三区统一 grid 语言（英雄 2 列/怪物·芯片 3 列）+ ui_v2_test 适配（0031） |
 | 21.12 | **P1 压测场景落地**（`js/stress.js` 新建）：`?stress=N&bullets=N&mode=full\|dot\|lod&ai=0\|1` 直达压测，无参数零开销（boot/主循环均单行分支 + stress_test 52 契约）。复用真实 World/Monster/Bullet 类铺场（isMain=false+kind="stress" 走空世界；轻量无敌 player 桩补 takeDamage/heal；弹幕可见环铺场+每帧补位维持目标数量）。**真机实测（iPhone12 视口 3000敌+2000弹）：full 帧耗时 8.9ms/drawCall 4090；dot 4.5ms/2；lod 5.0ms/182——LOD drawCall -95.6% 稳超 100fps，目标可达性证实**。cache_version_test 改清单驱动（stress.js 加入 VER_ASSETS）。三档截图 stress_full/dot/lod_3000.png 供拍板群体抽象 |候选分配 **§5.48 按队友轮转绑定池**（卡 i 绑定 `teamHeroIds()[i%n]` 单人池，池空随机非空队友兜底，替代 §5.47 全队混抽）+ slotLine 去名 + unlock_btn_check.py 13 项 / lu_final_check.py 6 项 |
 | 21.13 | **P2 渲染优化落地正式路径**：①敌方弹幕批绘（按外观等价类分两桶——小怪弹/Boss弹各单 Path 一次 fill，moveTo 逐发防连线；2000 弹从 6000 次/帧 → 9 次/帧，与数量解耦）②剔除常态化（cullMargin 260 不再被 isLowQuality 门控——视野外怪物对画面零贡献；低画质专属优化升级为全画质基线）+ **真机对比实测（render_opt_check.py，正式 render() 主路径）：500敌/500弹 p95 1.9→1.3ms(-32%) / 1500敌/1000弹 4.3→2.7ms(-37%) / 3000敌/2000弹 7.7→4.1ms(-47%)——规模越大收益越高** + render_opt_test 14 契约（源码级：批绘分桶/moveTo/LQ_SKIP_GLOW 保留；行为级：fill 与弹幕数解耦/剔除有意义）+ 门禁 2301→2315 全绿 |
+| 21.14 | **P3~P6 方案定稿 + 三代理并行开发**（方案 `G_docs/plan_perf_p3_p6.md`：群体抽象沿用 lod/近档阈值 60/自动降档做仅降不升/玩法载体不做）。🅐 **T1 空间分区自适应**（core.js：`SpatialHash.autoCell` 三档 <500→96/<1500→128/≥1500→192 + `retune` 变档才重建 + query 去重标记改 `tick*4096+(++_qSeq)` 修 V8 陷阱）🅑 **T2+T3 对象池与零分配**（`js/pool.js` 新建通用池 `Pool.makePool`：obtain/release/recycle/forEachAlive/compact/clear + highWater 埋点；game.js：FX 粒子/飘字池化（`FX.parts=pool.buf` 渲染侧零改动）+ `swapRemoveWhere` 替换 World.update 三处 filter + `aliveHeroes/enemyTargets` 模块级 scratch 双缓冲 + explode 复用 `_explodeSeen`——每帧新建对象 6000→235 **降 96%**）🅓 **T4 画质三档 + 自动降档**（main.js：`qualityLevel/setQualityLevel` 0低1中2高 + `opts.manual` 置 `G.autoDowngradeDisabled` + `_autoDowngradeTick` 仅降不升（WINDOW 60/ALERT_MS 150/DOWNGRADE_MS 100/RUN 90/COOLDOWN 20000）+ `_qualityFromDevice` 纯函数内核 + `applySettings` quality↔lowQuality 双向同步 + `set-lowq` 老开关桥接三档；index.html `#set-quality` 分段控件；css `.quality-seg` 三处同步；ui.js `renderSettings` 单行桥接 `renderQualitySeg`）。**测试 4 新增：spatial 27 + pool 47 + quality_tier 60 + render_opt 14 → 门禁 2315→2450 全绿**。真机验收：3000敌/2000弹 p95 6.3ms（与 21.13 基线 6.1 持平——见坑 18 预热采样）；压测 lod 5.1ms/137fps/drawCall 182（-95.6%）；画质设置页三档读写+手动覆盖+选中态实测全 PASS（quality_ui_check.py） |
 
 ### 10.3 新会话必须知道的坑（血泪浓缩）
 
@@ -1024,6 +1025,9 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 15. **解锁双入口语义**（21.8）：heroLv 型 = `isHeroUnlocked` 查询式**被动自动解锁**（无需 UI）；crystal 型 = 必须主动调 `Meta.unlockHero`（导师面板 `_appendLockedGroup` + 选人详情区 `btn-unlock-hero` 双入口），排查「条件达成没解锁」先分清类型。
 16. **压测复用真实类的三件套**（21.12）：① `Bullet` 签名是 `(x,y,ang,spd,dmg,side,...)`——side 是第 6 参不是第 5 参，错位会把 dmg 当 side 静默错乱；② `World` 构造传 `isMain=false, kind="stress"` 才走空世界分支（`isMain=true` 会触发 setupMain 依赖 `G.levelCfg.circles` 直接崩）；③ 轻量 player 桩必须实现 `takeDamage/heal`（ai=1 走真实 World.update 时敌方子弹命中会调，缺法则每帧抛错打崩主循环）。压测弹幕要「可见环铺场 + 每帧补位」——`life=1e9` 挡不住撞墙消亡（出界即 dead）。
 17. **渲染优化的两个视觉等价红线**（21.13）：①弹幕批绘必须逐发 `moveTo`——漏写会让相邻圆被 Path 直线连接，渲染出大面积三角色块（arc 只描点不隔离路径）；②剔除 margin 必须 ≥260（Boss 爆炸预警圈半径 200+，margin 太小会把预警圈裁掉半圈——「玩家看不见危险」比性能问题严重）。
+18. **性能测试必须先丢弃 JIT 预热轮**（21.14 血泪，差点误判「性能回归」）：V8 对 render() 的优化要数千帧才稳定，3000 敌规模预热更长——实测前 5 轮 p50 5.6~5.7ms/p95 峰值 13ms，第 6 轮起稳定 p50 4.7/p95 6.0ms。**采样脚本必须 WARMUP 3 轮丢弃再取 5 轮中位**，否则把 JIT 冷启动当回归，白查 2 小时（同配置 diff 对照 p50 一致即证明代码无差，差异全在尖刺）。
+19. **V8 给对象高频写新属性 = hidden class 变更 + 写屏障**（21.14）：SpatialHash.query 去重标记若写成 `++this.tick`（每次 query 自增），每个候选对象每帧被写 `_qhTick` 上万次，3000 敌 p95 4.1→9.4ms。正确姿势：「帧号×4096+查询序号」拼单调整数标记，同帧内同一对象至多写一次。
+20. **scratch 数组跨调用共享必须双缓冲**（21.14）：`enemyTargets` 内部调 `aliveHeroes`，两者若共用一个模块级 scratch 会互相覆盖——用 `_heroScratch`/`_targetScratch` 两个；且每个返回 scratch 的函数必须在文件末尾区块逐一审计调用点「即时遍历不保存引用」。
 
 ### 10.4 下一步候选
 
@@ -1031,3 +1035,4 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 - 战斗开场提示触屏化（小活）
 - 赛季玩法雏形（99 关通关后循环）
 - 美术/音频接入、Godot 4.7.2 迁移评估
+- 性能主线路线图（`G_docs/plan_bullet_hell_scale.md`）：P1 压测✅ / P2 渲染✅ / P3 空间分区✅ / P4 对象池✅ / P5 画质分档✅（21.14 三代理并行交付，门禁 2450）→ 剩余：P7 真实设备验证（低端安卓机 + Safari 实测）、自动降档阈值真机校准

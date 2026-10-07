@@ -1346,6 +1346,7 @@ const UI = {
     if (tgl) tgl.classList.toggle("on", !!s.showTouchOnDesktop);
     const lq = document.getElementById("set-lowq");   // 20.5 低画质开关状态同步
     if (lq) { lq.classList.toggle("on", !!s.lowQuality); lq.textContent = s.lowQuality ? "开" : "关"; }
+    renderQualitySeg();   // 23.x 画质三档：选中态 + 自动降档提示（实现在 main.js 末尾独立区块）
     this.renderPerfDiag();
   },
 

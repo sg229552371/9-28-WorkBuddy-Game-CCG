@@ -30,9 +30,9 @@ const EventBus = {
 
 /* ---------- 空间哈希（15.5 性能关键技术） ---------- */
 class SpatialHash {
-  constructor(cell = 96) { this.cell = cell; this.buckets = new Map(); }
+  constructor(cell = 96) { this.cell = cell; this.buckets = new Map(); this.tick = 0; this._qSeq = 0; }
   _key(cx, cy) { return cx * 4096 + cy; }   // 整数键，避免字符串开销
-  clear() { this.buckets.clear(); }
+  clear() { this.buckets.clear(); this.tick++; }   // tick 自增（不清零）：让上一帧的 _qhTick 标记自然失效
   insert(obj, x, y, r) {
     const c = this.cell;
     const x0 = Math.floor((x - r) / c), x1 = Math.floor((x + r) / c);
@@ -46,13 +46,20 @@ class SpatialHash {
   }
   // 查询圆邻域内的候选
   query(x, y, r, out) {
+    /* 去重标记：用「本帧序号 + 本次查询序号」的组合值，避免每帧给数万对象反复写属性。
+     * ⚠️ 踩坑记录（21.14）：最初实现写成 `const tick = ++this.tick`（每次 query 自增），
+     *    看似 O(1) 去重，实则让每个候选对象每帧被写入上万次 `_qhTick` —— V8 里这会造成
+     *    隐藏类（hidden class）反复变更 + 写屏障开销，3000 敌时 p95 从 4.1ms 反涨到 9.4ms。
+     *    改为「帧序号在 clear() 递增、查询序号在 query 内递增，两者拼成一个整数标记」后，
+     *    同帧多次查询互不干扰，且标记值单调递增不与历史值冲突。 */
+    const tick = this.tick * 4096 + (++this._qSeq);
     out.length = 0;
     const c = this.cell;
     const x0 = Math.floor((x - r) / c), x1 = Math.floor((x + r) / c);
     const y0 = Math.floor((y - r) / c), y1 = Math.floor((y + r) / c);
     for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) {
       const b = this.buckets.get(this._key(cx, cy));
-      if (b) for (const o of b) if (out.indexOf(o) < 0) out.push(o);
+      if (b) for (const o of b) if (o._qhTick !== tick) { o._qhTick = tick; out.push(o); }
     }
     return out;
   }
@@ -475,7 +482,7 @@ const BGM = {
 /* ---------- 版本上报（缓存自愈诊断；供排查新旧混合缓存） ----------
  * 与 index.html 顶部 APP_VERSION / <meta name="app-version"> 保持一致（发版时三处同步改）。
  * 纯静态字段赋值，不依赖 document/window —— 测试沙箱可无 DOM 独立加载本文件。 */
-Assets.buildVersion = "20261014";
+Assets.buildVersion = "20261015";
 try { console.log("[build] " + Assets.buildVersion); } catch (e) { /* 无 console 环境静默跳过 */ }
 
 /* ============================================================
@@ -556,3 +563,33 @@ const AssetHooks = {
 /* 启动自举：清单文件已挂载（AssetManifest 存在）则自动一次性预加载（幂等）。
  * 无清单 / 无 Image 环境的桩沙箱静默跳过，不影响既有测试与程序化占位回退。 */
 try { if (typeof AssetManifest !== "undefined") AssetHooks.init(); } catch (e) { /* 环境不支持时静默 */ }
+
+/* ============================================================
+ * SpatialHash 自适应 cell（文件末尾独立区块，§5.45）
+ * ============================================================
+ * 为什么需要它：cell 是「平均每桶实体数」与「查询扇出」之间的权衡杠杆 ——
+ *   cell 太小 → 单对象跨桶数暴增（大半径怪 r=65、cell=96 时跨 4+ 桶），insert 与去重压力上升；
+ *   cell 太大 → 单桶候选集膨胀（高密度时一次 query 拉回大量无关对象），碰撞粗筛失效。
+ * 固定 96 在 80 怪规模下够用，但 1500+ 弹幕/怪时会退化，故按实体总数推荐一档尺寸。
+ * 规则取「2 的幂次附近」的整数，保证 _key(cx,cy)=cx*4096+cy 在 |cx|,|cy|<2048 内仍唯一。
+ * 挂载方式：静态方法放类上（不污染实例），实例 retune 只在档位变化时重建桶表，
+ *   因为 cell 变更会让所有 cell 坐标键失效，旧桶必须清空。 */
+
+/* 自适应 cell：按实体数量推荐桶尺寸，避免高密度时单桶候选爆炸。
+ * 返回整数（96/128/192）；非有限值/负数按 0 处理，走最小档位更安全。 */
+SpatialHash.autoCell = function (count) {
+  const n = (typeof count === "number" && isFinite(count)) ? count : 0;
+  if (n < 500) return 96;
+  if (n < 1500) return 128;
+  return 192;
+};
+
+/* 实例方法 retune：推荐值与当前 cell 不同才改，并清空桶（键随 cell 变化）。
+ * 返回是否发生了变更，方便调用方决定是否需要重新 insert。 */
+SpatialHash.prototype.retune = function (count) {
+  const next = SpatialHash.autoCell(count);
+  if (next === this.cell) return false;
+  this.cell = next;
+  this.buckets.clear();   // 旧键基于旧 cell，一律丢弃；tick 不递增也无妨（query 前必 clear）
+  return true;
+};

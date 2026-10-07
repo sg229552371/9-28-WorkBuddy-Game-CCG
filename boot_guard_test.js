@@ -274,8 +274,21 @@ envB.__sa = fs.readFileSync(path.join(__dirname, "js/main.js"), "utf8");
 // 抽出 BootGuard 独立区块（从注释「20.6 首屏启动兜底（BootGuard）」起），单独在无 DOM 沙箱执行。
 // 之所以不整份 main.js 加载：其底部 Game.loadSettings() 会访问 document，本就依赖 DOM；
 // 而 BootGuard 被设计为「无 DOM 也能静默降级」，正好单独验证这一点。
-const bgStart = envB.__sa.indexOf("/* ============================================================\n * 20.6 首屏启动兜底（BootGuard）");
-const bgBlock = bgStart >= 0 ? envB.__sa.slice(bgStart) : "";
+/* 抽取范围 = BootGuard 区块起点 → 下一个区块头（而非文件末尾）。
+ * 动因：main.js 采用 §5.45「尾部追加独立区块」范式，每次新增区块都会落到 BootGuard 之后；
+ *      首版实现切到文件末尾，会被后续区块（22.1 共享工具 / 23.x 画质档）牵连——
+ *      那些区块在无 DOM 沙箱下会因缺少 window 而抛错，导致本测试误报。
+ *      按「区块边界」截断后，本测试只验证 BootGuard 自身的无 DOM 降级能力。 */
+const BG_MARK = "/* ============================================================\n * 20.6 首屏启动兜底（BootGuard）";
+const bgStart = envB.__sa.indexOf(BG_MARK);
+let bgEnd = envB.__sa.length;
+if (bgStart >= 0) {
+  // 找下一个「行首的区块注释头」（形如 /* ===== 开头）作为结束位置
+  const rest = envB.__sa.slice(bgStart + BG_MARK.length);
+  const nextHead = rest.search(/\n\/\* ={20,}/);
+  if (nextHead >= 0) bgEnd = bgStart + BG_MARK.length + nextHead;
+}
+const bgBlock = bgStart >= 0 ? envB.__sa.slice(bgStart, bgEnd) : "";
 // 无 DOM 沙箱：document / navigator / performance 均刻意不注入
 let noDom = null;
 try {

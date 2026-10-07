@@ -53,6 +53,10 @@ const PerfGuard = {
   ALERT_MS: 150,    // 连续 > 此值 2 帧 → 告警
   ALERT_RUN: 2,     // 连续阈值帧数
   COOLDOWN_MS: 30000,   // 告警冷却：30s 内不重复提示
+  /* ② 自动降档阈值（供 _autoDowngradeTick 读取；集中在此便于调参/测试） */
+  DOWNGRADE_MS: 100,          // 帧耗时 p95 超此值 → 计入「高帧耗时」
+  DOWNGRADE_RUN: 90,          // 连续高帧耗时帧数（≈1.5 秒 @60fps）→ 触发降档
+  DOWNGRADE_COOLDOWN_MS: 20000,   // 降档冷却：20s 内不再降
   frames: [],       // 最近帧间隔（ms）
   lastT: null,      // 上一采样时间戳（null = 未开始，避免首帧脏数据）
   consecStuck: 0,   // 连续 > ALERT_MS 的帧计数
@@ -450,11 +454,28 @@ const Game = {
     // 20.5 低画质开关（契约字段 G.settings.lowQuality + window.__lowQuality，供 game.js 后续读取）
     const lqToggle = document.getElementById("set-lowq");
     if (lqToggle) lqToggle.onclick = () => {
-      G.settings.lowQuality = !G.settings.lowQuality;
+      /* 旧布尔开关 ↔ 三档画质的桥接：关掉低画质时回到「次高档」而不是设备初判档——
+       * 用户此刻的意图是「不要再低画质了」，取 1（中）会显得没反应，故回升到高档 2；
+       * 若当前本就是高档，则降为 1（中）以体现开关生效。 */
+      const turningOn = !G.settings.lowQuality;
+      G.settings.lowQuality = turningOn;
+      G.settings.quality = turningOn ? 0 : (this.qualityLevel() === 2 ? 1 : 2);
       this.applySettings();
       UI.renderSettings();
-      UI.toast(G.settings.lowQuality ? "低画质模式：已开启（部分特效由渲染层后续读取 __lowQuality 降级）" : "低画质模式：已关闭", "");
+      UI.toast(turningOn ? "低画质模式：已开启（部分特效由渲染层后续读取 __lowQuality 降级）" : "低画质模式：已关闭（画质提升为「" + QUALITY_NAMES[this.qualityLevel()] + "」）", "");
     };
+    // 23.x 画质三档分段控件（低/中/高）：点击即 setQualityLevel（manual=true → 关闭自动降档）+ 落盘 + 立即生效
+    const qSeg = document.getElementById("set-quality");
+    if (qSeg) {
+      const segBtns = qSeg.querySelectorAll(".seg-btn");
+      for (let i = 0; i < segBtns.length; i++) {
+        segBtns[i].onclick = () => {
+          const lv = Number(segBtns[i].dataset && segBtns[i].dataset.quality);
+          this.setQualityLevel(lv, { manual: true });
+          UI.toast(`画质已切换为「${QUALITY_NAMES[this.qualityLevel()]}」（本次会话自动降档已关闭）`, "");
+        };
+      }
+    }
     // 20.5 复制诊断信息
     on("btn-perf-copy", () => UI.copyPerfDiag());
     /* ---- 主城事件：传送门读条完成 → 选关；NPC 进圈弹面板 / 离圈关闭 ---- */
@@ -810,16 +831,27 @@ const Game = {
       joyScale: CFG.settings.joyScale.default,
       showTouchOnDesktop: CFG.settings.showTouchOnDesktop.default,
       lowQuality: false,   // 20.5 低画质：契约字段，供渲染层读取（game.js 后续消费）
+      quality: _defaultQuality(),   // ① 三档画质（0/1/2）：默认由设备能力初判（见文件末尾独立区块）
     };
     try {
       const raw = localStorage.getItem(CFG.settings.saveKey);
       if (raw) Object.assign(G.settings, JSON.parse(raw));
     } catch (e) { /* 测试环境无 localStorage */ }
+    _migrateQuality();   // ④ 老存档迁移：仅有 lowQuality 布尔 → 推导 quality（保证升级后行为合理）
     this.applySettings();
   },
   applySettings() {
     const s = G.settings;
-    // 20.5 低画质契约：暴露全局标志供渲染层读取（不强行改渲染，只提供约定）
+    /* 20.5 低画质契约：暴露全局标志供渲染层读取（不强行改渲染，只提供约定）
+     * ① 三档画质：lowQuality 布尔 与 quality 档位互为镜像。同步规则（双向一致）：
+     *   - lowQuality === true  → quality = 0（低档）—— 兼容「旧开关直接改布尔」的既有路径
+     *   - quality === 0        → lowQuality = true
+     *   - quality 为 1/2       → lowQuality = false
+     *   - 两者都未初始化       → 保持原「按 lowQuality 字段」语义（boot 路径逐位不变）
+     * ⚠️ 必须让「直接置 lowQuality=true」也能生效：旧开关 UI 与既有测试都走这条路，
+     *    若只做 quality→lowQuality 单向覆盖，会把用户刚打开的低画质立刻抹掉。 */
+    if (s.lowQuality === true) s.quality = 0;
+    if (typeof s.quality === "number") s.lowQuality = (s.quality === 0);
     if (typeof window !== "undefined") window.__lowQuality = !!s.lowQuality;
     // 音效音量：直接驱动 SFX 主增益（未初始化时记下，init 时用）
     if (SFX.master) SFX.master.gain.value = s.sfxVolume;
@@ -878,6 +910,7 @@ const Game = {
     // 先续帧：任何单帧异常（如 UI 渲染错误）不再中断主循环导致游戏冻结
     requestAnimationFrame((tt) => this.loop(tt));
     PerfGuard.sample(t);              // 20.5 帧护栏：采样帧间隔（纯记录，异常时按冷却提示）
+    _autoDowngradeTick(t);            // ② 自动降档：连续高帧耗时 → 逐档下调画质（见文件末尾独立区块）
     const dt = Math.min(0.05, (t - this.lastT) / 1000 || 0.016);
     this.lastT = t;
     G.time += dt;
@@ -1276,4 +1309,183 @@ function isTouchDevice() {
   if (typeof navigator !== "undefined" && typeof navigator.maxTouchPoints === "number" && navigator.maxTouchPoints > 0) return true;
   if (typeof window !== "undefined" && typeof window.ontouchstart !== "undefined") return true;
   return false;
+}
+
+/* ============================================================
+ * 23.x 画质三档（低/中/高）+ 自动降档 —— 独立区块（文件末尾追加；§5.45）
+ * ------------------------------------------------------------
+ * 背景：原有只有一个粗粒度开关 lowQuality（布尔），无法表达「中档」。
+ * 本区块提供统一入口 Game.qualityLevel / Game.setQualityLevel(n)，并维护向后兼容：
+ *   设置 quality=0 时同步 G.settings.lowQuality = true，否则 false ——
+ *   这样 game.js 的 isLowQuality()（读 G.settings.lowQuality / window.__lowQuality）**一行都不用改**。
+ *
+ * 回归红线：defaultQuality 只在「无任何画质存档」时被判为「高」（=2）；quality=2 时 lowQuality=false，
+ *   渲染行为与改造前逐位一致（渲染层所有降级都包在 isLowQuality() 分支里）。
+ *
+ * 全部函数防御式：无 DOM / 无 navigator 的测试桩环境下加载不抛错；自动降档开关（_autoDowngrade 的
+ * 帧计数状态）只在本区块内维护，不写 globalThis（避免污染裸沙箱的对象环境）。
+ * ⚠️ 提示文案绝不出现英文 error/FAIL（门禁 grep 判失败），只写中文。
+ * ============================================================ */
+
+/* 画质档位常量与中文名（低=0 / 中=1 / 高=2） */
+var QUALITY_NAMES = { 0: "低", 1: "中", 2: "高" };
+
+/* 把任意输入钳制为合法档位（0/1/2）；非法值回落到高（升级/存档异常时保持最清晰，避免误降级）。 */
+function _clampQuality(n) {
+  var v = Math.round(Number(n));
+  if (!(v >= 0 && v <= 2)) return 2;
+  return v;
+}
+
+/* 设备能力初判默认档（④）：
+ *   navigator.deviceMemory（Chrome 有，单位 GB）：≤4 → 低；≥8 → 高；中间 → 中；
+ *   缺 deviceMemory → 触屏且短边 ≤480 → 中；否则（桌面）→ 高。
+ * 防御式：无 navigator / 无 window 一律返回高（保守：不降级 → 渲染行为与改造前一致）。 */
+function _defaultQuality() {
+  try {
+    var dm = (typeof navigator !== "undefined" && navigator && typeof navigator.deviceMemory === "number")
+      ? navigator.deviceMemory : undefined;
+    var vw = (typeof window !== "undefined" && window.innerWidth) || 0;
+    var vh = (typeof window !== "undefined" && window.innerHeight) || 0;
+    return _qualityFromDevice(dm, isTouchDevice(), vw, vh);
+  } catch (e) { return 2; }
+}
+
+/* 23.x 默认档判定的**纯函数内核**（供测试驱动直接注入参数，不依赖真实 navigator/window）。
+ * 与 _defaultQuality() 的判定规则严格一致——后者只是从环境读取参数后转调本函数。
+ * 抽出来的动因：Node 沙箱里改 navigator.deviceMemory 后需跨 vm 边界取值，写起来既绕又易错；
+ * 参数显式传入后，测试可以直接断言「给定设备能力 → 应得档位」这条纯逻辑。
+ * @param {number|undefined} dm        deviceMemory（GB），undefined = 浏览器未提供
+ * @param {boolean} touch              是否触屏设备
+ * @param {number} vw,vh               视口尺寸（touch 且无 dm 时用于判定短边） */
+function _qualityFromDevice(dm, touch, vw, vh) {
+  if (typeof dm === "number") {
+    if (dm <= 4) return 0;
+    if (dm >= 8) return 2;
+    return 1;
+  }
+  var shortSide = Math.min(vw || 0, vh || 0);
+  if (touch && shortSide > 0 && shortSide <= 480) return 1;
+  return 2;
+}
+
+/* ④ 老存档迁移：localStorage 里只有旧布尔 lowQuality（无 quality 字段）→ quality = lowQuality ? 0 : 2。
+ * 注意必须判 hasOwnProperty：loadSettings 的默认模板里已带 quality 字段，若用 typeof 判断会把
+ * 「老存档未覆盖默认模板」误判为已有设置，从而读不到旧 lowQuality 的意图。 */
+function _migrateQuality() {
+  var s = G.settings;
+  if (!s) return;
+  // 老存档 v1 不含 quality → Object.assign 后 quality 仍是默认模板值；用 `quality===undefined` 无法区分。
+  // 这里用「迁移标记」判定：首次迁移后写入 migrated=true，此后不再迁移。
+  if (s.migrated !== true) {
+    if (Object.prototype.hasOwnProperty.call(s, "lowQuality") && s.lowQuality === true) s.quality = 0;
+    // lowQuality=false / 缺失 → 保持设备初判默认档（前面 _defaultQuality 的语义）
+    s.migrated = true;
+  }
+  s.quality = _clampQuality(s.quality);
+  s.lowQuality = (s.quality === 0);   // 立即同步布尔镜像（loadSettings 用，不依赖 applySettings）
+}
+
+/* 统一入口：读当前档位（0/1/2）。无 settings → 高（2，保守）。 */
+Game.qualityLevel = function () {
+  if (!G.settings || typeof G.settings.quality !== "number") return 2;
+  return _clampQuality(G.settings.quality);
+};
+
+/* 统一入口：设置档位（0/1/2）。opts.manual=true 表示「用户手动切换」→ 永久关闭本次会话的自动降档。
+ * 职责：写 quality + 同步 lowQuality 布尔镜像 + 落盘 + 立即生效（不重启）+ 刷新设置页。
+ * 落盘与刷新均为防御式（localStorage / DOM 缺失时静默跳过），无 DOM 桩环境不抛错。 */
+Game.setQualityLevel = function (n, opts) {
+  var lv = _clampQuality(n);
+  G.settings = G.settings || {};
+  G.settings.quality = lv;
+  G.settings.lowQuality = (lv === 0);           // ③ 向后兼容：game.js isLowQuality() 直接读此字段
+  if (opts && opts.manual) G.autoDowngradeDisabled = true;   // ② 手动覆盖 → 关闭自动降档
+  this.applySettings();                          // 暴露 window.__lowQuality + 落盘 + 回归既有行为
+  if (typeof UI !== "undefined" && UI.renderSettings) UI.renderSettings();
+  return lv;
+};
+
+/* ② 自动降档帧计数状态（本区块私有，不污染 globalThis）。
+ *   run：连续 > DOWNGRADE_MS 的帧计数；lastAt：上次降档时间（冷却用）。 */
+var _autoDowngrade = { run: 0, lastAt: -Infinity };
+
+/* ② 自动降档主逻辑：连续 N 帧帧间隔 p95 超阈值 → 逐档下调（2→1→0，到 0 停止）。
+ *   仅采样既有 PerfGuard.frames（主循环每帧 PerfGuard.sample(t) 已填），无 DOM 依赖。
+ *   冷却：降档后 20 秒内不再降；手动覆盖后 G.autoDowngradeDisabled → 整段短路。
+ *   不自动回升（避免画质在高低档间反复跳变）。 */
+function _autoDowngradeTick(now) {
+  var PG = (typeof PerfGuard !== "undefined") ? PerfGuard : null;
+  if (!PG || !PG.frames) return;                       // 桩环境无护栏：静默跳过
+  // 关条件：用户手动覆盖 / 无 settings / 已到最低档
+  if (G.autoDowngradeDisabled === true) { _autoDowngrade.run = 0; return; }
+  if (!G.settings || typeof G.settings.quality !== "number") return;
+  var cur = _clampQuality(G.settings.quality);
+  if (cur <= 0) { _autoDowngrade.run = 0; return; }
+
+  var DOWNGRADE_MS = (PG.DOWNGRADE_MS != null) ? PG.DOWNGRADE_MS : 100;   // 阈值：帧耗时 p95 > 100ms
+  var DOWNGRADE_RUN = (PG.DOWNGRADE_RUN != null) ? PG.DOWNGRADE_RUN : 90; // 连续 90 帧 ≈ 1.5 秒
+  var DOWNGRADE_COOLDOWN_MS = (PG.DOWNGRADE_COOLDOWN_MS != null) ? PG.DOWNGRADE_COOLDOWN_MS : 20000;
+
+  // 帧间隔序列 → 统计 p95（复用 perfFrameStats 纯函数，保持口径一致）
+  var st = perfFrameStats(PG.frames, PG.STUCK_MS == null ? 80 : PG.STUCK_MS);
+  if (st.count < 2) { _autoDowngrade.run = 0; return; }
+
+  if (st.p95 > DOWNGRADE_MS) _autoDowngrade.run++;
+  else _autoDowngrade.run = 0;
+
+  if (_autoDowngrade.run < DOWNGRADE_RUN) return;
+  _autoDowngrade.run = 0;
+  var t = (typeof now === "number" && isFinite(now)) ? now : _perfNow();
+  if (t - _autoDowngrade.lastAt < DOWNGRADE_COOLDOWN_MS) return;   // 冷却中：静默不降
+  _autoDowngrade.lastAt = t;
+  var next = cur - 1;
+  var M = (typeof Game !== "undefined") ? Game : null;
+  if (M && typeof M.setQualityLevel === "function") M.setQualityLevel(next);   // 内部同步 lowQuality 镜像 + 落盘
+  if (typeof UI !== "undefined" && UI.renderSettings) UI.renderSettings();   // 刷新设置页选中态/提示
+  if (typeof UI !== "undefined" && typeof UI.toast === "function") {
+    UI.toast("画质已自动下调为「" + QUALITY_NAMES[next] + "」以保证流畅", "");
+  }
+}
+
+/* 供测试/调试重置自动降档内部状态（不影响画质档位本身）。 */
+function _autoDowngradeReset() { _autoDowngrade.run = 0; _autoDowngrade.lastAt = -Infinity; }
+
+/* ============================================================
+ * 23.x 画质三档：设置页选中态与提示渲染（末尾独立区块；§5.45）
+ * ------------------------------------------------------------
+ * 动因：bindEvents 只负责「点击 → setQualityLevel」，而选中态高亮与
+ *      「自动降档已关闭」提示需要在每次打开设置页时按当前状态重绘。
+ *      ui.js 的 renderSettings 只插一行调用，实现集中在此，避免在 ui.js 里
+ *      再起一套画质语义（两处判定迟早会分叉）。
+ * 防御式：无 DOM（Node 桩/无头）时全程静默返回，不影响任何既有流程。
+ * ============================================================ */
+
+/* 设置页画质分段控件：按当前档位打选中态 + 提示自动降档状态。
+ * 元素缺失（旧版本 HTML / 测试桩）一律跳过，绝不抛错。 */
+function renderQualitySeg() {
+  try {
+    if (typeof document === "undefined" || !document) return;
+    var box = document.getElementById("set-quality");
+    if (!box) return;
+    var cur = (typeof Game !== "undefined" && Game.qualityLevel) ? Game.qualityLevel() : 2;
+    var btns = box.querySelectorAll ? box.querySelectorAll(".seg-btn") : [];
+    for (var i = 0; i < btns.length; i++) {
+      var b = btns[i];
+      var lv = Number(b.dataset && b.dataset.quality);
+      var on = (lv === cur);
+      if (b.classList) {
+        if (b.classList.toggle) b.classList.toggle("selected", on);
+        else if (on) b.classList.add("selected");
+        else b.classList.remove("selected");
+      }
+    }
+    /* 提示位：仅在「自动降档已被手动覆盖关闭」时给出说明，平时留空不占视觉注意力 */
+    var hint = document.getElementById("set-quality-hint");
+    if (hint) {
+      hint.textContent = (G.autoDowngradeDisabled === true)
+        ? "已按你的选择固定画质，本局不再自动下调"
+        : "";
+    }
+  } catch (e) { /* 渲染失败绝不影响设置页其它项的显示 */ }
 }
