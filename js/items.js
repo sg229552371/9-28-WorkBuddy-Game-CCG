@@ -588,6 +588,14 @@ function totalRunWeight() {
 function weightFactor() {
   const w = totalRunWeight();
   const c = CFG.weight;
+  /* 21.19 深渊负重豁免：深渊局内宝箱装备照常入包（负重数值照常显示），
+   * 但不再施加移速惩罚（f 恒 1）——根因修复：用户真机反馈「深渊移速越来越慢」，
+   * 即每 chestEvery 波掉宝箱 → 拾取入背包 → 超重 → weightFactor 线性降速。
+   * 开关 = CFG.endless.weightFree（默认 true，策划可关）。 */
+  if (typeof G !== "undefined" && G && G.inEndless &&
+      typeof CFG.endless === "object" && CFG.endless && CFG.endless.weightFree !== false) {
+    return { w, f: 1, over: false };
+  }
   if (w <= c.threshold) return { w, f: 1, over: false };
   const f = Math.max(c.minFactor, 1 - c.slope * (w - c.threshold) / c.divisor);
   return { w, f, over: true };

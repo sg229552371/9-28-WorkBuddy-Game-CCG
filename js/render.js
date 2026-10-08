@@ -149,6 +149,33 @@ function render() {
       ctx.fillText(Math.floor(frac * 100) + "%", a.x, a.y - 44);
     }
   }
+  // 21.19 深渊奖励节点（金币/结晶/补给）：绘制实现见 js/endless-arena.js（非深渊世界零影响早退）
+  if (typeof EndlessArena !== "undefined" && EndlessArena && typeof EndlessArena.render === "function") {
+    EndlessArena.render(ctx, w);
+  }
+  // 21.19 深渊撤离点：仅最终 BOSS 被击杀后由 spawnAbyssExtractBeacon 掉落（w.exitBeacon 非空），
+  // 视觉契约与工匠返回信标同款（虚线圈 = 判定圈，判定半径 = 100 × CFG.altarJudgeMul，同源）
+  if (!w.isMain && w.kind === "endless" && w.exitBeacon) {
+    const b = w.exitBeacon;
+    const ch = (CFG.endless && CFG.endless.extractChannel) || 3.0;
+    ctx.setLineDash([6, 6]); ctx.strokeStyle = "#7de08a55"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(b.x, b.y, 100, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(b.x, b.y, 30, 0, Math.PI * 2);
+    ctx.fillStyle = "#7de08a33"; ctx.fill();
+    ctx.strokeStyle = "#7de08a"; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.fillStyle = "#7de08a"; ctx.font = "20px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("◀", b.x, b.y);
+    ctx.font = "13px sans-serif";
+    ctx.fillText(`撤离点（圈内读条 ${ch} 秒，带全收益撤离）`, b.x, b.y - 46);
+    if (w.exitProgress > 0) {
+      const frac = Math.min(1, w.exitProgress / ch);
+      ctx.strokeStyle = "#ffd76a"; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(b.x, b.y, 40, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = "#ffd76a"; ctx.font = "bold 13px sans-serif";
+      ctx.fillText(Math.floor(frac * 100) + "%", b.x, b.y - 58);
+    }
+  }
   // 撤离点雕像（5.2）：主地图当前撤离点，绿色系信标风格（虚线圈 = 判定圈，与祭坛同一契约）
   if (w.isMain && G.run && G.run.exitStatue) {
     const st = G.run.exitStatue, rExt = CFG.extract.radius;

@@ -1159,7 +1159,10 @@ function renderBurnAura(ctx, m) {
  *   深渊沿用同一分档逻辑，避免 300 只怪一次性铺满 300 个拾取物（对象数爆炸）。
  * ============================================================ */
 
-/** 深渊击杀掉落经验宝石（单行调用点 = onMonsterKilled 的无尽分支）。
+/** 深渊击杀掉落：经验宝石 + 金币（单行调用点 = onMonsterKilled 的无尽分支）。
+ *  21.19 补金币：原实现深渊只掉经验（主线掉落分支只覆盖 isMain/rift），
+ *  用户口径「深渊需要掉落金币」→ 与经验同分档同链路（spawnPickup "coin"），
+ *  拾取入 G.run.coin（结算照常折算），倍率读 CFG.endless.coinMul。
  *  非深渊世界立即返回（零副作用）。返回实际掉落枚数（供测试断言）。 */
 function dropEndlessExp(w, m) {
   if (!w || w.kind !== "endless") return 0;
@@ -1176,5 +1179,12 @@ function dropEndlessExp(w, m) {
   const per = Math.max(1, Math.round(base / n));
   for (let i = 0; i < n; i++) spawnPickup(w, m.x, m.y, "exp", per);
   r.endlessExpDrops = (r.endlessExpDrops || 0) + n;   // 统计字段（HUD/测试可读）
+  /* 21.19 金币掉落：与经验同分档（Boss 5 / 精英 3 / 小怪 1），单枚 = round(m.d.coin × coinMul / n)；
+   * 与主线 coin 掉落同链路（spawnPickup "coin" → 拾取入 G.run.coin），零新语义。 */
+  const coinMul = (c && typeof c.coinMul === "number") ? c.coinMul : 1;
+  const coinBase = Math.max(1, Math.round(((m.d && m.d.coin) || 1) * coinMul));
+  const coinPer = Math.max(1, Math.round(coinBase / n));
+  for (let i = 0; i < n; i++) spawnPickup(w, m.x, m.y, "coin", coinPer);
+  r.endlessCoinDrops = (r.endlessCoinDrops || 0) + n; // 统计字段（HUD/测试可读）
   return n;
 }

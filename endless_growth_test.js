@@ -123,13 +123,17 @@ check("⑤ 非深渊掉落枚数 = 0", nonAbyss.n === 0);
 check("⑤ 非深渊不产生拾取物", nonAbyss.pickups === 0);
 
 console.log("===== ⑥ dropEndlessExp：深渊掉落 + 枚数分档（小怪1/精英3/Boss5） =====");
+/* 21.19 起深渊击杀同时掉经验 + 金币（各 n 枚，同分档）→ 断言按 type 分开数 */
 const abyssDrop = run(`(function(){
   G.inEndless = true;
   function mk(type, isElite) {
     var w = { kind: "endless", pickups: [] };
-    var m = { d: { exp: 6, type: type }, isElite: !!isElite, x: 10, y: 10 };
+    var m = { d: { exp: 6, coin: 4, type: type }, isElite: !!isElite, x: 10, y: 10 };
     var n = dropEndlessExp(w, m);
-    return { n: n, cnt: w.pickups.length, type: w.pickups[0] && w.pickups[0].type,
+    return { n: n,
+             expCnt: w.pickups.filter(function(p){ return p.type === "exp"; }).length,
+             coinCnt: w.pickups.filter(function(p){ return p.type === "coin"; }).length,
+             type: w.pickups[0] && w.pickups[0].type,
              val: w.pickups[0] && w.pickups[0].value };
   }
   return { normal: mk("melee", false), elite: mk("melee", true), boss: mk("boss", false) };
@@ -139,9 +143,12 @@ check("⑥ 深渊精英掉 3 枚", abyssDrop.elite.n === 3);
 check("⑥ 深渊 Boss 掉 5 枚", abyssDrop.boss.n === 5);
 check("⑥ 掉落物 type 为 exp", abyssDrop.normal.type === "exp");
 check("⑥ 掉落物 value 为正数（可被 gainExp 消费）", abyssDrop.normal.val > 0);
-check("⑥ 拾取物数量与掉落枚数一致（小怪）", abyssDrop.normal.cnt === 1);
-check("⑥ 拾取物数量与掉落枚数一致（精英）", abyssDrop.elite.cnt === 3);
-check("⑥ 拾取物数量与掉落枚数一致（Boss）", abyssDrop.boss.cnt === 5);
+check("⑥ 经验拾取物数量与掉落枚数一致（小怪）", abyssDrop.normal.expCnt === 1);
+check("⑥ 经验拾取物数量与掉落枚数一致（精英）", abyssDrop.elite.expCnt === 3);
+check("⑥ 经验拾取物数量与掉落枚数一致（Boss）", abyssDrop.boss.expCnt === 5);
+check("⑥ 金币拾取物与经验同分档（小怪）", abyssDrop.normal.coinCnt === 1);
+check("⑥ 金币拾取物与经验同分档（精英）", abyssDrop.elite.coinCnt === 3);
+check("⑥ 金币拾取物与经验同分档（Boss）", abyssDrop.boss.coinCnt === 5);
 
 console.log("===== ⑦ expMul 缩放生效 =====");
 const scaled = run(`(function(){
@@ -150,9 +157,11 @@ const scaled = run(`(function(){
   function drop(mul) {
     CFG.endless.expMul = mul;
     var w = { kind: "endless", pickups: [] };
-    var m = { d: { exp: 10, type: "melee" }, isElite: false, x: 0, y: 0 };
+    var m = { d: { exp: 10, coin: 2, type: "melee" }, isElite: false, x: 0, y: 0 };
     dropEndlessExp(w, m);
-    return w.pickups.reduce(function(a, p) { return a + p.value; }, 0);
+    /* 21.19 起拾取物含金币 → 只统计 exp 类型 */
+    return w.pickups.filter(function(p) { return p.type === "exp"; })
+      .reduce(function(a, p) { return a + p.value; }, 0);
   }
   var v0 = drop(0.5), v1 = drop(1.0), v2 = drop(2.0);
   CFG.endless.expMul = saved;   // 还原，避免污染后续

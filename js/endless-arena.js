@@ -175,13 +175,45 @@ var EndlessArena = (function () {
   }
 
   /* ============================================================
-   * render(ctx, world)：渲染留空。
-   * 渲染统一由 render.js 管线负责（本模块为纯逻辑层，无 DOM 依赖）；
-   * 若 W8 集成时需要世界内自绘节点，在此补充绘制即可——注意绘制半径
-   * 用 node.radius，判定半径 = node.radius × CFG.altarJudgeMul，同源不双写。
+   * render(ctx, world)：绘制奖励节点（21.19 修复「雕像/奖励节点不可见」）。
+   *   · 渲染桥接点 = render.js 祭坛绘制之后单行调用（由 W8 集成接线）；
+   *   · 铁律 #1 同源：实体圈画 node.radius，虚线判定圈画 node.radius × CFG.altarJudgeMul
+   *     （与 heroInCircle / judgeChannel 的判定半径完全同源，不双写）；
+   *   · gold=金币袋 / crystal=结晶 / supply=补给；已拾取（done）不再绘制；
+   *   · 非深渊世界零影响早退；ctx 缺方法时静默跳过（测试桩健壮）。
    * ============================================================ */
+  var NODE_STYLE = {
+    gold:    { color: "#ffd76a", icon: "◎", label: "金币" },
+    crystal: { color: "#c79bff", icon: "◆", label: "结晶" },
+    supply:  { color: "#7de08a", icon: "✚", label: "补给" },
+  };
   function render(ctx, world) {
-    /* 空实现：由 render.js 统一渲染管线负责（见上方注释）。 */
+    var w = world;
+    if (!w || w.kind !== "endless" || !ctx) return false;   // 非深渊世界：零影响早退
+    var nodes = w.rewardNodes;
+    if (!nodes || !nodes.length) return false;
+    var jm = judgeMul();
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (n.done) continue;                                 // 已拾取：不再绘制
+      var st = NODE_STYLE[n.kind] || NODE_STYLE.gold;
+      try {
+        /* 虚线判定圈（= 真实判定半径，与祭坛同一契约） */
+        if (typeof ctx.setLineDash === "function") ctx.setLineDash([6, 6]);
+        ctx.strokeStyle = st.color + "55"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(n.x, n.y, n.radius * jm, 0, Math.PI * 2); ctx.stroke();
+        if (typeof ctx.setLineDash === "function") ctx.setLineDash([]);
+        /* 实体圈 + 图标 + 名称 */
+        ctx.beginPath(); ctx.arc(n.x, n.y, 22, 0, Math.PI * 2);
+        ctx.fillStyle = st.color + "33"; ctx.fill();
+        ctx.strokeStyle = st.color; ctx.lineWidth = 2.5; ctx.stroke();
+        ctx.font = "20px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillStyle = st.color; ctx.fillText(st.icon, n.x, n.y);
+        ctx.font = "12px sans-serif"; ctx.fillStyle = "#e8ecf2";
+        ctx.fillText(st.label, n.x, n.y + 36);
+      } catch (e) { /* 渲染桩缺方法：静默跳过单个节点 */ }
+    }
+    return true;
   }
 
   /* ============================================================

@@ -172,8 +172,32 @@ vm.runInContext(`
   EndlessArena.populate(w5);                          // 重复 populate 同一世界
   check("八4 重复 populate 幂等（__arenaPopulated 防重，不叠加）",
     w5.altars.length === altarsBefore && w5.rewardNodes.length === nodesBefore);
-  EndlessArena.render(null, w5);                      // 渲染空实现：不抛异常
-  check("八5 render 空实现安全（无 DOM 依赖，可无头调用）", true);
+  EndlessArena.render(null, w5);                      // 渲染实现：不抛异常
+  check("八5 render 无 ctx / 缺方法安全（不抛异常）", true);
+
+  /* ============ 九、21.19 修复回归：撤离点占位清除 + 节点可见 ============ */
+  const w6 = Endless.makeWorld(1600, 1200);
+  check("九1 makeWorld 后无工匠 NPC 占位（npc = null）", w6.npc === null);
+  check("九2 makeWorld 后无撤离点占位（exitBeacon = null，只允许最终 BOSS 掉落）",
+    w6.exitBeacon === null);
+  check("九3 撤离点状态字段已显式初始化（abyssExtractProgress = 0）",
+    w6.abyssExtractProgress === 0 && w6.abyssExtractSettled === false);
+  /* render 带桩 ctx：验证不抛异常且done 节点跳过（绘制细节由真机目检） */
+  const drawn = [];
+  const stubCtx = new Proxy({}, {
+    get: function (t, k) {
+      if (k === "setLineDash") return function () {};
+      return function () { drawn.push(String(k)); };
+    },
+    set: function () { return true; },
+  });
+  let renderOk = true;
+  try { EndlessArena.render(stubCtx, w6); } catch (e) { renderOk = false; }
+  check("九4 奖励节点渲染可执行（桩 ctx 不抛异常）", renderOk);
+  w6.rewardNodes.forEach(function (n) { n.done = true; });
+  drawn.length = 0;
+  try { EndlessArena.render(stubCtx, w6); } catch (e) { renderOk = false; }
+  check("九5 已拾取节点不再绘制（done 全部跳过）", renderOk && drawn.length === 0);
 
   console.log("PASS 合计 = " + pass + "  失败 = " + fail);
   if (fail > 0) { process.exitCode = 1; }

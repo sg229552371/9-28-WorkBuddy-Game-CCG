@@ -499,6 +499,14 @@ var Endless = {
     w.boss = null;
     w.endlessWave = 1;
     w.endlessBoss = null;   // 当前 BOSS（21.17；供 🅑 / 渲染读取）
+    /* 21.19 修复（「撤离点一进图就存在」根因）：World 构造对非 main/rift/city 世界一律走
+     * setupArtisan 分支，会预置 npc + exitBeacon 占位（工匠世界专用）。深渊世界绝不能带：
+     *   ① 撤离点按设计只允许「最终 BOSS 被击杀后」由 spawnAbyssExtractBeacon 掉落；
+     *   ② 占位 exitBeacon 真值会让 updateAbyssExtract 的掉落轮询短路（!w.exitBeacon 恒假），
+     *      真·撤离点永远掉不出来，且玩家走进占位坐标还会触发隐形撤离结算。 */
+    w.npc = null;
+    w.exitBeacon = null;
+    Endless.attachExtractFields(w);   // 显式补齐撤离点状态字段（幂等，全 null/0 初值）
     return w;
   },
   /* 真玩家：可死亡结算（对照 stress.js 的「无敌桩」——无尽要真玩家，故用真实 Player 类）。
