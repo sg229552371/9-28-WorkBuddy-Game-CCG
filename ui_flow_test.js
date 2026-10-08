@@ -86,7 +86,7 @@ console.assert(!htmlIds.has("screen-meta") && !htmlIds.has("btn-main-meta"), "�
     window: { addEventListener() { } }, document: { getElementById: () => null, createElement: () => new FakeEl("x"), addEventListener() { }, body: null },
     requestAnimationFrame: () => { }, localStorage: global.localStorage, console,
   });
-  for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js", "js/main.js"]) {
+  for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js", "js/quality.js", "js/rewards.js", "js/main.js"]) {
     vm.runInContext(fs.readFileSync(f, "utf8"), ctx0, { filename: f });
   }
   vm.runInContext(`
@@ -102,7 +102,7 @@ console.assert(!htmlIds.has("screen-meta") && !htmlIds.has("btn-main-meta"), "�
 
 /* ---- 3) 真实流程：首页 → 主城 → 传送门 → 选关 → 主城NPC升级 → 图鉴/档案 → 结算回城 ---- */
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js", "js/main.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js", "js/quality.js", "js/rewards.js", "js/main.js"]) {
   vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
 }
 

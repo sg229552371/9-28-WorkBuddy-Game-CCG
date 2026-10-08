@@ -37,12 +37,12 @@ global.localStorage = { getItem: () => null, setItem() { }, removeItem() { } };
 
 /* ---- 加载脚本（同 perf_guard_test：config → core → game） ---- */
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, f), "utf8"), ctx, { filename: f });
 }
 
 /* ---- 静态检查：源码确有消费低画质的调用点 ---- */
-const gameSrc = fs.readFileSync(path.join(__dirname, "js/game.js"), "utf8");
+const gameSrc = ["game","items","combat","modes","render"].map(function(n){return fs.readFileSync(path.join(__dirname, "js", n + ".js"), "utf8");}).join("\n");
 let okStatic = true;
 const staticCheck = (name, cond) => { console.log((cond ? "PASS" : "FAIL") + " " + name); if (!cond) okStatic = false; };
 
@@ -173,7 +173,7 @@ vm.runInContext(`
 let bareThrew = false, bareVal = null;
 try {
   const bare = vm.createContext({});
-  for (const f of ["js/config.js", "js/core.js", "js/game.js"]) {
+  for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js"]) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, f), "utf8"), bare, { filename: f });
   }
   bareVal = vm.runInContext("isLowQuality()", bare);

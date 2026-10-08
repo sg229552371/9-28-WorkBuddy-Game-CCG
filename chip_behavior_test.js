@@ -56,7 +56,7 @@ global.UI = { selectedLevel: null, selectedChar: null,
 
 const fs = require("fs"), vm = require("vm");
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/main.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/quality.js", "js/rewards.js", "js/main.js"]) {
   vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
 }
 

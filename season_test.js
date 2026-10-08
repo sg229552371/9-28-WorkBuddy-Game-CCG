@@ -50,7 +50,7 @@ global.Image = class { constructor() { this.width = 100; this.height = 100; } se
 /* ---- vm 加载游戏脚本（与 index.html 同序，不加载 main.js：赛季区块不依赖它） ---- */
 const fs = require("fs"), vm = require("vm");
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js"]) {
   vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
 }
 
@@ -107,8 +107,11 @@ ok("界面：index.html 含 #season-lv 等级节点与「赛季大厅」标题",
 ok("界面：index.html 含 #season-tasks 周任务容器与 #btn-season-back 返回按钮", /id="season-tasks"/.test(html) && /id="btn-season-back"/.test(html));
 
 /* ====== 四、ui.js 薄封装 + 结算钩子（源码静态断言） ====== */
-const uiSrc = fs.readFileSync("js/ui.js", "utf8");
-const gameSrc = fs.readFileSync("js/game.js", "utf8");
+// 21.16 物理搬移：ui.js 拆为「ui.js（基础）+ ui-panels.js（面板）」。UI.showSeason / UI.grantSeasonExp
+// 落在 ui-panels.js，showSettlement 结算钩子在 ui-screens.js；21.16 第二阶段 ui.js 再拆出 ui-screens.js →
+// 断言需读取三文件拼接。
+const uiSrc = fs.readFileSync("js/ui.js", "utf8") + "\n" + fs.readFileSync("js/ui-screens.js", "utf8") + "\n" + fs.readFileSync("js/ui-panels.js", "utf8");
+const gameSrc = ["game","items","combat","modes","render"].map(function(n){return fs.readFileSync("js/" + n + ".js", "utf8");}).join("\n");
 ok("UI：ui.js 定义 UI.showSeason 渲染赛季大厅（经验条+周任务+返回主城）", /UI\.showSeason\s*=\s*function/.test(uiSrc) && uiSrc.includes('showScreen("screen-season")') && uiSrc.includes('showScreen("screen-main")'));
 ok("UI：UI.grantSeasonExp 为单行薄封装（调用 SeasonState.addExp 并在面板开着时重渲染）", /UI\.grantSeasonExp\s*=\s*function/.test(uiSrc) && /SeasonState\.addExp\(n\)/.test(uiSrc));
 /* 结算钩子：showSettlement 函数体内新增恰好 1 行 SeasonState.addExp(500)，且带 typeof 防护 */

@@ -152,7 +152,7 @@ console.log("index.html v2 元素清单 OK: " + requiredIds.length + " 个必需
 
 /* ---- 2) 加载脚本 + 驱动 ---- */
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js", "js/main.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js", "js/quality.js", "js/rewards.js", "js/main.js"]) {
   vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
 }
 // ⑩ 静态核对需要读源码：在沙箱内 fs/__dirname 不可用，故先读出并以变量形式注入

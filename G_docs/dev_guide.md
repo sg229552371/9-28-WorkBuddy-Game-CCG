@@ -983,26 +983,11 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 
 ### 10.2 每轮一句话
 
+> 早期轮次（20.5~21.12）已归档 → `G_docs/archive/dev_guide_archive_1_20.5-21.12.md`
+
 | 轮次 | 内容 |
 |---|---|
-| 20.5 | 加载卡顿修复：fit() 代理图分帧 + PerfGuard 帧护栏 + 诊断面板 |
-| 20.6 | BootGuard 首屏看门狗 + 错误面板 + 版本自愈；**删 favicon 探针**（「无法开始游戏」根因） |
-| 20.7 | 低画质实装（DPR 封顶/粒子×0.4/网格减半）+ 图鉴 12 角立绘（修 `_parent===null` 恒假 bug） |
-| 20.8 | UI 单屏化 + 相机视野 +25%（**viewH 才是旋钮，zoom 单改无效**）+ 4 只冲锋怪 NM0027~30 |
-| 20.9 | 选人界面苹果风：12 宫格 3 列→6 列（卡片 47×62） |
-| 20.10/21.0 | 工匠世界三段式重排（4 页签并 3、删废弃卡牌页签）+ 结晶闭环（`growthRate 1.3`/BOSS 60、升满 1602≈21 局）+ 结算明细行 + 全局苹果风（选关 3 列/全面板 100dvh 单屏锁+安全区） |
 | 21.1 | 毒圈改 **dmgPercent 1% 比例口径**（`dmgPerTick` 是遗留字段**不参与结算**）+ 移动端只留摇杆（三按钮 `CFG.mobile.hideTouchButtons` 隐藏，技能本就全自动释放）+ 摇杆浮动 + autofight 挪右下 + NPC 点选 |
-| 21.2 | 手机端毛刺清理（0023 patch） |
-| 21.3 | 虚拟摇杆修复（0025 patch：浮动召唤时序坑——touchEnd 之后读 `G.joy.active` 恒 false） |
-| 21.4 | 升级 4 选 1 参考图改版：丝带横幅 + 竖版大卡（彩色标题栏/推荐角标/大图标/数值高亮/进度胶囊）+ 刷新按钮（`levelUpReroll` 就地换血）+ 19 条契约断言 + lu_check.py 触屏实测 19 项（0026） |
-| 21.5 | 实机反馈四连：摇杆全屏可召唤（`floatStick.zoneRatio 0.5→1.0`）/ 刷新按钮 sticky 贴底 / 归属行仅多英雄局渲染 + 候选去重（`allowDuplicateOffer=false`）/ 标题白字统一 + 背包格子 40px 方案 B + repro_ui.py 17 项 |
-| 21.6 | 选人面板：未解锁可点选（详情区持续展示条件 ??? 打码防剧透）+ 展示序 4 轮循环（`CFG.heroDisplayOrder` **渲染层消费，物理序不动**）+ 赛季占位（SeasonState）+ 美术音频接入层（AssetHooks+manifest+回退）+ 铺关卡 11~20（LEVEL_011~020+BOSS 二周目+levelCurve 20 行） |
-| 21.7 | = 21.6 的关卡铺量提交拆分（f74eaf3） |
-| 21.8 | 四连修复：①crystal 型解锁入口落地（选人详情区「◆N 解锁」按钮——**此前 `_unlockCost` 全库零调用，结晶够也无处解锁**；heroLv 型保持查询式自动解锁）②竖屏 4 选 1 压缩一屏（卡 148px/ico 44px，实测 footBottom=666<844）③移除「给 XXX 选择强化」标题（与轮转绑定矛盾）④候选分配 **§5.48 按队友轮转绑定池**（卡 i 绑定 `teamHeroIds()[i%n]` 单人池，池空随机非空队友兜底，替代 §5.47 全队混抽）+ slotLine 去名 + unlock_btn_check.py 13 项 / lu_final_check.py 6 项 |
-| 21.9 | 未解锁英雄信息公开化（取消 ??? 打码：真名+简介+LV1 属性+LV1 技能+解锁条件+crystal 解锁按钮，锁定感由🔒+置灰表达；图鉴/皮肤 ??? 是收集语义不动）+ 详情区 max-height 170→240（0029） |
-| 21.10 | 手机端主城 NPC 交互修复（双重根因：入口缺失——hideTouchButtons 隐藏按钮后主城只走键盘 E，补 `cityNpcTap`+金环提示；坐标错位——`screenToWorld` 主城无 G.world 落纯缩放分支忽略相机居中平移，补主城相机分支与 renderCity 严格同口径）+ mobile_test 4 断言 + city_npc_check.py 8 项（0030） |
-| 21.11 | 图鉴统一化：芯片图鉴并入图鉴页（首页独立按钮移除，screen-codex 新增 #codex-chips 分区，统计行扩三项）+ 英雄卡 line-clamp 2 行对齐 + 三区统一 grid 语言（英雄 2 列/怪物·芯片 3 列）+ ui_v2_test 适配（0031） |
-| 21.12 | **P1 压测场景落地**（`js/stress.js` 新建）：`?stress=N&bullets=N&mode=full\|dot\|lod&ai=0\|1` 直达压测，无参数零开销（boot/主循环均单行分支 + stress_test 52 契约）。复用真实 World/Monster/Bullet 类铺场（isMain=false+kind="stress" 走空世界；轻量无敌 player 桩补 takeDamage/heal；弹幕可见环铺场+每帧补位维持目标数量）。**真机实测（iPhone12 视口 3000敌+2000弹）：full 帧耗时 8.9ms/drawCall 4090；dot 4.5ms/2；lod 5.0ms/182——LOD drawCall -95.6% 稳超 100fps，目标可达性证实**。cache_version_test 改清单驱动（stress.js 加入 VER_ASSETS）。三档截图 stress_full/dot/lod_3000.png 供拍板群体抽象 |候选分配 **§5.48 按队友轮转绑定池**（卡 i 绑定 `teamHeroIds()[i%n]` 单人池，池空随机非空队友兜底，替代 §5.47 全队混抽）+ slotLine 去名 + unlock_btn_check.py 13 项 / lu_final_check.py 6 项 |
 | 21.13 | **P2 渲染优化落地正式路径**：①敌方弹幕批绘（按外观等价类分两桶——小怪弹/Boss弹各单 Path 一次 fill，moveTo 逐发防连线；2000 弹从 6000 次/帧 → 9 次/帧，与数量解耦）②剔除常态化（cullMargin 260 不再被 isLowQuality 门控——视野外怪物对画面零贡献；低画质专属优化升级为全画质基线）+ **真机对比实测（render_opt_check.py，正式 render() 主路径）：500敌/500弹 p95 1.9→1.3ms(-32%) / 1500敌/1000弹 4.3→2.7ms(-37%) / 3000敌/2000弹 7.7→4.1ms(-47%)——规模越大收益越高** + render_opt_test 14 契约（源码级：批绘分桶/moveTo/LQ_SKIP_GLOW 保留；行为级：fill 与弹幕数解耦/剔除有意义）+ 门禁 2301→2315 全绿 |
 | 21.14 | **P3~P6 方案定稿 + 三代理并行开发**（方案 `G_docs/plan_perf_p3_p6.md`：群体抽象沿用 lod/近档阈值 60/自动降档做仅降不升/玩法载体不做）。🅐 **T1 空间分区自适应**（core.js：`SpatialHash.autoCell` 三档 <500→96/<1500→128/≥1500→192 + `retune` 变档才重建 + query 去重标记改 `tick*4096+(++_qSeq)` 修 V8 陷阱）🅑 **T2+T3 对象池与零分配**（`js/pool.js` 新建通用池 `Pool.makePool`：obtain/release/recycle/forEachAlive/compact/clear + highWater 埋点；game.js：FX 粒子/飘字池化（`FX.parts=pool.buf` 渲染侧零改动）+ `swapRemoveWhere` 替换 World.update 三处 filter + `aliveHeroes/enemyTargets` 模块级 scratch 双缓冲 + explode 复用 `_explodeSeen`——每帧新建对象 6000→235 **降 96%**）🅓 **T4 画质三档 + 自动降档**（main.js：`qualityLevel/setQualityLevel` 0低1中2高 + `opts.manual` 置 `G.autoDowngradeDisabled` + `_autoDowngradeTick` 仅降不升（WINDOW 60/ALERT_MS 150/DOWNGRADE_MS 100/RUN 90/COOLDOWN 20000）+ `_qualityFromDevice` 纯函数内核 + `applySettings` quality↔lowQuality 双向同步 + `set-lowq` 老开关桥接三档；index.html `#set-quality` 分段控件；css `.quality-seg` 三处同步；ui.js `renderSettings` 单行桥接 `renderQualitySeg`）。**测试 4 新增：spatial 27 + pool 47 + quality_tier 60 + render_opt 14 → 门禁 2315→2450 全绿**。真机验收：3000敌/2000弹 p95 6.3ms（与 21.13 基线 6.1 持平——见坑 18 预热采样）；压测 lod 5.1ms/137fps/drawCall 182（-95.6%）；画质设置页三档读写+手动覆盖+选中态实测全 PASS（quality_ui_check.py） |
 | 21.15 | **无尽模式（海量敌人玩法落地）+ 配套四线，四代理并行**（方案 `G_docs/plan_endless_21_15.md`，用户拍板：主城开门/50→300 封顶/死亡结算/小怪无血条）。🅐 核心层（`js/endless.js` 新建 + `CFG.endless` 15 字段）：波次制 `capFor=min(300,40+wave*12)`、强度曲线 `hpMul=1+(wave-1)*0.18`、奖励 `round(8*wave^1.15)`、视野外刷怪（spawnRingMargin 100）、复用真实 World/Monster/Player 类（kind="endless" 走空世界分支）；endless_test 70 契约。🅑 入口与流程（game.js 末尾区块 + ui.js + index.html 两屏）：主城「深渊之门」（CFG.city.abyssPortal，fx 0.86/fy 0.60，金红 #ff7a3c，channel 2s）、enterEndless/exitEndlessToCity、结算面板（到达波次/击杀/结晶+再来一次/返回主城）、首次规则说明（endlessSeen 存档标记只弹一次）；endless_flow_test 48。🅒 HUD+血条+文案（`js/hud_endless.js` 新建）：左上角三项信息区（深渊·第N波/击杀/同屏 M/cap，仅 inEndless 渲染，safe-area 适配）、**小怪去血条**（血条仅 Boss 110/精英 CFG.elites.barWidth 44，用户口径：小怪 2~4 击死血条是噪声）、帮助页 WASD 文案拆 .kbd-desktop/.kbd-touch 双段 CSS 三处同步；hud_endless_test 35。🅓 奖励打通（main.js 末尾区块）：波次结晶实时累加 run 内、死亡一次性入账（继承死亡保留 30%）、每 5 波掉宝箱（makeChestItem 落地拾取）、包装 Endless.settle 收敛 crystals=到手数（rawCrystals 留审计）+ 对齐结算报告；endless_reward_test 56。**集成三连修**（e2e 抓到的真缺陷）：①enterEndless 必须先建完整 run 上下文（坑 21）②规则说明须在 startRun 的 showHudOnly 之后弹（坑 22）③报告对齐须在面板渲染之前（坑 23）。**验收：门禁 2661 全绿（+211）；e2e 全链主城→深渊→波1~4（42→58→73→88 递增）→死亡结算 +16 结晶入账恒等；300 敌封顶 update+render p95=1.0ms；小怪无血条/HUD 三项/结算面板截图确认；无 JS 异常**。版本 bump 20261015 保持（同日二次发布） |

@@ -278,7 +278,7 @@ check("⑥ 图鉴立绘卡 .portrait-card 竖屏 display:block 未被破坏（�
  * 目的：锁住新结构，防将来被误改回退；纯静态扫描（读 CSS/HTML/JS 文本）不依赖运行时 DOM。
  * ============================================================ */
 const uiSrc = fs.readFileSync(path.join(root, "js", "ui.js"), "utf8");
-const gameSrc = fs.readFileSync(path.join(root, "js", "game.js"), "utf8");
+const gameSrc = ["game","items","combat","modes","render"].map(function(n){return fs.readFileSync(path.join(root, "js", n + ".js"), "utf8");}).join("\n");
 
 /* ⑧-1 丝带标题「增益选择」 */
 check("⑧ index.html 含 .lu-banner 丝带标题「增益选择」",

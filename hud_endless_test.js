@@ -62,7 +62,7 @@ global.requestAnimationFrame = () => { };
  * ============================================================ */
 const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const htmlIds = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map(m => m[1]));
-const gameSrc = fs.readFileSync(path.join(__dirname, "js/game.js"), "utf8");
+const gameSrc = ["game","items","combat","modes","render"].map(function(n){return fs.readFileSync(path.join(__dirname, "js", n + ".js"), "utf8");}).join("\n");
 const configSrc = fs.readFileSync(path.join(__dirname, "js/config.js"), "utf8");
 const css = fs.readFileSync(path.join(__dirname, "css/style.css"), "utf8");
 
@@ -137,7 +137,7 @@ staticCheck("七6 三处规则齐备（.kbd-desktop 规则出现 ≥3 次：主 
  * 行为级：加载脚本
  * ============================================================ */
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/hud_endless.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/hud_endless.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, f), "utf8"), ctx, { filename: f });
 }
 

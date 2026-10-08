@@ -115,7 +115,7 @@ staticCheck("stress.js selfCheck 存在", stressSrc.indexOf("selfCheck") >= 0);
 
 /* ---- 加载脚本 ---- */
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/stress.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/stress.js"]) {
   vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
 }
 

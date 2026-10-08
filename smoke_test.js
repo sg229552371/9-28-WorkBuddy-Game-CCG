@@ -11,7 +11,7 @@ global.UI = new Proxy({}, { get: () => () => { } });   // game.js 运行时引�
 global.EventBus = undefined;
 const fs = require("fs"), vm = require("vm");
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js"]) {
   vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
 }
 vm.runInContext(`

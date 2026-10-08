@@ -137,7 +137,7 @@ env.g.setTimeout = (fn, ms) => { const id = ++env.g.__seq; env.g.__timers[id] = 
 env.g.clearTimeout = (id) => { delete env.g.__timers[id]; };
 
 const ctx = vm.createContext(env.g);
-for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js", "js/main.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js", "js/quality.js", "js/rewards.js", "js/main.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, f), "utf8"), ctx, { filename: f });
 }
 

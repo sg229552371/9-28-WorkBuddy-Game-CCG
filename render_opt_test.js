@@ -45,12 +45,12 @@ global.requestAnimationFrame = () => { };
 
 /* ---- 加载脚本 ---- */
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, f), "utf8"), ctx, { filename: f });
 }
 
 /* ---- 静态源码级检查 ---- */
-const gameSrc = fs.readFileSync(path.join(__dirname, "js/game.js"), "utf8");
+const gameSrc = ["game","items","combat","modes","render"].map(function(n){return fs.readFileSync(path.join(__dirname, "js", n + ".js"), "utf8");}).join("\n");
 let okStatic = true;
 const staticCheck = (name, cond) => { console.log((cond ? "PASS" : "FAIL") + " " + name); if (!cond) okStatic = false; };
 

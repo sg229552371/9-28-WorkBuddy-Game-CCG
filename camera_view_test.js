@@ -49,7 +49,7 @@ check("四 画布高 round(viewH×zoom) 仍为 1080（跨端锚点配平：" + c
 
 /* ---- 五、静态检查：js/game.js 相机消费点仍能正确读取 CFG.camera.zoom ---- */
 let gameSrc = "";
-try { gameSrc = fs.readFileSync(path.join(__dirname, "js/game.js"), "utf8"); }
+try { gameSrc = ["game","items","combat","modes","render"].map(function(n){return fs.readFileSync(path.join(__dirname, "js", n + ".js"), "utf8");}).join("\n"); }
 catch (e) { gameSrc = ""; }
 check("五 game.js 源码可读", gameSrc.length > 0);
 check("五 game.js 相机消费点仍读取 CFG.camera 与 zoom（改动不会让消费点失效）",

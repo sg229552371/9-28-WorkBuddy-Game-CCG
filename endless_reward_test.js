@@ -55,7 +55,7 @@ vm.createContext(sandbox);
 
 let loadOk = true, loadMsg = "";
 try {
-  for (const f of ["js/config.js", "js/core.js", "js/pool.js", "js/game.js", "js/endless.js", "js/main.js"]) {
+  for (const f of ["js/config.js", "js/core.js", "js/pool.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/endless.js", "js/quality.js", "js/rewards.js", "js/main.js"]) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, f), "utf8"), sandbox, { filename: f });
   }
 } catch (e) {

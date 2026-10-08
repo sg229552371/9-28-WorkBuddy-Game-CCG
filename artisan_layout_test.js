@@ -30,7 +30,12 @@ function check(name, cond) {
 /* ---------- 读源码（拍平换行便于跨行正则） ---------- */
 const htmlSrc = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const cssSrc = fs.readFileSync(path.join(root, "css", "style.css"), "utf8");
-const uiSrc = fs.readFileSync(path.join(root, "js", "ui.js"), "utf8");
+// 21.16 物理搬移：ui.js 拆为「ui.js + ui-panels.js」。CFG_ARTISAN_UI 常量落在 ui-panels.js，
+// 21.16 物理搬移（第二阶段）：ui.js 巨型对象字面量再拆出 ui-screens.js，renderCards / ART_TABS 落在
+//   ui-screens.js → 源码级断言读取三文件拼接（等价于拆分前整文件）。
+const uiSrc = fs.readFileSync(path.join(root, "js", "ui.js"), "utf8") + "\n"
+  + fs.readFileSync(path.join(root, "js", "ui-screens.js"), "utf8") + "\n"
+  + fs.readFileSync(path.join(root, "js", "ui-panels.js"), "utf8");
 const mainSrc = fs.readFileSync(path.join(root, "js", "main.js"), "utf8");
 const cssFlat = cssSrc.split("\n").join(" ").replace(/\s+/g, " ");
 const htmlFlat = htmlSrc.split("\n").join(" ");

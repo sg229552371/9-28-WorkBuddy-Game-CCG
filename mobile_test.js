@@ -67,7 +67,7 @@ check("CSS 含竖屏升级弹窗 2×2 网格类（.levelup-cards.grid-portrait�
 check("CSS 竖屏背包三段改为上下堆叠（.bp-body 竖排规则）", /\.portrait[^{]*\.bp-body/.test(css) || /body\.portrait\s+\.bp-body/.test(css));
 
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/main.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/quality.js", "js/rewards.js", "js/main.js"]) {
   vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
 }
 // 桥接：把宿主侧的 check 暴露给 vm 内部（vm.createContext 不继承模块级 const）

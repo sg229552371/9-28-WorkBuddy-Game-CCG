@@ -286,7 +286,7 @@ function evalIn(ctx, code) { return vm.runInContext(code, ctx); }
     vm.runInContext(fs.readFileSync(path.join(__dirname, "js/pool.js"), "utf8"), ctx, { filename: "js/pool.js" });
     vm.runInContext(fs.readFileSync(path.join(__dirname, "js/config.js"), "utf8"), ctx, { filename: "js/config.js" });
     vm.runInContext(fs.readFileSync(path.join(__dirname, "js/core.js"), "utf8"), ctx, { filename: "js/core.js" });
-    vm.runInContext(fs.readFileSync(path.join(__dirname, "js/game.js"), "utf8"), ctx, { filename: "js/game.js" });
+    for (const g of ["game", "items", "combat", "modes", "render"]) vm.runInContext(fs.readFileSync(path.join(__dirname, "js", g + ".js"), "utf8"), ctx, { filename: "js/" + g + ".js" });
     // 调用几个改造后的纯函数，确认不抛
     vm.runInContext("aliveHeroes(); enemyTargets(); updateFX(0.016); swapRemoveWhere([{dead:true},{dead:false}], o => o.dead);", ctx);
   } catch (e) { threw = e; }
@@ -298,7 +298,7 @@ function evalIn(ctx, code) { return vm.runInContext(code, ctx); }
     const ctx = vm.createContext({ console, Math, Set, Array, Object, JSON, Date, isFinite, parseInt, parseFloat });
     vm.runInContext(fs.readFileSync(path.join(__dirname, "js/config.js"), "utf8"), ctx, { filename: "js/config.js" });
     vm.runInContext(fs.readFileSync(path.join(__dirname, "js/core.js"), "utf8"), ctx, { filename: "js/core.js" });
-    vm.runInContext(fs.readFileSync(path.join(__dirname, "js/game.js"), "utf8"), ctx, { filename: "js/game.js" });
+    for (const g of ["game", "items", "combat", "modes", "render"]) vm.runInContext(fs.readFileSync(path.join(__dirname, "js", g + ".js"), "utf8"), ctx, { filename: "js/" + g + ".js" });
     vm.runInContext("spawnBurst(0,0,'#fff',3,20); updateFX(0.1); FX.parts.length = 0; spawnBurst(0,0,'#fff',2,20);", ctx);
     const n = vm.runInContext("FX.parts.length", ctx);
     check("⑥ 无 Pool 时降级为 push/filter，粒子计数正确（2）", n === 2, "len=" + n);
@@ -335,7 +335,7 @@ function makeGameCtx(withPool) {
   const ctx = vm.createContext(sandbox);
   const files = ["js/config.js", "js/core.js"];
   if (withPool) files.push("js/pool.js");
-  files.push("js/game.js");
+  for (const g of ["game", "items", "combat", "modes", "render"]) files.push("js/" + g + ".js");
   for (const f of files) vm.runInContext(fs.readFileSync(path.join(__dirname, f), "utf8"), ctx, { filename: f });
   return ctx;
 }

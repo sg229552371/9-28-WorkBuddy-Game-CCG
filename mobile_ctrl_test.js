@@ -100,7 +100,7 @@ check("#btn-backpack 与 #btn-autofight 同在 #hud-br 内", html.indexOf('id="b
 
 /* ============ 静态 B：CFG.mobile 字段合法 ============ */
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/main.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/quality.js", "js/rewards.js", "js/main.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, f), "utf8"), ctx, { filename: f });
 }
 ctx.check = check;

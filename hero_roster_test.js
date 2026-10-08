@@ -18,7 +18,7 @@ global.localStorage = { getItem: () => null, setItem() { }, removeItem() { } };
 
 const fs = require("fs"), vm = require("vm");
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js"]) {
   vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
 }
 

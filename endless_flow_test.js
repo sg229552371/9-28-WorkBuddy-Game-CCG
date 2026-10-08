@@ -74,8 +74,13 @@ const path = require("path");
 /* ---- 0) 源码级断言：index.html 面板 id + renderCity 调用渲染函数 ---- */
 const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const htmlIds = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map(m => m[1]));
-const gameSrc = fs.readFileSync(path.join(__dirname, "js", "game.js"), "utf8");
-const uiSrc = fs.readFileSync(path.join(__dirname, "js", "ui.js"), "utf8");
+const gameSrc = ["game","items","combat","modes","render"].map(function(n){return fs.readFileSync(path.join(__dirname, "js", n + ".js"), "utf8");}).join("\n");
+// 21.16 物理搬移：ui.js 拆为「ui.js + ui-panels.js」。无尽结算/说明 UI（showEndlessSettle /
+// showEndlessIntro）落在 ui-panels.js；21.16 第二阶段 ui.js 再拆出 ui-screens.js →
+// 源码级断言读取三文件拼接（等价于拆分前整文件）。
+const uiSrc = fs.readFileSync(path.join(__dirname, "js", "ui.js"), "utf8") + "\n"
+  + fs.readFileSync(path.join(__dirname, "js", "ui-screens.js"), "utf8") + "\n"
+  + fs.readFileSync(path.join(__dirname, "js", "ui-panels.js"), "utf8");
 
 let okStatic = true;
 const needIds = ["screen-endless-intro", "btn-endless-intro-ok",
@@ -98,7 +103,7 @@ console.assert(uiSrc.indexOf("UI.showEndlessIntro") >= 0, "ui.js 应定义 showE
     document: { getElementById: () => null, createElement: () => new FakeEl("x"), addEventListener() { }, body: null },
     requestAnimationFrame: () => { }, localStorage: global.localStorage, console,
   });
-  for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js", "js/main.js"]) {
+  for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js", "js/quality.js", "js/rewards.js", "js/main.js"]) {
     vm.runInContext(fs.readFileSync(f, "utf8"), ctx0, { filename: f });
   }
   vm.runInContext(`
@@ -112,7 +117,7 @@ console.assert(uiSrc.indexOf("UI.showEndlessIntro") >= 0, "ui.js 应定义 showE
 
 /* ---- 2) 真实逻辑：加载完整脚本链 ---- */
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js", "js/main.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js", "js/quality.js", "js/rewards.js", "js/main.js"]) {
   vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
 }
 

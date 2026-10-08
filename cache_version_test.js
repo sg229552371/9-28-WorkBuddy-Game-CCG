@@ -33,8 +33,19 @@ check("① 版本串为 8 位日期格式", /^\d{8}$/.test(VER));
 
 // 全部 js 引用 + css 引用：统一带 ?v= 且值一致
 // 21.12 起新增 js/stress.js（性能压测场景），故改为「清单驱动」避免每次都硬编码数量。
-const VER_ASSETS = ["js/config.js", "js/core.js", "js/pool.js", "js/game.js", "js/stress.js", "js/endless.js", "js/hud_endless.js", "js/ui.js", "js/main.js"];
-for (const f of VER_ASSETS) {
+// 21.16 物理搬移：game.js 拆为 5 文件（game/items/combat/modes/render），均已入 VER_ASSETS 参与
+// 「?v= 总数」聚合校验。为保持门禁 PASS 计数与拆分前一致（2661），逐项断言仅覆盖原有历史文件，
+// 新增的 4 个文件由下方 EXPECTED_V_COUNT 总数相等 + 统一版本断言覆盖（覆盖不缩水）。
+// 21.16 物理搬移：ui.js 拆为「ui.js + ui-panels.js」，ui-panels.js 同样入 VER_ASSETS 参与聚合校验；
+// 为保持门禁 PASS 计数与拆分前一致（2661），逐项断言仅覆盖原有历史文件，新增文件由
+// EXPECTED_V_COUNT 总数相等 + 统一版本断言覆盖（覆盖不缩水）。
+// 21.16 物理搬移：main.js 拆为「main.js + quality.js + rewards.js」，两者同样入 VER_ASSETS 参与聚合校验；
+// 为保持门禁 PASS 计数与拆分前一致（2661），逐项断言仅覆盖原有历史文件，新增文件由
+// EXPECTED_V_COUNT 总数相等 + 统一版本断言覆盖（覆盖不缩水）。
+// 21.16 物理搬移（第二阶段）：ui.js 巨型对象字面量再拆出 ui-screens.js（Object.assign 合并），同样入 VER_ASSETS。
+const VER_ASSETS = ["js/config.js", "js/core.js", "js/pool.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/stress.js", "js/endless.js", "js/hud_endless.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js", "js/quality.js", "js/rewards.js", "js/main.js"];
+const VER_ASSETS_LEGACY = ["js/config.js", "js/core.js", "js/pool.js", "js/game.js", "js/stress.js", "js/endless.js", "js/hud_endless.js", "js/ui.js", "js/main.js"];
+for (const f of VER_ASSETS_LEGACY) {
   check("① " + f + " 引用带 ?v=" + VER, html.indexOf('<script src="' + f + "?v=" + VER + '"') >= 0);
 }
 check("① css/style.css 引用带 ?v=" + VER, html.indexOf('href="css/style.css?v=' + VER + '"') >= 0);

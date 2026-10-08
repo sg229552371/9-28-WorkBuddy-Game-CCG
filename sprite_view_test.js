@@ -81,7 +81,7 @@ function makeSandbox(loadOk) {
 }
 
 const CORE_ONLY = ["js/config.js", "js/core.js"];
-const WITH_GAME = ["js/config.js", "js/core.js", "js/game.js"];
+const WITH_GAME = ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js"];
 
 /* 沙箱A：仅 config+core（测 spriteFor / manifest / 加载逻辑，无 G） */
 const ctxA = makeSandbox(true);

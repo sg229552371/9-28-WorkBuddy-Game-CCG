@@ -13,8 +13,11 @@ function ok(cond, msg) {
 }
 
 const dir = __dirname;
-const gameSrc = fs.readFileSync(path.join(dir, "js/game.js"), "utf8");
-const uiSrc = fs.readFileSync(path.join(dir, "js/ui.js"), "utf8");
+const gameSrc = ["game","items","combat","modes","render"].map(function(n){return fs.readFileSync(path.join(dir, "js", n + ".js"), "utf8");}).join("\n");
+// 21.16 物理搬移（第二阶段）：ui.js 巨型对象字面量再拆出 ui-screens.js。
+// 结算/死亡（_crystalReportLine / showSettlement / showDeath）落在 ui-screens.js → 读取两文件拼接。
+const uiSrc = fs.readFileSync(path.join(dir, "js/ui.js"), "utf8") + "\n"
+  + fs.readFileSync(path.join(dir, "js/ui-screens.js"), "utf8");
 
 /* ---------- 1. 源码结构：接口与挂点存在 ---------- */
 ok(/function buildCrystalReport\s*\(/.test(gameSrc), "game.js 应定义 buildCrystalReport 纯函数");

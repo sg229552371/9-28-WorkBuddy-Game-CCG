@@ -140,7 +140,7 @@ function makeSandbox(opts) {
   sandbox.globalThis = sandbox;
   sandbox.Image = class { constructor() { this.width = 256; this.height = 512; } set src(v) { if (this.onload) this.onload(); } };
   const ctx = vm.createContext(sandbox);
-  for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js"]) {
+  for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js"]) {
     vm.runInContext(fs.readFileSync(path.join(root, f), "utf8"), ctx, { filename: f });
   }
   // 素材桩：从真实 Assets.images 结构里只放指定键（宽度 256，高度 512 的假图）
@@ -239,7 +239,7 @@ check("closeHeroDetail → 详情层重新 hidden", overlay.classList.contains("
   let ok = true;
   try {
     const ctx = vm.createContext(sandbox);
-    for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js"]) {
+    for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js"]) {
       vm.runInContext(fs.readFileSync(path.join(root, f), "utf8"), ctx, { filename: f });
     }
     // 无 document：两个入口都必须静默返回，不抛
@@ -272,7 +272,7 @@ check("closeHeroDetail → 详情层重新 hidden", overlay.classList.contains("
   let ok = true, overlay = null;
   try {
     const ctx = vm.createContext(sandbox);
-    for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js"]) {
+    for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js"]) {
       vm.runInContext(fs.readFileSync(path.join(root, f), "utf8"), ctx, { filename: f });
     }
     overlay = vm.runInContext("UI.openHeroDetail('H001');", ctx);

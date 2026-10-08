@@ -170,7 +170,7 @@ function makeSandbox(opts) {
   sandbox.globalThis = sandbox;
   sandbox.Image = class { constructor() { this.width = 256; this.height = 512; } set src(v) { if (this.onload) this.onload(); } };
   const ctx = vm.createContext(sandbox);
-  for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js"]) {
+  for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js"]) {
     vm.runInContext(fs.readFileSync(path.join(root, f), "utf8"), ctx, { filename: f });
   }
   vm.runInContext(`
@@ -294,7 +294,7 @@ check("选关：已解锁卡含 BOSS 名", levelBox.children[0].innerHTML.indexO
   let ok = true;
   try {
     const c = vm.createContext(sandbox);
-    for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/ui.js"]) {
+    for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js"]) {
       vm.runInContext(fs.readFileSync(path.join(root, f), "utf8"), c, { filename: f });
     }
     vm.runInContext("G.state = 'charSel'; UI.buildCharList(); UI.renderCharDetail(CFG.heroes[0]); UI.renderCharDetail(null);", c);

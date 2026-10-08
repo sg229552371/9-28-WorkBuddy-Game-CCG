@@ -507,6 +507,12 @@ var APP_VERSION = "20261015";
 <script src="js/core.js?v=20261015"></script>
 <script src="js/pool.js?v=20261015"></script>
 <script src="js/game.js?v=20261015"></script>
+<!-- 21.16 物理搬移：原 game.js 拆为 5 个职责单一文件，加载顺序沿用原行序（game → items → combat → modes → render）。
+     跨文件仅为函数调用（提升安全），顶层 const/class 各自唯一且初始化不跨文件引用 → 无 TDZ 风险。 -->
+<script src="js/items.js?v=20261015"></script>
+<script src="js/combat.js?v=20261015"></script>
+<script src="js/modes.js?v=20261015"></script>
+<script src="js/render.js?v=20261015"></script>
 <!-- 21.12 性能压测场景（独立模块，无 ?stress 参数时零开销；依赖 game.js 的 World/Monster/Bullet 类） -->
 <script src="js/stress.js?v=20261015"></script>
 <!-- 21.15 🅐 无尽模式核心（波次/刷怪/难度曲线；依赖 game.js 的 World/Monster/Player 类，须在 game.js 之后） -->
@@ -514,6 +520,17 @@ var APP_VERSION = "20261015";
 <!-- 21.15 🅒 无尽模式 HUD 信息区（canvas 绘制左上角三项：波次/击杀/同屏）；依赖 game.js 的 G（render 内单行桥接） -->
 <script src="js/hud_endless.js?v=20261015"></script>
 <script src="js/ui.js?v=20261015"></script>
+<!-- 21.16 物理搬移（第二阶段）：原巨型 const UI = {...} 按行号切成两段——ui.js 保留前半段（基础层），
+     ui-screens.js 以 Object.assign(UI, {...}) 承载后半段（屏幕层）。故 ui-screens.js 必须在 ui.js 之后。 -->
+<script src="js/ui-screens.js?v=20261015"></script>
+<!-- 21.16 物理搬移：原 ui.js 拆为「基础（ui.js + ui-screens.js）+ 面板（ui-panels.js）」，加载顺序沿用原行序。
+     ui-panels.js 多处 UI.xxx = ... 挂载到 UI 对象（定义于 ui.js）→ 必须紧跟 ui.js/ui-screens.js 之后。 -->
+<script src="js/ui-panels.js?v=20261015"></script>
+<!-- 21.16 物理搬移：原 main.js 拆为「quality.js（画质三档/性能护栏/加载遮罩）+ rewards.js（无尽奖励包装）+
+     main.js（宿主）」。quality.js 必须在 main.js 之前——main.js 顶层 Game.loadSettings() 会调用
+     _defaultQuality()/_migrateQuality()；rewards.js 依赖 endless.js/modes.js 且 main.js 依赖 rewards 接线。 -->
+<script src="js/quality.js?v=20261015"></script>
+<script src="js/rewards.js?v=20261015"></script>
 <script src="js/main.js?v=20261015"></script>
 <!-- 20.6 JS 未加载兜底：main.js 之后立刻执行；若 window.Game 未定义（脚本全部/部分加载失败）
      则直接显示兜底面板。面板与按钮由 main.js 的 BootGuard.ensure() 建成（本行也可能在

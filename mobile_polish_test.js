@@ -67,7 +67,10 @@ const check = (name, cond) => { console.log((cond ? "PASS" : "FAIL") + " " + nam
 const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const css = fs.readFileSync(path.join(__dirname, "css/style.css"), "utf8");
 const mainSrc = fs.readFileSync(path.join(__dirname, "js/main.js"), "utf8");
-const uiSrc = fs.readFileSync(path.join(__dirname, "js/ui.js"), "utf8");
+// 21.16 物理搬移（第二阶段）：ui.js 巨型对象字面量再拆出 ui-screens.js。
+// 「悬停/点选」等用户可见文案落在 ui-screens.js（背包/TIPS 面板）→ 读取两文件拼接。
+const uiSrc = fs.readFileSync(path.join(__dirname, "js/ui.js"), "utf8") + "\n"
+  + fs.readFileSync(path.join(__dirname, "js/ui-screens.js"), "utf8");
 
 /* ============ 静态 A：hoverItem 赋值点 >= 2（点选路径存在，非仅 pointerover） ============ */
 const hoverAssigns = mainSrc.match(/UI\.hoverItem\s*=/g) || [];
@@ -114,7 +117,7 @@ global.UI = { selectedLevel: null, selectedChar: null, hoverItem: null,
   buildLevelList() { }, buildCharList() { }, showSettlement() { }, showDeath() { },
   startDrag() { }, onPointerMove() { }, onPointerUp() { } };
 const ctx = vm.createContext(global);
-for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/main.js"]) {
+for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/quality.js", "js/rewards.js", "js/main.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, f), "utf8"), ctx, { filename: f });
 }
 ctx.check = check;
