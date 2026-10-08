@@ -12,6 +12,9 @@ const G = {
   run: null,              // 本局数据
   mainWorld: null, subWorld: null, activeWorld: null,
   inArtisan: false,
+  inEndless: false,       // 21.15 无尽模式进行中（深渊世界接管 activeWorld）
+  endlessWorld: null,     // 21.15 无尽世界实例（Endless.makeWorld 产出）
+  saved: {},              // 21.15 会话内轻量存档标记（如 endlessSeen 首次说明）
   keys: {}, mouse: { x: 0, y: 0 },
   joy: { active: false, dx: 0, dy: 0 },   // 移动端虚拟摇杆向量（归一化 + 死区；active=手指按住）
   time: 0,
@@ -2018,6 +2021,10 @@ function onMonsterKilled(w, m, killer) {
   }
   spawnSplitBullets(w, m, killer);   // 行为芯片（19.12）：裂变——击杀弹带 split 时生成小弹
   spawnBurst(m.x, m.y, "#9aa7b8", 10);
+  // 21.15 无尽模式：击杀计数上报（Endless 未就绪时静默跳过，安全降级）
+  if (G.inEndless && typeof Endless !== "undefined" && Endless && typeof Endless.recordKill === "function") {
+    Endless.recordKill();
+  }
 }
 
 function spawnPickup(w, x, y, type, value) {
@@ -2801,6 +2808,7 @@ class World {
     this.portal = { name: c.portal.name, x: this.w / 2, y: 90, radius: c.portal.radius, channel: c.portal.channel };
     this.seasonPortal = c.seasonPortal ? { name: c.seasonPortal.name, x: this.w * 0.82, y: 90, radius: c.seasonPortal.radius, channel: c.seasonPortal.channel } : null;
     this.portalProgress = 0;
+    setupAbyssPortal(this);   // 21.15 深渊之门初始化（末尾区块，单行调用）
   }
   setupRift() {
     // 空间裂缝子地图（5.1）：一次性投放战斗场景
@@ -3413,6 +3421,7 @@ function updateCityWorld(dt) {
     G.cityNpcOpen = null;
     EventBus.emit("cityNpcClose");
   }
+  updateAbyssPortal(dt);   // 21.15 深渊之门进圈判定/读条（末尾区块，单行调用）
 }
 function renderCity() {
   applyLowQualityDPR();   // 低画质：帧内纠偏 canvas 物理分辨率（DPR 封顶）
@@ -3458,6 +3467,7 @@ function renderCity() {
     }
   }
   renderCityNpcTapHint(ctx, w);   // 21.10 主城 NPC 点选提示环（金环脉冲 + 「点击进入」浮动文案）
+  renderAbyssPortal(ctx, w);      // 21.15 深渊之门渲染（末尾区块，单行调用）
   // 出征传送门：读条环 + 涟漪动画
   const pt = w.portal;
   ctx.beginPath(); ctx.arc(pt.x, pt.y, 34 + 3 * Math.sin(G.time * 3), 0, Math.PI * 2);
@@ -3685,11 +3695,14 @@ function render() {
       ctx.fillStyle = m.d.type === "boss" ? "#e5484d" : "#c96"; 
       ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2); ctx.fill();
     }
-    // 血条
-    const bw = m.d.type === "boss" ? 110 : 34;
-    ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(m.x - bw / 2, m.y - size / 2 - 12, bw, 5);
-    ctx.fillStyle = m.d.type === "boss" ? "#ff5b5b" : "#e5a04b";
-    ctx.fillRect(m.x - bw / 2, m.y - size / 2 - 12, bw * Math.max(0, m.hp / m.hpMax), 5);
+    // 血条：仅 Boss / 精英保留（21.15 用户拍板——小怪 2~4 击即死，血条是视觉噪声）
+    if (m.d.type === "boss" || m.isElite === true) {
+      const bw = m.d.type === "boss" ? 110
+        : ((CFG.elites && CFG.elites.barWidth) || 44);   // 精英血条更醒目（44），与普通怪旧值 34 区分
+      ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(m.x - bw / 2, m.y - size / 2 - 12, bw, 5);
+      ctx.fillStyle = m.d.type === "boss" ? "#ff5b5b" : "#e5a04b";
+      ctx.fillRect(m.x - bw / 2, m.y - size / 2 - 12, bw * Math.max(0, m.hp / m.hpMax), 5);
+    }
     renderBurnAura(ctx, m);   // 行为芯片（19.12）：燃蚀火色描边
     // 冲锋预警
     if (m.d.type === "charger" && m.state === "telegraph") {
@@ -3740,6 +3753,7 @@ function render() {
       ctx.fillStyle = `rgba(255,255,255,${a * 0.3})`; ctx.fill();
     }
   }
+  if (typeof renderEndlessHud === "function") renderEndlessHud(ctx);   // 21.15 无尽 HUD（🅒）单行桥接，实现见 js/hud_endless.js
   // 弹道
   for (const b of w.playerBullets) {
     ctx.fillStyle = b.isSkill ? "#6cb2ff" : "#ffd76a";
@@ -5188,3 +5202,308 @@ function swapRemoveWhere(arr, pred) {
 const _explodeSeen = new Set();
 
 /* 21.14 区域结束 */
+
+/* ============================================================================
+ * ====== 21.15 深渊之门（无尽模式入口与进出门流程）—— 独立区块（§5.45 铁律）======
+ * ----------------------------------------------------------------------------
+ * 职责（本代理 🅑）：主城右上「深渊之门」的坐标/判定/读条/点选/进出门/结算打通。
+ *   ① CFG.city.abyssPortal 只管入口侧（坐标比例 / 半径 / channel / 文案 / 颜色）；
+ *   ② 无尽世界本体（Endless.makeWorld/begin/update/...）由另一代理产出 —— 本区块**一律
+ *      用 `typeof Endless !== "undefined"` 做存在性守卫**（项目惯例），未就绪时门显示
+ *      「尚未开启」且进入动作安全降级（toast 提示，不进入）。
+ *
+ * 接入方式（现有函数体内**只插单行调用**，行级冲突最小化）：
+ *   • World.setupCity()                 → 插 `setupAbyssPortal(this);`（初始化门对象）
+ *   • updateCityWorld()（进圈判定/读条） → 插 `updateAbyssPortal(dt);`
+ *   • renderCity()（门渲染）             → 插 `renderAbyssPortal(ctx, w);`
+ *   • screenToWorld 主城分支             → 走既有 `G.abyssPortal` 坐标（与 NPC 同口径）
+ *   • 触屏点选：新增 `abyssPortalTap(cx, cy)`，由 main.js 的 pointerdown 单行调用
+ *   • 进出流程：`enterEndless()` / `exitEndlessToCity()`，由 main.js 事件单行调用
+ *
+ * 数值全部进 CFG，逻辑不写死；ES5/ES6 全局脚本，中文注释。
+ * ========================================================================== */
+
+/* 兜底常量（CFG 缺失时不影响启动；正常路径一律读 CFG.city.abyssPortal） */
+var ABYSS_FALLBACK = { fx: 0.86, fy: 0.60, radius: 84, channel: 2.0,
+  hintRadius: 104, tapRadius: 116, color: "#ff7a3c", glow: "#ffd76a",
+  desc: "进圈读条 2 秒 → 进入无尽深渊", ready: true };
+
+/** 读取深渊之门配置（惰性 + 缺省回落，避免 CFG 半加载时报错）。 */
+function abyssCfg() {
+  var c = (typeof CFG !== "undefined" && CFG.city && CFG.city.abyssPortal) || null;
+  return c || ABYSS_FALLBACK;
+}
+
+/** 无尽世界是否可用：另一代理的 Endless 必须暴露 makeWorld + begin 两个入口才算就绪。
+ *  未就绪时门照常渲染，但进入动作降级为 toast（不硬依赖、不抛错）。 */
+function endlessReady() {
+  return typeof Endless !== "undefined" && Endless
+    && typeof Endless.makeWorld === "function" && typeof Endless.begin === "function";
+}
+
+/* 门对象初始化（由 World.setupCity 单行调用）：比例坐标 → 像素。 */
+function setupAbyssPortal(w) {
+  if (!w || w.kind !== "city") return;
+  var c = abyssCfg();
+  w.abyssPortal = {
+    name: c.name || "深渊之门",
+    x: (c.fx != null ? c.fx : ABYSS_FALLBACK.fx) * w.w,
+    y: (c.fy != null ? c.fy : ABYSS_FALLBACK.fy) * w.h,
+    radius: c.radius || ABYSS_FALLBACK.radius,
+    channel: c.channel || ABYSS_FALLBACK.channel,
+  };
+  w.abyssProgress = 0;          // 读条进度（本区块私有字段，与 portalProgress 区分）
+  w.abyssReady = false;         // 圈内标记（供渲染高亮 / 点选门槛）
+}
+
+/** 进圈判定 + 读条推进（由 updateCityWorld 单行调用，city 世界 + avatar 存在时）。
+ *  - 进圈：积累进度并置 abyssReady=true（高亮提示）；
+ *  - 出圈：置 abyssReady=false 并 1.2 倍速衰退（与出征门/撤离读条同一契约）；
+ *  - 读满 channel：调用 enterEndless() 进入无尽世界（守卫 endlessReady）。 */
+function updateAbyssPortal(dt) {
+  var w = G.activeWorld, a = G.cityAvatar;
+  if (!w || w.kind !== "city" || !a || !w.abyssPortal) return;
+  var p = w.abyssPortal;
+  var inCircle = U.dist(a.x, a.y, p.x, p.y) < p.radius * CFG.altarJudgeMul;
+  w.abyssReady = inCircle;
+  if (inCircle && p.name) {
+    w.abyssProgress += dt;
+    if (w.abyssProgress >= p.channel) {
+      w.abyssProgress = 0;
+      enterEndless();
+      return;
+    }
+  } else {
+    w.abyssProgress = Math.max(0, w.abyssProgress - dt * 1.2);   // 离开缓慢衰退
+  }
+}
+
+/** 渲染深渊之门（由 renderCity 单行调用）：金红传送门 + 脉冲光环 + 读条环 + 圈内提示。
+ *  视觉与既有 seasonPortal（未开放占位）/ 出征门（绿）明确区分：金红主色 + 双层脉冲环。 */
+function renderAbyssPortal(ctx, w) {
+  var p = w && w.abyssPortal;
+  if (!ctx || !p) return;
+  var c = abyssCfg();
+  var col = c.color || ABYSS_FALLBACK.color;
+  var glow = c.glow || ABYSS_FALLBACK.glow;
+  var open = endlessReady() && c.ready !== false;
+  var pulse = 0.5 + 0.5 * Math.sin(G.time * 2.6);
+  ctx.save();
+  // 判定圈（虚线，进圈高亮）
+  ctx.setLineDash([6, 6]);
+  ctx.strokeStyle = open ? (w.abyssReady ? col + "cc" : col + "66") : "rgba(120,150,190,.4)";
+  ctx.lineWidth = w.abyssReady ? 3 : 2;
+  ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  // 门体：双层脉冲光环（内实外虚，金红渐变感）
+  var r0 = 34 + 3 * Math.sin(G.time * 3);
+  ctx.beginPath(); ctx.arc(p.x, p.y, r0, 0, Math.PI * 2);
+  ctx.fillStyle = open ? (col + "33") : "rgba(120,150,190,.15)"; ctx.fill();
+  ctx.strokeStyle = open ? col : "rgba(120,150,190,.6)"; ctx.lineWidth = 3; ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, (c.radius || ABYSS_FALLBACK.radius) * 0.72 + 6 * pulse, 0, Math.PI * 2);
+  ctx.strokeStyle = open ? (glow + "88") : "rgba(120,150,190,.3)"; ctx.lineWidth = 2; ctx.stroke();
+  // 门名 + 说明
+  ctx.textAlign = "center";
+  ctx.font = "bold 14px sans-serif"; ctx.fillStyle = open ? col : "#9fb4d4";
+  ctx.fillText(p.name, p.x, p.y - 58);
+  ctx.font = "11px sans-serif"; ctx.fillStyle = "#9fb4d4";
+  ctx.fillText(open ? (c.desc || "") : "尚未开启", p.x, p.y + 56);
+  // 读条环（进圈后）
+  if (w.abyssProgress > 0) {
+    var frac = Math.min(1, w.abyssProgress / p.channel);
+    ctx.strokeStyle = glow; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 42, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = glow; ctx.font = "bold 13px sans-serif";
+    ctx.fillText(Math.floor(frac * 100) + "%", p.x, p.y - 74);
+  }
+  ctx.restore();
+  // 触屏点选提示（圈内 → 金环 + 「点击进入」；与 cityNpcTap/renderCityNpcTapHint 同款视觉）
+  if (w.abyssReady && open) renderAbyssTapHint(ctx, p, c);
+}
+
+/** 深渊门触屏提示环（圈内且未读满时提示可点击）。 */
+function renderAbyssTapHint(ctx, p, c) {
+  var r = (c && c.hintRadius) || ABYSS_FALLBACK.hintRadius;
+  var pulse = 0.5 + 0.5 * Math.sin(G.time * 6);
+  ctx.save();
+  ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(255,215,106," + (0.55 + 0.45 * pulse) + ")";
+  ctx.lineWidth = 4; ctx.stroke();
+  ctx.font = "bold 26px sans-serif"; ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(255,215,106," + (0.7 + 0.3 * pulse) + ")";
+  ctx.strokeStyle = "rgba(0,0,0,.75)"; ctx.lineWidth = 4;
+  ctx.strokeText("点击进入", p.x, p.y - r - 14);
+  ctx.fillText("点击进入", p.x, p.y - r - 14);
+  ctx.restore();
+}
+
+/** 深渊门触屏点选（与 cityNpcTap 同款结构，缺口最小化）。
+ *  门槛三重：① G.state === "city" ② G.abyssReady（已进圈）③ 点击点落在门 tapRadius 内。
+ *  命中：已就绪则立即进入无尽世界；未就绪 toast 提示。返回 true = 本次点击已消费。 */
+function abyssPortalTap(clientX, clientY) {
+  if (G.state !== "city") return false;
+  var w = G.activeWorld, p = w && w.abyssPortal;
+  if (!p || !w.abyssReady) return false;            // 圈外不响应（避免隔屏误点）
+  var pt = screenToWorld(clientX, clientY);
+  if (!pt) return false;
+  var c = abyssCfg();
+  var r = c.tapRadius || ABYSS_FALLBACK.tapRadius;
+  if (U.dist(pt.x, pt.y, p.x, p.y) > r) return false;
+  enterEndless();
+  return true;
+}
+
+/* ---------- 进出门流程 ---------- */
+
+/** 进入无尽世界：首次弹规则说明（存档标记 endlessSeen）；守卫 Endless 就绪。
+ *  - 就绪：切 G.state="playing"，创建世界 + begin，置 G.inEndless=true；
+ *  - 未就绪：toast 提示并留在主城（安全降级，不抛错）。 */
+function enterEndless() {
+  if (G.state !== "city") return false;
+  // 首次进入：先记存档标记（G.saved.endlessSeen，跨会话只弹一次）。
+  // ⚠️ 面板弹窗**不能在这里做**——下方 Game.startRun 会调 UI.showHudOnly() 把 screen 层
+  //    切走（真机复现：说明面板一闪而过/根本看不到）。挪到本函数末尾再弹。
+  var firstTime = markEndlessSeen();
+  if (!endlessReady()) {
+    if (typeof UI !== "undefined" && UI.toast) UI.toast("深渊尚未开启（无尽模式未就绪）", "bad");
+    return false;
+  }
+  /* ⚠️ 集成修复（21.15）：必须先建**完整 run 上下文**再换世界。
+   * 原实现只 new 了 World，没建 G.run/G.player/G.team → 渲染与 update 循环读
+   * `G.run.weaponInv` 每帧抛 TypeError（真机复现：黑屏 + 控制台刷屏）。
+   * 复用 startRun 的上下文构建（队伍/局外等级加成/背包/芯片/模块/recomputeWeapon），
+   * 再把 activeWorld 换成无尽世界 —— 与正式关卡开局的字段集合严格一致，杜绝漏项。 */
+  var team = (G.team && G.team.length) ? G.team : [CFG.heroes[0]];
+  /* startRun 会读 `G.levelCfg.mapW/mapH/name`（关卡表产物）——无尽模式没有「关卡」，
+   * 故先兜一个**深渊虚拟关卡**（尺寸用城市地图尺寸，名字「无尽深渊」），
+   * 只供 startRun 建世界与提示文案使用；随后 activeWorld 立刻被无尽世界覆盖。 */
+  if (!UI.selectedLevel && typeof UI !== "undefined") UI.selectedLevel = CFG.levels[0];
+  var prevLevelCfg = G.levelCfg;
+  G.levelCfg = {
+    name: (CFG.city && CFG.city.abyssPortal && CFG.city.abyssPortal.name) || "无尽深渊",
+    mapW: (CFG.city && CFG.city.mapW) || 1920,
+    mapH: (CFG.city && CFG.city.mapH) || 960,
+  };
+  if (typeof Game !== "undefined" && Game && typeof Game.startRun === "function") {
+    try {
+      Game.startRun(team);          // 建 run/player/mainWorld/队友/技能解析；末尾会置 state="playing"
+    } catch (e) {
+      // startRun 依赖外部状态（UI.selectedLevel 等）缺失时降级：保底建 run，别让入口崩掉
+      G.heroDef = team[0];
+      G.run = createRun(G.heroDef);
+      G.player = new Player(G.levelCfg.mapW / 2, G.levelCfg.mapH / 2);
+      G.state = "playing";
+      if (typeof console !== "undefined" && console.warn) console.warn("enterEndless: startRun 降级", e && e.message);
+    }
+  } else {
+    // 极端降级（无 Game 宿主时）：至少补齐 run，避免渲染崩
+    G.heroDef = team[0];
+    G.run = createRun(G.heroDef);
+    G.player = new Player(G.levelCfg.mapW / 2, G.levelCfg.mapH / 2);
+    G.state = "playing";
+  }
+  if (prevLevelCfg) G.levelCfg = prevLevelCfg;   // 还原（无尽世界不依赖关卡表）
+  var W = (CFG.city && CFG.city.mapW) || 1920;
+  var H = (CFG.city && CFG.city.mapH) || 960;
+  var world = Endless.makeWorld(W, H);
+  G.endlessWorld = world;
+  G.activeWorld = world;          // ★ 覆盖 startRun 建的 mainWorld：无尽世界接管
+  G.mainWorld = world;            // 与 activeWorld 同步，避免队友/无人机的世界归属判断落空
+  G.inEndless = true;
+  Endless.begin(world);
+  // 首帧对齐：清空主城残留交互状态
+  G.cityNpcOpen = null; G.cityNpcNear = null;
+  var hud = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("hud") : null;
+  if (hud && hud.classList) hud.classList.remove("city-mode");
+  if (typeof UI !== "undefined" && UI.toast) UI.toast("◈ 踏入深渊之门——无尽试炼开始！", "gold");
+  // 首次规则说明：放在所有 UI 切换**之后**弹（startRun 的 showHudOnly 会顶掉 screen 层），
+  // 保证玩家真正看到说明面板（21.15 集成修复，endless_flow_test 七2 曾抓到此缺陷）。
+  if (firstTime && typeof UI !== "undefined" && UI.showEndlessIntro) UI.showEndlessIntro();
+  return true;
+}
+
+/** 无尽模式结算 → 返回主城（由 UI 结算面板「返回主城」/「再来一次」调用）。
+ *  - 复用撤离结算口径：G.lastSettleReport + buildCrystalReport 由调用方在结算前写入；
+ *  - 清无尽世界/旗标，回到主城（Hub）。 */
+function exitEndlessToCity() {
+  G.inEndless = false;
+  G.endlessWorld = null;
+  if (typeof Endless !== "undefined" && Endless && typeof Endless.reset === "function") {
+    Endless.reset();
+  }
+  if (typeof Game !== "undefined" && Game && typeof Game.returnToCity === "function") {
+    Game.returnToCity();
+  } else if (typeof Game !== "undefined" && Game && typeof Game.enterCity === "function") {
+    Game.enterCity();
+  }
+  return true;
+}
+
+/** 无尽模式「再来一次」：结算后不回国、直接重开一局。 */
+function restartEndless() {
+  if (typeof Game !== "undefined" && Game && typeof Game.enterCity === "function") {
+    Game.enterCity();          // 先回主城清场
+  }
+  return enterEndless();       // 立即重进（数值置零由 Endless.reset/begin 保证）
+}
+
+/** 无尽模式死亡结算：读 Endless.settle() → 结晶入存档 → 弹结算面板。
+ *  Endless 未就绪时用安全兜底（波次/击杀读 world 或 run，结晶 0），保证面板总能弹、不抛错。 */
+function showEndlessSettle() {
+  G.state = "settled";
+  var s = { wave: 0, kills: 0, crystals: 0 };
+  if (typeof Endless !== "undefined" && Endless && typeof Endless.settle === "function") {
+    try { s = Endless.settle() || s; } catch (e) { s = { wave: 0, kills: 0, crystals: 0 }; }
+  }
+  s.wave = Number(s.wave) || 0;
+  s.kills = Number(s.kills) || 0;
+  s.crystals = Number(s.crystals) || 0;
+  // 结晶入局外存档（与撤离/死亡同一货币：进化结晶）
+  if (s.crystals > 0 && typeof Meta !== "undefined" && Meta && Meta.data) {
+    Meta.data.crystals = (Meta.data.crystals || 0) + s.crystals;
+    if (Meta.commit) Meta.commit();
+  }
+  if (typeof SFX !== "undefined" && SFX.play) SFX.play("death");
+  // 复用撤离结算明细写入 G.lastSettleReport（第 3 参表示死亡、非撤离）
+  if (typeof publishCrystalReport === "function") {
+    try { publishCrystalReport(s.kills, false, false, 0); } catch (e) { /* 明细失败不影响结算 */ }
+  }
+  // 21.15 修复（接缝时序）：先把无尽口径的报告对齐**再**渲染面板。
+  // 原时序：publish(boss=0) → UI 渲染（明细行读旧报告 → 「本局合计 +0」）→ hook 才对齐报告 →
+  // 面板文本与真实入账不一致（endless_e2e 截图抓到「获得 +16 / 合计 +0」并存）。
+  // endlessRewardOnSettle 在 main.js 末尾区块（🅓），运行时已定义，typeof 守卫兼容桩环境。
+  if (typeof endlessRewardOnSettle === "function") {
+    try { endlessRewardOnSettle(); } catch (e) { /* 对齐失败不阻断结算 */ }
+  }
+  if (typeof UI !== "undefined" && UI.showEndlessSettle) UI.showEndlessSettle(s);
+  return s;
+}
+
+/* 首次进入标记：写存档 G.saved（先读后写，兼容老存档）。
+ * 返回 true 表示「本次是首次」（应弹说明）；已读过的返回 false。 */
+function markEndlessSeen() {
+  try {
+    var s = (typeof G !== "undefined") ? G.saved : null;
+    if (!s || typeof s !== "object") { if (typeof G !== "undefined") G.saved = s = {}; }
+    if (!s) return true;         // 无 G.saved（极端桩环境）：按首次处理，不抛错
+    if (s.endlessSeen) return false;
+    s.endlessSeen = true;
+    if (typeof Meta !== "undefined" && Meta && Meta.data && Meta.commit) {
+      Meta.data.endlessSeen = true;   // 同步落盘（若 Meta 存在）
+      Meta.commit();
+    }
+    return true;
+  } catch (e) { return true; }    // 写标记失败也不阻断流程（安全降级）
+}
+
+/* 查询：是否已看过说明（供测试/UI 判定）。 */
+function hasSeenEndlessIntro() {
+  try {
+    if (G && G.saved && G.saved.endlessSeen) return true;
+    if (typeof Meta !== "undefined" && Meta && Meta.data && Meta.data.endlessSeen) return true;
+    return false;
+  } catch (e) { return false; }
+}
+
+/* 21.15 深渊之门区块结束 */

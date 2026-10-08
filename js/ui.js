@@ -22,7 +22,8 @@ const UI = {
   /* ---------- 界面切换 ---------- */
   // 全部全屏界面（首页 / 关卡选择 / 角色选择 / 结算 / 死亡 / 帮助 / 设置 / 图鉴 / 告别）
   SCREEN_IDS: ["screen-main", "screen-level", "screen-character", "screen-settle", "screen-death",
-    "screen-help", "screen-settings", "screen-codex", "screen-chip-codex", "screen-goodbye"],
+    "screen-help", "screen-settings", "screen-codex", "screen-chip-codex", "screen-goodbye",
+    "screen-endless-settle", "screen-endless-intro"],
   showScreen(name) {
     for (const id of this.SCREEN_IDS) {
       const el = document.getElementById(id);
@@ -2537,3 +2538,65 @@ UI.grantSeasonExp = function (n) {
 };
 
 /* 21.6 赛季玩法 UI 区块结束 */
+
+/* ============================================================================
+ * ====== 21.15 无尽模式 UI（结算面板 + 首次规则说明）—— 独立区块（§5.45）======
+ * ----------------------------------------------------------------------------
+ * 本区块只负责界面：① 无尽死亡结算面板（到达波次 / 击杀数 / 获得结晶 + 两个按钮）
+ * ② 首次进入的规则说明面板（知道了）。所有 DOM 读写均空值保护（无 DOM 桩环境安全）。
+ * 数值/文案走 CFG.city.abyssPortal；结算明细复用 G.lastSettleReport + 现有 _crystalReportLine。
+ * ========================================================================== */
+
+UI.showEndlessSettle = function (settle) {
+  // settle = { wave, kills, crystals }（Endless.settle() 产出）；缺字段按 0 兜底
+  settle = settle || {};
+  var wave = Number(settle.wave) || 0;
+  var kills = Number(settle.kills) || 0;
+  var crystals = Number(settle.crystals) || 0;
+  var el = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("endless-settle-stats") : null;
+  if (el) {
+    el.innerHTML = '<span>到达波次 <b>' + wave + '</b></span><span>击杀数 <b>' + kills + '</b></span><span>◆ 获得结晶 <b>+' + crystals + '</b></span>' + this._crystalReportLine();
+  }
+  var title = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("endless-settle-title") : null;
+  if (title) {
+    var c = (typeof CFG !== "undefined" && CFG.city && CFG.city.abyssPortal) || {};
+    title.textContent = (c.settleTitle || "深渊结算") + " · 第 " + wave + " 波";
+  }
+  var scr = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("screen-endless-settle") : null;
+  if (scr && scr.classList) scr.classList.remove("hidden");
+  var hud = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("hud") : null;
+  if (hud && hud.classList) hud.classList.add("hidden");
+  return true;
+};
+
+UI.hideEndlessSettle = function () {
+  var scr = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("screen-endless-settle") : null;
+  if (scr && scr.classList) scr.classList.add("hidden");
+  return true;
+};
+
+UI.showEndlessIntro = function () {
+  var scr = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("screen-endless-intro") : null;
+  if (scr && scr.classList) scr.classList.remove("hidden");
+  var body = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("endless-intro-body") : null;
+  if (body) {
+    var c = (typeof CFG !== "undefined" && CFG.city && CFG.city.abyssPortal) || {};
+    body.innerHTML =
+      '<div class="tip-line">◆ 深渊之门 = 无尽模式：敌人按<b>波次</b>刷新，越打越多、越强。</div>' +
+      '<div class="tip-line">◆ 每波清空后短暂间隔进入下一波，同屏敌人上限随波次缓增。</div>' +
+      '<div class="tip-line">◆ 每波结算<b>进化结晶</b>，波次越高奖励越多。</div>' +
+      '<div class="tip-line">◆ 首版规则：<b>死亡即结算</b>，无主动撤离——尽情深潜吧。</div>' +
+      '<div class="tip-line">' + (c.desc || "进圈读条 2 秒 → 进入无尽深渊") + '</div>';
+  }
+  var hud = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("hud") : null;
+  if (hud && hud.classList) hud.classList.add("hidden");
+  return true;
+};
+
+UI.hideEndlessIntro = function () {
+  var scr = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("screen-endless-intro") : null;
+  if (scr && scr.classList) scr.classList.add("hidden");
+  return true;
+};
+
+/* 21.15 无尽模式 UI 区块结束 */

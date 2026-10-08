@@ -510,6 +510,24 @@ CFG.city = {
     { id: "NPC_SHOP",    name: "神秘商人", icon: "◈", color: "#e5a04b", fx: 0.14, fy: 0.62, func: "shop",     desc: "敬请期待" },
     // ⚠️ 商人原在 (0.50, 0.14) 顶部中央——与出征传送门 (w/2, 90) 判定圈完全重叠（中心仅差 44px），已移到西翼空位
   ],
+  /* ---------- 21.15 深渊之门（无尽模式入口）----------
+   * 独立命名空间 CFG.city.abyssPortal（不与并行代理的 CFG.endless 冲突：对方掌管波次/难度数值，
+   * 本块只管「入口与流程」的坐标 / 判定 / 文案 / 结算面板字段）。
+   * 位置：主城**右上区域**（避开既有 NPC：图鉴学者在 0.80/0.32、传送门在顶部中央 w/2）。
+   * 比例坐标范式与 NPC 的 fx/fy 一致，加载时换算成像素。 */
+  abyssPortal: {
+    name: "深渊之门",
+    fx: 0.86, fy: 0.60,          // 比例坐标（右上偏下，与图鉴学者 0.80/0.32 拉开纵向距离）
+    radius: 84,                  // 判定圈半径（进圈读条，绘制该圈）
+    channel: 2.0,                // 读条时长（秒）——与赛季/出征门同款 channel 范式
+    hintRadius: 104,             // 触屏点选提示环半径（略大于判定圈，照顾手指精度）
+    tapRadius: 116,              // 点击本体判定半径（触屏点选，与 cityNpcTap 同款口径）
+    color: "#ff7a3c",            // 金红主色（与赛季门区分；出征门是绿 #7de08a）
+    glow: "#ffd76a",             // 金色脉冲光环
+    desc: "进圈读条 2 秒 → 进入无尽深渊",
+    ready: true,                 // 未就绪（另一代理 endless 未落地）时置 false → 门显示"尚未开启"
+    settleTitle: "深渊结算",
+  },
 };
 
 /* ---------- 玩家档案（主城形象：更名 / 头像皮肤 / 称号） ----------
@@ -1404,6 +1422,9 @@ CFG.elites = {
                           //   避免"22 只 × 20% ≈ 4 只随机词缀精英 + 3 只 ED"导致精英过载；改回 0.20 可恢复）
   affixCount: [1, 2],     // 词缀条数范围
   sizeMul: 1.35,          // 体型放大（在 monsterSizeMul 基础上）
+  /* 21.15 🅒：精英血条宽度（像素）。普通小怪已去血条（用户拍板），仅 Boss/精英保留；
+   * 精英用比旧普通怪 34 更醒目的 44，Boss 仍是固定 110（见 game.js 血条块）。 */
+  barWidth: 44,
   affixes: {
     "坚韧": { hpMul: 3.0, defAdd: 2, color: "#e5a04b" },
     "迅捷": { spdMul: 1.5, atkMul: 1.1, color: "#5ad0ff" },
@@ -1976,4 +1997,36 @@ CFG._validateLevelCurve = function () {
     issues.push("自检过程异常: " + (e && e.message ? e.message : String(e)));   // 防御：绝不向外抛
   }
   return { ok: issues.length === 0, issues: issues };
+};
+
+/* ============================================================================
+ * 21.15 无尽模式（深渊）—— 数值曲线总表（CFG.endless，单一事实源）
+ * ----------------------------------------------------------------------------
+ * 定位：无尽模式（世界 kind="endless"）的**全部可调数值**集中于此。
+ *   项目铁律：逻辑里不写死任何可调数值，波次曲线一律从本区块读取。
+ * 实现：`js/endless.js` 的 Endless 对象消费本表（消费方只读、不修改本表）。
+ *
+ * 曲线口径（首版占位曲线，用户已确认「后期会调」，改数值只动本表）：
+ *   · 同屏上限   capFor(wave) = min(capMax, capBase + wave * capPerWave)   —— 波 1≈52，波 10≈160，波 22+ 达 300
+ *   · 血量倍率   hpMul(wave)  = 1 + (wave - 1) * hpMulPerWave              —— 波 1 = 1.00（基准）
+ *   · 伤害倍率   dmgMul(wave) = 1 + (wave - 1) * dmgMulPerWave             —— 波 1 = 1.00（基准）
+ *   · 每波结晶   waveReward(wave) = round(reward.base * wave ^ reward.exp) —— 波次越高奖励越多
+ *   · 宝箱掉落   每 chestEvery 波额外掉一枚宝箱（wave % chestEvery === 0）
+ * ========================================================================== */
+CFG.endless = {
+  waveGap: 3.0,             // 波次间隔（秒）：本波清空后 → 等待该时长 → 进入下一波
+  capBase: 40,              // 同屏上限基数
+  capPerWave: 12,           // 同屏上限每波增量（capFor = capBase + wave * capPerWave，再按 capMax 封顶）
+  capMax: 300,              // 同屏上限硬顶（性能红线）
+  hpMulPerWave: 0.18,       // 敌人血量倍率每波增量（线性成长）
+  dmgMulPerWave: 0.06,      // 敌人伤害倍率每波增量（线性成长）
+  reward: { base: 8, exp: 1.15 },   // 每波结晶 = round(base * wave ^ exp)
+  chestEvery: 5,            // 每 N 波额外掉一枚宝箱（wave % chestEvery === 0）
+  spawnRingMargin: 100,     // 刷怪点距摄像机可视边界的外扩像素（从视野外生成，避免"凭空出现"）
+  firstWaveDelay: 1.5,      // 进入无尽世界到第 1 波的延迟（秒）
+  mapW: 1920,               // 无尽竞技场宽（首版固定竞技场，不做随机地图生成）
+  mapH: 1920,               // 无尽竞技场高
+  spawnBatch: 12,           // 单次刷怪"分批"的最大结点数（每帧最多补几个刷怪点，防一帧峰值）
+  monsterLevelBase: 1,      // 怪物等级基准（Monster 构造第 4 参 lv）
+  monsterLevelPerWave: 0.35,// 怪物等级每波增量（低等级增益，强度主曲线仍由 hpMul/dmgMul 表达）
 };

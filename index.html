@@ -71,7 +71,7 @@ var APP_VERSION = "20261015";
         </div>
         <div>
           <h3>桌面端操作（键盘 / 鼠标）</h3>
-          <p><b>WASD / 方向键</b> — 移动（队长带队，队友蛇形跟随）</p>
+          <p><b>移动</b> — <span class="kbd-desktop"><b>WASD / 方向键</b>（队长带队，队友蛇形跟随）</span><span class="kbd-touch">左下摇杆（左半屏按下即为中心，灵敏度可在设置里调）</span></p>
           <p><b>主动技能</b> — 冷却与能量就绪后自动释放（19.1 移除普攻，技能即唯一输出；无需按键）</p>
           <p><b>B</b> — 打开 / 关闭背包与武器栏</p>
           <p><b>E</b> — 撤离点查看进度 / 工匠世界开关面板</p>
@@ -213,6 +213,9 @@ var APP_VERSION = "20261015";
   <div id="hud" class="hidden">
     <div id="city-avatar-bar" class="hidden-in-battle"></div>
     <div id="hud-tl">
+      <!-- 21.15 🅒 无尽模式 HUD 信息区（深渊 · 第 N 波 / 击杀 / 同屏）；仅无尽世界显示。
+           实际内容由 canvas 绘制（js/hud_endless.js），本容器作锚点/语义占位与测试 id。 -->
+      <div id="hud-endless-info" class="hidden" aria-live="polite"></div>
       <!-- 技能冷却环（19.3：能量条退役 → 冷却制）。冷却中就绪比例填充，就绪时常亮显示 READY -->
       <div id="hud-skill-cd" class="ready" title="主动技能冷却（冷却中就绪比例填充 / 就绪时 READY）">
         <svg viewBox="0 0 80 80"><circle class="cd-track" cx="40" cy="40" r="34"/><circle id="skill-cd-arc" class="cd-arc" cx="40" cy="40" r="34"/></svg>
@@ -431,6 +434,27 @@ var APP_VERSION = "20261015";
     </div>
   </div>
 
+  <!-- ====== 21.15 无尽模式 · 首次规则说明（每个存档只弹一次） ====== -->
+  <div id="screen-endless-intro" class="screen hidden">
+    <div class="panel">
+      <h2>深渊之门 · 规则说明</h2>
+      <div id="endless-intro-body"></div>
+      <div class="btn-row"><button id="btn-endless-intro-ok" class="btn primary">知道了</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 21.15 无尽模式 · 结算面板（死亡即结算） ====== -->
+  <div id="screen-endless-settle" class="screen hidden">
+    <div class="panel settle-panel">
+      <h2 id="endless-settle-title">深渊结算</h2>
+      <div id="endless-settle-stats" class="stats"></div>
+      <div class="btn-row">
+        <button id="btn-endless-retry" class="btn">再来一次</button>
+        <button id="btn-endless-city" class="btn primary">返回主城</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ====== 21.6 赛季玩法（占位）：赛季大厅（99 关通关后开放，当前仅占位面板） ====== -->
   <div id="screen-season" class="screen hidden">
     <div class="panel">
@@ -485,6 +509,10 @@ var APP_VERSION = "20261015";
 <script src="js/game.js?v=20261015"></script>
 <!-- 21.12 性能压测场景（独立模块，无 ?stress 参数时零开销；依赖 game.js 的 World/Monster/Bullet 类） -->
 <script src="js/stress.js?v=20261015"></script>
+<!-- 21.15 🅐 无尽模式核心（波次/刷怪/难度曲线；依赖 game.js 的 World/Monster/Player 类，须在 game.js 之后） -->
+<script src="js/endless.js?v=20261015"></script>
+<!-- 21.15 🅒 无尽模式 HUD 信息区（canvas 绘制左上角三项：波次/击杀/同屏）；依赖 game.js 的 G（render 内单行桥接） -->
+<script src="js/hud_endless.js?v=20261015"></script>
 <script src="js/ui.js?v=20261015"></script>
 <script src="js/main.js?v=20261015"></script>
 <!-- 20.6 JS 未加载兜底：main.js 之后立刻执行；若 window.Game 未定义（脚本全部/部分加载失败）

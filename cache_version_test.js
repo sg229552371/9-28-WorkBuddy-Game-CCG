@@ -33,7 +33,7 @@ check("① 版本串为 8 位日期格式", /^\d{8}$/.test(VER));
 
 // 全部 js 引用 + css 引用：统一带 ?v= 且值一致
 // 21.12 起新增 js/stress.js（性能压测场景），故改为「清单驱动」避免每次都硬编码数量。
-const VER_ASSETS = ["js/config.js", "js/core.js", "js/pool.js", "js/game.js", "js/stress.js", "js/ui.js", "js/main.js"];
+const VER_ASSETS = ["js/config.js", "js/core.js", "js/pool.js", "js/game.js", "js/stress.js", "js/endless.js", "js/hud_endless.js", "js/ui.js", "js/main.js"];
 for (const f of VER_ASSETS) {
   check("① " + f + " 引用带 ?v=" + VER, html.indexOf('<script src="' + f + "?v=" + VER + '"') >= 0);
 }

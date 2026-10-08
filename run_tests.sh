@@ -29,7 +29,11 @@ stress_test \
 render_opt_test \
 spatial_test \
 pool_test \
-quality_tier_test"
+quality_tier_test \
+endless_test \
+endless_flow_test \
+hud_endless_test \
+endless_reward_test"
 
 # --- 选 node：优先 PATH 里的 node，其次本机 WorkBuddy 托管运行时 ---
 NODE="${NODE:-}"

@@ -1437,3 +1437,44 @@ body.portrait #level-list { grid-template-columns: repeat(3, 1fr); }
 body.portrait .grid .cell { width: 40px; height: 40px; }
 
 /* ---------- 20.10 全局苹果风 结束 ---------- */
+
+/* ============================================================
+ * 21.15 🅒 无尽模式 HUD 信息区 + 帮助页文案触屏化
+ * ------------------------------------------------------------
+ * 追加区块，不改动上方既有规则（§5.45 文件末尾独立区块）。
+ * 本区块包含三处必须同步的规则（坑 1）：
+ *   ① 主规则（桌面默认）
+ *   ② @media (orientation: portrait) 竖屏块（纯 CSS 兜底）
+ *   ③ body.portrait 钩子（JS 由 UI.applyOrientation 挂类，双保险）
+ * ============================================================ */
+
+/* ---- 无尽模式 HUD 信息区（#hud-endless-info）----
+ * 实际内容由 canvas 绘制（js/hud_endless.js，屏幕左上角）；本容器作语义锚点。
+ * 默认隐藏：#hud 非无尽时由 JS 保持，无尽时不占位（canvas 已在画布上画好）。 */
+#hud-endless-info {
+  display: none;                 /* canvas 负责可见内容，DOM 容器仅作锚点/测试 id 与无障碍朗读 */
+  position: absolute;
+  left: calc(var(--sa-left) + 12px);
+  top: calc(var(--sa-top) + 12px);
+  pointer-events: none;
+  color: #e8c574; font-size: 12px; line-height: 1.5; white-space: pre-line;
+}
+
+/* ---- 帮助页文案：桌面 / 触屏 双段切换 ----
+ * 默认（桌面）：显示 .kbd-desktop，隐藏 .kbd-touch。 */
+.kbd-desktop { display: inline; }
+.kbd-touch { display: none; }
+
+/* ② 竖屏媒体查询块（纯 CSS 兜底）：竖屏多为触屏 → 换触屏话术 */
+@media (orientation: portrait) {
+  .kbd-desktop { display: none; }
+  .kbd-touch { display: inline; }
+  /* HUD 信息区在竖屏同锚点（安全区已由变量覆盖），仅字号略收 */
+  #hud-endless-info { font-size: 11px; }
+}
+
+/* ③ body.portrait 钩子（JS 路径双保险，与 ② 等效） */
+body.portrait .kbd-desktop { display: none; }
+body.portrait .kbd-touch { display: inline; }
+body.portrait #hud-endless-info { font-size: 11px; }
+
