@@ -5,10 +5,24 @@
 > 本机技能目录 `~/.workbuddy/skills/` 与 `.workbuddy/`（记忆）**都不在仓库里**，
 > 换设备不会同步 —— 所以关键知识一律沉淀到本文件与 `G_docs/` 内。
 
-**线上试玩（手机浏览器直接打开）：** https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
-**当前线上预览（沙箱发布，始终最新）：** https://ae6c0d4fb9b5c352d.app.workbuddy.host
+**线上试玩（唯一正式入口，push 后 1~2 分钟自动生效）：** https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
 
-> ⚠️ **代码以 `/workspace/9-28-WorkBuddy-Game-CCG` 工作区为准，不要假设 GitHub 是最新的。**
+> ### 路径与链接统一约定（2026-10-09 起）
+> | 项 | 值 |
+> |---|---|
+> | GitHub 仓库（唯一真源） | `https://github.com/sg229552371/9-28-WorkBuddy-Game-CCG`（私有 · `main`）|
+> | 云端沙箱工作区 | `/workspace/9-28-WorkBuddy-Game-CCG` |
+> | PC 本地工作区 | `D:/AI-game-All/HTML_TEST_002` |
+> | **正式试玩链接** | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` |
+> | 本地预览 | `python3 -m http.server 8123` → `http://127.0.0.1:8123/index.html` |
+> | 备用站点（手动） | WorkBuddy「发布为应用」——独立部署，**只有明确要求时才重新发布** |
+> | 旧线归档分支 | `archive/pc-line-18`（方案 A 替换前的 18 提交，随时可回）|
+>
+> ⚠️ **历史遗留的三方链接已作废**：`ae6c0d4fb9b5c352d.app.workbuddy.host`（旧沙箱域名，已失效）。
+> 今后一律以上表为准，**不要再写其它试玩链接**。
+
+> ⚠️ **代码以 GitHub `main` 为唯一真源**：云端/PC 各自 `push` 到远端收敛，不要假设任一侧本地必然最新。
+> 协作方式：改完 → `bash push.sh "说明"` → 另一端 `git pull`。
 > 原因与处理见 §0.1。
 
 ---
@@ -978,8 +992,8 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 
 - **门禁：46 项测试 2081 断言全绿 bad=0**；git 21 提交，最新 `450c3c0`（21.1）
 - 全部历史 patch 在 /workspace（增量 `00NN-increment-*` + 全量 `00NN-all-in-one-vNN`）
-- 线上发布：WorkBuddy「发布为应用」skill，链接恒定 `https://ae6c0d4fb9b5c352d.app.workbuddy.host`
-  （每次发布覆盖同链接；GitHub 仍是 `git am` + push，见 推送指南.md）
+- 线上发布：**正式入口 = GitHub Pages** `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/`
+  （push 后自动生效；WorkBuddy「发布为应用」为备用站点，仅在明确要求时手动重发）
 
 ### 10.2 每轮一句话
 

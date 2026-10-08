@@ -27,7 +27,7 @@ python3 -m http.server 8123
 ├── G_docs/             # 设计文档（随仓库携带的「随身上下文」）
 │   ├── dev_guide.md    # 开发指南：铁律、已踩的坑、测试基线 ← 新会话先读这份
 │   └── game_design_proposal.md   # 游戏设计提案（规则与数值）
-├── *_test.js           # 测试（37 个，见 tests/README.md 分类索引）
+├── *_test.js           # 测试（63 个，见 tests/README.md 分类索引）
 ├── run_tests.sh        # 全量测试运行器（判绿 = 每项 exit=0 且 bad=0）
 └── push.sh             # 测试全绿才提交并推送 GitHub
 ```
@@ -35,7 +35,7 @@ python3 -m http.server 8123
 ## 测试
 
 ```bash
-bash run_tests.sh          # 全量：37 项，约 1700+ 条断言
+bash run_tests.sh          # 全量：63 项，2928 条断言
 node smoke_test.js         # 单个测试
 ```
 
@@ -55,4 +55,22 @@ node smoke_test.js         # 单个测试
 
 ## 线上试玩
 
-发布由「发布为应用」流程生成分享链接；历史链接见 `G_docs/dev_guide.md`。
+**正式入口（唯一）：** <https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/>
+—— 推送到 `main` 后 1~2 分钟自动生效，无需任何发布动作。
+
+| 用途 | 地址 |
+|---|---|
+| 正式试玩链接 | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` |
+| GitHub 仓库（唯一真源） | `https://github.com/sg229552371/9-28-WorkBuddy-Game-CCG`（私有）|
+| PC 本地工作区 | `D:/AI-game-All/HTML_TEST_002` |
+| 云端沙箱工作区 | `/workspace/9-28-WorkBuddy-Game-CCG` |
+| 本地预览 | `python3 -m http.server 8123` → <http://127.0.0.1:8123/index.html> |
+| 备用站点（手动） | WorkBuddy「发布为应用」——独立部署，**只在明确要求时重新发布** |
+
+> ⚠️ 旧沙箱域名 `ae6c0d4fb9b5c352d.app.workbuddy.host` **已失效**，不要再使用。
+
+## 换行符约定
+
+仓库内文本文件**一律 LF**（由 `.gitattributes` 强制）。
+部分测试用 `"\n"` 精确匹配多行代码块，CRLF 会导致门禁在 Windows 上误红。
+Windows 本地请保持 `git config core.autocrlf false`。

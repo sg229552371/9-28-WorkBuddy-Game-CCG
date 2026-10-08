@@ -195,4 +195,9 @@ if [ "$total_bad" -ne 0 ]; then
   exit 1
 fi
 echo "全绿"
-[ "$MODE" = "quick" ] && echo "（QUICK 模式：仅 core 套件 + 冒烟，未跑全量！）"
+if [ "$MODE" = "quick" ]; then
+  echo "（QUICK 模式：仅 core 套件 + 冒烟，未跑全量！）"
+fi
+# 显式 exit 0：否则末行 `[ cond ] && echo` 在条件为假时会让脚本返回 1，
+# 全量模式下即使 "全绿" 也会被 push.sh 误判为失败（历史 bug，2026-10-09 修）。
+exit 0

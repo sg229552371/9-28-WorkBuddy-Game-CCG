@@ -13,9 +13,11 @@
 |---|---|
 | 技术栈 | 纯静态 HTML + 全局脚本（**无模块化/无打包**）+ Canvas 2D |
 | 语言风格 | ES5/ES6、`"use strict"`、**中文注释**、`CFG` 收口所有数值 |
-| 工作区 | `/workspace/9-28-WorkBuddy-Game-CCG` |
-| 试玩链接 | `https://ae6c0d4fb9b5c352d.app.workbuddy.host` |
-| 门禁 | `bash run_tests.sh`（全量 8.6s / 2661 断言）· `bash run_tests.sh --quick`（3.4s）|
+| GitHub 仓库（唯一真源） | `https://github.com/sg229552371/9-28-WorkBuddy-Game-CCG`（私有 · `main`）|
+| 工作区（云端沙箱） | `/workspace/9-28-WorkBuddy-Game-CCG` |
+| 工作区（PC 本地） | `D:/AI-game-All/HTML_TEST_002` |
+| 试玩链接（正式·唯一） | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` |
+| 门禁 | `bash run_tests.sh`（全量 63 项 / 2928 断言）· `bash run_tests.sh --quick` |
 | 交付 | 每轮：门禁全绿 → commit → patch → 发布 → 给的试玩链接 |
 
 ### 铁律（违反必出事）

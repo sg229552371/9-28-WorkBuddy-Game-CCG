@@ -1,0 +1,26 @@
+# ============================================================
+#  换行符统一约定（跨平台行为一致性）
+#
+#  背景：部分测试（如 boot_guard_test.js）用 "\n" 精确匹配多行代码块，
+#        Windows 下 core.autocrlf=true 会把仓库里的 LF 检出成 CRLF，
+#        导致匹配失败、门禁在本机误红（云端 Linux 全绿）。
+#  约定：仓库内文本文件一律 LF —— 云端 / PC / CI 三方行为完全一致。
+# ============================================================
+
+* text=auto eol=lf
+
+# 二进制素材：禁止换行符转换
+*.png    -text
+*.jpg    -text
+*.jpeg   -text
+*.gif    -text
+*.webp   -text
+*.ico    -text
+*.mp3    -text
+*.wav    -text
+*.ogg    -text
+*.bundle -text
+
+# 脚本强制 LF
+*.sh     text eol=lf
+*.bash   text eol=lf

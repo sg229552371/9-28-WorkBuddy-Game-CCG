@@ -2,7 +2,7 @@
 import json
 from playwright.sync_api import sync_playwright
 
-URL = "https://ae6c0d4fb9b5c352d.app.workbuddy.host/"
+URL = "https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/"
 
 with sync_playwright() as p:
     b = p.chromium.launch(args=["--no-sandbox", "--disable-gpu"])
