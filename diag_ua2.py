@@ -1,7 +1,7 @@
 # 多 WebView UA 实测：微信/QQ/支付宝内置浏览器 是否会被拦（对比 Safari）
 from playwright.sync_api import sync_playwright
 
-URL = "https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/"
+URL = "https://bagrogue-shooter.app.workbuddy.host/"
 
 UAS = {
     "iOS Safari": ("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 "

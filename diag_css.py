@@ -1,5 +1,5 @@
 from playwright.sync_api import sync_playwright
-URL = "https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/"
+URL = "https://bagrogue-shooter.app.workbuddy.host/"
 with sync_playwright() as p:
     b = p.chromium.launch(args=["--no-sandbox", "--disable-gpu"])
     ctx = b.new_context(viewport={"width":390,"height":844}, device_scale_factor=3, is_mobile=True, has_touch=True)

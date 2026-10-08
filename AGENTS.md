@@ -16,9 +16,12 @@
 | GitHub 仓库（唯一真源） | `https://github.com/sg229552371/9-28-WorkBuddy-Game-CCG`（私有 · `main`）|
 | 工作区（云端沙箱） | `/workspace/9-28-WorkBuddy-Game-CCG` |
 | 工作区（PC 本地） | `D:/AI-game-All/HTML_TEST_002` |
-| 试玩链接（正式·唯一） | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` |
+| **试玩链接（正式·主入口）** | `https://bagrogue-shooter.app.workbuddy.host/`（WorkBuddy 托管站 · 国内手机优先）|
+| 试玩链接（备用·自动最新） | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/`（Pages · push 即生效）|
 | 门禁 | `bash run_tests.sh`（全量 63 项 / 2928 断言）· `bash run_tests.sh --quick` |
-| 交付 | 每轮：门禁全绿 → commit → patch → 发布 → 给的试玩链接 |
+| 交付 | 每轮：门禁全绿 → commit → push → **重新发布托管站** → 给的试玩链接 |
+
+> ⚠️ **托管站是独立部署，不会自动跟随 GitHub**。用户以它为主入口 → 每轮改完 **必须重新发布**，否则手机上玩到的是旧版（此坑已踩过一次）。
 
 ### 铁律（违反必出事）
 

@@ -55,17 +55,20 @@ node smoke_test.js         # 单个测试
 
 ## 线上试玩
 
-**正式入口（唯一）：** <https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/>
+**主入口（手机优先）：** <https://bagrogue-shooter.app.workbuddy.host/>
+—— WorkBuddy 托管站，国内访问更稳；⚠️ **独立部署，每轮 push 后必须重新发布**。
+
+**备用入口（自动最新）：** <https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/>
 —— 推送到 `main` 后 1~2 分钟自动生效，无需任何发布动作。
 
 | 用途 | 地址 |
 |---|---|
-| 正式试玩链接 | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` |
+| **正式试玩链接（主入口）** | `https://bagrogue-shooter.app.workbuddy.host/`（push 后需重新发布 + 指纹复验）|
+| 备用试玩链接（自动最新） | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` |
 | GitHub 仓库（唯一真源） | `https://github.com/sg229552371/9-28-WorkBuddy-Game-CCG`（私有）|
 | PC 本地工作区 | `D:/AI-game-All/HTML_TEST_002` |
 | 云端沙箱工作区 | `/workspace/9-28-WorkBuddy-Game-CCG` |
 | 本地预览 | `python3 -m http.server 8123` → <http://127.0.0.1:8123/index.html> |
-| 备用站点（手动） | WorkBuddy「发布为应用」——独立部署，**只在明确要求时重新发布** |
 
 > ⚠️ 旧沙箱域名 `ae6c0d4fb9b5c352d.app.workbuddy.host` **已失效**，不要再使用。
 
