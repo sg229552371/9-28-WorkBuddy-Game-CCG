@@ -458,6 +458,41 @@ UI.showEndlessSettle = function (settle) {
       '<span>◆ 获得结晶 <b>+' + crystals + '</b></span>' +
       this._crystalReportLine();
   }
+  /* 21.20 逐角色伤害/承伤明细（与战绩榜同口径；读当前运行时实体，失败静默跳过） */
+  var teamBox = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("endless-settle-team") : null;
+  if (teamBox) {
+    var team = [];
+    try {
+      if (typeof G !== "undefined" && G && G.run) {
+        var hd = G.heroDef || G.run.heroDef || {};
+        if (G.player) team.push({ name: hd.name || "队长", dmg: G.player.dmgDealt || 0, taken: G.player.dmgTaken || 0 });
+        var comps = Array.isArray(G.run.companions) ? G.run.companions : [];
+        for (var ti = 0; ti < comps.length; ti++) {
+          var tc = comps[ti];
+          if (tc) team.push({ name: tc.name || ("队友" + (ti + 1)), dmg: tc.dmgDealt || 0, taken: tc.dmgTaken || 0 });
+        }
+      }
+    } catch (e) { team = []; }
+    if (team.length) {
+      var tDmg = 0, tTaken = 0;
+      for (var tj = 0; tj < team.length; tj++) { tDmg += team[tj].dmg; tTaken += team[tj].taken; }
+      function _pct(v, tot) { return tot > 0 ? Math.round(v / tot * 100) : 0; }
+      var rowsHtml = team.map(function (m, k) {
+        return '<tr><td class="ard-name">' + (k === 0 ? "★ " : "") + m.name + '</td>' +
+          '<td class="ard-num">' + m.dmg + '</td><td class="ard-pct">' + _pct(m.dmg, tDmg) + '%</td>' +
+          '<td class="ard-num taken">' + m.taken + '</td></tr>';
+      }).join("");
+      teamBox.innerHTML =
+        '<div class="es-team-title">队伍明细（伤害 / 占比 / 承伤）</div>' +
+        '<table class="abyss-rec-detail"><thead><tr><th>角色</th><th>伤害</th><th>占比</th><th>承伤</th></tr></thead>' +
+        '<tbody>' + rowsHtml + '</tbody>' +
+        '<tfoot><tr><td>合计</td><td class="ard-num">' + tDmg + '</td><td></td><td class="ard-num taken">' + tTaken + '</td></tr></tfoot></table>';
+      teamBox.classList.remove("hidden");
+    } else {
+      teamBox.innerHTML = "";
+      teamBox.classList.add("hidden");
+    }
+  }
   var title = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("endless-settle-title") : null;
   if (title) {
     var c = (typeof CFG !== "undefined" && CFG.city && CFG.city.abyssPortal) || {};

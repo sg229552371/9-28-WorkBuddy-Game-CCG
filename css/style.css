@@ -1534,11 +1534,44 @@ body.portrait #endless-settle-title { font-size: 19px; }
 /* 暂停菜单信息区 */
 #abyss-pause-info { margin-bottom: 10px; }
 
+/* ====== 21.20 战绩榜（#screen-abyss 复用）====== */
+/* 战绩列表改单列行式（层级的 4 列网格不再适用）；卡片样式类保留兼容旧测试 */
+#abyss-tier-list { grid-template-columns: 1fr; }
+.abyss-rec-row {
+  display: flex; align-items: center; gap: 10px;
+  background: #2a1c22; border: 1px solid #6b3a3a; border-radius: 8px;
+  padding: 6px 10px; cursor: pointer; transition: .15s; font-size: 12px;
+}
+.abyss-rec-row:hover { border-color: #ffd76a; background: #3a2530; }
+.abyss-rec-row.selected { border-color: #ff9a5c; background: #4a2a24; box-shadow: 0 0 0 1px #ff9a5c inset; }
+.abyss-rec-row .arr-rank { width: 22px; font-weight: bold; color: #ffd7a0; text-align: center; }
+.abyss-rec-row .arr-wave { flex: 1.2; font-weight: bold; color: #ffe4b8; }
+.abyss-rec-row .arr-time { flex: 1; color: #9fd0ff; }
+.abyss-rec-row .arr-kills { flex: 1; color: #ff8f6a; }
+.abyss-rec-row .arr-out { flex: 0 0 auto; padding: 1px 8px; border-radius: 10px; font-size: 10px; background: #33486b; color: #cfe0ff; }
+.abyss-rec-row .arr-out.ok { background: #1d3a2a; color: #7de08a; }
+.abyss-rec-row .arr-out.bad { background: #4a2222; color: #ff8a8a; }
+.abyss-rec-row .arr-date { flex: 0 0 auto; font-size: 10px; color: #8fa0b8; }
+.abyss-rec-empty { grid-column: 1 / -1; text-align: center; color: #8fa0b8; font-size: 12px; padding: 18px 0; }
+/* 逐角色明细表 */
+.abyss-rec-detail { width: 100%; border-collapse: collapse; margin-top: 3px; font-size: 11px; }
+.abyss-rec-detail th, .abyss-rec-detail td { padding: 2px 8px; text-align: right; }
+.abyss-rec-detail th:first-child, .abyss-rec-detail td:first-child { text-align: left; }
+.abyss-rec-detail thead th { color: #8fa0b8; font-weight: normal; border-bottom: 1px solid #33486b; }
+.abyss-rec-detail .ard-name { color: #ffe4b8; }
+.abyss-rec-detail .ard-num { color: #ffd76a; font-variant-numeric: tabular-nums; }
+.abyss-rec-detail .ard-num.taken { color: #ff9a7f; }
+.abyss-rec-detail .ard-pct { color: #9fb4cc; }
+.abyss-rec-detail tfoot td { border-top: 1px solid #33486b; color: #cfe0ff; font-weight: bold; }
+/* 结算面板队伍明细容器（21.20） */
+#endless-settle-team { margin-top: 8px; padding: 7px 10px; background: #1d2433; border: 1px solid #33486b; border-radius: 8px; }
+#endless-settle-team .es-team-title { font-size: 11px; color: #8fa0b8; margin-bottom: 2px; }
+
 /* 移动端（竖屏）适配：层级改 3 列，面板收窄 */
 @media (orientation: portrait) {
   .abyss-panel { width: 96vw; max-height: calc(100dvh - 16px); }
-  #abyss-tier-list { grid-template-columns: repeat(3, 1fr); }
+  #abyss-tier-list { grid-template-columns: 1fr; }
 }
-body.portrait #abyss-tier-list { grid-template-columns: repeat(3, 1fr); }
+body.portrait #abyss-tier-list { grid-template-columns: 1fr; }
 
 

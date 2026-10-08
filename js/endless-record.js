@@ -22,7 +22,39 @@ var EndlessRecord = (function () {
   /* abyss 缺省字段（CFG 缺失时的安全降级基线） */
   var ABYSS_KEYS = ["bestWave", "bestTier", "fastestSec", "firstExtract", "firstFinalBoss"];
   function freshAbyss() {
-    return { bestWave: 0, bestTier: 0, fastestSec: 0, firstExtract: false, firstFinalBoss: false, clearedTiers: {} };
+    return { bestWave: 0, bestTier: 0, fastestSec: 0, firstExtract: false, firstFinalBoss: false, clearedTiers: {}, runs: [] };
+  }
+
+  /* 战绩榜容量（CFG.endless.records.maxRuns 可调；缺省 10） */
+  function maxRuns() {
+    var r = (typeof CFG !== "undefined" && CFG && CFG.endless && CFG.endless.records) || {};
+    return (typeof r.maxRuns === "number" && r.maxRuns > 0) ? r.maxRuns : 10;
+  }
+
+  /* 21.20 逐角色队伍快照：队长（G.player，读 G.heroDef 名字）+ 全体队友。
+   * 字段 dmgDealt/dmgTaken 由 combat.js / game.js 的深渊统计埋点写入。 */
+  function snapshotTeam() {
+    var team = [];
+    try {
+      if (typeof G !== "undefined" && G && G.run) {
+        var hd = G.heroDef || (G.run.heroDef) || {};
+        if (G.player) team.push({ id: hd.id || "player", name: hd.name || "队长", dmg: G.player.dmgDealt || 0, taken: G.player.dmgTaken || 0 });
+        var comps = Array.isArray(G.run.companions) ? G.run.companions : [];
+        for (var i = 0; i < comps.length; i++) {
+          var c = comps[i];
+          if (c) team.push({ id: c.id || ("c" + i), name: c.name || ("队友" + (i + 1)), dmg: c.dmgDealt || 0, taken: c.dmgTaken || 0 });
+        }
+      }
+    } catch (e) { /* 快照失败不阻断结算 */ }
+    return team;
+  }
+
+  /* 战绩排序：到达波次降序，同波次耗时升序（快的在前） */
+  function sortRuns(runs) {
+    runs.sort(function (a, b) {
+      if (b.wave !== a.wave) return b.wave - a.wave;
+      return (a.elapsed || 0) - (b.elapsed || 0);
+    });
   }
 
   /* 无 Meta 时的内存兜底根（含 abyss + crystals，保证链路可测） */
@@ -57,6 +89,7 @@ var EndlessRecord = (function () {
       if (a[k] === undefined) a[k] = freshAbyss()[k];
     }
     if (!a.clearedTiers || typeof a.clearedTiers !== "object") a.clearedTiers = {};
+    if (!Array.isArray(a.runs)) a.runs = [];
     return a;
   }
 
@@ -113,6 +146,21 @@ var EndlessRecord = (function () {
       a.firstFinalBoss = true;
     }
 
+    /* 21.20 战绩榜：每局记录 { t, wave, kills, elapsed, extracted, reason, team[] }；
+     *  排序 = 波次降序 → 耗时升序；只保留前 maxRuns 条（默认 10）。 */
+    if (!Array.isArray(a.runs)) a.runs = [];
+    a.runs.push({
+      t: Date.now(),
+      wave: wave,
+      kills: Number(s.kills) || 0,
+      elapsed: elapsed,
+      extracted: extracted,
+      reason: s.reason || (extracted ? "extract" : null),
+      team: snapshotTeam(),
+    });
+    sortRuns(a.runs);
+    a.runs = a.runs.slice(0, maxRuns());
+
     commit();
     return a;
   }
@@ -150,8 +198,23 @@ var EndlessRecord = (function () {
       firstFinalBoss: !!a.firstFinalBoss,
       clearedTiers: a.clearedTiers || {},
       clearedCount: cleared,
+      runCount: Array.isArray(a.runs) ? a.runs.length : 0,   // 21.20 战绩条数（供摘要行）
       crystals: hasMeta() ? (Meta.data.crystals || 0) : (_fallback ? (_fallback.crystals || 0) : 0),
     };
+  }
+
+  /* 战绩榜只读副本（供 UI 渲染；深拷贝 team 数组防 UI 侧误写存档） */
+  function runs() {
+    var a = ensure();
+    return (a.runs || []).map(function (r) {
+      return {
+        t: r.t, wave: r.wave, kills: r.kills, elapsed: r.elapsed,
+        extracted: !!r.extracted, reason: r.reason || null,
+        team: (r.team || []).map(function (m) {
+          return { id: m.id, name: m.name, dmg: m.dmg || 0, taken: m.taken || 0 };
+        }),
+      };
+    });
   }
 
   return {
@@ -159,6 +222,7 @@ var EndlessRecord = (function () {
     onSettle: onSettle,
     grantFirstRewards: grantFirstRewards,
     best: best,
+    runs: runs,
     __isFallback: function () { return !hasMeta() && !!_fallback; },
   };
 })();

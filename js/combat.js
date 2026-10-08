@@ -424,21 +424,40 @@ function nearestMonster(w, x, y, exclude) {
   return bestLos || best;
 }
 
+/** 21.20 深渊逐角色伤害归属：从伤害来源实体（子弹 / 陷阱 / 英雄本体）沿 owner 链
+ *  解析出归属英雄（队长 G.player 或队友 companion）。深度上限 3（英雄→召唤物→召唤物子弹）。
+ *  仅深渊（G.inEndless）生效；解析失败返回 null（该次伤害不计入任何角色）。
+ *  返回英雄运行时实体（有 dmgDealt/dmgTaken 字段）。 */
+function abyssDamageHeroOf(ent) {
+  if (typeof G === "undefined" || !G || !G.inEndless || !G.run) return null;
+  let o = ent, depth = 0;
+  const comps = Array.isArray(G.run.companions) ? G.run.companions : [];
+  while (o && depth < 3) {
+    if (o === G.player) return G.player;
+    if (comps.indexOf(o) >= 0) return o;
+    o = o.owner; depth++;
+  }
+  return null;
+}
+
 function damageMonster(w, m, dmg, killer) {
   // Boss 阶段转换无敌（17.3）：转换窗口内不吃伤害（子弹照常被消耗，但 Boss 不掉血）
   if (m.phaseInvulnT > 0) { spawnBurst(m.x + U.rand(-m.r, m.r), m.y + U.rand(-m.r, m.r), "#ffffff", 2); return; }
   const cuDef = (G.run && G.run.curse) ? G.run.curse.defMul : 1;   // 诅咒附加的"防御 ×N"被动
   const real = Math.max(1, Math.round(dmg - m.d.def * cuDef - (m.eliteDef || 0)));
+  const hero = abyssDamageHeroOf(killer);                          // 21.20 逐角色伤害归属（非深渊恒 null）
   // 精英「护盾」词缀：先扣盾，盾破前本体不受损
   if (m.shield > 0) {
     m.shield -= real; m.flashT = 0.1;
     if (G.run && G.run.stats && m.d.type !== "boss") G.run.stats.dmgDealt += real;
+    if (hero) hero.dmgDealt = (hero.dmgDealt || 0) + real;         // 打盾也计入该角色输出
     spawnBurst(m.x, m.y, "#6cb2ff", 4); SFX.play("hit");
     if (m.shield <= 0) { m.shield = 0; spawnBurst(m.x, m.y, "#6cb2ff", 14); }
     return;
   }
   m.hp -= real; m.flashT = 0.1;
   if (G.run && G.run.stats && m.d.type !== "boss") G.run.stats.dmgDealt += real;
+  if (hero) hero.dmgDealt = (hero.dmgDealt || 0) + real;           // 21.20 逐角色伤害统计
   spawnBurst(m.x, m.y, "#ffd76a", 4);
   SFX.play("hit");
   if (m.hp <= 0 && !m.dead) {
@@ -508,7 +527,8 @@ function parseWeightPool(str) {
   return out;
 }
 
-function explode(w, x, y, radius, dmg, side) {
+function explode(w, x, y, radius, dmg, side, owner) {
+  /* 21.20：owner = 伤害归属实体（英雄 / 带 owner 链的产物），仅深渊逐角色统计消费 */
   spawnBurst(x, y, "#6cb2ff", 26, radius);
   if (side !== "player") {   // Boss 爆炸等敌方爆炸 → 强震动
     G.shakeT = CFG.audio.shake.dur; G.shakeAmp = CFG.audio.shake.bossBoom;
@@ -522,7 +542,7 @@ function explode(w, x, y, radius, dmg, side) {
     seen.clear();
     for (const m of cands) {
       if (m.dead || seen.has(m)) continue;
-      if (U.dist(x, y, m.x, m.y) <= radius + m.r) { damageMonster(w, m, dmg); seen.add(m); }
+      if (U.dist(x, y, m.x, m.y) <= radius + m.r) { damageMonster(w, m, dmg, owner); seen.add(m); }
     }
   }
 }
@@ -1069,7 +1089,7 @@ function applyChainFromHit(w, bullet, src, n) {
     }
     if (!best) break;
     bullet.chainHit.add(best);
-    damageMonster(w, best, Math.max(1, Math.round(bullet.dmg * CHIP_CHAIN_DMG_MUL)));
+    damageMonster(w, best, Math.max(1, Math.round(bullet.dmg * CHIP_CHAIN_DMG_MUL)), bullet);   // 21.20 传 bullet → 伤害归属链锁英雄
     spawnChainFx(src.x, src.y, best.x, best.y);  // 瞬结（线段）表现
     linked++;
   }

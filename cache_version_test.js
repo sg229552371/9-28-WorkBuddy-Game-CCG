@@ -43,10 +43,10 @@ check("① 版本串为 8 位日期格式", /^\d{8}$/.test(VER));
 // 为保持门禁 PASS 计数与拆分前一致（2661），逐项断言仅覆盖原有历史文件，新增文件由
 // EXPECTED_V_COUNT 总数相等 + 统一版本断言覆盖（覆盖不缩水）。
 // 21.16 物理搬移（第二阶段）：ui.js 巨型对象字面量再拆出 ui-screens.js（Object.assign 合并），同样入 VER_ASSETS。
-// 21.19 深渊功能并行波次：新增 7 个独立模块（endless-tier/affix/arena/record/team + ui-abyss/ui-abyss-pause），
+// 21.20：endless-tier 已随层级系统退役下线；现存 6 个深渊模块：
 // 同样入 VER_ASSETS 参与「?v= 总数」聚合校验（逐项断言不新增，保持 PASS 计数口径稳定）。
 const VER_ASSETS = ["js/config.js", "js/core.js", "js/pool.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/stress.js", "js/endless.js", "js/hud_endless.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js", "js/quality.js", "js/rewards.js", "js/main.js",
-  "js/endless-tier.js", "js/endless-affix.js", "js/endless-arena.js", "js/endless-record.js", "js/endless-team.js", "js/ui-abyss.js", "js/ui-abyss-pause.js"];
+  "js/endless-affix.js", "js/endless-arena.js", "js/endless-record.js", "js/endless-team.js", "js/ui-abyss.js", "js/ui-abyss-pause.js"];
 const VER_ASSETS_LEGACY = ["js/config.js", "js/core.js", "js/pool.js", "js/game.js", "js/stress.js", "js/endless.js", "js/hud_endless.js", "js/ui.js", "js/main.js"];
 for (const f of VER_ASSETS_LEGACY) {
   check("① " + f + " 引用带 ?v=" + VER, html.indexOf('<script src="' + f + "?v=" + VER + '"') >= 0);

@@ -847,13 +847,10 @@ function abyssPortalTap(clientX, clientY) {
  *   选完由 btn-char-start 调 enterEndless(selectedChars)）；
  *   ⚠️ 宿主未提供时（旧版本 / 测试桩）**回落直接进入**，保证门始终可用。 */
 function enterAbyssFromPortal() {
-  /* 21.19：先进「深渊入口 / 选层」界面（大秘境层级选择）——选定层级后由 `#btn-abyss-start`
-   *   调 Endless.setTier + Game.enterAbyssCharSelect 继续；无 DOM（无头测试/桩）时回落选角。 */
-  var canSelect = (typeof document !== "undefined" && document.getElementById && document.getElementById("screen-abyss"));
-  if (canSelect && typeof UI !== "undefined" && UI && typeof UI.showAbyssSelect === "function") {
-    UI.showAbyssSelect();
-    return true;
-  }
+  /* 21.20：层级系统退役（用户口径「深渊大秘境不需要层级」）——进门**直通选角**
+   * （选完由 btn-char-start 调 enterEndless(selectedChars)）；
+   * 宿主未提供时（旧版本 / 测试桩）**回落直接进入**，保证门始终可用。
+   * 战绩榜入口移至深渊选角界面的「深渊战绩」按钮（#btn-abyss-records）。 */
   if (typeof Game !== "undefined" && Game && typeof Game.enterAbyssCharSelect === "function") {
     if (Game.enterAbyssCharSelect()) return true;
   }
@@ -935,10 +932,19 @@ function enterEndless(chars) {
   if (typeof seedTrail === "function") seedTrail(world, CFG.team.follow.seedDir[0], CFG.team.follow.seedDir[1]);
   if (typeof snapCompanions === "function") snapCompanions(world);
   Endless.begin(world);
-  /* 21.19：按当前层级抽取本局秘境词缀（层级由选层界面 Endless.setTier 设定；旧路径默认 1）。
-   * 必须在 begin 之后（begin/reset 会清空词缀，见 endless-affix.js 的钩子）。 */
+  /* 21.20：按固定层 1 抽取词缀（层级退役后 countAnchors(1)=0 条 → 词缀系统暂 dormant，
+   * CFG.endless.affixes 与整套 rollAffixes 保留，后续可作为独立难度钩子复用）。 */
   if (typeof Endless.rollAffixes === "function") {
-    try { Endless.rollAffixes(Endless.tier || 1); } catch (e) { /* 词缀失败不阻断进图 */ }
+    try { Endless.rollAffixes(1); } catch (e) { /* 词缀失败不阻断进图 */ }
+  }
+  /* 21.20 深渊逐角色伤害/承伤统计：每局清零（队长 + 全体队友）。
+   * 字段 dmgDealt / dmgTaken 挂在英雄运行时实体上（见 combat.js abyssDamageHeroOf）。 */
+  if (G.player) { G.player.dmgDealt = 0; G.player.dmgTaken = 0; }
+  if (G.run && Array.isArray(G.run.companions)) {
+    for (var ci = 0; ci < G.run.companions.length; ci++) {
+      var cm = G.run.companions[ci];
+      if (cm) { cm.dmgDealt = 0; cm.dmgTaken = 0; }
+    }
   }
   /* 21.17 深渊玩家强化：G.inEndless 置位后 computeStats() 才返回强化倍率，
    * 故必须**在置位之后**补满血 —— 否则 hpMax 已涨到 500 但当前 hp 仍是主线的残血，
@@ -1019,7 +1025,6 @@ function showEndlessSettle() {
         reason: (typeof G !== "undefined" && G) ? G.abyssSettleReason : null,
         timedOut: s.timedOut,
         bossKills: s.bossKills,
-        tier: (typeof Endless !== "undefined" && Endless && Endless.tier) || 0,
       });
       var _bonus = EndlessRecord.grantFirstRewards();
       if (_bonus > 0) s.crystals += _bonus;

@@ -313,6 +313,7 @@ class Player {
     const st = computeStats();
     // ignoreDef = true（21.1 毒圈比例伤害）：按最大生命的固定比例扣，不受防御影响
     const real = ignoreDef ? Math.max(1, Math.round(dmg)) : Math.max(1, Math.round(dmg - st.def));
+    if (G.inEndless) this.dmgTaken = (this.dmgTaken || 0) + real;   // 21.20 深渊逐角色承伤统计
     G.run.hp -= real;
     spawnFloat(this.x, this.y - 30, `-${real}`, "#ff7b7f");
     SFX.play("hurt");
@@ -392,6 +393,7 @@ function heroTakeDamage(w, h, dmg, ignoreDef) {
   if (h === G.player) { G.player.takeDamage(w, dmg, ignoreDef); return; }
   // ignoreDef = true（21.1 毒圈比例伤害）：不走防御减免，扣血量即传入值
   const real = ignoreDef ? Math.max(1, Math.round(dmg)) : Math.max(1, Math.round(dmg - companionStats(h).def));
+  if (G.inEndless) h.dmgTaken = (h.dmgTaken || 0) + real;   // 21.20 深渊逐角色承伤统计
   h.hp -= real;
   if (G.run.stats) G.run.stats.dmgTaken += real;
   spawnFloat(h.x, h.y - 30, `-${real}`, "#ff9a7f");
@@ -633,11 +635,11 @@ class Bullet {
     this.life -= dt;
     // 撞墙
     if (this.x < 0 || this.x > w.w || this.y < 0 || this.y > w.h || this.life <= 0) {
-      if (this.aoe > 0) explode(w, this.x, this.y, this.aoe, this.dmg, this.side);
+      if (this.aoe > 0) explode(w, this.x, this.y, this.aoe, this.dmg, this.side, this.owner);
       this.dead = true; return;
     }
     if (blockedByObstacle(w, this.x, this.y)) {
-      if (this.aoe > 0) explode(w, this.x, this.y, this.aoe, this.dmg, this.side);
+      if (this.aoe > 0) explode(w, this.x, this.y, this.aoe, this.dmg, this.side, this.owner);
       this.dead = true; return;
     }
     // 命中判定
@@ -647,7 +649,7 @@ class Bullet {
         if (m.dead || this.hitSet.has(m)) continue;
         if (U.dist(this.x, this.y, m.x, m.y) < m.r + 6) {
           this.hitSet.add(m);
-          if (this.aoe > 0) { explode(w, this.x, this.y, this.aoe, this.dmg, this.side); this.dead = true; return; }
+          if (this.aoe > 0) { explode(w, this.x, this.y, this.aoe, this.dmg, this.side, this.owner); this.dead = true; return; }
           damageMonster(w, m, this.dmg, this);
           applyLifesteal(this.owner, this.dmg);   // 吸血归属发射者（全队各自独立）
           applyBulletHitBehavior(w, this, m);     // 行为芯片（19.12）：burn 灼烧 / chain 链锁（bounce 走下方字段链路）
@@ -1228,7 +1230,7 @@ class World {
       } else {
         t.fuse -= dt;
         if (t.fuse <= 0) {
-          explode(this, t.x, t.y, t.radius, t.dmg, "player");
+          explode(this, t.x, t.y, t.radius, t.dmg, "player", t.owner);
           r.traps.splice(i, 1);
         }
       }

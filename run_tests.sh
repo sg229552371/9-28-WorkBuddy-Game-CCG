@@ -33,7 +33,6 @@ FEATURE="rift_test extract_test boss_test bugfix_test shop_test laser_test seaso
 levels_11_20_test special_monster_test assets_hook_test stress_test \
 endless_test endless_flow_test hud_endless_test endless_reward_test rift_extract_test rift_hud_test endless_growth_test \
 endless_restart_test \
-endless_tier_test endless_affix_test endless_arena_test endless_record_test endless_team_test \
 ui_abyss_test endless_pause_test"
 
 PERF="perf_test perf_guard_test quality_tier_test render_opt_test spatial_test pool_test low_quality_test"

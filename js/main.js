@@ -143,6 +143,9 @@ const Game = {
       startBtn.disabled = true;
       startBtn.textContent = `开始游戏（0/${CFG.team.maxSize}）`;
     }
+    // 21.20：「深渊战绩」按钮仅深渊来源（endless）显示；主线出征隐藏
+    const recBtn = document.getElementById("btn-abyss-records");
+    if (recBtn) recBtn.classList.toggle("hidden", this.charSelectFor !== "endless");
     UI.showScreen("screen-character");
   },
   /* 进入主城（Hub）：创建主城世界与玩家形象；无战斗系统加载（队友/弹道/撤离不进主城） */
@@ -296,6 +299,7 @@ const Game = {
     on("btn-endless-intro-ok", () => { if (UI.hideEndlessIntro) UI.hideEndlessIntro(); });
     on("btn-endless-city", () => { if (UI.hideEndlessSettle) UI.hideEndlessSettle(); exitEndlessToCity(); });
     on("btn-endless-retry", () => { if (UI.hideEndlessSettle) UI.hideEndlessSettle(); restartEndless(); });
+    on("btn-abyss-records", () => { if (typeof UI !== "undefined" && UI.showAbyssRecords) UI.showAbyssRecords("charSel"); });
     /* ---- 21.19 深渊新界面按钮绑定（选层界面 / 暂停菜单；模块未加载时安全跳过） ---- */
     if (typeof UI.initAbyssSelect === "function") UI.initAbyssSelect();
     if (typeof UI.initAbyssPause === "function") UI.initAbyssPause();
