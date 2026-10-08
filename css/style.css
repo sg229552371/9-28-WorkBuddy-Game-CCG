@@ -1488,3 +1488,57 @@ body.portrait #endless-settle-title { font-size: 19px; }
 /* ① 主规则（桌面默认）对应补充：结算标题常态字号（三处之一） */
 #endless-settle-title { font-size: 20px; }
 
+/* ============================================================================
+ * 21.19 深渊「入口 / 选层」界面 + 「暂停菜单」样式（W0 契约冻结）
+ * --------------------------------------------------------------------------
+ * 结构复用 .level-panel 范式（flex 三段：头部 / 列表滚动 / 底部按钮），
+ * 层级卡片沿用 .level-card 视觉，仅补深渊专属配色与信息区。
+ * ========================================================================== */
+.abyss-panel {
+  width: min(560px, 94vw);
+  max-height: calc(100dvh - 16px);
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column;
+}
+.abyss-head { flex-shrink: 0; }
+.abyss-head h2 { margin-bottom: 3px; font-size: 15px; color: #ff9a5c; }
+.abyss-head .tip { margin-top: 0; margin-bottom: 7px; font-size: 10px; }
+/* 层级网格：4 列（层数多），卡片紧凑；超高时自身滚动 */
+#abyss-tier-list {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  align-content: start; padding: 2px;
+}
+.abyss-tier-card {
+  background: #2a1c22; border: 1px solid #6b3a3a; border-radius: 8px;
+  padding: 5px 6px; cursor: pointer; transition: .15s; line-height: 1.25;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.abyss-tier-card:hover { border-color: #ffd76a; background: #3a2530; }
+.abyss-tier-card.selected { border-color: #ff9a5c; background: #4a2a24; box-shadow: 0 0 0 1px #ff9a5c inset; }
+.abyss-tier-card.locked { opacity: .38; cursor: not-allowed; }
+.abyss-tier-card .tier-no { font-size: 11px; font-weight: bold; color: #ffd7a0; }
+.abyss-tier-card .tier-mul { font-size: 9px; color: #e79aa0; }
+/* 所选层信息 / 最高记录 */
+.abyss-tier-info {
+  flex-shrink: 0; margin-top: 8px; padding: 7px 10px; font-size: 11px; line-height: 1.6;
+  background: #1d2433; border: 1px solid #33486b; border-radius: 8px; color: #cfe0ff;
+}
+.abyss-tier-info .affix-chip {
+  display: inline-block; margin: 2px 4px 0 0; padding: 1px 7px; border-radius: 10px;
+  background: #3a2530; border: 1px solid #6b3a3a; color: #ffb894; font-size: 10px;
+}
+.abyss-best {
+  flex-shrink: 0; margin-top: 6px; font-size: 10px; color: #9fb4cc;
+}
+/* 暂停菜单信息区 */
+#abyss-pause-info { margin-bottom: 10px; }
+
+/* 移动端（竖屏）适配：层级改 3 列，面板收窄 */
+@media (orientation: portrait) {
+  .abyss-panel { width: 96vw; max-height: calc(100dvh - 16px); }
+  #abyss-tier-list { grid-template-columns: repeat(3, 1fr); }
+}
+body.portrait #abyss-tier-list { grid-template-columns: repeat(3, 1fr); }
+
+

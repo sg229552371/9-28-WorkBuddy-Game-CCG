@@ -847,6 +847,13 @@ function abyssPortalTap(clientX, clientY) {
  *   选完由 btn-char-start 调 enterEndless(selectedChars)）；
  *   ⚠️ 宿主未提供时（旧版本 / 测试桩）**回落直接进入**，保证门始终可用。 */
 function enterAbyssFromPortal() {
+  /* 21.19：先进「深渊入口 / 选层」界面（大秘境层级选择）——选定层级后由 `#btn-abyss-start`
+   *   调 Endless.setTier + Game.enterAbyssCharSelect 继续；无 DOM（无头测试/桩）时回落选角。 */
+  var canSelect = (typeof document !== "undefined" && document.getElementById && document.getElementById("screen-abyss"));
+  if (canSelect && typeof UI !== "undefined" && UI && typeof UI.showAbyssSelect === "function") {
+    UI.showAbyssSelect();
+    return true;
+  }
   if (typeof Game !== "undefined" && Game && typeof Game.enterAbyssCharSelect === "function") {
     if (Game.enterAbyssCharSelect()) return true;
   }
@@ -928,6 +935,11 @@ function enterEndless(chars) {
   if (typeof seedTrail === "function") seedTrail(world, CFG.team.follow.seedDir[0], CFG.team.follow.seedDir[1]);
   if (typeof snapCompanions === "function") snapCompanions(world);
   Endless.begin(world);
+  /* 21.19：按当前层级抽取本局秘境词缀（层级由选层界面 Endless.setTier 设定；旧路径默认 1）。
+   * 必须在 begin 之后（begin/reset 会清空词缀，见 endless-affix.js 的钩子）。 */
+  if (typeof Endless.rollAffixes === "function") {
+    try { Endless.rollAffixes(Endless.tier || 1); } catch (e) { /* 词缀失败不阻断进图 */ }
+  }
   /* 21.17 深渊玩家强化：G.inEndless 置位后 computeStats() 才返回强化倍率，
    * 故必须**在置位之后**补满血 —— 否则 hpMax 已涨到 500 但当前 hp 仍是主线的残血，
    * 玩家顶着一个「大血条的空壳」进图，强化形同虚设。 */
@@ -996,6 +1008,22 @@ function showEndlessSettle() {
   // endlessRewardOnSettle 在 main.js 末尾区块（🅓），运行时已定义，typeof 守卫兼容桩环境。
   if (typeof endlessRewardOnSettle === "function") {
     try { endlessRewardOnSettle(); } catch (e) { /* 对齐失败不阻断结算 */ }
+  }
+  /* 21.19 深渊记录 + 首通奖励（幂等；非深渊/未加载时安全降级）。
+   *   onSettle 更新最高波次/层数/最快用时；grantFirstRewards 返回本次额外结晶，累进面板数值。 */
+  if (typeof EndlessRecord !== "undefined" && EndlessRecord) {
+    try {
+      EndlessRecord.onSettle({
+        wave: s.wave, kills: s.kills, crystals: s.crystals, elapsed: s.elapsed,
+        extracted: (typeof G !== "undefined" && G && G.abyssSettleReason === "extract"),
+        reason: (typeof G !== "undefined" && G) ? G.abyssSettleReason : null,
+        timedOut: s.timedOut,
+        bossKills: s.bossKills,
+        tier: (typeof Endless !== "undefined" && Endless && Endless.tier) || 0,
+      });
+      var _bonus = EndlessRecord.grantFirstRewards();
+      if (_bonus > 0) s.crystals += _bonus;
+    } catch (e) { /* 记录失败不阻断结算 */ }
   }
   if (typeof UI !== "undefined" && UI.showEndlessSettle) UI.showEndlessSettle(s);
   return s;

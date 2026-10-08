@@ -296,6 +296,9 @@ const Game = {
     on("btn-endless-intro-ok", () => { if (UI.hideEndlessIntro) UI.hideEndlessIntro(); });
     on("btn-endless-city", () => { if (UI.hideEndlessSettle) UI.hideEndlessSettle(); exitEndlessToCity(); });
     on("btn-endless-retry", () => { if (UI.hideEndlessSettle) UI.hideEndlessSettle(); restartEndless(); });
+    /* ---- 21.19 深渊新界面按钮绑定（选层界面 / 暂停菜单；模块未加载时安全跳过） ---- */
+    if (typeof UI.initAbyssSelect === "function") UI.initAbyssSelect();
+    if (typeof UI.initAbyssPause === "function") UI.initAbyssPause();
     /* ---- 背包 / 工匠 / 卡牌 ---- */
     on("btn-bp-close", () => UI.toggleBackpack(false));
     on("btn-artisan-close", () => UI.toggleArtisan(false));
@@ -504,6 +507,8 @@ const Game = {
       if (k === "b" && G.state === "playing") UI.toggleBackpack();
       if (k === "e" && G.inArtisan && G.state === "playing") UI.toggleArtisan();
       if (k === "escape" && G.state === "city") UI.closeNpcPanels();   // 主城：Esc 关闭 NPC 面板
+      // 21.19 深渊局内：Esc 切换暂停菜单（复用 Game.paused 闸门；非深渊/未加载零副作用）
+      if (k === "escape" && G.state === "playing" && G.inEndless && typeof UI !== "undefined" && UI.toggleAbyssPause) UI.toggleAbyssPause();
       // 撤离点雕像（5.2）：**站进雕像圈内自动读条**（8 秒，受击归零）；E 仅用于查看进度 / 节流提示
       if (k === "e") this.actionE();
     });
@@ -865,6 +870,10 @@ const Game = {
       // 21.15 无尽模式（深渊）：每帧驱动波次/刷怪/难度（Endless 未就绪时静默跳过，安全降级）
       if (G.inEndless && typeof Endless !== "undefined" && Endless && typeof Endless.update === "function") {
         Endless.update(G.activeWorld, dt);
+      }
+      // 21.19 深渊组队：队友倒下 → 救援读条 / 自动复活（非深渊零介入；模块未加载时安全跳过）
+      if (G.inEndless && !frozen && typeof EndlessTeam !== "undefined" && EndlessTeam) {
+        EndlessTeam.update(dt);
       }
       // 撤离读条推进（5.2）：**任一存活英雄在圈内即自动读条**（判定圈统一规则，见 judgeChannel）；
       // 移动本身不再打断，圈内英雄全部离开才按判定规则衰退；受击打断在 heroTakeDamage 中处理。

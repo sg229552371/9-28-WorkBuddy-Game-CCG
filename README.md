@@ -35,7 +35,7 @@ python3 -m http.server 8123
 ## 测试
 
 ```bash
-bash run_tests.sh          # 全量：64 项，2949 条断言
+bash run_tests.sh          # 全量：71 项，3176 条断言
 node smoke_test.js         # 单个测试
 ```
 
