@@ -552,6 +552,7 @@ function computeStats() {
     spdMul: bo.mul.spd, cdMul: bo.mul.cd,
   };
   st.atk = Math.round(st.atk);
+  applyEndlessPlayerBuff(st);          // 21.17 深渊内玩家强化（非深渊原样返回）
   return st;
 }
 
@@ -1128,3 +1129,41 @@ function levelUpReroll() {
   return true;
 }
 
+
+
+/* ============================================================
+ * 21.17 深渊内玩家强化（末尾独立区块）
+ * ============================================================
+ * 【问题】深渊第 1 波就有 10 只怪（含 1 只精英）、80 波后 200 只全是精英/BOSS，
+ *   而玩家 H001 只有 100 血 / 防 2，怪物单次接触造成 5.5~21 点伤害。
+ *   真机实测：进图 5~10 秒内被围殴致死，第 1 波都过不去——
+ *   升级系统（combat.js 的 dropEndlessExp）虽已打通，但 LV1 进图时没有任何加成，
+ *   「靠升级成长」远水不解近渴。
+ *
+ * 【方案】深渊内玩家属性倍率（**仅深渊生效，与主线完全解耦**）：
+ *   在 computeStats() 这一**单一属性出口**末尾乘上深渊倍率 → 主线/裂缝/工匠世界
+ *   一律不受影响（非深渊时倍率为 1，且不产生任何额外计算）。
+ *   选 computeStats 而非改 hp 初值的原因：它是全项目唯一的玩家属性出口，
+ *   Player.update 每帧 `G.run.hpMax = st.hpMax` 自动同步上限，
+ *   队友走 companionStats() 同源管线 → 组队时队友一并生效，不需要逐处打补丁。
+ *
+ * 【数值】全部进 CFG.endless.playerBuff（见 js/config.js），逻辑不硬编码：
+ *   hpMul / defMul / atkMul —— 策划调参改 CFG 即可，后续「策划会优化生怪参数」时不用碰代码。
+ *
+ * 【为什么不改怪物】怪物数值同时服务于主线 99 关（CFG.monsters 全局共享），
+ *   在深渊侧削怪会污染主线手感；强化玩家则天然隔离。
+ * ============================================================ */
+
+/** 深渊玩家属性倍率应用（由 computeStats 末尾单行调用）。
+ *  非深渊（主线 / 裂缝 / 工匠世界）立即返回原对象（零副作用、零额外属性读）。 */
+function applyEndlessPlayerBuff(st) {
+  if (!st) return st;
+  if (typeof G === "undefined" || !G || !G.inEndless) return st;   // 非深渊：原样返回
+  const c = (typeof CFG !== "undefined" && CFG.endless && CFG.endless.playerBuff) || null;
+  if (!c) return st;
+  if (typeof c.hpMul === "number")  st.hpMax = Math.round(st.hpMax * c.hpMul);
+  if (typeof c.atkMul === "number") st.atk   = Math.round(st.atk * c.atkMul);
+  if (typeof c.defMul === "number") st.def   = Math.round(st.def * c.defMul);
+  if (typeof c.spdMul === "number") st.spd   = st.spd * c.spdMul;
+  return st;
+}

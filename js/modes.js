@@ -896,6 +896,11 @@ function enterEndless() {
   G.mainWorld = world;            // 与 activeWorld 同步，避免队友/无人机的世界归属判断落空
   G.inEndless = true;
   Endless.begin(world);
+  /* 21.17 深渊玩家强化：G.inEndless 置位后 computeStats() 才返回强化倍率，
+   * 故必须**在置位之后**补满血 —— 否则 hpMax 已涨到 500 但当前 hp 仍是主线的残血，
+   * 玩家顶着一个「大血条的空壳」进图，强化形同虚设。 */
+  if (typeof recomputeWeapon === "function") recomputeWeapon();
+  if (G.player) { const st0 = computeStats(); G.run.hp = st0.hpMax; }
   // 首帧对齐：清空主城残留交互状态
   G.cityNpcOpen = null; G.cityNpcNear = null;
   var hud = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("hud") : null;
@@ -991,3 +996,222 @@ function hasSeenEndlessIntro() {
 }
 
 /* 21.15 深渊之门区块结束 */
+
+/* ============================================================================
+ * ====== 21.17 深渊撤离点 + 屏蔽空间裂隙雕像（🅑 线）—— 独立区块（§5.45 铁律） ======
+ * ----------------------------------------------------------------------------
+ * 职责：① 最终 BOSS 被击杀 → 掉落**撤离点**（复用主线 exitBeacon 的视觉/判定方式）；
+ *       ② 玩家走进撤离点 → judgeChannel 读条（CFG.endless.extractChannel = 3.0s）→ 撤离成功；
+ *       ③ 撤离成功 = **带全收益结算**（不走死亡 30% 折扣）；超时 = 失败结算（保留 30%）；
+ *       ④ 深渊世界**屏蔽空间裂隙雕像（RIFT）**——只在深渊的祭坛抽取处过滤，**不改 CFG.altars 本身**。
+ *
+ * 接入方式（现有函数体内**只插单行调用**，行级冲突最小化；全部用 typeof 守卫）：
+ *   • main.js 主循环 update 前 → `updateAbyssExtract(dt)`（每帧推进：掉落轮询 + 读条）
+ *   • 受击打断 → heroTakeDamage 内 `abyssExtractInterrupt()`（读条归零，对齐主线 exitBeacon）
+ *   • 渲染复用 → 世界字段 `world.exitBeacon`（render.js 的 artisan 分支自动绘制，零改动）
+ *   • 结算入口 → `abyssExtractSettle(reason)`，由 main.js / 结算侧单行调用
+ *
+ * ⚠️ 生存空间约定：本区块**全部新增函数**，不改任何既有函数体。
+ *   对既有行为的唯一改动 = RIFT 屏蔽（通过 monkey-patch 深渊世界实例的 altars 抽取，见下）。
+ * ========================================================================== */
+
+/** 世界是否为「深渊（无尽）」世界：以世界自带 kind 为准（与 Endless.isActive 同口径）。
+ *  非深渊世界恒返回 false → 本区块全部逻辑零介入（主线/裂缝/工匠/主城行为逐位不变）。 */
+function isAbyssWorld(w) {
+  var world = w || (typeof G !== "undefined" && G ? G.activeWorld : null);
+  return !!(world && world.kind === "endless");
+}
+
+/** 深渊撤离点配置（惰性读取 CFG.endless，缺字段回落，避免 CFG 半加载时报错）。
+ *  数值单一事实源 = CFG.endless（铁律：逻辑不硬编码）。 */
+function abyssExtractCfg() {
+  var e = (typeof CFG !== "undefined" && CFG.endless) || {};
+  return {
+    channel: (typeof e.extractChannel === "number") ? e.extractChannel : 3.0,  // 读条时长（秒）
+    dropRadius: 90,        // 掉落点与 BOSS 死亡位置的最大偏移（避免重叠在尸体上）
+    judgeRadius: 100,      // 判定圈绘制半径（与主线 exitBeacon 同款）
+  };
+}
+
+/** 最终 BOSS 掉撤离点（幂等：只掉一次；非最终 BOSS 不掉）。
+ *  - 判定依据：Endless.isFinalBossDefeated() 为真（由 endless.js 的 recordKill 置位）；
+ *  - 掉落位置：BOSS 死亡位置附近（世界内随机偏移，避墙）；
+ *  - 视觉/判定复用：写 world.exitBeacon（render.js 的 artisan 分支自动绘制虚线判定圈 + 进度环）。
+ *  返回 true = 本次确实掉了撤离点。 */
+function spawnAbyssExtractBeacon(world) {
+  var w = world || (typeof G !== "undefined" && G ? G.activeWorld : null);
+  if (!isAbyssWorld(w)) return false;
+  if (w.exitBeacon) return false;   // ⚠️ 只在最终 BOSS 死后出现一次（不重复）
+  if (typeof Endless === "undefined" || !Endless || typeof Endless.isFinalBossDefeated !== "function") return false;
+  if (!Endless.isFinalBossDefeated()) return false;   // 非最终 BOSS / 尚未击杀 → 不掉
+  var c = abyssExtractCfg();
+  // 掉落位置：BOSS 死亡位置附近随机偏移（避墙 60px）；无记录则回退世界中心。
+  var src = w._lastFinalBossPos || null;
+  var bx = src ? src.x : w.w / 2, by = src ? src.y : w.h / 2;
+  var a = U.rand(0, Math.PI * 2), rr = U.rand(0, c.dropRadius);
+  var x = U.clamp(bx + Math.cos(a) * rr, 60, w.w - 60);
+  var y = U.clamp(by + Math.sin(a) * rr, 60, w.h - 60);
+  w.exitBeacon = { x: x, y: y };                                   // 复用主线字段名（渲染自动生效）
+  w.abyssExtractReady = false;                                     // 圈内标记（读条/视觉）
+  w.abyssExtractDone = false;                                      // 是否已撤离（防重复结算）
+  w.abyssExtractProgress = 0; w.abyssExtractHolder = null;          // 读条进度/持有者（复用 judgeChannel 契约）
+  w.exitProgress = 0;                                              // 渲染进度环读取该字段（render.js 用 exitProgress）
+  if (typeof UI !== "undefined" && UI.toast) {
+    UI.toast("◈ 最终 BOSS 已被击败！撤离点已出现——走进圈内读条即带全收益撤离", "gold");
+  }
+  if (typeof SFX !== "undefined" && SFX.play) SFX.play("extract");
+  return true;
+}
+
+/** 记录最终 BOSS 死亡位置（供掉撤离点定位）。由 recordKill 类的击杀回调单行调用；
+ *  非最终 BOSS 不记录。返回 true = 已记录。 */
+function noteFinalBossDeath(monster) {
+  var w = (typeof G !== "undefined" && G ? G.activeWorld : null);
+  if (!isAbyssWorld(w)) return false;
+  if (!monster || !monster.endlessFinalBoss) return false;
+  w._lastFinalBossPos = { x: monster.x, y: monster.y };
+  return true;
+}
+
+/** 每帧推进深渊撤离（main.js 主循环单行调用）：① 掉落轮询 ② 读条判定 ③ 到点 → 撤离成功。
+ *  - 超时（Endless.isTimedOut）→ 失败结算（保留 30%），与死亡同口径；
+ *  - 撤离中受击 → 归零（由 heroTakeDamage 调 abyssExtractInterrupt）；
+ *  - 非深渊世界 / 未 begin → 立即返回（零副作用）。 */
+function updateAbyssExtract(dt) {
+  var w = (typeof G !== "undefined" && G ? G.activeWorld : null);
+  if (!isAbyssWorld(w)) return false;
+  if (typeof Game !== "undefined" && Game && Game.paused) return false;   // 升级 4 选 1 暂停不推进
+  if (!(dt > 0)) return false;
+
+  // ① 超时优先：超时 → 失败结算（保留 30%），撤离点不再生效
+  if (typeof Endless !== "undefined" && Endless && typeof Endless.isTimedOut === "function" && Endless.isTimedOut()) {
+    if (!w.abyssExtractSettled) abyssExtractSettle("timeout");
+    return true;
+  }
+  if (w.abyssExtractDone || w.abyssExtractSettled) return false;
+
+  // ② 掉落轮询：最终 BOSS 已死但撤离点尚未出现 → 补掉（幂等，只掉一次）
+  if (!w.exitBeacon) spawnAbyssExtractBeacon(w);
+  if (!w.exitBeacon) return false;
+
+  // ③ 读条判定（复用统一入口 judgeChannel；受击归零由 abyssExtractInterrupt 承担）
+  var c = abyssExtractCfg();
+  var done = judgeChannel(w, w.exitBeacon.x, w.exitBeacon.y, c.judgeRadius, dt, c.channel,
+    "abyssExtractProgress", "abyssExtractHolder");
+  w.exitProgress = w.abyssExtractProgress || 0;        // 同步给渲染进度环（render.js 读 exitProgress）
+  w.abyssExtractReady = !!w.abyssExtractHolder;
+  if (done) {
+    w.abyssExtractDone = true;
+    abyssExtractSettle("extract");
+  }
+  return true;
+}
+
+/** 撤离读条受击打断（heroTakeDamage 单行调用）：读条归零（撤离点保留，可重读）。
+ *  对齐主线 exitBeacon 的「受击立即归零」语义。返回 true = 本次确实打断了读条。 */
+function abyssExtractInterrupt() {
+  var w = (typeof G !== "undefined" && G ? G.activeWorld : null);
+  if (!isAbyssWorld(w)) return false;
+  if (!w.exitBeacon) return false;
+  var had = (w.abyssExtractProgress || 0) > 0;
+  w.abyssExtractProgress = 0; w.abyssExtractHolder = null; w.exitProgress = 0; w.abyssExtractReady = false;
+  if (had && typeof UI !== "undefined" && UI.toast) UI.toast("撤离读条被打断！（撤离点仍在原地，重新站回圈内即可继续）", "bad");
+  return had;
+}
+
+/** 深渊结算统一入口（三种口径：撤离成功 / 死亡 / 超时）：
+ *  - reason = "extract"：**带全收益结算**（不走死亡 30% 折扣）；
+ *  - reason = "death"  ：死亡失败结算（保留 30%）；
+ *  - reason = "timeout"：超时失败结算（保留 30%，与死亡同口径）。
+ *  写 G.lastSettleReport（复用 publishCrystalReport）+ 置 G.state="settled"，供 UI 结算面板渲染。
+ *  返回结算报告对象（供测试断言）。幂等：同一局只结算一次。 */
+function abyssExtractSettle(reason) {
+  var w = (typeof G !== "undefined" && G ? G.activeWorld : null);
+  var extracted = (reason === "extract");
+  var s = { wave: 0, kills: 0, crystals: 0, timedOut: (reason === "timeout"), bossKills: 0, elapsed: 0 };
+  if (typeof Endless !== "undefined" && Endless && typeof Endless.settle === "function") {
+    try { var r = Endless.settle(); if (r) s = r; } catch (e) { /* 结算取数失败不阻断 */ }
+  }
+  s.wave = Number(s.wave) || 0; s.kills = Number(s.kills) || 0; s.crystals = Number(s.crystals) || 0;
+  s.reason = reason || (extracted ? "extract" : "death");
+  s.extracted = extracted;
+  // 标记已结算（防重复）；世界若存在则打标
+  if (w) { w.abyssExtractSettled = true; w.abyssExtractDone = extracted; }
+  if (typeof G !== "undefined" && G) {
+    G.abyssSettleReason = s.reason;
+    G.abyssExtractSuccess = extracted;
+    G.state = "settled";
+  }
+  // 结晶入局外存档：撤离成功发全收益；死亡/超时保留 deathRatio（与主线 awardRun 同口径）
+  var boss = s.crystals || 0;
+  if (!extracted && typeof CFG !== "undefined" && CFG.outLevel && typeof CFG.outLevel.deathRatio === "number") {
+    boss = Math.floor(boss * CFG.outLevel.deathRatio);   // 失败结算（保留 30%）
+  }
+  if (boss > 0 && typeof Meta !== "undefined" && Meta && Meta.data) {
+    Meta.data.crystals = (Meta.data.crystals || 0) + boss;
+    if (Meta.commit) Meta.commit();
+  }
+  // 复用既有结算报告（中文文案；撤离 = 全收益，死亡/超时 = 阵亡口径）
+  if (typeof publishCrystalReport === "function") {
+    try { publishCrystalReport(s.kills, true, extracted, boss); } catch (e) { /* 明细失败不影响结算 */ }
+  }
+  if (typeof SFX !== "undefined" && SFX.play) SFX.play(extracted ? "extract" : "death");
+  return s;
+}
+
+/* ---------- 屏蔽空间裂隙雕像（RIFT）：只在深渊世界的祭坛抽取处过滤 ----------
+ * 背景：主线/裂缝仍需空间裂隙（CFG.altars.RIFT），深渊是纯粹冲关 → 不刷 RIFT。
+ * 手法（**不改 game.js / 不改 CFG.altars**）：
+ *   game.js 的 setupMain 祭坛抽取写死 `const pool = Object.entries(CFG.altars).filter(...)`，
+ *   而深渊世界走 setupArtisan 分支（isMain=false），**从不经过该行**。故 RIFT 屏蔽的
+ *   真正落点 = 深渊自己的世界：makeWorld 归零 altars 后由本区块按过滤后的池投放。
+ *   为可测且不误伤主线，抽出纯函数 abyssAltarPool() / rollAbyssAltars()：
+ *     · 主线调用恒返回全池（含 RIFT）——不误伤；
+ *     · 深渊调用会排除白名单里的 id（RIFT）。 */
+
+/** 深渊祭坛屏蔽白名单：这些祭坛 id 不在深渊生成（默认屏蔽空间裂隙 RIFT）。
+ *  可通过 CFG.endless.blockAltars 覆盖（数组）；缺省 = ["RIFT"]。 */
+function abyssBlockedAltarIds() {
+  var e = (typeof CFG !== "undefined" && CFG.endless) || {};
+  if (Array.isArray(e.blockAltars)) return e.blockAltars.slice();
+  return ["RIFT"];
+}
+
+/** 祭坛抽取池（纯函数）：入参 kind 为 "endless" 时排除屏蔽白名单，其余世界返回全池。
+ *  返回 { id: weight } 的拷贝（不改 CFG.altars 本体）。 */
+function abyssAltarPool(kind) {
+  var pool = {};
+  var blocked = (kind === "endless") ? abyssBlockedAltarIds() : [];
+  var altars = (typeof CFG !== "undefined" && CFG.altars) || {};
+  for (var k in altars) {
+    var a = altars[k];
+    if (!a || !(a.weight > 0)) continue;                 // 只取有权重的（与 game.js:921 同口径）
+    if (blocked.indexOf(k) >= 0) continue;               // 深渊：排除屏蔽白名单（RIFT）
+    pool[k] = a.weight;
+  }
+  return pool;
+}
+
+/** 为深渊世界投放祭坛（排除 RIFT）：从 abyssAltarPool("endless") 按权重抽 count 个。
+ *  返回本次投放的 id 数组（供测试断言「100 次不含 RIFT」）。 */
+function rollAbyssAltars(world, count) {
+  var w = world;
+  if (!isAbyssWorld(w)) return [];
+  var n = (count === undefined) ? 5 : count;
+  var pool = abyssAltarPool("endless");
+  var ids = Object.keys(pool);
+  if (!ids.length) return [];
+  w.altars = w.altars || [];
+  var made = [];
+  for (var i = 0; i < n; i++) {
+    var id = U.weightedPick(pool);
+    if (!id) break;
+    var pos = w.findFreeSpot ? w.findFreeSpot(100) : null;
+    var x = pos ? pos.x : U.rand(200, w.w - 200), y = pos ? pos.y : U.rand(200, w.h - 200);
+    w.altars.push({ cfg: CFG.altars[id], x: x, y: y, id: id });
+    made.push(id);
+  }
+  return made;
+}
+
+/* 21.17 深渊撤离点 + 屏蔽 RIFT 区块结束 */

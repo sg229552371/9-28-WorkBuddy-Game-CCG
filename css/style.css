@@ -633,6 +633,10 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .items-list.lost .chip { border-color:#6b3030; background:#2a1d1d; color:#ff9a9a; text-decoration:line-through; }
 .death-panel h2 { color:#ff5b5b; }
 .settle-panel h2 { color:#7de08a; }
+/* 21.17 无尽结算面板三结局色调：撤离成功=绿（good）/ 超时·阵亡=红（bad）。
+ * 覆盖上一条 .settle-panel h2 的默认绿；三处同步（主规则 + portrait 媒体块 + body.portrait）。 */
+#endless-settle-title.good { color:#7de08a; }
+#endless-settle-title.bad { color:#ff5b5b; }
 
 /* ===== 拖拽幽灵 ===== */
 #drag-ghost {
@@ -1471,10 +1475,16 @@ body.portrait .grid .cell { width: 40px; height: 40px; }
   .kbd-touch { display: inline; }
   /* HUD 信息区在竖屏同锚点（安全区已由变量覆盖），仅字号略收 */
   #hud-endless-info { font-size: 11px; }
+  /* 21.17 无尽结算标题：竖屏字号略收（三处同步，与主规则/钩子等效） */
+  #endless-settle-title { font-size: 19px; }
 }
 
 /* ③ body.portrait 钩子（JS 路径双保险，与 ② 等效） */
 body.portrait .kbd-desktop { display: none; }
 body.portrait .kbd-touch { display: inline; }
 body.portrait #hud-endless-info { font-size: 11px; }
+body.portrait #endless-settle-title { font-size: 19px; }
+
+/* ① 主规则（桌面默认）对应补充：结算标题常态字号（三处之一） */
+#endless-settle-title { font-size: 20px; }
 

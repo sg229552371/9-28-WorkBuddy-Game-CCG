@@ -569,6 +569,7 @@ function onMonsterKilled(w, m, killer) {
     } else UI.toast("背包已满，精英宝箱作废", "bad");
     for (let i = 0; i < CFG.elites.extraExp; i++) spawnPickup(w, m.x, m.y, "exp", Math.max(2, Math.round(m.d.exp)));
   }
+  dropEndlessExp(w, m);              // 21.17 深渊局内升级：掉落经验宝石（非深渊世界立即返回）
   spawnSplitBullets(w, m, killer);   // 行为芯片（19.12）：裂变——击杀弹带 split 时生成小弹
   spawnBurst(m.x, m.y, "#9aa7b8", 10);
   // 21.15 无尽模式：击杀计数上报（Endless 未就绪时静默跳过，安全降级）
@@ -1132,3 +1133,48 @@ function renderBurnAura(ctx, m) {
 }
 
 
+
+
+/* ============================================================
+ * 21.17 深渊局内升级：击杀掉落经验宝石（末尾独立区块）
+ * ============================================================
+ * 【问题】onMonsterKilled 的掉落分支只覆盖 `w.isMain`（主线）与 `w.kind === "rift"`
+ *   （裂缝），深渊世界 `w.kind === "endless"` 两个分支都不进 → **深渊击杀零经验**，
+ *   局内升级系统（gainExp → 4 选 1）在深渊里根本触发不了。
+ *   而 21.17 的数值曲线把每波只数推到 300、81 波后全精英/BOSS（精英综合强度 ≈ 小怪 3 倍），
+ *   玩家若不成长必然速死（真机实测：进图 7~9 秒阵亡）。
+ *
+ * 【方案】复用主线**同一套**经验链路，不新增经验语义：
+ *   深渊击杀 → spawnPickup(..., "exp", ...) 掉经验宝石 → 玩家走近自动拾取
+ *   → World.update 的拾取分支调 gainExp() → 升级 → beginLevelUpChoices 弹 4 选 1。
+ *   拾取处理（js/game.js 的 pickups 循环）本就与 world.kind 无关，故**只需补掉落**，
+ *   升级/弹窗/暂停/属性成长全部自动生效——零改动主线。
+ *
+ * 【数值】经验量对齐主线口径（m.d.exp），并受 CFG.endless.expMul 缩放：
+ *   深渊怪密度远高于主线（每波最多 300 只），若照搬主线 exp 会导致升级过快；
+ *   同理精英/BOSS 单只给更多经验（对齐主线 Boss 分裂 5 枚的观感）。
+ *   所有系数进 CFG.endless，便于后续策划调参（用户明确说过「后续策划会优化生怪参数」）。
+ *
+ * 【为什么宝石数按 type 分档】主线用 Boss 5 枚 / 小怪 1 枚控制"掉落手感"，
+ *   深渊沿用同一分档逻辑，避免 300 只怪一次性铺满 300 个拾取物（对象数爆炸）。
+ * ============================================================ */
+
+/** 深渊击杀掉落经验宝石（单行调用点 = onMonsterKilled 的无尽分支）。
+ *  非深渊世界立即返回（零副作用）。返回实际掉落枚数（供测试断言）。 */
+function dropEndlessExp(w, m) {
+  if (!w || w.kind !== "endless") return 0;
+  const r = (typeof G !== "undefined" && G) ? G.run : null;
+  if (!r) return 0;
+  const c = (typeof CFG !== "undefined" && CFG.endless) ? CFG.endless : null;
+  const mul = (c && typeof c.expMul === "number") ? c.expMul : 1;
+  const base = Math.max(1, Math.round(((m.d && m.d.exp) || 1) * mul));
+  /* 枚数分档：Boss 5 枚、精英 3 枚、小怪 1 枚（对齐主线 Boss 5 枚的手感，
+   * 同时限制同屏拾取物数量——300 只小怪 = 300 枚 vs 高波 300 只 Boss = 1500 枚上限，
+   * 后者由「每波 BOSS 唯一实例上限」与拾取物 30 秒 life 自然衰减共同约束）。 */
+  const isBoss = m.d && m.d.type === "boss";
+  const n = isBoss ? 5 : (m.isElite ? 3 : 1);
+  const per = Math.max(1, Math.round(base / n));
+  for (let i = 0; i < n; i++) spawnPickup(w, m.x, m.y, "exp", per);
+  r.endlessExpDrops = (r.endlessExpDrops || 0) + n;   // 统计字段（HUD/测试可读）
+  return n;
+}

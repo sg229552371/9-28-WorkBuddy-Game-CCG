@@ -31,7 +31,7 @@ hero_roster_test hero_portrait_test sprite_view_test camera_view_test audio_spri
 
 FEATURE="rift_test extract_test boss_test bugfix_test shop_test laser_test season_test \
 levels_11_20_test special_monster_test assets_hook_test stress_test \
-endless_test endless_flow_test hud_endless_test endless_reward_test"
+endless_test endless_flow_test hud_endless_test endless_reward_test rift_extract_test rift_hud_test endless_growth_test"
 
 PERF="perf_test perf_guard_test quality_tier_test render_opt_test spatial_test pool_test low_quality_test"
 

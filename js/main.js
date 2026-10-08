@@ -444,6 +444,12 @@ const Game = {
       UI.showSettlement(crystals);
     });
     EventBus.on("playerDied", (penalty) => {
+      // 21.17 深渊撤离点（🅑 独立区块）：深渊内死亡 → 走统一结算入口（撤离/死亡/超时三态同口径）
+      if (G.inEndless && typeof abyssExtractSettle === "function") {
+        abyssExtractSettle("death");
+        if (typeof UI !== "undefined" && UI.showEndlessSettle) UI.showEndlessSettle({ wave: 0, kills: 0, crystals: 0 });
+        return;
+      }
       // 21.15 无尽模式：死亡即结算 → 走专用结算面板（波次/击杀/结晶），不进原死亡面板
       if (G.inEndless) { showEndlessSettle(); return; }
       const crystals = Meta.awardRun(G.run.kills, G.run.bossDefeated, false);
@@ -834,6 +840,10 @@ const Game = {
       // 移动本身不再打断，圈内英雄全部离开才按判定规则衰退；受击打断在 heroTakeDamage 中处理。
       // 仅主地图存在撤离点，工匠世界 / 裂缝中不推进。
       if (!frozen && G.activeWorld && G.activeWorld.isMain) updateExtractJudge(dt);
+      // 21.17 深渊撤离点（🅑 独立区块）：最终 BOSS 掉点轮询 + 读条 + 超时结算（非深渊世界零介入）
+      if (!frozen && typeof updateAbyssExtract === "function") updateAbyssExtract(dt);
+      // 21.17 🅒 结算面板调度：超时/撤离结算后补弹面板（读 G.abyssSettleReason，幂等；非深渊零介入）
+      if (!frozen && typeof riftHudDispatchSettle === "function") riftHudDispatchSettle();
       updateFX(dt);
       UI.updateHUD();
       }

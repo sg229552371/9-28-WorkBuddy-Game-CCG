@@ -409,20 +409,64 @@ UI.grantSeasonExp = function (n) {
  * 数值/文案走 CFG.city.abyssPortal；结算明细复用 G.lastSettleReport + 现有 _crystalReportLine。
  * ========================================================================== */
 
+/* ---------- 21.17 结算面板：三结局（撤离成功 / 超时 / 阵亡）----------
+ * 判定权威顺序（先查代码对齐 🅑 数据链路）：
+ *   ① settle.reason === "extract" 或 settle.extracted === true → 撤离成功（全收益，绿）
+ *   ② settle.timedOut === true 或 settle.reason === "timeout"    → 时限耗尽（保留 30%，红）
+ *   ③ 其余（含死亡）                                             → 深渊阵亡（保留 30%，红）
+ * 数据来源：🅑 的 abyssExtractSettle(reason) 返回对象（含 reason/extracted/timedOut/
+ *   wave/kills/crystals/bossKills/elapsed），经 UI.showEndlessSettle(settle) 传入。
+ *   旧路径（死亡）走 showEndlessSettle() 无参 → settle() 返回体，无 reason 字段 → 归为「阵亡」。 */
+UI._endlessSettleOutcome = function (settle) {
+  settle = settle || {};
+  if (settle.reason === "timeout" || settle.timedOut === true) return "timeout";
+  if (settle.reason === "extract" || settle.extracted === true) return "extract";
+  return "death";
+};
+
+/* 坚持时长格式化（秒 → MM:SS）：与 HUD 同口径；缺 HUD 模块时本地兜底。 */
+UI._endlessFormatElapsed = function (sec) {
+  if (typeof formatEndlessTime === "function") return formatEndlessTime(sec);
+  var s = (typeof sec === "number" && isFinite(sec)) ? Math.floor(sec) : 0;
+  if (s < 0) s = 0;
+  var mm = Math.floor(s / 60), ss = s % 60;
+  return (mm < 10 ? "0" + mm : "" + mm) + ":" + (ss < 10 ? "0" + ss : "" + ss);
+};
+
 UI.showEndlessSettle = function (settle) {
-  // settle = { wave, kills, crystals }（Endless.settle() 产出）；缺字段按 0 兜底
+  // settle = { wave, kills, crystals, timedOut, bossKills, elapsed, reason, extracted }；缺字段按 0 兜底
   settle = settle || {};
   var wave = Number(settle.wave) || 0;
   var kills = Number(settle.kills) || 0;
   var crystals = Number(settle.crystals) || 0;
+  var bossKills = Number(settle.bossKills) || 0;
+  var elapsed = Number(settle.elapsed) || 0;
+  var sc = (typeof CFG !== "undefined" && CFG.endless && CFG.endless.settle) || {};
+  var outcome = this._endlessSettleOutcome(settle);
+  var titleText = (outcome === "extract") ? (sc.extractTitle || "撤离成功")
+    : (outcome === "timeout") ? (sc.timeoutTitle || "时限耗尽")
+    : (sc.deathTitle || "深渊阵亡");
+  var toneClass = (outcome === "extract") ? (sc.extractClass || "good") : (sc.failClass || "bad");
+
   var el = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("endless-settle-stats") : null;
   if (el) {
-    el.innerHTML = '<span>到达波次 <b>' + wave + '</b></span><span>击杀数 <b>' + kills + '</b></span><span>◆ 获得结晶 <b>+' + crystals + '</b></span>' + this._crystalReportLine();
+    el.innerHTML =
+      '<span>到达波次 <b>' + wave + '</b></span>' +
+      '<span>击杀数 <b>' + kills + '</b></span>' +
+      '<span>坚持时长 <b>' + this._endlessFormatElapsed(elapsed) + '</b></span>' +
+      '<span>BOSS 击杀 <b>' + bossKills + '</b></span>' +
+      '<span>◆ 获得结晶 <b>+' + crystals + '</b></span>' +
+      this._crystalReportLine();
   }
   var title = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("endless-settle-title") : null;
   if (title) {
     var c = (typeof CFG !== "undefined" && CFG.city && CFG.city.abyssPortal) || {};
-    title.textContent = (c.settleTitle || "深渊结算") + " · 第 " + wave + " 波";
+    title.textContent = (c.settleTitle || "深渊结算") + " · " + titleText;
+    // 三结局色调：撤离成功 = 绿（good）；超时/阵亡 = 红（bad）
+    if (title.classList) {
+      title.classList.remove("good", "bad");
+      title.classList.add(toneClass);
+    }
   }
   var scr = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("screen-endless-settle") : null;
   if (scr && scr.classList) scr.classList.remove("hidden");
@@ -443,11 +487,16 @@ UI.showEndlessIntro = function () {
   var body = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("endless-intro-body") : null;
   if (body) {
     var c = (typeof CFG !== "undefined" && CFG.city && CFG.city.abyssPortal) || {};
+    var e = (typeof CFG !== "undefined" && CFG.endless) || {};
+    var mins = Math.round(((e.timeLimit !== undefined ? e.timeLimit : 600)) / 60);
+    var pct = (typeof CFG !== "undefined" && CFG.outLevel && typeof CFG.outLevel.deathRatio === "number")
+      ? Math.round(CFG.outLevel.deathRatio * 100) : 30;
     body.innerHTML =
-      '<div class="tip-line">◆ 深渊之门 = 无尽模式：敌人按<b>波次</b>刷新，越打越多、越强。</div>' +
-      '<div class="tip-line">◆ 每波清空后短暂间隔进入下一波，同屏敌人上限随波次缓增。</div>' +
-      '<div class="tip-line">◆ 每波结算<b>进化结晶</b>，波次越高奖励越多。</div>' +
-      '<div class="tip-line">◆ 首版规则：<b>死亡即结算</b>，无主动撤离——尽情深潜吧。</div>' +
+      '<div class="tip-line">◆ 深渊之门 = <b>大秘境</b>：怪物<b>按时间驱动持续涌来</b>（到点就刷，清不完），越往后越密越强。</div>' +
+      '<div class="tip-line">◆ 总时限 <b>' + mins + ' 分钟</b>倒计时，归零即<b>时限耗尽</b>——时间就是压力，别磨。</div>' +
+      '<div class="tip-line">◆ 击杀 + 存活时间共同积累<b>推进量</b>，推进量到阈值便会刷出 <b>BOSS</b>（进度条可直观看到距离）。</div>' +
+      '<div class="tip-line">◆ 打到<b>最终 BOSS</b> 会掉落<b>撤离点</b>：走进圈内<b>读条 3 秒</b>完成撤离，即带<b>全收益</b>离场。</div>' +
+      '<div class="tip-line">◆ 未撤离就<b>超时 / 阵亡</b> = 失败结算，仅保留 <b>' + pct + '%</b> 结晶。</div>' +
       '<div class="tip-line">' + (c.desc || "进圈读条 2 秒 → 进入无尽深渊") + '</div>';
   }
   var hud = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("hud") : null;

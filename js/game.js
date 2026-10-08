@@ -387,6 +387,8 @@ function heroTakeDamage(w, h, dmg, ignoreDef) {
     UI.toast("撤离读条被打断！（雕像仍在原地，重新站回圈内即可继续）", "bad");
   }
   if (w && w.kind === "rift" && w.returnProgress > 0) { w.returnProgress = 0; UI.toast("返回信标读条被打断！", "bad"); }
+  // 21.17 深渊撤离点受击打断（🅑 独立区块，单行调用）：读条归零、撤离点保留可重读
+  if (typeof abyssExtractInterrupt === "function") abyssExtractInterrupt();
   if (h === G.player) { G.player.takeDamage(w, dmg, ignoreDef); return; }
   // ignoreDef = true（21.1 毒圈比例伤害）：不走防御减免，扣血量即传入值
   const real = ignoreDef ? Math.max(1, Math.round(dmg)) : Math.max(1, Math.round(dmg - companionStats(h).def));

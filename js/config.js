@@ -2006,27 +2006,173 @@ CFG._validateLevelCurve = function () {
  *   项目铁律：逻辑里不写死任何可调数值，波次曲线一律从本区块读取。
  * 实现：`js/endless.js` 的 Endless 对象消费本表（消费方只读、不修改本表）。
  *
- * 曲线口径（首版占位曲线，用户已确认「后期会调」，改数值只动本表）：
- *   · 同屏上限   capFor(wave) = min(capMax, capBase + wave * capPerWave)   —— 波 1≈52，波 10≈160，波 22+ 达 300
- *   · 血量倍率   hpMul(wave)  = 1 + (wave - 1) * hpMulPerWave              —— 波 1 = 1.00（基准）
- *   · 伤害倍率   dmgMul(wave) = 1 + (wave - 1) * dmgMulPerWave             —— 波 1 = 1.00（基准）
- *   · 每波结晶   waveReward(wave) = round(reward.base * wave ^ reward.exp) —— 波次越高奖励越多
- *   · 宝箱掉落   每 chestEvery 波额外掉一枚宝箱（wave % chestEvery === 0）
+ * 曲线口径（21.17 真机 e2e 首测「深渊 2.75 秒阵亡」后重定；用户已拍板，改数值只动本表）：
+ *   · 每波只数   waveCap(wave)：**分段线性插值**（见 waveCapAnchors）
+ *        锚点 波 1→10 / 波 50→100 / 波 80→200 / 波 90→256 / 波 99→300
+ *        波 ≤1 → 10；波 ≥99 → 300；中间逐段线性（波 25≈54，波 75≈183）
+ *   · 同屏上限   capMax = 3000：**海量敌人闸门**（不是每波配额）
+ *        ⚠️ 概念区分：每波只数（10~300，按曲线）≠ 同屏上限（3000，闸门）。
+ *   · 波次间隔   spawnIntervalFor(wave) = 先快后慢线性 4.0s → 11.0s（波 1 → 波 99）
+ *   · 攻击倍率   atkMul = 1.25：**常量**（旧 dmgMulPerWave 逐步放大已退役）
+ *        用户口径「atk×1.25」——波次难度由只数曲线承担，攻击不再随波次涨。
+ *   · 血量倍率   hpMul(wave) = 1 + (wave - 1) * hpMulPerWave（保留）
+ *   · 每波结晶   waveReward(wave) = round(reward.base * wave ^ reward.exp)（保留）
+ *   · 宝箱掉落   每 chestEvery 波额外掉一枚宝箱（wave % chestEvery === 0）（保留）
+ *
+ * 21.17 大秘境改版（时间驱动 + 总时限 + 推进量 BOSS）：
+ *   · 刷怪改**时间驱动**：每 spawnIntervalFor(wave) 秒刷一波，不看场上剩余
+ *        （仅受同屏上限 capMax 封顶），**到点就刷，不等清场**
+ *   · 总时限   timeLimit（秒）：归零 → 超时结算（保留 30%），且**停止刷怪**
+ *   · 推进量   progress = kills + elapsedSec * timeWeight
+ *        阈值 bossThreshold(n) = bossProgressBase + n * bossProgressStep（n 从 0 起）
+ *   · 最终 BOSS 第 finalBossIndex 个（击杀后由 🅑 掉撤离点，读条 extractChannel 秒）
+ *   · waveGap 已退役（清空推进不再使用），保留字段仅为向后兼容，慎删。
+ *   · spawnInterval/spawnIntervalMin/spawnIntervalDecay 已退役（旧「越来越快」公式），
+ *     保留字段仅为向后兼容（selfCheck 仍读），改由 spawnIntervalStart/End/Waves 消费。
  * ========================================================================== */
 CFG.endless = {
-  waveGap: 3.0,             // 波次间隔（秒）：本波清空后 → 等待该时长 → 进入下一波
-  capBase: 40,              // 同屏上限基数
-  capPerWave: 12,           // 同屏上限每波增量（capFor = capBase + wave * capPerWave，再按 capMax 封顶）
-  capMax: 300,              // 同屏上限硬顶（性能红线）
-  hpMulPerWave: 0.18,       // 敌人血量倍率每波增量（线性成长）
-  dmgMulPerWave: 0.06,      // 敌人伤害倍率每波增量（线性成长）
+  waveGap: 3.0,             // [退役] 旧「清空推进」波间间隔；21.17 时间驱动后不再读取（保留兼容）
+  timeLimit: 780,           // 总时限（秒）= 13 分钟；归零 → 超时结算（保留 30%）+ 停刷
+  /* ---- 21.17 真机重定：波次间隔「先快后慢」线性 4.0s → 11.0s ---- */
+  spawnIntervalStart: 4.0,  // 第 1 波刷怪间隔（秒）：开局给玩家喘息
+  spawnIntervalEnd: 11.0,   // 第 spawnIntervalWaves 波刷怪间隔（秒）：后期放慢，避免糊脸
+  spawnIntervalWaves: 99,   // 间隔插值终点波次（波 99 = 11.0s；两端线性）
+  spawnInterval: 4.0,       // [退役] 旧间隔基准（秒）；保留兼容，改由 spawnIntervalStart 消费
+  spawnIntervalMin: 1.5,    // [退役] 旧间隔下限（秒）；保留兼容（selfCheck 读取）
+  spawnIntervalDecay: 0.12, // [退役] 旧每波递减量（秒/波）；保留兼容
+  bossProgressBase: 300,    // 首个 BOSS 的推进量阈值（n=0）
+  bossProgressStep: 260,    // 后续每个 BOSS 的阈值增量（阈值随序号线性递增）
+  timeWeight: 1.0,          // 时间加权：每秒折算的推进量（progress = kills + elapsedSec * timeWeight）
+  finalBossIndex: 3,        // 第 N 个 BOSS = 最终 BOSS（击杀后掉撤离点，1 起算）
+  extractChannel: 3.0,      // 撤离读条时长（秒）：对齐主线 exitBeacon（最终 BOSS 掉落点）
+  /* ---- 21.17 真机重定：每波只数（分段线性插值锚点）+ 同屏上限闸门 ---- */
+  waveCapAnchors: [[1, 10], [50, 100], [80, 200], [90, 256], [100, 300]],
+                            // 每波只数锚点 [波次, 只数]：波≤1→10，波≥100→300，中间分段线性
+                            // 21.17 构成曲线：末锚点由 [99,300] 扩到 [100,300]（总波数 100）——
+                            //   第 99→100 波维持 300 封顶（锚点间线性：w99 = 256+(9/10)*44 = 296，
+                            //   w100 = 300）；200 只落在 [90,256]→[100,300] 段上，与旧值一致。
+  capMax: 3000,             // 同屏上限硬顶（「海量敌人」闸门，非每波配额；性能红线）
+  capBase: 40,              // [退役] 旧同屏上限基数；保留兼容
+  capPerWave: 12,           // [退役] 旧同屏上限每波增量；保留兼容
+  hpMulPerWave: 0.18,       // 敌人血量倍率每波增量（线性成长，保留）
+  atkMul: 1.25,             // 敌人攻击倍率（常量，不随波次涨；用户口径 atk×1.25）
+  dmgMulPerWave: 0.06,      // [退役] 旧伤害倍率每波增量；保留兼容（改由 atkMul 常量消费）
   reward: { base: 8, exp: 1.15 },   // 每波结晶 = round(base * wave ^ exp)
   chestEvery: 5,            // 每 N 波额外掉一枚宝箱（wave % chestEvery === 0）
   spawnRingMargin: 100,     // 刷怪点距摄像机可视边界的外扩像素（从视野外生成，避免"凭空出现"）
-  firstWaveDelay: 1.5,      // 进入无尽世界到第 1 波的延迟（秒）
+  firstWaveDelay: 5.0,      // 进入无尽世界到第 1 波的缓冲（秒）：真机重定 1.5→5.0
   mapW: 1920,               // 无尽竞技场宽（首版固定竞技场，不做随机地图生成）
   mapH: 1920,               // 无尽竞技场高
   spawnBatch: 12,           // 单次刷怪"分批"的最大结点数（每帧最多补几个刷怪点，防一帧峰值）
   monsterLevelBase: 1,      // 怪物等级基准（Monster 构造第 4 参 lv）
   monsterLevelPerWave: 0.35,// 怪物等级每波增量（低等级增益，强度主曲线仍由 hpMul/dmgMul 表达）
+
+  /* ---------- 21.17 怪物构成曲线（用户需求：小怪先多后少 → 80 后无小怪 → 90 后只有 BOSS）----------
+   * 定位：每波配额（waveCap）不变，只改**配额里各怪种的配比**。
+   *   每波只数仍由 waveCapAnchors 决定（用户口径「数量保持不变」，不要下调）。
+   *   本区块只回答「这一波的 N 只里，小怪几只、精英几只、BOSS 几只」。
+   *
+   * 三段构成（波次 → 怪种）：
+   *   ① 波 1 ~ 79   ：小怪为主，小怪占比**先多后少**（精英占比随波次上升）
+   *   ② 波 80 ~ 89  ：**无小怪** = 精英为主 + 少量 BOSS（配比见 bossMixRatioAnchors）
+   *   ③ 波 90 ~ 100 ：**只有 BOSS**（配额全部为 BOSS）
+   *
+   * 精英判定 = `isEliteDef(id)`（ED 前缀，js/combat.js:451）；强度由 `applyElite(m)` 词缀加持。
+   * BOSS 抽取 = `Endless._bossPool()`（CFG.monsters 里 type==="boss" 的条目）。
+   * ⚠️ BOSS 双轨不打架：本区块只负责「常规波里夹杂的 BOSS」；原有的「推进量阈值触发」
+   *    （bossThreshold，主线 BOSS 序列）继续独立运行，两套互不读写对方的 bossIndex。 */
+  /* 波 1~79 的「精英占本波配额比例」锚点 [波次, 精英比例]：
+   *   波 1 → 0.10（小怪占 90%，纯铺垫）→ 波 40 → 0.35 → 波 79 → 0.60（转为精英压场）。
+   *   中间的「小怪比例 = 1 - 精英比例」由 _fillQueue 现算，无需再配一条曲线（单一事实源）。 */
+  eliteRatioAnchors: [[1, 0.10], [40, 0.35], [79, 0.60]],
+  /* 波 80~89 的「BOSS 占配额比例」锚点 [波次, BOSS 比例]：
+   *   波 80 → 0.05（20 只里约 1 只 BOSS，精英为主）→ 波 89 → 0.10（256 只里约 25 只）。
+   *   剩余（1 - BOSS 比例）全给精英 → 保证「精英是主体、BOSS 少量穿插」。 */
+  bossMixRatioAnchors: [[80, 0.05], [89, 0.10]],
+  /* 波 90+ 的「BOSS 占配额比例」锚点 [波次, BOSS 比例]：恒 1.0（配额全部 BOSS，构成最纯粹）。
+   *   作为独立常量表达「90 波后只有 BOSS」，与上面两条曲线解耦。 */
+  bossOnlyRatio: 1.0,
+  /* BOSS 池不足的解法（关键：BOSS 池仅 10 种，90 波后每波 256~300 只不可能每只唯一）：
+   *   ① 常规波夹杂的 BOSS 属「小 BOSS」，**每波唯一实例数上限 = bossBudgetPerWave**（20）：
+   *      90+ 波虽然配额 256~300 只，但**最多同时新增 20 只 BOSS**，其余配额 = 按类型轮转复制
+   *      （同一 BOSS 可重复出现，如同普通怪同种多只共存），只数曲线**不变**。
+   *      理由：BOSS 池 10 种 × 每波 20 只唯一 = 每类每波 ≤2 只；既守住「同种不刷几百只」的观感，
+   *      又不削只数（用户口径「数量保持不变」）。
+   *   ② 每波第 1 只 BOSS（90+ 波即第 1 只）恒定使用 `bossMixAnchorId`（终局常规 BOSS），
+   *      保证每波都有「可辨认的守关 BOSS」，其余按 `_bossPool()` 轮转。 */
+  bossBudgetPerWave: 20,    // 常规波 BOSS 每波唯一实例上限（超出部分按类型轮转复制）
+  bossMixAnchorId: "BS0001",// 每波首只 BOSS 的固定定义（终局常规 BOSS 锚点）
+  /* 每帧唯一实例预算（性能护栏）：同帧最多真正 new 的「非普通怪」数量。
+   *   普通怪（NM）沿用 spawnBatch(12)；精英/BOSS 构造重、词缀多，另给更小的预算。
+   *   ⚠️ 只在**这一帧**限流，队列照常消费，只数曲线不变（跨帧补齐）。 */
+  eliteSpawnBatch: 6,       // 每帧最多生成的精英数（ED）
+  bossSpawnBatch: 3,        // 每帧最多生成的 BOSS 数（BS）
+  eliteAffixChance: 1.0,    // 精英怪施加词缀（applyElite）的概率：1.0 = 必定带词缀（ED 本就该带）
+
+  /* ---------- 21.17 深渊局内升级：击杀经验（js/combat.js 的 dropEndlessExp 消费）----------
+   * 深渊每波最多 300 只（远高于主线密度），故经验量需整体缩放，否则升级过快。
+   * 掉落枚数分档在代码里固定（Boss 5 / 精英 3 / 小怪 1，对齐主线 Boss 5 枚手感），
+   * 这里只控制「单只怪物给多少经验」的倍率——策划调参改这一个数即可。 */
+  expMul: 1.0,              // 深渊击杀经验倍率（× m.d.exp 后再按分档拆成多枚宝石）
+
+  /* ---------- 21.17 深渊内玩家强化（js/items.js 的 applyEndlessPlayerBuff 消费）----------
+   * 【为什么需要】深渊第 1 波就有 10 只怪（含 1 只精英）、80 波后每波 200 只全精英，
+   *   而玩家 H001 只有 100 血 / 防 2，怪物单次接触 5.5~21 伤害 —— 真机实测进图
+   *   5~10 秒即被围殴致死，第 1 波都过不去。升级系统虽已打通，但 LV1 进图无加成，
+   *   远水不解近渴，故给玩家一层**仅深渊生效**的属性倍率。
+   * 【为什么改玩家不改怪】CFG.monsters 是主线 99 关与深渊共享的全局表，削怪会污染
+   *   主线手感；强化玩家天然隔离（非深渊时 applyEndlessPlayerBuff 直接早退）。
+   * 【数值依据】波 1 有效 DPS 实测 ≈20 → 100 血仅 5 秒；hpMul 5 = 500 血 → 25 秒，
+   *   给足反应与走位时间。后期（波 80+）200 只精英 10 只贴身 ≈194 DPS → 2.6 秒，
+   *   必须靠走位 + 局内升级成长 —— 保留大秘境「后期紧张」的手感。
+   * 【调参入口】策划改这三个倍率即可，逻辑零改动。 */
+  playerBuff: {
+    hpMul: 5,               // 生命上限倍率（100 → 500）
+    defMul: 2,              // 防御倍率（2 → 4）
+    atkMul: 1.5,            // 攻击倍率（14 → 21，缓解 200 只精英的清场压力）
+  },
+
+  /* ---------- 21.17 HUD 与结算面板数值（🅒 独占；全部可调，逻辑不硬编码）----------
+   * HUD = js/hud_endless.js（canvas 绘制，屏幕左上）；结算/说明 = js/ui-panels.js。
+   * 倒计时是否「红闪」由 timeWarnSec 阈值决定；进度条/配色等一律读本区块。 */
+  hud: {
+    timeWarnSec: 60,          // 剩余时间 ≤ 此值（秒）→ 倒计时转红并闪烁（最后 60 秒告警）
+    blinkPeriodSec: 0.5,      // 红闪周期（秒）：亮/暗各半个周期
+    barWidth: 176,            // 推进进度条像素宽（HUD 内，缩放前基准）
+    barHeight: 8,             // 推进进度条像素高
+    panelPadX: 12,            // HUD 背板水平内边距（缩放前基准）
+    panelPadY: 9,             // HUD 背板垂直内边距
+    lineH: 22,                // HUD 单行行高（缩放前基准）
+    fontSize: 15,             // HUD 正文字号（缩放前基准）
+    fontSmall: 11,            // HUD 小字（击杀/同屏）字号
+    timeFontSize: 24,         // 倒计时字号（最醒目）
+    bossFontSize: 14,         // BOSS 状态字号
+    hintFontSize: 13,         // 撤离点提示字号
+    safeAreaExtra: 0,         // 安全区额外下移像素（env 之外的人工补偿，默认 0）
+  },
+  hudColors: {
+    time: "#cfe0ff",          // 倒计时：常态冷白
+    timeWarn: "#ff5b5b",      // 倒计时：告警红（最后 timeWarnSec 秒）
+    progressBg: "rgba(120,150,200,0.25)",   // 进度条底槽
+    progressFill: "#7de08a",  // 进度条填充：绿（未满）
+    progressBoss: "#ffd76a",  // 进度条：接近/到达 BOSS 阈值时转金
+    boss: "#ff8f6a",          // BOSS 状态：暖橙
+    bossFinal: "#ff5b5b",     // 最终 BOSS：高亮红
+    extract: "#7de08a",       // 撤离点提示：绿（醒目闪烁）
+    wave: "#e8c574",          // 波次：金（沿用）
+    kill: "#ff8f6a",          // 击杀：暖橙（沿用）
+    cap: "#8fd0ff",           // 同屏：冷蓝（沿用）
+    panel: "rgba(10,16,28,0.55)",
+    edge: "rgba(120,150,200,0.35)",
+  },
+  /* 结算面板三结局：标题文案 + 色调类（UI.showEndlessSettle 按结局择一）。
+   * extract = 走过撤离点读条完成（全收益，绿）；timeout = 时限耗尽（保留 30%，红）；
+   * death = 玩家阵亡（保留 30%，红）。 */
+  settle: {
+    extractTitle: "撤离成功",
+    timeoutTitle: "时限耗尽",
+    deathTitle: "深渊阵亡",
+    extractClass: "good",     // 面板标题色调类（绿）
+    failClass: "bad",         // 面板标题色调类（红）
+  },
 };

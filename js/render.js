@@ -338,6 +338,7 @@ function render() {
     }
   }
   if (typeof renderEndlessHud === "function") renderEndlessHud(ctx);   // 21.15 无尽 HUD（🅒）单行桥接，实现见 js/hud_endless.js
+  renderAbyssExtract(ctx, w);   // 21.17 深渊撤离点（🅑 独立区块，单行调用）：终点 BOSS 掉落的撤离点信标
   // 弹道
   for (const b of w.playerBullets) {
     ctx.fillStyle = b.isSkill ? "#6cb2ff" : "#ffd76a";
@@ -515,6 +516,44 @@ function render() {
   }
 }
 /* ---------------- 渲染 ---------------- */
+
+/* ============================================================================
+ * 21.17 深渊撤离点渲染（🅑 独立区块 §5.45，单行调用点 = render() 内）
+ * ----------------------------------------------------------------------------
+ * 只渲染**深渊世界**的撤离点信标：绿系信标 + 虚线判定圈 + 读条进度环，
+ * 视觉与主线 exitBeacon 同款（同一套配色/半径语义），但用独立函数承载，
+ * 以免在 render.js 的 isMain / artisan 条件分支里做跨世界耦合。
+ * ⚠️ 零改动既有分支：非深渊世界（kind !== "endless"）恒早退。
+ * ========================================================================== */
+function renderAbyssExtract(ctx, w) {
+  if (!w || w.kind !== "endless" || !w.exitBeacon) return;   // 仅深渊 + 已掉点
+  var b = w.exitBeacon;
+  var judgeR = (typeof abyssExtractCfg === "function") ? abyssExtractCfg().judgeRadius : 100;
+  var channel = (typeof abyssExtractCfg === "function") ? abyssExtractCfg().channel : 3.0;
+  ctx.save();
+  // 判定圈（虚线 = 真实判定圈，与主线 exitBeacon / 祭坛同一契约）
+  ctx.setLineDash([6, 6]); ctx.strokeStyle = "#7de08a55"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(b.x, b.y, judgeR, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  // 信标本体
+  ctx.beginPath(); ctx.arc(b.x, b.y, 30, 0, Math.PI * 2);
+  ctx.fillStyle = "#7de08a33"; ctx.fill();
+  ctx.strokeStyle = "#7de08a"; ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.fillStyle = "#7de08a"; ctx.font = "20px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("◀", b.x, b.y);
+  ctx.font = "13px sans-serif";
+  ctx.fillText("撤离点（圈内自动读条 " + channel + " 秒 · 全收益）", b.x, b.y - 46);
+  // 读条进度环（受击归零；圈内英雄全部离开则缓慢衰退）
+  var prog = w.abyssExtractProgress || 0;
+  if (prog > 0 && channel > 0) {
+    var frac = Math.min(1, prog / channel);
+    ctx.strokeStyle = "#ffd76a"; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.arc(b.x, b.y, 40, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = "#ffd76a"; ctx.font = "bold 13px sans-serif";
+    ctx.fillText(Math.floor(frac * 100) + "%", b.x, b.y - 58);
+  }
+  ctx.restore();
+}
 
 /** 毒圈渲染：红色半透明环边界 + 环外渐暗遮罩（在障碍层之后、实体之前绘制）。 */
 function renderHazard(ctx, w) {
