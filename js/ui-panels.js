@@ -482,6 +482,10 @@ UI.hideEndlessSettle = function () {
 };
 
 UI.showEndlessIntro = function () {
+  /* 21.18 弹窗暂停（用户拍板「暂停游戏」）：面板显示期间复用 Game.paused 闸门 ——
+   * 主循环据此跳过世界/玩家/同伴更新（怪物静止、不结算伤害），关闭后恢复。
+   * 解决「首次进深渊边读说明边被围殴致死」。typeof 守卫兼容测试桩（无 Game 时静默）。 */
+  if (typeof Game !== "undefined" && Game) Game.paused = true;
   var scr = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("screen-endless-intro") : null;
   if (scr && scr.classList) scr.classList.remove("hidden");
   var body = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("endless-intro-body") : null;
@@ -507,6 +511,8 @@ UI.showEndlessIntro = function () {
 UI.hideEndlessIntro = function () {
   var scr = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("screen-endless-intro") : null;
   if (scr && scr.classList) scr.classList.add("hidden");
+  /* 21.18 解除弹窗暂停：与 showEndlessIntro 配对（面板关闭 → 世界恢复推进） */
+  if (typeof Game !== "undefined" && Game) Game.paused = false;
   return true;
 };
 

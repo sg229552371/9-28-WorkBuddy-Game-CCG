@@ -803,7 +803,8 @@ function setupAbyssPortal(w) {
 /** 进圈判定 + 读条推进（由 updateCityWorld 单行调用，city 世界 + avatar 存在时）。
  *  - 进圈：积累进度并置 abyssReady=true（高亮提示）；
  *  - 出圈：置 abyssReady=false 并 1.2 倍速衰退（与出征门/撤离读条同一契约）；
- *  - 读满 channel：调用 enterEndless() 进入无尽世界（守卫 endlessReady）。 */
+ *  - 读满 channel：调用 enterAbyssFromPortal() 进门（守卫 endlessReady；内部先走
+ *    「深渊选角」界面，宿主未提供选角入口时回落直接进入）。 */
 function updateAbyssPortal(dt) {
   var w = G.activeWorld, a = G.cityAvatar;
   if (!w || w.kind !== "city" || !a || !w.abyssPortal) return;
@@ -814,7 +815,7 @@ function updateAbyssPortal(dt) {
     w.abyssProgress += dt;
     if (w.abyssProgress >= p.channel) {
       w.abyssProgress = 0;
-      enterEndless();
+      enterAbyssFromPortal();
       return;
     }
   } else {
@@ -824,7 +825,8 @@ function updateAbyssPortal(dt) {
 
 /** 深渊门触屏点选（与 cityNpcTap 同款结构，缺口最小化）。
  *  门槛三重：① G.state === "city" ② G.abyssReady（已进圈）③ 点击点落在门 tapRadius 内。
- *  命中：已就绪则立即进入无尽世界；未就绪 toast 提示。返回 true = 本次点击已消费。 */
+ *  命中：已就绪则进门（改走「深渊选角」界面，见 enterAbyssFromPortal）；未就绪 toast 提示。
+ *  返回 true = 本次点击已消费。 */
 function abyssPortalTap(clientX, clientY) {
   if (G.state !== "city") return false;
   var w = G.activeWorld, p = w && w.abyssPortal;
@@ -834,8 +836,21 @@ function abyssPortalTap(clientX, clientY) {
   var c = abyssCfg();
   var r = c.tapRadius || ABYSS_FALLBACK.tapRadius;
   if (U.dist(pt.x, pt.y, p.x, p.y) > r) return false;
-  enterEndless();
+  enterAbyssFromPortal();
   return true;
+}
+
+/* ---------- 深淵进门入口（21.18：平移主线玩法 —— 进门先选角色） ----------
+ * 用户口径：深渊 = 主线玩法的 100 波大秘境版本，所以进门流程应与主线一致
+ *   （主城传送门 → 选关 → 选角 → 战斗；深渊之门 → **选角** → 深渊战斗）。
+ * 实现：优先委托宿主 Game.enterAbyssCharSelect()（走 screen-character 选角界面，
+ *   选完由 btn-char-start 调 enterEndless(selectedChars)）；
+ *   ⚠️ 宿主未提供时（旧版本 / 测试桩）**回落直接进入**，保证门始终可用。 */
+function enterAbyssFromPortal() {
+  if (typeof Game !== "undefined" && Game && typeof Game.enterAbyssCharSelect === "function") {
+    if (Game.enterAbyssCharSelect()) return true;
+  }
+  return enterEndless();
 }
 
 /* ---------- 进出门流程 ---------- */
@@ -843,8 +858,10 @@ function abyssPortalTap(clientX, clientY) {
 /** 进入无尽世界：首次弹规则说明（存档标记 endlessSeen）；守卫 Endless 就绪。
  *  - 就绪：切 G.state="playing"，创建世界 + begin，置 G.inEndless=true；
  *  - 未就绪：toast 提示并留在主城（安全降级，不抛错）。 */
-function enterEndless() {
-  if (G.state !== "city") return false;
+function enterEndless(chars) {
+  /* 21.18：允许两个入口状态 —— 主城直接进（旧路径）/ 深渊选角界面点「开始」进（新路径）。
+   * ⚠️ 选角界面 G.state === "charSel"，若只放行 "city" 会导致「点开始无反应」。 */
+  if (G.state !== "city" && G.state !== "charSel") return false;
   // 首次进入：先记存档标记（G.saved.endlessSeen，跨会话只弹一次）。
   // ⚠️ 面板弹窗**不能在这里做**——下方 Game.startRun 会调 UI.showHudOnly() 把 screen 层
   //    切走（真机复现：说明面板一闪而过/根本看不到）。挪到本函数末尾再弹。
@@ -858,7 +875,12 @@ function enterEndless() {
    * `G.run.weaponInv` 每帧抛 TypeError（真机复现：黑屏 + 控制台刷屏）。
    * 复用 startRun 的上下文构建（队伍/局外等级加成/背包/芯片/模块/recomputeWeapon），
    * 再把 activeWorld 换成无尽世界 —— 与正式关卡开局的字段集合严格一致，杜绝漏项。 */
-  var team = (G.team && G.team.length) ? G.team : [CFG.heroes[0]];
+  /* 角色来源优先级（21.18 深渊选角）：显式入参（选角界面选定）> 上次队伍 G.team > 首个英雄。
+   * ⚠️ 入参应是 CFG.heroes 的**原始英雄定义**（与主线 startRun 同口径）；
+   *    局外等级加成由 startRun 内部 applyOutLevel 统一施加，此处不重复应用。
+   * ⚠️ 兼容性：旧调用点（updateAbyssPortal / 测试桩）不带参数 → 恒等旧行为。 */
+  var team = (Array.isArray(chars) && chars.length) ? chars
+    : ((G.team && G.team.length) ? G.team : [CFG.heroes[0]]);
   /* startRun 会读 `G.levelCfg.mapW/mapH/name`（关卡表产物）——无尽模式没有「关卡」，
    * 故先兜一个**深渊虚拟关卡**（尺寸用城市地图尺寸，名字「无尽深渊」），
    * 只供 startRun 建世界与提示文案使用；随后 activeWorld 立刻被无尽世界覆盖。 */
@@ -888,13 +910,23 @@ function enterEndless() {
     G.state = "playing";
   }
   if (prevLevelCfg) G.levelCfg = prevLevelCfg;   // 还原（无尽世界不依赖关卡表）
-  var W = (CFG.city && CFG.city.mapW) || 1920;
-  var H = (CFG.city && CFG.city.mapH) || 960;
+  /* 21.18 修复（「进图必死」的机械根因）：世界尺寸必须取 CFG.endless 的**无尽竞技场**尺寸。
+   * 原实现误用 CFG.city（1280×960），而 startRun 的出生点取 CFG.levels[0]（1920×1920）中心
+   * =（960,960）→ 玩家落在**世界下边缘**（y 恰 = 世界高），_spawnSpot 的 maxY 变负数
+   * → 刷怪环带退化（怪只从左右来、x 甚至算到世界外）→ 开局被贴脸围殴。
+   * 同源修正：世界、出生点、刷怪环带三者统一到 CFG.endless.mapW/mapH。 */
+  var W = (typeof CFG.endless !== "undefined" && CFG.endless.mapW) || 1920;
+  var H = (typeof CFG.endless !== "undefined" && CFG.endless.mapH) || 1920;
   var world = Endless.makeWorld(W, H);
   G.endlessWorld = world;
   G.activeWorld = world;          // ★ 覆盖 startRun 建的 mainWorld：无尽世界接管
   G.mainWorld = world;            // 与 activeWorld 同步，避免队友/无人机的世界归属判断落空
   G.inEndless = true;
+  /* 玩家 + 队友统一落位到**无尽世界中心**（与 startRun 的关卡出生点解耦），并重铺尾迹——
+   * 否则队友仍停在 startRun 旧世界的坐标上，可能出现出界/错位。 */
+  if (G.player) { G.player.x = world.w / 2; G.player.y = world.h / 2; }
+  if (typeof seedTrail === "function") seedTrail(world, CFG.team.follow.seedDir[0], CFG.team.follow.seedDir[1]);
+  if (typeof snapCompanions === "function") snapCompanions(world);
   Endless.begin(world);
   /* 21.17 深渊玩家强化：G.inEndless 置位后 computeStats() 才返回强化倍率，
    * 故必须**在置位之后**补满血 —— 否则 hpMax 已涨到 500 但当前 hp 仍是主线的残血，

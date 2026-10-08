@@ -18,7 +18,7 @@
 | 工作区（PC 本地） | `D:/AI-game-All/HTML_TEST_002` |
 | **试玩链接（正式·主入口）** | `https://bagrogue-shooter.app.workbuddy.host/`（WorkBuddy 托管站 · 国内手机优先）|
 | 试玩链接（备用·自动最新） | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/`（Pages · push 即生效）|
-| 门禁 | `bash run_tests.sh`（全量 63 项 / 2928 断言）· `bash run_tests.sh --quick` |
+| 门禁 | `bash run_tests.sh`（全量 64 项 / 2949 断言）· `bash run_tests.sh --quick` |
 | 交付 | 每轮：门禁全绿 → commit → push → **重新发布托管站** → 给的试玩链接 |
 
 > ⚠️ **托管站是独立部署，不会自动跟随 GitHub**。用户以它为主入口 → 每轮改完 **必须重新发布**，否则手机上玩到的是旧版（此坑已踩过一次）。
@@ -89,7 +89,7 @@
 # 日常开发（快）
 bash run_tests.sh --quick          # 3.4s，core + 冒烟
 # 交付前（必须全绿）
-bash run_tests.sh                  # 8.6s，2661 断言
+bash run_tests.sh                  # 8.6s，2949 断言
 bash run_tests.sh --suite=ui       # 单套件
 bash run_tests.sh --list           # 列出套件
 ```

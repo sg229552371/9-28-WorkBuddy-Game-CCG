@@ -113,8 +113,28 @@ const Game = {
     if (typeof UI !== "undefined" && UI.applyOrientation) UI.applyOrientation();
   },
 
-  /* ---------- 界面流程（首页 → 主城 → 传送门 → 选关 → 选角 → 战斗） ---------- */
+  /* ---------- 界面流程（首页 → 主城 → 传送门 → 选关 → 选角 → 战斗） ----------
+   * 21.18「深渊平移主线玩法」：选角界面被**两条线**复用 ——
+   *   ① 主线出征（来源 charSelectFor="level"）：返回 → 选关；开始 → startRun；
+   *   ② 深渊进门（来源 charSelectFor="endless"）：返回 → 主城；开始 → enterEndless(选定角色)。
+   *   两条线共用 screen-character 与 UI.selectedChars，仅去向不同（见 bindEvents）。 */
   enterCharSelect() {
+    this.charSelectFor = "level";     // 主线出征（默认来源）
+    this._openCharSelect();
+  },
+  /* 深渊进门选角（21.18）：与主线同一界面，来源标记 = "endless"。
+   * 未就绪（Endless 未加载）时返回 false → 调用方（enterAbyssFromPortal）回落直接进入。 */
+  enterAbyssCharSelect() {
+    if (typeof endlessReady === "function" && !endlessReady()) return false;
+    this.charSelectFor = "endless";
+    this._openCharSelect();
+    if (typeof UI !== "undefined" && UI.toast) {
+      UI.toast("◈ 深渊出战 —— 选择出征的英雄（1~" + CFG.team.maxSize + " 人）", "gold");
+    }
+    return true;
+  },
+  /* 选角界面公共开屏（两条线共用；改来源请用上面的两个入口） */
+  _openCharSelect() {
     G.state = "charSel";
     UI.selectedChars = [];   // 每次进入选角重新组队
     UI.buildCharList();
@@ -256,9 +276,19 @@ const Game = {
     on("btn-goodbye-back", () => UI.showScreen("screen-main"));
     /* ---- 流程：选关 / 选角 / 结算 / 死亡 ---- */
     on("btn-level-back", () => this.returnToCity());            // 选关「返回」→ 回主城
-    on("btn-char-back", () => this.openLevelSelect());          // 角色选择 → 关卡选择
+    /* 选角「返回」（21.18 按来源分流）：深渊 → 回主城；主线 → 回关卡选择 */
+    on("btn-char-back", () => {
+      if (this.charSelectFor === "endless") { this.returnToCity(); return; }
+      this.openLevelSelect();
+    });
+    /* 选角「开始」（21.18 按来源分流）：深渊 → 进无尽世界；主线 → 正式出征 */
     on("btn-char-start", () => {
-      if (UI.selectedChars && UI.selectedChars.length) this.startRun(UI.selectedChars);
+      if (!(UI.selectedChars && UI.selectedChars.length)) return;
+      if (this.charSelectFor === "endless") {
+        if (typeof enterEndless === "function") enterEndless(UI.selectedChars.slice());
+        return;
+      }
+      this.startRun(UI.selectedChars);
     });
     on("btn-settle-ok", () => this.backToMenu());
     on("btn-death-ok", () => this.backToMenu());

@@ -296,7 +296,18 @@ vm.runInContext(`
   const scy = ((cw.abyssPortal.y - camY) * zoom) * (rect.height / G.H) + rect.top;
   G.state = "city"; G.inEndless = false;
   const hit = abyssPortalTap(scx, scy);
-  check("十3 圈内点击门本体 → 消费点击并进入（inEndless=true）", hit === true && G.inEndless === true);
+  /* 21.18「深渊平移主线玩法」：点门不再直接开打，而是先进**选角界面**（与主线一致）。
+   * 断言改为：点击被消费 + 切到选角屏 + 来源标记 = endless。 */
+  check("十3 圈内点击门本体 → 消费点击并进入深渊选角",
+        hit === true && G.state === "charSel"
+        && typeof Game !== "undefined" && Game.charSelectFor === "endless");
+  /* 选角「开始」→ enterEndless(选定角色) → 真正进入无尽世界（模拟点 btn-char-start） */
+  const heroList = (UI.selectedChars && UI.selectedChars.length) ? UI.selectedChars.slice() : [CFG.heroes[0]];
+  check("十4 选角已默认选中英雄（可直接开打）", heroList.length >= 1);
+  enterEndless(heroList);
+  check("十5 选角开始 → 进入无尽世界（inEndless=true / kind=endless）",
+        G.inEndless === true && !!G.activeWorld && G.activeWorld.kind === "endless");
+  /* 选角返回按钮的去向（来源=endless → 回主城，不回关卡选择） */
   G.inEndless = false; G.state = "city";
   tapW.abyssReady = false;                       // 复位
 
