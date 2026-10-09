@@ -54,5 +54,5 @@ echo ""
 echo "==== 完成：远程 main 已更新 ===="
 git log --oneline -1 origin/main
 echo "备用入口（自动最新，约 1~2 分钟）：https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/"
-echo "!! 主入口 = WorkBuddy 托管站：https://bagrogue-shooter.app.workbuddy.host/"
+echo "!! 主入口 = WorkBuddy 托管站：https://bagrogue-shooter-85672.app.workbuddy.host/"
 echo "!! 它是独立部署、不会自动跟随 GitHub —— 必须再执行一次「重新发布」并做指纹复验，否则手机上仍是旧版。"
