@@ -505,7 +505,7 @@ const BGM = {
 /* ---------- 版本上报（缓存自愈诊断；供排查新旧混合缓存） ----------
  * 与 index.html 顶部 APP_VERSION / <meta name="app-version"> 保持一致（发版时三处同步改）。
  * 纯静态字段赋值，不依赖 document/window —— 测试沙箱可无 DOM 独立加载本文件。 */
-Assets.buildVersion = "20261032";
+Assets.buildVersion = "20261033";
 try { console.log("[build] " + Assets.buildVersion); } catch (e) { /* 无 console 环境静默跳过 */ }
 
 /* ============================================================

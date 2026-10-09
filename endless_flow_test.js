@@ -234,6 +234,9 @@ vm.runInContext(`
   check("七2 首次进入：弹出规则说明面板", shown("screen-endless-intro"));
   check("七3 hasSeenEndlessIntro() 返回 true", hasSeenEndlessIntro() === true);
   UI.hideEndlessIntro();
+  // 26.x 回归（真机 bug）：关闭说明页必须成对摘掉 #hud 的 hidden——
+  // 否则深渊局内 DOM HUD（进度条/LV·货币·经验/负重/背包/队伍技能栏）全部不可见，只剩 canvas 信息区。
+  check("七3b 关闭说明页后 #hud 恢复可见（hidden 被成对摘除）", !get("hud").classList.contains("hidden"));
   // 二次进入：不应再弹（标记已存在）
   G.inEndless = false; G.state = "city";
   enterEndless();                       // 二次

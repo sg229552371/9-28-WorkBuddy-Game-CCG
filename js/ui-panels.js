@@ -548,6 +548,11 @@ UI.hideEndlessIntro = function () {
   if (scr && scr.classList) scr.classList.add("hidden");
   /* 21.18 解除弹窗暂停：与 showEndlessIntro 配对（面板关闭 → 世界恢复推进） */
   if (typeof Game !== "undefined" && Game) Game.paused = false;
+  /* 26.x 修复（真机复现：深渊局内 DOM HUD 全部消失）：showEndlessIntro 把 #hud 加了 hidden，
+   * 关闭说明页时必须成对摘掉 —— 否则顶部进度条 / LV·货币·经验 / 负重 / 背包 / 队伍技能栏
+   * 整个战斗 HUD 不可见，只剩 canvas 绘制的左上信息区（主线不弹说明页故从未暴露）。 */
+  var hud = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("hud") : null;
+  if (hud && hud.classList) hud.classList.remove("hidden");
   return true;
 };
 
