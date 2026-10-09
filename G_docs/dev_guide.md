@@ -5,23 +5,25 @@
 > 本机技能目录 `~/.workbuddy/skills/` 与 `.workbuddy/`（记忆）**都不在仓库里**，
 > 换设备不会同步 —— 所以关键知识一律沉淀到本文件与 `G_docs/` 内。
 
-**线上试玩（正式·主入口，手机优先）：** https://bagrogue-shooter.app.workbuddy.host/
+**线上试玩（正式·主入口，手机优先）：** https://bagrogue-shooter-85672.app.workbuddy.host/
 **备用入口（push 后 1~2 分钟自动生效）：** https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/
 
 > ### 路径与链接统一约定（2026-10-09 起）
 > | 项 | 值 |
 > |---|---|
-> | GitHub 仓库（唯一真源） | `https://github.com/sg229552371/9-28-WorkBuddy-Game-CCG`（私有 · `main`）|
+> | GitHub 仓库（唯一真源） | `https://github.com/sg229552371/9-28-WorkBuddy-Game-CCG`（**公开** · `main`）|
 > | 云端沙箱工作区 | `/workspace/9-28-WorkBuddy-Game-CCG` |
 > | PC 本地工作区 | `D:/AI-game-All/HTML_TEST_002` |
-> | **正式试玩链接（主入口）** | `https://bagrogue-shooter.app.workbuddy.host/` —— WorkBuddy 托管站，国内手机体验优先 |
+> | **正式试玩链接（主入口）** | `https://bagrogue-shooter-85672.app.workbuddy.host/` —— WorkBuddy 托管站，国内手机体验优先 |
 > | 备用试玩链接（自动最新） | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` —— Pages，push 即生效 |
 > | 本地预览 | `python3 -m http.server 8123` → `http://127.0.0.1:8123/index.html` |
 > | 旧线归档分支 | `archive/pc-line-18`（方案 A 替换前的 18 提交，随时可回）|
 >
 > ⚠️ **托管站是独立部署，不会自动跟随 GitHub**。它被定为主入口 → **每轮 `push` 之后都必须重新发布**，
 > 否则手机上玩到的是旧版（此坑已踩过一次：停旧版导致"看不见深渊之门"）。发布后**必须指纹复验**。
-> ⚠️ **历史遗留的三方链接已作废**：`ae6c0d4fb9b5c352d.app.workbuddy.host`（旧沙箱域名，已失效）。
+> ⚠️ **两个旧托管域名已冻结，不要再写、不要与新入口混用**：
+> `bagrogue-shooter.app.workbuddy.host`（停在 `20261025`，app 归属另一个工作区，本机无法再更新）
+> 与 `ae6c0d4fb9b5c352d.app.workbuddy.host`（停在 `20261021`）。
 > 今后一律以上表为准，**不要再写其它试玩链接**。
 
 > ⚠️ **代码以 GitHub `main` 为唯一真源**：云端/PC 各自 `push` 到远端收敛，不要假设任一侧本地必然最新。
@@ -175,7 +177,7 @@ git branch --show-current   # 必须是 main
 ### 0.5 手机端试玩（**主入口 = WorkBuddy 托管站**）
 
 ```
-https://bagrogue-shooter.app.workbuddy.host/     ← 主入口（国内手机体验优先）
+https://bagrogue-shooter-85672.app.workbuddy.host/     ← 主入口（国内手机体验优先）
 https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/     ← 备用（push 后自动生效）
 ```
 
@@ -193,9 +195,10 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/     ← 备用（push 后
 
 | 域名 | `app-version` | 结论 |
 | --- | --- | --- |
-| `bagrogue-shooter.app.workbuddy.host` | 20261025 | **主入口**（手机优先） |
-| `sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` | 20261025 | **备用**，push 后自动最新 |
-| `ae6c0d4fb9b5c352d.app.workbuddy.host` | **20261021** | 旧沙箱，**已冻结**（未失效但不再更新）|
+| `bagrogue-shooter-85672.app.workbuddy.host` | 20261026 | **主入口**（手机优先，WorkBuddy 托管站）|
+| `sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` | 20261026 | **备用**，push 后自动最新 |
+| `bagrogue-shooter.app.workbuddy.host` | 20261025 | 旧托管站，**已冻结**（app 归属另一工作区，本机无法更新）|
+| `ae6c0d4fb9b5c352d.app.workbuddy.host` | 20261021 | 更早的旧沙箱，**已冻结** |
 
 ⚠️ **不要在两个域名之间来回切换。** 两者版本号不同 → `index.html` 头部的「缓存自愈」
 （`localStorage.app_version` 对不上就 `location.reload` 强刷）每次切换都会触发一次强刷，
@@ -1055,7 +1058,7 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 - **门禁：46 项测试 2081 断言全绿 bad=0**；git 21 提交，最新 `450c3c0`（21.1）
 - 全部历史 patch 在 /workspace（增量 `00NN-increment-*` + 全量 `00NN-all-in-one-vNN`）
 - 线上发布：~~正式入口 = GitHub Pages~~（**2026-10-09 已变更** → 见 §0 顶部约定表：
-  **主入口 = WorkBuddy 托管站** `https://bagrogue-shooter.app.workbuddy.host/`，每轮 push 后必须重新发布；
+  **主入口 = WorkBuddy 托管站** `https://bagrogue-shooter-85672.app.workbuddy.host/`，每轮 push 后必须重新发布；
   GitHub Pages 降为备用/自动最新入口）
 
 ### 10.2 每轮一句话

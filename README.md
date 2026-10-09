@@ -55,7 +55,7 @@ node smoke_test.js         # 单个测试
 
 ## 线上试玩
 
-**主入口（手机优先）：** <https://bagrogue-shooter.app.workbuddy.host/>
+**主入口（手机优先）：** <https://bagrogue-shooter-85672.app.workbuddy.host/>
 —— WorkBuddy 托管站，国内访问更稳；⚠️ **独立部署，每轮 push 后必须重新发布**。
 
 **备用入口（自动最新）：** <https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/>
@@ -63,16 +63,21 @@ node smoke_test.js         # 单个测试
 
 | 用途 | 地址 |
 |---|---|
-| **正式试玩链接（主入口）** | `https://bagrogue-shooter.app.workbuddy.host/`（push 后需重新发布 + 指纹复验）|
+| **正式试玩链接（主入口）** | `https://bagrogue-shooter-85672.app.workbuddy.host/`（push 后需重新发布 + 指纹复验）|
 | 备用试玩链接（自动最新） | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` |
 | GitHub 仓库（唯一真源） | `https://github.com/sg229552371/9-28-WorkBuddy-Game-CCG`（**公开**；clone 无需登录，push 需令牌）|
 | PC 本地工作区 | `D:/AI-game-All/HTML_TEST_002` |
 | 云端沙箱工作区 | `/workspace/9-28-WorkBuddy-Game-CCG` |
 | 本地预览 | `python3 -m http.server 8123` → <http://127.0.0.1:8123/index.html> |
 
-> ⚠️ 旧沙箱域名 `ae6c0d4fb9b5c352d.app.workbuddy.host` **已冻结**：还能打开，但停在
-> `app-version=20261021`（4 天前的旧版），不再跟随发布更新。**不要再用，也不要与新版混用** ——
-> 两个域名版本号不同，来回切换会让「缓存自愈」每次都触发强刷 + 全量重新下载素材，
+> ⚠️ **两个旧托管域名已冻结，不要再用，也不要与新版混用**：
+>
+> | 冻结域名 | 停在 | 说明 |
+> |---|---|---|
+> | `bagrogue-shooter.app.workbuddy.host` | `20261025` | 2026-10 之前的主入口，app 归属另一个工作区，**本机无法再更新它**；已被 `-85672` 那个新 app 取代 |
+> | `ae6c0d4fb9b5c352d.app.workbuddy.host` | `20261021` | 更早的旧沙箱尝试 |
+>
+> 两个域名版本号都落后于新版，来回切换会让「缓存自愈」每次都触发强刷 + 全量重新下载素材，
 > 在手机弱网下容易撞上首屏 12 秒看门狗（表现为「启动超时」诊断面板）。
 > 统一用上面的**主入口**或 **GitHub Pages**。
 
