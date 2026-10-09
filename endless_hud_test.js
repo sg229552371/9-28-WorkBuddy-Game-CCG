@@ -11,6 +11,7 @@
  *   六、行为级（规则 2）：深渊复用统一 HUD —— abyss-mode 开关 + updateHUD 数据照常写入
  *   七、行为级（规则 2）：逐英雄武器技能栏（主角 + 队友 = N 栏，含技能名 + 冷却态）
  *   八、空值保护：G / G.run / companions / DOM 缺失时全部不抛错
+ *   九、统一战斗 UI 契约护栏（必留元素 / 隐藏白名单 / 数据同源 / 深渊态行为）
  *
  * 桩：复用 endless_flow_test.js 的 FakeEl / ClassList + ui_v2_test 的 DOM 语义。
  * ⚠️ PASS 行文案不得出现英文 error / Error / FAIL（run_tests.sh 以 grep -ci 统计失败）。
@@ -303,6 +304,56 @@ vm.runInContext(`(function(){
   window.__packNullOk = ok;
 })();`, ctx, { filename: "pack-null" });
 check("八3 G.run 为空时属性包卡面渲染不抛异常", ctx.window.__packNullOk === true);
+
+/* ============================================================
+ * 九、统一战斗 UI 契约（26.x 用户口径的护栏 —— 防止后续改动破坏统一性）
+ *   契约：关卡地图战斗 UI = 唯一基准；深渊**只允许功能级增减**，不得另起一套布局。
+ *   ① 必留元素：经验条行(#hud-tr) / 队伍技能栏(#party-skillbar) / 资产(负重 #hud-bl + 背包按钮)
+ *   ② 隐藏白名单：abyss-mode 只准隐藏「自动战斗按钮 + 风格选择器」
+ *   ③ 数据同源：经验条等由 updateHUD 统一写；updateAbyssHud 只挂/摘 .abyss-mode
+ * ============================================================ */
+// ① 必留元素：静态存在（index.html 声明 + 深渊复用同一套）
+const MUST_IDS = ["hud-tr", "lv-num", "bar-exp", "coin-num", "exp-num", "party-skillbar", "hud-bl", "weight-num", "btn-backpack"];
+sc("九1 主线 HUD 三大必留元素在 index.html（经验条行 / 队伍技能栏 / 资产=负重+背包）",
+  MUST_IDS.every(id => htmlIds.has(id)));
+/* ② 隐藏白名单：abyss-mode 的 display:none 规则只允许出现在这两个选择器上
+ * ⚠️ 先剥注释再断言（本仓复发坑：CSS 注释里也会提到 #hud-tr / #abyss-hud 等词，直接正则必假红）。 */
+const cssNoCmt = css.replace(/\/\*[\s\S]*?\*\//g, "");
+const hiddenRules = (cssNoCmt.match(/#hud\.abyss-mode[^{}]*\{[^}]*display:\s*none/g) || []);
+sc("九2 abyss-mode 隐藏白名单：只准隐藏自动战斗按钮 + 风格选择器（当前 " + hiddenRules.length + " 条）",
+  hiddenRules.length <= 2 && hiddenRules.every(r => /#btn-autofight|#autofight-styles/.test(r)));
+sc("九3 三大必留元素没被任何 abyss-mode 规则隐藏（不被 display:none 点名）",
+  !/#hud\.abyss-mode[^{}]*(#hud-tr|#bar-exp|#party-skillbar|#hud-bl|#weight-num|#btn-backpack)/.test(cssNoCmt));
+// ③ updateAbyssHud 不得自行写经验条/货币/负重（只能 toggle .abyss-mode）
+const abyssFn = (uiSrc.match(/updateAbyssHud\(\)\s*\{[\s\S]*?\n  \},/) || [""])[0];
+sc("九4 updateAbyssHud 只挂/摘 .abyss-mode（不自写 lv-num / bar-exp / coin-num / weight-num）",
+  abyssFn.indexOf("abyss-mode") >= 0 && !/lv-num|bar-exp|coin-num|exp-num|weight-num/.test(abyssFn));
+
+// ④ 行为级：深渊态下 updateHUD 照常写入全部必留元素（与主线同一个函数、同一批 DOM）
+vm.runInContext(`(function(){
+  G.inEndless = true; G.state = "playing";
+  G.run.lv = 6; G.run.exp = 21; G.run.expNext = 42; G.run.coin = 88;
+  G.run.companions = [0, 1].map(function (i) {
+    var hd = CFG.heroes[i + 1];
+    return { heroDef: hd, id: hd.id, name: hd.name, alive: true, skillTimer: 0.3 };
+  });
+  for (var i = 0; i < 3; i++) G.run.heroModules[CFG.heroes[i].id] = [null, null, null, null];
+  UI.updateHUD();
+  window.__abyssLv = document.getElementById("lv-num").textContent;
+  window.__abyssExpWidth = document.getElementById("bar-exp").style.width;
+  window.__abyssCoin = document.getElementById("coin-num").textContent;
+  window.__abyssWeight = document.getElementById("weight-num").textContent;
+  window.__abyssBar = document.getElementById("party-skillbar").children.length;
+  window.__abyssModeOn = document.getElementById("hud").classList.contains("abyss-mode");
+  G.inEndless = false;
+})();`, ctx, { filename: "abyss-contract" });
+check("九5 深渊态下经验条行照常写入（LV 6 / 宽度 50% / 货币 88）",
+  ctx.window.__abyssLv === 6 && ctx.window.__abyssExpWidth === "50%" && String(ctx.window.__abyssCoin) === "88");
+check("九6 深渊态下资产行照常写入（负重数值非空）",
+  ctx.window.__abyssWeight !== undefined && ctx.window.__abyssWeight !== null && String(ctx.window.__abyssWeight).length > 0);
+check("九7 深渊态下队伍技能栏照常渲染（主角 + 2 队友 = 3 栏，与主线同一函数）",
+  ctx.window.__abyssBar === 3);
+check("九8 深渊态挂 .abyss-mode（唯一差异开关），主线态不挂", ctx.window.__abyssModeOn === true);
 
 console.log("----------------------------------------");
 console.log("行为断言 " + checks + " 项，失败 " + fails + " 项");
