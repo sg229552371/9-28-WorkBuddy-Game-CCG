@@ -113,10 +113,11 @@ vm.runInContext(`
   console.assert(Meta.levelUp("H001"), "升级成功");
   console.assert(Meta.heroLevel("H001") === 2, "局外等级 2");
   console.assert(Meta.levelUpCost("H001") === 65, "LV2→3 消耗 65");
+  const _h001hp = CFG.heroes[0].hp;                 // 快照：applyOutLevel 必须产出副本、不写回 CFG
   const boosted = applyOutLevel(CFG.heroes[0]);
   console.assert(boosted.hp === CFG.heroes[0].hp + 8 && boosted.atk === CFG.heroes[0].atk + 2
     && boosted.def === CFG.heroes[0].def + 1 && boosted.outLevel === 2, "局外加成生效");
-  console.assert(CFG.heroes[0].hp === 100, "CFG 原表不被污染");
+  console.assert(CFG.heroes[0].hp === _h001hp, "CFG 原表不被污染");
   // 9b) 武器/技能等级（局外结晶升级；技能等级 = 武器等级；上限 100，公式曲线）
   console.assert(CFG.weaponLevel.maxLv === 100, "武器/技能等级上限 = 100");
   console.assert(Meta.weaponLv("H001") === 1, "武器初始 LV1");
@@ -206,7 +207,8 @@ vm.runInContext(`
   // 12) 批次 B：角色 2~6 武器绑定（基础值来自各自武器技能；先重置词条环境避免串扰）
   run.weaponInv = new Inventory(CFG.weaponGrid.cols, CFG.weaponGrid.rows, "weapon");
   run.appliedCards.length = 0;
-  const heroWeaponChecks = { H002: ["AT103", 3], H003: ["AT105", 2], H004: ["AT107", 2], H005: ["AT109", 1], H006: ["AT111", 1] };
+  // 26.x 12 角重做：远程英雄各挂专属弹道普攻；近战英雄（H005 快枪手 / H006 重炮手）统一挂 AT121 近战挥砍
+  const heroWeaponChecks = { H002: ["AT103", 3], H003: ["AT105", 2], H004: ["AT107", 2], H005: ["AT121", 1], H006: ["AT121", 1] };
   for (const [hid, [skId, baseBullets]] of Object.entries(heroWeaponChecks)) {
     const h = CFG.heroes.find(x => x.id === hid);
     console.assert(h && CFG.weapons[h.weapon].skills.basic === skId, hid + " 武器→" + skId);

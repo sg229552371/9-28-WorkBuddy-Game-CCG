@@ -27,7 +27,7 @@ python3 -m http.server 8123
 ├── G_docs/             # 设计文档（随仓库携带的「随身上下文」）
 │   ├── dev_guide.md    # 开发指南：铁律、已踩的坑、测试基线 ← 新会话先读这份
 │   └── game_design_proposal.md   # 游戏设计提案（规则与数值）
-├── *_test.js           # 测试文件 75 个（门禁全部编排 75 套，见 tests/README.md 分类索引）
+├── *_test.js           # 测试文件 76 个（门禁全部编排 76 套，见 tests/README.md 分类索引）
 ├── run_tests.sh        # 全量测试运行器（判绿 = 每项 exit=0 且 bad=0）
 └── push.sh             # 测试全绿才提交并推送 GitHub
 ```
@@ -35,7 +35,7 @@ python3 -m http.server 8123
 ## 测试
 
 ```bash
-bash run_tests.sh          # 全量：75 套，3281 条断言（4 套件并发，约 2 分钟）
+bash run_tests.sh          # 全量：76 套，3336 条断言（4 套件并发，约 2 分钟）
 node smoke_test.js         # 单个测试
 ```
 

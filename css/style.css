@@ -169,6 +169,16 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .char-detail .cd-unlock-btn:hover { transform:translateY(-2px); filter:brightness(1.08); }
 .char-detail .cd-unlock-btn:disabled { filter:grayscale(1) brightness(.72); cursor:not-allowed; transform:none; box-shadow:none; }
 .char-detail .cd-stats { font-size:11px; color:#9fb4cc; margin-bottom:4px; line-height:1.45; }
+/* 属性说明区块（26.x）：角色详情里逐条列出「属性名 + 量纲 + 一句话说明」，
+ * 解决「只看到数字，看不出加成的是什么属性」。深色主题：面板深底、正文浅灰、属性名高亮。 */
+.char-detail .cd-stathelp {
+  margin:4px 0 6px; padding:6px 8px; border-radius:6px;
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+}
+.char-detail .cd-stathelp-t { font-size:11px; color:#cfe0f5; margin-bottom:3px; }
+.char-detail .cd-stat-row { font-size:11px; color:#9fb4cc; line-height:1.5; }
+.char-detail .cd-stat-row b { color:#ffe08a; margin-right:4px; }
+.char-detail .cd-stat-row span { color:#8fa3ba; }
 .char-detail .cd-skill { font-size:11px; color:#ffd76a; line-height:1.45; word-break:break-word; }
 .char-detail .cd-skill b { color:#ffe08a; }
 .char-detail .cd-lock { font-size:11px; color:#e0a24c; margin-top:3px; }

@@ -498,6 +498,7 @@ const UI = {
         `<div class="cd-desc">${h.desc}</div>` +
         `<div class="cd-stats">HP ${h.hp} · 攻击 ${h.atk} · 防御 ${h.def} · 移速 ${h.spd}` +
         `<span class="cd-id">　（LV1 基础值 · 解锁后随局外等级成长）</span></div>` +
+        this._statHelpHtml(this._statKeysOf(h)) +
         `<div class="cd-skill">⚔ <b>${wpn.name}</b> · 技能 LV1（解锁后可升级）<br>${skLine}</div>` +
         `<div class="cd-desc">解锁后可编入队伍出战。${cost ? "点击上方按钮花结晶解锁" : (ruleTxt !== "暂未解锁" ? "达成条件后自动解锁" : "敬请期待后续版本")}</div>`;
       if (canBuy) {
@@ -528,6 +529,7 @@ const UI = {
       `<div class="cd-desc">${h.desc}</div>` +
       `<div class="cd-stats">HP ${h.hp + g.hp * n} · 攻击 ${h.atk + g.atk * n} · 防御 ${h.def + g.def * n} · 移速 ${h.spd}` +
       `<span class="cd-id">　（基础 HP ${h.hp} / 攻 ${h.atk} / 防 ${h.def}）</span></div>` +
+      this._statHelpHtml(this._statKeysOf(h)) +
       `<div class="cd-skill">⚔ <b>${wpn.name}</b> · 技能 LV${skLv}${skLv < CFG.weaponLevel.maxLv ? `（上限 ${CFG.weaponLevel.maxLv}）` : "（满级）"}<br>${skLine}</div>`;
   },
 
@@ -1051,6 +1053,32 @@ Object.assign(UI, {
     } catch (e) { name = ""; }
     if (!name) name = FALLBACK[key] || (key ? key : "属性");
     return name;
+  },
+
+  /* 该英雄需要展示说明的属性键（26.x：解决「属性说明不够详细、看不出加成的是什么」）。
+   * 规则：4 项基础属性必有 + 能量上限；召唤物上限 / 陷阱上限只在**该英雄确实高于默认值**时列出
+   *（默认 2 / 1 属于通用值，列出来只会刷屏）。空值保护：h 缺失时返回基础 4 项。 */
+  _statKeysOf(h) {
+    const keys = ["atk", "def", "hp", "spd", "energyMax"];
+    if (h && h.summonMax > 2) keys.push("summonMax");
+    if (h && h.trapMax > 1) keys.push("trapMax");
+    return keys;
+  },
+
+  /* 属性说明区块（HTML 字符串）：名称 + 一句话说明，逐行列出。
+   * 说明文案取自 CFG.statDesc；缺失时回落 CFG.statNames 的名称 + 「暂无说明」（不空白、不抛错）。 */
+  _statHelpHtml(keys) {
+    const list = Array.isArray(keys) && keys.length ? keys : ["atk", "def", "hp", "spd"];
+    const rows = [];
+    for (const k of list) {
+      let d = null;
+      try { if (typeof CFG !== "undefined" && CFG.statDesc) d = CFG.statDesc[k] || null; } catch (e) { d = null; }
+      const name = (d && d.name) ? d.name : this._statName(k);
+      const unit = (d && d.unit) ? `（${d.unit}）` : "";
+      const desc = (d && d.desc) ? d.desc : "暂无说明";
+      rows.push(`<div class="cd-stat-row"><b>${name}</b>${unit}<span>${desc}</span></div>`);
+    }
+    return `<div class="cd-stathelp"><div class="cd-stathelp-t">📖 属性说明</div>${rows.join("")}</div>`;
   },
 
   /* 深渊局内 HUD 刷新（每帧，由 updateHUD 单行调用）：

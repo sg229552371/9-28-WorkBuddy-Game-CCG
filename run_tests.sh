@@ -21,6 +21,7 @@ set -u
 
 # --- 套件分组（组内顺序 = 原 TESTS 顺序；26.x 新增 battle_rules_test / altar_timeline_test）---
 # 2026-10-09 新增 boss_ux_test（Boss 体验四件套：贴图区分 / 吞噬反馈 / 招式名横幅 / 转阶段宝箱）。
+# 26.x 新增 hero_kit_test（12 角重做四件套：属性说明 / 近战引擎 / 特色技能零重复 / scaleBy 属性成长 / 辅助三件套）。
 # ⚠️ 21.20「层级退役」曾把 endless_affix/arena/record/team_test 连同已下线的 endless-tier_test 一起摘掉，
 #    但前 4 个模块（js/endless-affix|arena|record|team.js）**至今仍被 index.html 加载并在运行**
 #    （EndlessRecord 就是战绩榜在用的模块），摘掉 = 白丢覆盖。2026-10-09 已全部加回。
@@ -33,7 +34,7 @@ battle_rules_test"
 
 UI="ui_flow_test ui_v2_test ui_layout_test ui_global_test unlock_ui_test \
 mobile_test mobile_ctrl_test mobile_polish_test artisan_test artisan_layout_test \
-hero_roster_test hero_portrait_test sprite_view_test camera_view_test audio_sprite_test autofight_test \
+hero_roster_test hero_kit_test hero_portrait_test sprite_view_test camera_view_test audio_sprite_test autofight_test \
 endless_hud_test"
 
 FEATURE="rift_test extract_test boss_test boss_ux_test bugfix_test shop_test laser_test season_test \

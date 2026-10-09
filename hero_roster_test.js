@@ -128,31 +128,48 @@ const crystalPassed = new Set(["H008", "H010", "H012"]);  // 配置为 crystal �
   delete Meta.data.unlockExtra[id];
 });
 
-/* ============ 五、新英雄与同定位旧英雄数值带对比（≤15% 偏差） ============ */
-/* 数值带 = 同定位现有旧英雄（H001~H008）的 [min×0.85, max×1.15]；新角每项落在带内即视为同带。 */
-const OLD_IDS = ids.filter(id => id <= "H008");
-const STAT_KEYS = ["hp", "atk", "def", "energyMax", "spd"];
-function bandOf(role) {
-  const peers = CFG.heroes.filter(h => h.id <= "H008" && CFG.heroRoles.byHero[h.id] === role);
-  return peers;
-}
-["H009", "H010", "H011", "H012"].forEach(id => {
-  const h = CFG.heroes.find(x => x.id === id);
-  const role = CFG.heroRoles.byHero[id];
-  const peers = bandOf(role);
-  check("五0 " + id + " 同定位（" + role + "）存在旧英雄参照", peers.length > 0);
-  STAT_KEYS.forEach(k => {
-    const vals = peers.map(p => p[k]);
-    const lo = Math.min.apply(null, vals) * 0.85, hi = Math.max.apply(null, vals) * 1.15;
-    check("五1 " + id + "." + k + " = " + h[k] + " 落在 " + role + " 带 [" + lo.toFixed(1) + "," + hi.toFixed(1) + "]",
-      h[k] >= lo && h[k] <= hi);
-  });
+/* ============ 五、26.x 定位风格带（替代旧「新角与旧角同带」口径） ============ */
+/* ⚠️ 口径已变（2026-10-09 用户拍板「12 角全部重做」）：
+ *   旧断言要求「H009~H012 落在 H001~H008 同定位 ±15% 带内」——那是**铺量期**的约束，
+ *   目的是「新角不要破坏既有平衡」。重做后**有意让数值按定位拉开**，该约束已被推翻。
+ *   新口径 = 每个定位有自己的**风格带**（输出=高攻低防 / 防御=高血高防低攻 / 辅助=中血中防中攻），
+ *   并且**每个定位都有远程与近战**（用户要求「三大定位各自区分远程/近战」）。 */
+const STYLE = {
+  output:  { hp: [80, 145],  def: [1, 4],  atk: [15, 32] },
+  defense: { hp: [115, 165], def: [5, 9],  atk: [7, 12] },
+  aux:     { hp: [100, 128], def: [3, 6],  atk: [10, 15] },
+};
+CFG.heroes.forEach(h => {
+  const band = STYLE[CFG.heroRoles.byHero[h.id]];
+  const inBand = (k) => h[k] >= band[k][0] && h[k] <= band[k][1];
+  check("五1 " + h.id + "（" + h.role + "）数值落在定位风格带：hp " + h.hp + " / def " + h.def + " / atk " + h.atk,
+    inBand("hp") && inBand("def") && inBand("atk"));
 });
-check("五2 三定位分布：output/defense/aux 齐全且新角补稀缺 aux",
-  (() => { const got = new Set(ids.map(id => CFG.heroRoles.byHero[id])); return got.has("output") && got.has("defense") && got.has("aux"); })());
-check("五3 新角 3 为 aux / 1 为 defense（补稀缺定位）",
-  CFG.heroRoles.byHero.H010 === "aux" && CFG.heroRoles.byHero.H011 === "aux" && CFG.heroRoles.byHero.H012 === "aux"
-  && CFG.heroRoles.byHero.H009 === "defense");
+["output", "defense", "aux"].forEach(role => {
+  const melee = CFG.heroes.filter(h => h.role === role && h.range === "melee");
+  const ranged = CFG.heroes.filter(h => h.role === role && h.range === "ranged");
+  check("五2 " + role + " 同时有远程与近战（远 " + ranged.length + " / 近 " + melee.length + "）",
+    ranged.length >= 1 && melee.length >= 1);
+});
+/* 防御定位必须真的「高防高血低攻」，且防御角比输出角更耐打 */
+{
+  const maxDefAtk = Math.max.apply(null, CFG.heroes.filter(h => h.role === "defense").map(h => h.atk));
+  const minAtkDef = Math.min.apply(null, CFG.heroes.filter(h => h.role === "output").map(h => h.atk));
+  check("五3 防御定位「低攻」：防御最高攻 " + maxDefAtk + " < 输出最低攻 " + minAtkDef,
+    maxDefAtk < minAtkDef);
+}
+check("五4 防御定位「高血」（按定位均值）：防御 " +
+  (CFG.heroes.filter(h => h.role === "defense").reduce((s, h) => s + h.hp, 0) / 4) +
+  " > 输出 " + (CFG.heroes.filter(h => h.role === "output").reduce((s, h) => s + h.hp, 0) / 4),
+  (() => {
+    const avg = (r) => CFG.heroes.filter(h => h.role === r).reduce((s, h) => s + h.hp, 0) / 4;
+    return avg("defense") > avg("output") && avg("defense") > avg("aux");
+  })());
+check("五5 三定位分布：output/defense/aux 齐全且各 4 人",
+  ["output", "defense", "aux"].every(r => CFG.heroes.filter(h => h.role === r).length === 4));
+check("五6 新角定位不变（H009 defense / H010~H012 aux）",
+  CFG.heroRoles.byHero.H009 === "defense" && CFG.heroRoles.byHero.H010 === "aux"
+  && CFG.heroRoles.byHero.H011 === "aux" && CFG.heroRoles.byHero.H012 === "aux");
 
 /* ============ 六、定位映射 byHero 对 12 角全有条目 ============ */
 check("六1 byHero 恰 12 条", Object.keys(CFG.heroRoles.byHero).length === 12);
@@ -160,24 +177,29 @@ check("六2 byHero 覆盖全部英雄 id", CFG.heroes.every(h => !!CFG.heroRoles
 check("六3 byHero 取值均为合法定位",
   CFG.heroes.every(h => ["output", "defense", "aux"].indexOf(CFG.heroRoles.byHero[h.id]) >= 0));
 
-/* ============ 七、回归：H001~H008 数值与既有口径不变 ============ */
-/* ⚠️ 这些数值是 smoke/exp/meta_growth 等既有测试锁定的平衡基线，改动会破坏其它线。 */
+/* ============ 七、回归：12 角数值快照（26.x 重做后的新基线）+ 特色技能唯一性 ============ */
+/* ⚠️ 这些数值是本次「12 角全部重做」确定下来的平衡基线，再改会连带影响战斗手感。
+ *    改动必须**同时**更新本快照，并说明为什么（不要直接删断言）。 */
 const BASE = {
-  H001: { hp: 100, def: 2, atk: 14, energyMax: 100, spd: 300, weapon: "W001" },
-  H002: { hp: 110, def: 3, atk: 8, energyMax: 100, spd: 290, weapon: "W002" },
-  H003: { hp: 90, def: 1, atk: 16, energyMax: 100, spd: 295, weapon: "W003" },
-  H004: { hp: 95, def: 2, atk: 11, energyMax: 110, spd: 305, weapon: "W004" },
-  H005: { hp: 85, def: 1, atk: 7, energyMax: 100, spd: 330, weapon: "W005" },
-  H006: { hp: 120, def: 4, atk: 26, energyMax: 120, spd: 265, weapon: "W006" },
-  H007: { hp: 90, def: 1, atk: 12, energyMax: 120, spd: 300, weapon: "W007" },
-  H008: { hp: 95, def: 2, atk: 15, energyMax: 110, spd: 295, weapon: "W008" },
+  H001: { hp: 94, def: 2, atk: 16, energyMax: 100, spd: 306, weapon: "W001" },
+  H002: { hp: 116, def: 3, atk: 23, energyMax: 100, spd: 290, weapon: "W002" },
+  H003: { hp: 84, def: 1, atk: 21, energyMax: 100, spd: 300, weapon: "W003" },
+  H004: { hp: 132, def: 6, atk: 9, energyMax: 110, spd: 296, weapon: "W004" },
+  H005: { hp: 120, def: 5, atk: 10, energyMax: 105, spd: 320, weapon: "W005" },
+  H006: { hp: 138, def: 4, atk: 30, energyMax: 120, spd: 258, weapon: "W006" },
+  H007: { hp: 106, def: 3, atk: 13, energyMax: 120, spd: 300, weapon: "W007" },
+  H008: { hp: 128, def: 6, atk: 11, energyMax: 110, spd: 288, weapon: "W008" },
+  H009: { hp: 155, def: 8, atk: 8, energyMax: 115, spd: 274, weapon: "W009" },
+  H010: { hp: 110, def: 4, atk: 12, energyMax: 125, spd: 300, weapon: "W010" },
+  H011: { hp: 120, def: 5, atk: 11, energyMax: 120, spd: 294, weapon: "W011" },
+  H012: { hp: 116, def: 4, atk: 14, energyMax: 130, spd: 298, weapon: "W012" },
 };
 Object.keys(BASE).forEach(id => {
   const h = CFG.heroes.find(x => x.id === id), b = BASE[id];
-  check("七1 " + id + " 基础数值不变（hp/def/atk/energyMax/spd/weapon）",
+  check("七1 " + id + " 基础数值与 26.x 基线一致（hp/def/atk/energyMax/spd/weapon）",
     !!h && h.hp === b.hp && h.def === b.def && h.atk === b.atk && h.energyMax === b.energyMax && h.spd === b.spd && h.weapon === b.weapon);
 });
-check("七2 H001~H008 武器表 W001~W008 技能绑定不变",
+check("七2 W001~W008 主动技能绑定不变（本次重做只改普攻，不动特色技能）",
   CFG.weapons.W001.skills.skill === "AT102" && CFG.weapons.W002.skills.skill === "AT104"
   && CFG.weapons.W003.skills.skill === "AT106" && CFG.weapons.W004.skills.skill === "AT108"
   && CFG.weapons.W005.skills.skill === "AT110" && CFG.weapons.W006.skills.skill === "AT112"
@@ -187,6 +209,33 @@ check("七3 H007/H008 解锁规则口径不变（H006 LV3 / 300 结晶）",
 check("七4 定位基线不变（H001~H008 定位映射）",
   CFG.heroRoles.byHero.H001 === "output" && CFG.heroRoles.byHero.H004 === "defense"
   && CFG.heroRoles.byHero.H007 === "aux" && CFG.heroRoles.byHero.H008 === "defense");
+
+/* 七5~七8：用户拍板的「一角色一技能」硬指标 —— 12 人必须 12 种不重复特色技能 */
+const skillIds = CFG.heroes.map(h => CFG.weapons[h.weapon].skills.skill);
+check("七5 12 英雄的特色技能**零重复**（共 " + new Set(skillIds).size + " 种 / 12 人）",
+  new Set(skillIds).size === 12);
+check("七6 每名英雄的普攻也随之区分：近战角统一挂 AT121（近战挥砍）",
+  CFG.heroes.every(h => (h.range === "melee") === (CFG.weapons[h.weapon].skills.basic === "AT121")));
+check("七7 AT121 是 type:melee 且带 reach / meleeArc（引擎按扇形即时判定）",
+  CFG.skills.AT121.type === "melee" && CFG.skills.AT121.reach > 0 && CFG.skills.AT121.meleeArc > 0);
+check("七8 全部 12 个特色技能都有伤害来源（dmgMul / anchors.dmgMul / 召唤物 anchors.atk）",
+  skillIds.every(id => {
+    const s = CFG.skills[id];
+    if (!s) return false;
+    if (typeof s.dmgMul === "number" && s.dmgMul > 0) return true;
+    const a = s.anchors || {};
+    if (a.dmgMul && Object.keys(a.dmgMul).every(k => a.dmgMul[k] > 0)) return true;
+    if (a.atk && Object.keys(a.atk).every(k => a.atk[k] > 0)) return true;   // AT113 召唤无人机：伤害在召唤物 atk 锚点
+    return false;
+  }));
+/* 七9：技能吃角色成长 —— 至少 4 条技能声明 scaleBy（嘲讽 + 三条辅助特色技能） */
+{
+  const scaled = skillIds.filter(id => CFG.skills[id] && CFG.skills[id].scaleBy);
+  check("七9 有 " + scaled.length + " 条特色技能声明了 scaleBy（属性强化技能）",
+    scaled.length >= 4 && scaled.indexOf("AT120") >= 0);
+  check("七10 scaleBy 的 stat 都合法（攻击/防御/能量上限 + 未声明除外）",
+    scaled.every(id => ["atk", "def", "hp", "spd", "energyMax"].indexOf(CFG.skills[id].scaleBy.stat) >= 0));
+}
 
 console.log(ok ? "ALL PASS" : "HAS FAIL");
 if (!ok) process.exit(1);

@@ -490,6 +490,7 @@ function runBonus() {
     else if (stat === "spd") mul.spd *= mv;
     else if (stat === "cdMul") mul.cd *= mv;
     else if (stat === "lifesteal") add.lifesteal += mv;
+    else if (stat === "def") add.def += mv;   // 26.x：技能施加的防御护罩（AT124 灵能护罩）走平坦通道
   }
   for (const c of (r.appliedCards || [])) {    // 属性卡牌（8.3，工匠世界使用后随本局）——19.7 已退役，本循环恒为空
     if (c.attr === "cd") mul.cd *= c.value;

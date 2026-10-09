@@ -155,10 +155,16 @@ const driver = `
     // 26 条玩家主动（表 4a，26.x 新增 AT120 嘲讽战吼）+ 10 条 Boss 弹幕招式（表 4e-2，AT211~AT220，第十七章）
     //   + 3 条 Boss 激光招式（表 4e-3，AT231~AT233，第十七章 17.7 第 4 步，不带 pattern）
     //   + 4 条冲锋怪招式（表 4e-4，AT241~AT244，charger 表现差异化扩充）
+    //   + 4 条 26.x「12 角重做」新增：AT121 近战挥砍（近战英雄共用普攻）+ AT122/123/124（医疗兵/圣歌者/灵能者特色技能）
     const bossPatterns = ids.filter((id) => CFG.skills[id].pattern);
-    check("cat=active（表 4a + 4e 视图）共 " + byCat("active").length + " 条", byCat("active").length === 43);
+    check("cat=active（表 4a + 4e 视图）共 " + byCat("active").length + " 条", byCat("active").length === 47);
     check("其中 Boss 弹幕招式（带 pattern 字段）共 " + bossPatterns.length + " 条", bossPatterns.length === 10);
-    check("cat=buff（表 4c 视图）4 条", byCat("buff").length === 4);
+    // 4 条战争雕像增益（BF001~004）+ 3 条 26.x 技能施加的临时增益（BF005~007，pool:"skill"）
+    check("cat=buff（表 4c 视图）7 条", byCat("buff").length === 7);
+    check("技能施加的临时增益（pool:skill）不进战争雕像池",
+      byCat("buff").filter((id) => CFG.skills[id].pool === "skill").length === 3
+      && CFG.warBuffs.length === 4
+      && CFG.warBuffs.every((b) => ["BF001", "BF002", "BF003", "BF004"].indexOf(b.skillId) >= 0));
     check("cat=debuff（表 4d 视图）3 条", byCat("debuff").length === 3);
     check("cat=passive（表 4b 视图）结构就绪（当前 0 条，不预置死数据）", byCat("passive").length === 0);
     check("cat 中文标签齐全", CFG.skillCat.active === "主动" && CFG.skillCat.passive === "被动"

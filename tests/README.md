@@ -4,11 +4,11 @@
 运行方式：
 
 ```bash
-bash run_tests.sh        # 全量 75 套（推荐）
+bash run_tests.sh        # 全量 76 套（推荐）
 node <name>_test.js      # 单项
 ```
 
-> 根目录现有 **75 个 `_test.js`**，门禁**全部编排（75 套）**，口径统一、无差集。
+> 根目录现有 **76 个 `_test.js`**，门禁**全部编排（76 套）**，口径统一、无差集。
 >
 > 历史注记（2026-10-09 已纠正）：21.20「层级退役」曾把 `endless_affix_test` /
 > `endless_arena_test` / `endless_record_test` / `endless_team_test` 连同真正已下线的
@@ -77,7 +77,8 @@ node <name>_test.js      # 单项
 
 | 文件 | 覆盖内容 |
 |---|---|
-| `hero_roster_test.js` | 12 角铺量、解锁规则 |
+| `hero_roster_test.js` | 12 角铺量、定位分组（4/4/4）、解锁规则 |
+| `hero_kit_test.js` | 属性说明表（statNames/statDesc）、近战扇形引擎、特色技能零重复、`scaleBy` 属性成长、辅助三件套 |
 | `unlock_ui_test.js` | 解锁链路 UI（选人置灰、结晶解锁） |
 | `ui_flow_test.js` | 界面流转：首页 → 主城 → 出征 |
 | `ui_v2_test.js` | UI 重构（v2）全量 |

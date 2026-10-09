@@ -635,8 +635,34 @@ CFG.pickup = {
 };
 
 /* ---------- 属性名 → 中文（界面文案用：如「攻击 +3」）----------
- * 提供表即可；显示拼接由界面线消费（本表不含显示逻辑）。 */
-CFG.statNames = { atk: "攻击", hp: "生命", def: "防御", spd: "速度" };
+ * 提供表即可；显示拼接由界面线消费（本表不含显示逻辑）。
+ * 26.x 补全：原先只有 4 项（atk/hp/def/spd），英雄实际还有能量/召唤/陷阱等属性，
+ * 界面会漏出英文键 → 现按「英雄属性全集 + 常见别名」补齐。 */
+CFG.statNames = {
+  atk: "攻击", hp: "生命", hpMax: "生命上限", def: "防御", spd: "速度",
+  energyMax: "能量上限", energyRegen: "能量回复",
+  summonMax: "召唤物上限", trapMax: "陷阱上限",
+  radius: "碰撞半径", cdMul: "冷却系数", lifesteal: "吸血",
+};
+
+/* ---------- 属性说明文案（玩家看得懂的一句话解释）----------
+ * 用途：UI 中属性名后面/浮窗里显示，解决「只看到 +3，看不出加成的是什么属性」。
+ * 每条格式：{ name 中文名, unit 单位或量纲提示, desc 一句话说明 }。
+ * 界面按 key 查表；查不到时回落 CFG.statNames 的名称 + 空说明（不空白、不抛错）。 */
+CFG.statDesc = {
+  atk:          { name: "攻击", unit: "点", desc: "所有伤害的来源。子弹、召唤物、陷阱与近战伤害都按它结算，越高清怪越快。" },
+  hp:           { name: "生命", unit: "点", desc: "角色的最大生命值。降到 0 即倒下；小队全员倒下则本局结束。" },
+  hpMax:        { name: "生命上限", unit: "点", desc: "同「生命」，装备与增益提升的是上限值。" },
+  def:          { name: "防御", unit: "点", desc: "减免受到的伤害；同时是「属性强化技能」的加成来源（防御越高，守护者的嘲讽半径越大）。" },
+  spd:          { name: "速度", unit: "px/秒", desc: "移动速度，决定走位与躲弹幕的容错空间。" },
+  energyMax:    { name: "能量上限", unit: "点", desc: "主动技能的能量池容量。容量越大，越能连续释放多个技能。" },
+  energyRegen:  { name: "能量回复", unit: "点/秒", desc: "每秒自动回复的能量，决定技能循环的续航节奏。" },
+  summonMax:    { name: "召唤物上限", unit: "个", desc: "该角色可同时在场的召唤物数量上限；技能想召更多也会被它压住。" },
+  trapMax:      { name: "陷阱上限", unit: "个", desc: "该角色可同时存在的地面陷阱数量上限。" },
+  radius:       { name: "碰撞半径", unit: "px", desc: "受击判定半径。越大越容易被弹幕命中。" },
+  cdMul:        { name: "冷却系数", unit: "倍", desc: "越小越快：0.7 表示冷却时间只有原来的 70%。" },
+  lifesteal:    { name: "吸血", unit: "%", desc: "造成伤害时按比例回复自身生命（队友输出回队友自己）。" },
+};
 
 /* ---------- 技能系统（现阶段：普攻 + 主动技能自动施法；终极技局外解锁后续开发） ----------
  * 注：技能局外等级已并入武器等级（Meta.weaponUp/weaponUpCost），此处仅保留自动施法开关。 */
@@ -1036,47 +1062,58 @@ CFG.boss = {
   },
 };
 
-/* ---------- 英雄配置表（8.5 表 1，首发 6 角） ---------- */
+/* ---------- 英雄配置表（8.5 表 1，首发 6 角） ----------
+ * 26.x 重做（用户拍板）：**12 角全部重配**，定位分布不变（输出 4 / 防御 4 / 辅助 4），
+ *   但数值风格按定位拉开，并让**每个定位都同时有远程与近战**
+ *   （实际分布：输出 1 近 / 3 远、防御 2 近 / 2 远、辅助 2 近 / 2 远；共 5 近 / 7 远）。
+ *   ⚠️ 散弹手（H002）**保持远程** —— 他的「三向散射」是被 runtime_test 锁定的核心身份，
+ *      不要为了凑"每定位 2 近战"把他改成近战。
+ *   风格带：
+ *     输出 = 高攻低防（hp 84~138 / def 1~4 / atk 16~30）
+ *     防御 = 高血高防低攻（hp 120~155 / def 5~8 / atk 8~11）—— 落实「防御近战 = 高防高血、攻击低」
+ *     辅助 = 中血中防中攻（hp 106~120 / def 3~5 / atk 11~14）
+ *   近战角在同定位内额外 +血 +防、降一点速度（贴身作战的代价与补偿）。
+ * ⚠️ role 分组被 hero_roster_test 一2c/2d/2e 锁定，**不要改**（输出 H001/H002/H003/H006、
+ *   防御 H004/H005/H008/H009、辅助 H007/H010/H011/H012）。 */
 CFG.heroes = [
-  { id: "H001", name: "猎手", desc: "远程速射 / 能量爆发 · 均衡型", role: "output", range: "ranged", sprite: "hero",
-    hp: 100, def: 2, atk: 14, energyMax: 100, energyRegen: 10,
-    spd: 300, radius: 18, weapon: "W001", summonMax: 2, trapMax: 1 },
-  { id: "H002", name: "散弹手", desc: "三向散射 / 震荡波 · 近战压制型", role: "output", range: "ranged", sprite: "hero",
-    hp: 110, def: 3, atk: 8, energyMax: 100, energyRegen: 10,
-    spd: 290, radius: 18, weapon: "W002", summonMax: 2, trapMax: 1 },
-  { id: "H003", name: "穿甲者", desc: "高穿透直线弹 / 贯穿射线 · 阵地输出型", role: "output", range: "ranged", sprite: "hero",
-    hp: 90, def: 1, atk: 16, energyMax: 100, energyRegen: 10,
-    spd: 295, radius: 18, weapon: "W003", summonMax: 2, trapMax: 1 },
-  { id: "H004", name: "弹射手", desc: "弹射跳弹 / 环形弹幕 · 走位牵制型", role: "defense", range: "ranged", sprite: "hero",
-    hp: 95, def: 2, atk: 11, energyMax: 110, energyRegen: 11,
-    spd: 305, radius: 18, weapon: "W004", summonMax: 2, trapMax: 1 },
-  { id: "H005", name: "快枪手", desc: "极限射速 / 疾跑翻滚 · 高机动型", role: "defense", range: "ranged", sprite: "hero",
-    hp: 85, def: 1, atk: 7, energyMax: 100, energyRegen: 12,
-    spd: 330, radius: 17, weapon: "W005", summonMax: 2, trapMax: 1 },
-  { id: "H006", name: "重炮手", desc: "低速重弹 / 巨型爆破 · 火力覆盖型", role: "output", range: "ranged", sprite: "hero",
-    hp: 120, def: 4, atk: 26, energyMax: 120, energyRegen: 8,
-    spd: 265, radius: 19, weapon: "W006", summonMax: 1, trapMax: 1 },
+  { id: "H001", name: "猎手", desc: "远程速射 / 能量爆发 · 均衡输出", role: "output", range: "ranged", sprite: "hero",
+    hp: 94, def: 2, atk: 16, energyMax: 100, energyRegen: 10,
+    spd: 306, radius: 18, weapon: "W001", summonMax: 2, trapMax: 1 },
+  { id: "H002", name: "散弹手", desc: "远程三向散射 / 震荡波 · 贴脸压制输出", role: "output", range: "ranged", sprite: "hero",
+    hp: 116, def: 3, atk: 23, energyMax: 100, energyRegen: 10,
+    spd: 290, radius: 19, weapon: "W002", summonMax: 2, trapMax: 1 },
+  { id: "H003", name: "穿甲者", desc: "远程穿透 / 贯穿射线 · 脆皮高攻输出", role: "output", range: "ranged", sprite: "hero",
+    hp: 84, def: 1, atk: 21, energyMax: 100, energyRegen: 10,
+    spd: 300, radius: 18, weapon: "W003", summonMax: 2, trapMax: 1 },
+  { id: "H004", name: "弹射手", desc: "远程跳弹 / 环形弹幕 · 牵制型防御", role: "defense", range: "ranged", sprite: "hero",
+    hp: 132, def: 6, atk: 9, energyMax: 110, energyRegen: 11,
+    spd: 296, radius: 19, weapon: "W004", summonMax: 2, trapMax: 1 },
+  { id: "H005", name: "快枪手", desc: "近战突刺 / 疾跑翻滚 · 高机动防御", role: "defense", range: "melee", sprite: "hero",
+    hp: 120, def: 5, atk: 10, energyMax: 105, energyRegen: 12,
+    spd: 320, radius: 18, weapon: "W005", summonMax: 2, trapMax: 1 },
+  { id: "H006", name: "重炮手", desc: "近战重锤 / 巨型爆破 · 重甲火力输出", role: "output", range: "melee", sprite: "hero",
+    hp: 138, def: 4, atk: 30, energyMax: 120, energyRegen: 8,
+    spd: 258, radius: 21, weapon: "W006", summonMax: 1, trapMax: 1 },
   // 原型验证角（批次 E）：召唤/陷阱技能原型载体，后续按设计再作解锁门槛
-  { id: "H007", name: "召唤师", desc: "无人机协战 / 机炮 · 召唤物原型角", role: "aux", range: "ranged", sprite: "hero",
-    hp: 90, def: 1, atk: 12, energyMax: 120, energyRegen: 12,
+  { id: "H007", name: "召唤师", desc: "远程无人机 / 机炮 · 召唤物原型角", role: "aux", range: "ranged", sprite: "hero",
+    hp: 106, def: 3, atk: 13, energyMax: 120, energyRegen: 12,
     spd: 300, radius: 18, weapon: "W007", summonMax: 6, trapMax: 1 },
-  { id: "H008", name: "陷阱师", desc: "大地雷封锁 / 掷雷 · 陷阱原型角", role: "defense", range: "melee", sprite: "hero",
-    hp: 95, def: 2, atk: 15, energyMax: 110, energyRegen: 10,
-    spd: 295, radius: 18, weapon: "W008", summonMax: 2, trapMax: 3 },
-  // 铺量角（批次 F）：12 角补齐，定位与武器数值均落在同定位现有角平衡带内；
-  // 武器技能复用 CFG.skills 已有条目（技能表已铺满，不新增技能条目）。
-  { id: "H009", name: "守护者", desc: "重型护盾 / 贯穿射线 · 阵地防御型", role: "defense", range: "ranged", sprite: "hero",
-    hp: 100, def: 2, atk: 12, energyMax: 110, energyRegen: 9,
-    spd: 295, radius: 19, weapon: "W009", summonMax: 2, trapMax: 1 },
-  { id: "H010", name: "医疗兵", desc: "随行治疗 / 震荡波 · 续航恢复型", role: "aux", range: "ranged", sprite: "hero",
-    hp: 92, def: 1, atk: 12, energyMax: 120, energyRegen: 12,
+  { id: "H008", name: "陷阱师", desc: "近战布雷 / 大地雷 · 陷阱原型角", role: "defense", range: "melee", sprite: "hero",
+    hp: 128, def: 6, atk: 11, energyMax: 110, energyRegen: 10,
+    spd: 288, radius: 19, weapon: "W008", summonMax: 2, trapMax: 3 },
+  // 铺量角（批次 F）：12 角补齐；26.x 起每位各挂 1 个**不重复**的特色技能（见 CFG.weapons）
+  { id: "H009", name: "守护者", desc: "远程护盾 / 嘲讽战吼 · 阵地防御核心", role: "defense", range: "ranged", sprite: "hero",
+    hp: 155, def: 8, atk: 8, energyMax: 115, energyRegen: 9,
+    spd: 274, radius: 21, weapon: "W009", summonMax: 2, trapMax: 1 },
+  { id: "H010", name: "医疗兵", desc: "远程治疗弹 / 生命脉冲 · 续航恢复型", role: "aux", range: "ranged", sprite: "hero",
+    hp: 110, def: 4, atk: 12, energyMax: 125, energyRegen: 13,
     spd: 300, radius: 18, weapon: "W010", summonMax: 2, trapMax: 1 },
-  { id: "H011", name: "圣歌者", desc: "光环鼓舞 / 环形弹幕 · 群疗恢复型", role: "aux", range: "ranged", sprite: "hero",
-    hp: 88, def: 1, atk: 11, energyMax: 115, energyRegen: 12,
-    spd: 305, radius: 18, weapon: "W011", summonMax: 2, trapMax: 1 },
-  { id: "H012", name: "灵能者", desc: "灵能护罩 / 能量爆发 · 灵力恢复型", role: "aux", range: "ranged", sprite: "hero",
-    hp: 90, def: 1, atk: 13, energyMax: 125, energyRegen: 11,
-    spd: 300, radius: 18, weapon: "W012", summonMax: 2, trapMax: 1 },
+  { id: "H011", name: "圣歌者", desc: "近战圣咏 / 鼓舞光环 · 群体增益型", role: "aux", range: "melee", sprite: "hero",
+    hp: 120, def: 5, atk: 11, energyMax: 120, energyRegen: 13,
+    spd: 294, radius: 19, weapon: "W011", summonMax: 2, trapMax: 1 },
+  { id: "H012", name: "灵能者", desc: "近战灵能 / 灵能护罩 · 护盾自愈型", role: "aux", range: "melee", sprite: "hero",
+    hp: 116, def: 4, atk: 14, energyMax: 130, energyRegen: 12,
+    spd: 298, radius: 19, weapon: "W012", summonMax: 2, trapMax: 1 },
 ];
 
 /* ========== 21.6 选人界面角色顺序：输出 / 防御 / 治疗 ×4 轮循环（用户要求）==========
@@ -1099,7 +1136,7 @@ CFG.weapons = {
     // 术语（16.5）：技能石 = **主动技能**（绑定在本表武器上）、辅助石 = **武器模块**（CFG.moduleDefs，代码 module）
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
     skills: { basic: "AT101", skill: "AT102" } },
-  W002: { id: "W002", name: "散射炮", desc: "三向散射，单发低伤近距压制",
+  W002: { id: "W002", name: "散射炮", desc: "三向散射，单发低伤近距压制（远程：3 条弹道）",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
     skills: { basic: "AT103", skill: "AT104" } },
   W003: { id: "W003", name: "磁轨步枪", desc: "自带 2 层穿透的高速直线弹",
@@ -1108,31 +1145,31 @@ CFG.weapons = {
   W004: { id: "W004", name: "跳弹枪", desc: "子弹在墙与敌人间弹射 2 次",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
     skills: { basic: "AT107", skill: "AT108" } },
-  W005: { id: "W005", name: "双生短枪", desc: "极高射速，单发低伤",
+  W005: { id: "W005", name: "双生短枪", desc: "近战双刀突刺：极快出手，需贴身短打",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT109", skill: "AT110" } },
-  W006: { id: "W006", name: "攻城重炮", desc: "低速重弹，技能为巨型范围爆破",
+    skills: { basic: "AT121", skill: "AT110" } },
+  W006: { id: "W006", name: "攻城重炮", desc: "近战攻城锤：慢速重砸，技能为巨型范围爆破",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT111", skill: "AT112" } },
+    skills: { basic: "AT121", skill: "AT112" } },
   W007: { id: "W007", name: "无人机母舰", desc: "技能召唤无人机协战（可被击毁）",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数", "召唤物"],
     skills: { basic: "AT115", skill: "AT113" } },
-  W008: { id: "W008", name: "布雷器", desc: "技能布设地雷陷阱（敌人入圈延迟引爆）",
+  W008: { id: "W008", name: "布雷器", desc: "近战布雷：贴身挥击 + 布设地雷陷阱（敌人入圈延迟引爆）",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数", "陷阱"],
-    skills: { basic: "AT116", skill: "AT114" } },
+    skills: { basic: "AT121", skill: "AT114" } },
   // 铺量武器（批次 F）：专属绑定，技能引用 CFG.skills 既有条目（不新增技能）
   W009: { id: "W009", name: "堡垒炮", desc: "重型护盾炮，技能为嘲讽战吼（拉怪聚拢）",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
     skills: { basic: "AT107", skill: "AT120" } },   // 26.x：防御定位载体挂嘲讽样板技能 AT120
-  W010: { id: "W010", name: "生命枪", desc: "随行治疗枪，技能为震荡波压制",
+  W010: { id: "W010", name: "生命枪", desc: "远程治疗枪，技能为生命脉冲（伤害 + 全队回复）",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT101", skill: "AT104" } },
-  W011: { id: "W011", name: "圣咏器", desc: "光环圣咏器，技能为环形弹幕群疗",
+    skills: { basic: "AT101", skill: "AT122" } },
+  W011: { id: "W011", name: "圣咏器", desc: "近战圣咏杖：贴身挥击，技能鼓舞光环全队增益",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT109", skill: "AT108" } },
-  W012: { id: "W012", name: "灵能杖", desc: "灵能法杖，技能为能量爆发",
+    skills: { basic: "AT121", skill: "AT123" } },
+  W012: { id: "W012", name: "灵能杖", desc: "近战灵能杖：贴身重击，技能为自己与全队套护罩",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT105", skill: "AT102" } },
+    skills: { basic: "AT121", skill: "AT124" } },
 };
 
 /* ---------- 技能表（8.5 表 4：**单表 + cat 分类**，不物理拆表） ----------
@@ -1239,6 +1276,48 @@ CFG.skills = {
     scaleBy: { stat: "def", pct: 0.02 },    // 半径额外 + 防御 × 0.02 × 等级系数
     desc: "战吼嘲讽：半径内敌人强制攻击自身 4 秒（半径 = 锚点固定值 + 防御×2%×等级系数）",
     anchors: { radius: { 1: 180, 50: 260, 100: 340 } } },
+
+  /* ===== 26.x 新增：近战普攻 + 辅助三定位特色技能（表 4a 视图）=====
+   * 设计目标（用户拍板）：12 角各挂 1 个**不重复**的特色技能；技能吃角色自身属性（scaleBy）。
+   * scaleBy 的产物同时给出：① 半径加成（withScaleBy 既有行为）② sk.scaleByAdd（效果量加成，
+   *   供下面三条辅助技能换算成治疗量 / 增益幅度 / 护罩值）。 */
+
+  /** AT121 近战挥砍 —— **近战英雄共用的普攻**（range:"melee" 的 6 名英雄全部指向它）。
+   *  type:"melee" = 身周扇形**即时判定**（不产生飞行物）：
+   *    命中条件 = 目标在 reach 距离内 且 与施法者面朝方向的夹角 ≤ meleeArc/2。
+   *  近距离高伤、出手快；代价是必须贴身（吃弹幕惩罚）——这就是「远程 / 近战」的手感差。
+   *  数值：dmgMul 1.35（高于远程普攻的 1.0 左右），cd 0.62（快于远程 0.75~1.1）。 */
+  AT121: { name: "近战挥砍", cat: "active", kind: "basic", type: "melee",
+    cd: 0.62, energy: 0, dmgMul: 1.35,
+    reach: 78, meleeArc: 1.75,         // 挥击距离(px) / 扇形张角(弧度，约 100°)
+    desc: "贴身扇形挥击：对身前面向约 100° 内、距离 78px 的敌人造成伤害（近战英雄共用的普攻）" },
+
+  /** AT122 生命脉冲（医疗兵 H010）：范围伤害 + **全队回复**。
+   *  scaleBy 吃「攻击」：攻击越高回复越多 → 加攻击的装备/增益会顺带强化治疗（技能吃角色成长）。 */
+  AT122: { name: "生命脉冲", cat: "active", kind: "skill", type: "healNova",
+    cd: 6.0, energy: 80, tags: ["伤害", "范围", "冷却"],
+    dmgMul: 1.6, healBase: 18, healPerAdd: 1.0,
+    scaleBy: { stat: "atk", pct: 0.04 },
+    desc: "生命脉冲：对半径内敌人造成伤害，并回复全队生命（回复量 = 18 + 攻击×4%×等级系数，走攻击成长）",
+    anchors: { radius: { 1: 150, 50: 200, 100: 260 } } },
+
+  /** AT123 鼓舞光环（圣歌者 H011）：范围伤害 + **全队攻击/移速增益**。
+   *  scaleBy 吃「防御」：越坦光环越强（防御型辅助的自我强化路径）。 */
+  AT123: { name: "鼓舞光环", cat: "active", kind: "skill", type: "aura",
+    cd: 8.0, energy: 90, tags: ["冷却"],
+    dmgMul: 0.9, auraDuration: 10, auraPct: 0.08,
+    scaleBy: { stat: "def", pct: 0.01 },
+    desc: "鼓舞光环：对身周敌人造成伤害，并令全队攻击与移速提升（幅度 = 8% + 防御×1%×等级系数），持续 10 秒",
+    anchors: { radius: { 1: 160, 50: 200, 100: 250 } } },
+
+  /** AT124 灵能护罩（灵能者 H012）：范围伤害 + **全队防御护罩**。
+   *  scaleBy 吃「能量上限」：灵能储备越厚护罩越硬（该角色 energyMax 全场最高 = 130）。 */
+  AT124: { name: "灵能护罩", cat: "active", kind: "skill", type: "barrier",
+    cd: 7.0, energy: 100, tags: ["伤害", "范围", "冷却"],
+    dmgMul: 1.4, barrierDuration: 12, barrierDef: 4,
+    scaleBy: { stat: "energyMax", pct: 0.008 },
+    desc: "灵能护罩：对身周敌人造成伤害，并为全队附加防御提升（+4 + 能量上限×0.8%×等级系数）的护罩，持续 12 秒",
+    anchors: { radius: { 1: 140, 50: 190, 100: 240 } } },
 
   /* ===== 表 4e 视图：敌人技能（8.2：怪物攻击行为也是技能条目） =====
    * 攻击参数（伤害间隔/弹速/保持距离/冲锋/爆炸/召唤）由本表提供，怪物表不再重复硬编码；
@@ -1376,6 +1455,16 @@ CFG.skills = {
   BF004: { name: "汲血", cat: "buff", pool: "war", tags: ["吸血"], duration: 20,
     stat: "lifesteal", mul: 0.15, label: "吸血 15%", stackable: true,
     anchors: { mul: { 1: 0.15, 10: 0.22, 30: 0.35, 99: 0.60 } } },
+
+  /* ===== 26.x：技能施加的临时增益（pool:"skill" = **不进战争雕像池**）=====
+   * 由辅助技能 AT123 / AT124 在释放时直接写入 G.run.buffs（带动态 mul，不带 skillId）。
+   * ⚠️ pool 必须是 "skill" —— CFG.warBuffs 按 pool==="war" 过滤，写成 war 会污染雕像池。 */
+  BF005: { name: "圣咏鼓舞", cat: "buff", pool: "skill", tags: ["攻击"],
+    stat: "atk", mul: 1.08, label: "攻击 +8%" },
+  BF006: { name: "圣咏迅捷", cat: "buff", pool: "skill", tags: ["移速"],
+    stat: "spd", mul: 1.08, label: "移速 +8%" },
+  BF007: { name: "灵能护罩", cat: "buff", pool: "skill", tags: ["防御"],
+    stat: "def", mul: 4, label: "防御 +4" },
 
   /* ===== 表 4d 视图：减益状态技能（Debuff）——对敌方施加的负面状态 =====
    * target:"monster" 表示作用于敌方全体；mods 为属性修改器（对应 8.2「可被添加技能：是」）。

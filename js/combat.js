@@ -89,8 +89,103 @@ const SkillSystem = {
     });
     return { n: mine().length, cap };
   },
-  /** 嘲讽战吼（AT120）：半径内敌人强制攻击施法者 duration 秒，并造成一次小额 AOE 伤害。
-   *  半径 = sk.radius（锚点固定值 + scaleBy 的防御加成，见 withScaleBy）。
+  /** 近战挥击（AT121，type:"melee"）：**身周扇形即时判定**，不产生飞行物。
+   *  命中条件 = 距离 ≤ reach + 目标半径，且与施法者面朝方向的夹角 ≤ meleeArc/2。
+   *  - `ang` 由调用方给出（面朝目标；无目标时用面朝方向），与子弹同源，便于复用同一套瞄准逻辑。
+   *  - 伤害走 damageMonster（吃怪物防御 / 精英盾 / 逐角色统计），killer = caster → 吸血归属正确。
+   *  - 表现：spawnBurst 挥砍火花 + SFX.play("hit")，无弹体。
+   *  近战与远程的差别（用户口径）：近战**必须贴身**、单次伤害更高、出手更快，被弹幕惩罚更重。 */
+  castMelee(w, caster, sk, ang, opts = {}) {
+    const reach = sk.reach || 70;
+    const halfArc = (sk.meleeArc || 1.6) / 2;
+    const atk = opts.atk != null ? opts.atk : caster.atk;
+    const dmg = Math.max(1, Math.round(atk * (sk.dmgMul != null ? sk.dmgMul : 1)));
+    let hit = 0;
+    const ax = Math.cos(ang), ay = Math.sin(ang);
+    for (const m of w.monsters) {
+      if (m.dead) continue;
+      const dx = m.x - caster.x, dy = m.y - caster.y;
+      const d = Math.sqrt(dx * dx + dy * dy) || 0;
+      if (d > reach + (m.r || 0)) continue;
+      if (d > 1) {                                   // 贴身重合时不做角度剔除（避免零向量抖动）
+        const cosA = (dx * ax + dy * ay) / d;
+        if (cosA < Math.cos(halfArc)) continue;      // 超出扇形张角
+      }
+      damageMonster(w, m, dmg, caster);
+      hit++;
+    }
+    // 挥砍表现：沿面朝方向撒一串火花（视觉提示"这一下打出去了"，无弹体）
+    spawnBurst(caster.x + ax * reach * 0.6, caster.y + ay * reach * 0.6, "#ffe9a8", hit ? 6 : 3);
+    if (hit) SFX.play("hit");
+    return { kind: "melee", n: hit, reach, arc: sk.meleeArc || 1.6 };
+  },
+
+  /** 辅助三件套共用的「范围伤害 + 全队效果」骨架（AT122 治疗 / AT123 光环 / AT124 护罩）。
+   *  - 伤害：以施法者为中心的圆形范围（半径 = sk.radius，含 scaleBy 加成），与 taunt 同源走 explode。
+   *  - 效果：由调用分支决定（回血 / 增益 / 护罩），数值 = 技能固定值 + `sk.scaleByAdd`（属性加成积木产物）。
+   *  - 全队遍历统一用 aliveHeroes()（队长 + 存活队友），与「局内增益全队生效」口径一致。 */
+  castSupport(w, caster, sk, opts = {}, kind = "support") {
+    const atk = opts.atk != null ? opts.atk : caster.atk;
+    const R = sk.radius || 0;
+    if (R > 0) explode(w, caster.x, caster.y, R, Math.max(1, Math.round(atk * (sk.dmgMul != null ? sk.dmgMul : 1))), "player", caster);
+    const add = sk.scaleByAdd || 0;              // 属性加成积木产出的"效果量"（未声明 scaleBy 时为 0）
+    const heroes = aliveHeroes();
+    const out = { kind, n: 0, radius: R, amount: 0 };
+    if (kind === "heal") {
+      const amt = Math.max(1, Math.round((sk.healBase || 0) + add * (sk.healPerAdd != null ? sk.healPerAdd : 1)));
+      const r = (typeof G !== "undefined" && G.run) ? G.run : null;
+      for (const h of heroes) {
+        if (!h) continue;
+        /* ⚠️ 血量存放位置不一致（踩坑）：**队长**的血在 G.run.hp / G.run.hpMax（Player 实例本身不带 hp 字段，
+         *    见 heroTakeDamage → G.player.takeDamage），**队友**才在 h.hp / h.hpMax。
+         *    曾经统一按 h.hp 读 → 队长的 h.hp 恒为 undefined → 治疗**永远跳过队长**，只有队友回血。 */
+        if (h === G.player) {
+          if (!r || typeof r.hp !== "number") continue;
+          const mx = (r.hpMax != null) ? r.hpMax : r.hp;
+          if (r.hp < mx) { r.hp = Math.min(mx, r.hp + amt); out.n++; }
+          continue;
+        }
+        if (typeof h.hp !== "number") continue;
+        const mx = (h.hpMax != null) ? h.hpMax : h.hp;
+        if (h.hp < mx) { h.hp = Math.min(mx, h.hp + amt); out.n++; }
+      }
+      out.amount = amt;
+      spawnBurst(caster.x, caster.y, "#7dffa8", 16, R * 0.8);
+      SFX.play("skill");
+      return out;
+    }
+    if (kind === "aura") {
+      const pct = (sk.auraPct || 0) + add * 0.01;         // 属性加成：每点加成 +1% 幅度
+      const dur = sk.auraDuration || 10;
+      SkillSystem.pushRunBuff("圣咏鼓舞", "atk", 1 + pct, dur);
+      SkillSystem.pushRunBuff("圣咏迅捷", "spd", 1 + pct, dur);
+      out.n = heroes.length; out.amount = pct;
+      spawnBurst(caster.x, caster.y, "#ffd76a", 18, R * 0.8);
+      SFX.play("skill");
+      return out;
+    }
+    // barrier：全队防御护罩（def 走 runBonus().add.def，与装备/卡牌同一通道）
+    const defAdd = Math.max(1, Math.round((sk.barrierDef || 0) + add));
+    SkillSystem.pushRunBuff("灵能护罩", "def", defAdd, sk.barrierDuration || 12);
+    out.n = heroes.length; out.amount = defAdd;
+    spawnBurst(caster.x, caster.y, "#6cb2ff", 18, R * 0.8);
+    SFX.play("skill");
+    return out;
+  },
+  /** 写入 / 刷新一条**技能施加的临时增益**到 G.run.buffs（title = 稳定 id，用于去重刷新）。
+   *  与战争雕像 Buff 的差别：**不带 skillId**，runBonus() 直接读 b.stat / b.mul（动态数值），
+   *  且同 id 只保留一份（重复施放 = 刷新时长，不叠加，避免无限叠乘）。
+   *  stat 仅支持 runBonus 认得的通道：atk / spd / cdMul / lifesteal / def。 */
+  pushRunBuff(id, stat, mul, duration) {
+    const r = (typeof G !== "undefined" && G.run) ? G.run : null;
+    if (!r) return null;
+    if (!Array.isArray(r.buffs)) r.buffs = [];
+    const rec = { id, stat, mul, remain: duration, label: buffLabelOf(stat, mul) };
+    const i = r.buffs.findIndex(b => b && b.id === id);
+    if (i >= 0) r.buffs[i] = rec; else r.buffs.push(rec);
+    return rec;
+  },
+  /** 嘲讽战吼（AT120）：半径内敌人强制攻击施法者 duration 秒，并造成一次小额 AOE 伤害。   *  半径 = sk.radius（锚点固定值 + scaleBy 的防御加成，见 withScaleBy）。
    *  归属：嘲讽者 = caster（怪物 tauntedBy/tauntT，AI 选目标优先嘲讽者，见 game.js）。 */
   castTaunt(w, caster, sk, opts = {}) {
     const R = sk.radius || 0;
@@ -111,9 +206,22 @@ const SkillSystem = {
     if (sk.type === "summon") return { kind: "summon", ...this.castSummon(w, caster, sk, opts.atk) };
     if (sk.type === "trap") return { kind: "trap", ...this.castTrap(w, caster, sk, opts.atk) };
     if (sk.type === "taunt") return { ...this.castTaunt(w, caster, sk, opts) };
+    if (sk.type === "melee") return { ...this.castMelee(w, caster, sk, ang, opts) };            // 近战挥击
+    if (sk.type === "healNova") return { ...this.castSupport(w, caster, sk, opts, "heal") };    // 医疗兵
+    if (sk.type === "aura") return { ...this.castSupport(w, caster, sk, opts, "aura") };        // 圣歌者
+    if (sk.type === "barrier") return { ...this.castSupport(w, caster, sk, opts, "barrier") };  // 灵能者
     return { kind: "bullet", n: this.castBullet(w, caster, sk, ang, opts) };
   },
 };
+
+/** 临时增益的中文标签（技能施加的 Buff 用；runBonus 只认 stat 通道，这里只做文案）。
+ *  形如 攻击 +8% / 移速 +8% / 防御 +4。数值缺失时回落空串（不抛错）。 */
+function buffLabelOf(stat, mul) {
+  const name = (typeof CFG !== "undefined" && CFG.statNames && CFG.statNames[stat]) || stat || "";
+  const mv = (typeof mul === "number") ? mul : 0;
+  if (stat === "def") return name + " +" + Math.round(mv);
+  return name + " +" + Math.round((mv - 1) * 100) + "%";
+}
 
 /* ============ 弹幕发射器（第十七章 17.4 / 17.6：Boss 弹幕范式） ============
  * 分工：SkillSystem 管**伤害与词条**（谁打的、吃哪些标签、吸血归属），
