@@ -119,14 +119,20 @@ const driver = `
     check("一10 未登记属性也不崩（回落「暂无说明」）",
       UI._statHelpHtml(["nope"]).indexOf("暂无说明") >= 0);
 
-    // 英雄详情需要展示的属性键：默认 4+能量；召唤/陷阱上限只在高于默认值时出现
-    check("一11 _statKeysOf 召唤师列出 summonMax（6 > 默认 2）",
-      UI._statKeysOf(CFG.heroes.find(h => h.id === "H007")).indexOf("summonMax") >= 0);
-    check("一12 _statKeysOf 猎手不列 summon/trap（都是默认值）",
-      UI._statKeysOf(CFG.heroes.find(h => h.id === "H001")).indexOf("summonMax") < 0
-      && UI._statKeysOf(CFG.heroes.find(h => h.id === "H001")).indexOf("trapMax") < 0);
-    check("一13 _statKeysOf 陷阱师列出 trapMax（3 > 默认 1）",
-      UI._statKeysOf(CFG.heroes.find(h => h.id === "H008")).indexOf("trapMax") >= 0);
+    // 26.x 优化后：说明只出现在右上角 ? 弹窗（sht-* 专用样式），角色详情面板不再内嵌
+    check("一11 弹窗标记用 sht-* 专用样式类（标题/行/名/量纲/说明齐全）",
+      html.indexOf("sht-head") >= 0 && html.indexOf("sht-row") >= 0
+      && html.indexOf("sht-name") >= 0 && html.indexOf("sht-unit") >= 0 && html.indexOf("sht-desc") >= 0);
+    check("一12 角色详情渲染不再内嵌属性说明区块（防回归：只保留 ? 弹窗入口）",
+      String(UI.renderCharDetail).indexOf("_statHelpHtml") < 0);
+    check("一13 弹窗内容 = CFG.statDesc 全量（toggleStatHelp 渲染 15+ 条）", (() => {
+      UI.toggleStatHelp();          // 对齐初始态（桩 classList 初始为空，首跳等价收起）
+      UI.toggleStatHelp();          // 展开
+      const tip = document.getElementById("stat-help-tip");
+      const n = (tip.innerHTML.match(/sht-row/g) || []).length;
+      UI.toggleStatHelp();          // 收起还原
+      return n === Object.keys(CFG.statDesc).length && n >= 12;
+    })());
   }
 
   /* ============ 二、近战引擎（AT121 type:melee 扇形即时判定） ============ */
@@ -340,10 +346,13 @@ const driver = `
     check("六9 关掉开关恢复正式解锁规则（H007 未解锁 / H001 首发解锁）", lockedOk);
 
     /* 属性说明 tips 弹窗（角色选择右上角图标）。
-     * ⚠️ DOM 桩的初始类集合为空（不解析 HTML 里的 class="... hidden"）→ 第一跳按「已展开」处理 = 收起，
-     *     故这里先跳一次对齐真实页面的初始 hidden 态，再断言 展开 → 收起。 */
-    UI.toggleStatHelp();          // 对齐初始态（等价于真实页面的 hidden 起始）
-    UI.toggleStatHelp();          // 展开
+     * ⚠️ DOM 桩的初始类集合为空（不解析 HTML 里的 class="... hidden"）→ 第一跳按「已展开」处理 = 收起。
+     *     显式归零（摘掉 hidden + 清内容）后：第一跳 = 收起挂 hidden，第二跳 = 展开渲染，与真实页面对齐。 */
+    const tip6 = document.getElementById("stat-help-tip");
+    tip6.classList.remove("hidden");
+    tip6.innerHTML = "";
+    UI.toggleStatHelp();          // 第一跳 = 收起（挂 hidden）
+    UI.toggleStatHelp();          // 第二跳 = 展开（渲染内容）
     const tip = document.getElementById("stat-help-tip");
     check("六10 属性说明 tips：点击展开且含力量/敏捷/智力说明",
       tip && !tip.classList.contains("hidden") &&

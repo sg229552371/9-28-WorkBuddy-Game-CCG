@@ -113,14 +113,29 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   cursor:pointer; user-select:none;
 }
 .ico-btn:hover { border-color:#c79bff; box-shadow:0 0 8px rgba(199,155,255,.35); }
-/* tips 弹窗：贴按钮下方右对齐，可滚动（15 条属性说明在小屏也放得下），不挤占面板布局 */
+/* tips 弹窗：贴按钮下方右对齐，可滚动（15 条属性说明在小屏也放得下），不挤占面板布局。
+ * 26.x 排版优化：属性说明统一收进本弹窗（角色详情面板不再内嵌），行式布局——
+ * 属性名金色高亮、量纲弱化小字、说明正文独立成行浅灰，虚线分隔逐条，层级一目了然。 */
 .stat-help-tip {
   position:absolute; right:0; top:34px; z-index:30;
-  width:min(340px, 88vw); max-height:46vh; overflow-y:auto;
+  width:min(360px, 88vw); max-height:52vh; overflow-y:auto;
   background:#141b28; border:1px solid #4a5a78; border-radius:10px;
-  padding:10px 12px; box-shadow:0 8px 24px rgba(0,0,0,.55);
+  padding:10px 14px 8px; box-shadow:0 8px 24px rgba(0,0,0,.55);
 }
 .stat-help-tip.hidden { display:none; }
+.stat-help-tip .sht-head {
+  font-size:13px; font-weight:bold; color:#ffe08a; letter-spacing:2px;
+  padding-bottom:6px; margin-bottom:2px;
+  border-bottom:1px solid rgba(255,255,255,.14);
+}
+.stat-help-tip .sht-row {
+  padding:6px 0 5px; border-bottom:1px dashed rgba(255,255,255,.10);
+  font-size:11px; line-height:1.55;
+}
+.stat-help-tip .sht-row:last-child { border-bottom:none; }
+.stat-help-tip .sht-name { color:#ffe08a; font-weight:bold; font-size:12px; margin-right:2px; }
+.stat-help-tip .sht-unit { color:#7e93ad; font-size:10px; margin-right:6px; }
+.stat-help-tip .sht-desc { display:block; color:#b3c4da; }
 /* 12 宫格头像：6 列 × 2 行（20.9 缩小 50%：99px→52px，小而美的苹果风），一屏看完 12 角。 */
 #char-list {
   flex-shrink:0;
@@ -189,16 +204,6 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .char-detail .cd-unlock-btn:hover { transform:translateY(-2px); filter:brightness(1.08); }
 .char-detail .cd-unlock-btn:disabled { filter:grayscale(1) brightness(.72); cursor:not-allowed; transform:none; box-shadow:none; }
 .char-detail .cd-stats { font-size:11px; color:#9fb4cc; margin-bottom:4px; line-height:1.45; }
-/* 属性说明区块（26.x）：角色详情里逐条列出「属性名 + 量纲 + 一句话说明」，
- * 解决「只看到数字，看不出加成的是什么属性」。深色主题：面板深底、正文浅灰、属性名高亮。 */
-.char-detail .cd-stathelp {
-  margin:4px 0 6px; padding:6px 8px; border-radius:6px;
-  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
-}
-.char-detail .cd-stathelp-t { font-size:11px; color:#cfe0f5; margin-bottom:3px; }
-.char-detail .cd-stat-row { font-size:11px; color:#9fb4cc; line-height:1.5; }
-.char-detail .cd-stat-row b { color:#ffe08a; margin-right:4px; }
-.char-detail .cd-stat-row span { color:#8fa3ba; }
 .char-detail .cd-skill { font-size:11px; color:#ffd76a; line-height:1.45; word-break:break-word; }
 .char-detail .cd-skill b { color:#ffe08a; }
 .char-detail .cd-lock { font-size:11px; color:#e0a24c; margin-top:3px; }
