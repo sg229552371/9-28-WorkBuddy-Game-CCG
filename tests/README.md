@@ -4,11 +4,11 @@
 运行方式：
 
 ```bash
-bash run_tests.sh        # 全量 74 套（推荐）
+bash run_tests.sh        # 全量 75 套（推荐）
 node <name>_test.js      # 单项
 ```
 
-> 根目录现有 **74 个 `_test.js`**，门禁**全部编排（74 套）**，口径统一、无差集。
+> 根目录现有 **75 个 `_test.js`**，门禁**全部编排（75 套）**，口径统一、无差集。
 >
 > 历史注记（2026-10-09 已纠正）：21.20「层级退役」曾把 `endless_affix_test` /
 > `endless_arena_test` / `endless_record_test` / `endless_team_test` 连同真正已下线的
@@ -36,6 +36,7 @@ node <name>_test.js      # 单项
 | 文件 | 覆盖内容 |
 |---|---|
 | `boss_test.js` | Boss 战：阶段切换、技能、结算 |
+| `boss_ux_test.js` | Boss 体验四件套：贴图区分 / 吞噬反馈 / 招式名横幅 / 转阶段宝箱 |
 | `laser_test.js` | 激光/射线类武器 |
 | `freeze_test.js` | 冻结机制 |
 | `exp_test.js` | 经验与升级结算 |

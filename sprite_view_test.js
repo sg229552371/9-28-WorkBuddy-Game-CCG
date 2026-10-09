@@ -4,7 +4,7 @@
  *   B. ASSET_MANIFEST 条目数 ≥36 且每条 src 文件真实存在（fs.existsSync）
  *   C. G.sprites 全量键：桩 Image 触发 onload 后 enemy00~22 / hero 系列键齐全，缺失项为 null
  *   D. Monster 接入：new Monster("NM0010") 的 m.sprite 等于 G.sprites[spriteFor("NM0010")]；
- *      Boss(BS0001) spriteFor→null，m.sprite 回落 G.sprites.enemy22 且不崩
+ *      Boss(BS0001) spriteFor→null，m.sprite 回落 CFG.monsters.BS0001.sprite 且不崩
  *   E. CSS 静态核对：竖屏压缩段存在、横屏无新增规则
  * 运行：node sprite_view_test.js（退出码 0 = 全绿）
  * 环境：全部断言用 check()（PASS/FAIL 计数 + 非零退出码），与 run_tests.sh 口径一致。 */
@@ -182,22 +182,25 @@ try {
     G.sprites[spriteFor("NM0010")] = "SPR_enemy10";
     G.sprites[spriteFor("ED0003")] = "SPR_enemy03";
     G.sprites.enemy16 = "SPR_enemy16";
-    G.sprites.enemy22 = "SPR_enemy22";
     G.sprites.enemy00 = "SPR_enemy00";
+    // 🔴 数据驱动：Boss 贴图键从配表现读（2026-10-09 起 10 只 Boss 各配不同贴图，
+    //    写死具体键（如 enemy22）会在换肤时假红）。这里把该键覆盖成哨兵值再断言。
+    const BS_KEY = CFG.monsters.BS0001.sprite;
+    G.sprites[BS_KEY] = "SPR_" + BS_KEY;
     const m1 = new Monster("NM0010", 0, 0, 1);              // NM0010 → enemy10
     const m2 = new Monster("ED0003", 0, 0, 1);              // ED0003 → enemy03
-    const boss = new Monster("BS0001", 0, 0, 1);            // BS → spriteFor null → 回落 d.sprite=enemy22
+    const boss = new Monster("BS0001", 0, 0, 1);            // BS → spriteFor null → 回落 d.sprite
     ({
       m1: m1.sprite, m2: m2.sprite,
-      bossSprite: boss.sprite, bossKeyUsed: CFG.monsters.BS0001.sprite,
+      bossSprite: boss.sprite, bossKeyUsed: BS_KEY, bossSentinel: "SPR_" + BS_KEY,
       m1Match: m1.sprite === G.sprites[spriteFor("NM0010")],
       m2Match: m2.sprite === G.sprites[spriteFor("ED0003")],
     })
   `, ctxB);
   check("new Monster('NM0010').sprite === G.sprites[spriteFor('NM0010')]（= SPR_enemy10）", r.m1 === "SPR_enemy10" && r.m1Match === true);
   check("new Monster('ED0003').sprite === G.sprites[spriteFor('ED0003')]（= SPR_enemy03）", r.m2 === "SPR_enemy03" && r.m2Match === true);
-  check("Boss BS0001：spriteFor→null，m.sprite 回落 CFG 显式键 enemy22（= SPR_enemy22），不崩",
-    r.bossSprite === "SPR_enemy22" && r.bossKeyUsed === "enemy22");
+  check("Boss BS0001：spriteFor→null，m.sprite 回落 CFG 显式键 " + r.bossKeyUsed + "（= " + r.bossSentinel + "），不崩",
+    r.bossSprite === r.bossSentinel && typeof r.bossKeyUsed === "string" && /^enemy\d+$/.test(r.bossKeyUsed));
 } catch (e) { check("Monster 接入 (" + e.message + ")", false); }
 
 /* ============================================================

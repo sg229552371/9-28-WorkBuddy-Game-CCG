@@ -902,21 +902,21 @@ CFG.monsters = {
    *   phases[].hp    = 该阶段开始的**血量比例**（1.0 = 满血即进入，0.5 = 半血进入下一阶段）
    *   phases[].skills = 该阶段轮转发射的弹幕技能 ID（技能表 AT21x）
    * 阶段推进 = **加机制**（换招式池），不是单纯加血加攻；转换时 Boss 无敌停手 CFG.boss.phaseInvuln 秒。 */
-  BS0001: { name: "触手邪神", type: "boss", sprite: "enemy22",
+  BS0001: { name: "触手邪神", type: "boss", sprite: "enemy19",
     skillList: ["AT207", "AT211", "AT212", "AT217", "AT220"],
     phases: [
       { hp: 1.0, skills: ["AT211", "AT212"] },        // 放射炮台：触手放射 / 触手追瞄
       { hp: 0.5, skills: ["AT217", "AT220"] },        // 变奏：邪神花形 / 触手狂潮
     ], patternCd: 3.2,
     hp: 600, atk: 15, def: 3, spd: 72, radius: 46, exp: 60, coin: 80, sizeMul: 1.2 },
-  BS0002: { name: "腐化树母", type: "boss", sprite: "enemy22",
+  BS0002: { name: "腐化树母", type: "boss", sprite: "enemy13",
     skillList: ["AT208", "AT213", "AT214", "AT219"],
     phases: [
       { hp: 1.0, skills: ["AT213", "AT214"] },        // 扇形压制：藤蔓扇射 / 根系翻涌
       { hp: 0.5, skills: ["AT219", "AT213"] },        // 变奏：藤蔓绞杀（双螺旋）
     ], patternCd: 3.4,
     hp: 950, atk: 18, def: 4, spd: 64, radius: 54, exp: 90, coin: 130, sizeMul: 1.35 },
-  BS0003: { name: "深渊吞噬者", type: "boss", sprite: "enemy22",
+  BS0003: { name: "深渊吞噬者", type: "boss", sprite: "enemy20",
     skillList: ["AT209", "AT215", "AT218", "AT216"],
     phases: [
       { hp: 1.0, skills: ["AT215", "AT218"] },        // 冲锋践踏：落地冲击环 / 深渊波幕
@@ -929,7 +929,7 @@ CFG.monsters = {
    * 招式复用表 4e-2 的弹幕条目（AT211~220 按原型被多只 Boss 复用，见 17.8 契约 1）；
    * 激光主题 Boss（BS0006 / BS0009）额外挂 `laserSkills` + `laserCd`（表 4e-3）。
    * 血量沿关卡递进，最终 Boss（BS0010）最厚且**三阶段**分阶段解锁前面的机制。 */
-  BS0004: { name: "旋刃使者", type: "boss", sprite: "enemy22",
+  BS0004: { name: "旋刃使者", type: "boss", sprite: "enemy15",
     skillList: ["AT207", "AT216", "AT219", "AT220", "AT214"],
     phases: [
       { hp: 1.0, skills: ["AT216", "AT219"] },        // 螺旋舞者：三臂漩涡 + 双螺旋绞杀（顺逆双螺旋）
@@ -937,7 +937,7 @@ CFG.monsters = {
     ], patternCd: 3.1,
     hp: 1750, atk: 25, def: 6, spd: 96, radius: 56, exp: 150, coin: 240 },
 
-  BS0005: { name: "熔核暴君", type: "boss", sprite: "enemy22",
+  BS0005: { name: "熔核暴君", type: "boss", sprite: "enemy12",
     skillList: ["AT208", "AT215", "AT218", "AT211"],
     phases: [
       { hp: 1.0, skills: ["AT215", "AT218"] },        // 冲锋践踏·强化：落地冲击环 + 熔岩波幕
@@ -945,7 +945,7 @@ CFG.monsters = {
     ], patternCd: 2.9,
     hp: 2100, atk: 28, def: 6, spd: 88, radius: 58, exp: 170, coin: 280 },
 
-  BS0006: { name: "棱镜之眼", type: "boss", sprite: "enemy22",
+  BS0006: { name: "棱镜之眼", type: "boss", sprite: "enemy21",
     skillList: ["AT207", "AT212", "AT213", "AT217"],
     phases: [
       { hp: 1.0, skills: ["AT212", "AT213"] },        // 棱镜 Laser：追瞄扇压制（激光走 laserSkills 独立通道）
@@ -954,7 +954,7 @@ CFG.monsters = {
     laserSkills: ["AT231", "AT232"], laserCd: 4.0,     // 三束旋转扫描 / 交叉棱光扫描
     hp: 2450, atk: 30, def: 7, spd: 78, radius: 60, exp: 190, coin: 320 },
 
-  BS0007: { name: "裂空织者", type: "boss", sprite: "enemy22",
+  BS0007: { name: "裂空织者", type: "boss", sprite: "enemy03",
     skillList: ["AT208", "AT216", "AT219", "AT213", "AT212"],
     phases: [
       { hp: 1.0, skills: ["AT216", "AT219"] },        // 双螺旋
@@ -962,7 +962,7 @@ CFG.monsters = {
     ], patternCd: 3.2,
     hp: 2800, atk: 32, def: 7, spd: 84, radius: 60, exp: 210, coin: 360 },
 
-  BS0008: { name: "噬弹虫母", type: "boss", sprite: "enemy22",
+  BS0008: { name: "噬弹虫母", type: "boss", sprite: "enemy07",
     skillList: ["AT209", "AT212", "AT214", "AT217", "AT220"],
     phases: [
       { hp: 1.0, skills: ["AT212", "AT214"] },        // 弹幕吞噬：吸收反击前奏（追瞄 + 同心环）
@@ -970,7 +970,7 @@ CFG.monsters = {
     ], patternCd: 3.6,
     hp: 3200, atk: 34, def: 8, spd: 70, radius: 64, exp: 230, coin: 400 },
 
-  BS0009: { name: "深渊领主", type: "boss", sprite: "enemy22",
+  BS0009: { name: "深渊领主", type: "boss", sprite: "enemy14",
     skillList: ["AT209", "AT211", "AT214", "AT220", "AT215"],
     phases: [
       { hp: 1.0, skills: ["AT211", "AT214"] },        // 混合：放射环
@@ -1024,6 +1024,16 @@ CFG.boss = {
   laserHalfW: 12,        // 光柱半宽（px，线段-圆判定用）
   laserDmgInterval: 0.25, // 伤害结算间隔（秒，按段节流而非逐帧）
   laserDmgMul: 0.5,      // 单段伤害 = Boss atk × 此倍率
+  /* ---- 招式名横幅（17.9-④：东方符卡式出招提示）---- */
+  skillNameTime: 1.5,    // 出招时招式名在屏幕上方停留秒数（淡出由渲染按剩余时间算）
+  /* ---- 转阶段奖励（17.9-⑤）----
+   * 每次转阶段掉 1 个宝箱，品质权重**取当前关卡的宝箱档位**（CFG.levelCurve.rows[].chest
+   * → chestTiers[CT].weights），与祭坛宝箱（ALTAR_003）同一套曲线，不另开一套数值。
+   * weights 仅作兜底（关卡表缺失 / 无尽等无关卡世界时用）。 */
+  phaseChest: {
+    enabled: true,
+    weights: { normal: 40, advanced: 30, epic: 20, divine: 8, mythic: 2 },
+  },
 };
 
 /* ---------- 英雄配置表（8.5 表 1，首发 6 角） ---------- */

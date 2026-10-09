@@ -525,6 +525,29 @@ function render() {
       ctx.fillStyle = "#ff8c5a";
       ctx.fillText(`☠ ${cu.name} ${Math.ceil(cu.remain)}s · 敌人强化中 · 掉落 ×${cu.rewardMul}`, G.W / 2, 56);
     }
+    // Boss 招式名横幅（17.9-④）：出招时在屏幕上方显示招式名（东方符卡式提示）。
+    // 白色电报只预告「哪里会有弹幕」，招式名才给「这是哪一招、该怎么躲」的语义；
+    // 多 Boss 同场时取剩余时间最长的那个（后出的招优先展示）。
+    const awBoss = G.activeWorld;
+    if (awBoss && awBoss.monsters) {
+      let bn = null;
+      for (const mm of awBoss.monsters) {
+        if (mm.skillNameT > 0 && mm.skillName && (!bn || mm.skillNameT > bn.skillNameT)) bn = mm;
+      }
+      if (bn) {
+        const k = Math.min(1, bn.skillNameT / 0.4);   // 末 0.4s 线性淡出
+        ctx.save();
+        ctx.globalAlpha = 0.35 + 0.65 * k;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.font = "bold 22px sans-serif";
+        ctx.lineWidth = 5; ctx.strokeStyle = "rgba(0,0,0,0.7)";
+        const bnTxt = `「${bn.skillName}」`;
+        ctx.strokeText(bnTxt, G.W / 2, 86);
+        ctx.fillStyle = "#ffe9a8";
+        ctx.fillText(bnTxt, G.W / 2, 86);
+        ctx.restore();
+      }
+    }
     // 子地图开场冻结倒计时（5.1）：全员静止 + 全员无敌，红色大字 3/2/1
     const fw = G.activeWorld;
     if (fw && fw.freezeTimer > 0) {

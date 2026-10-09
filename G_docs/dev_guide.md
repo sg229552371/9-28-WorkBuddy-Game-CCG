@@ -254,7 +254,7 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/     ← 备用（push 后
 
 ## 3. 验证流程（必做）
 
-**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 3254（门禁 74 套）**。
+**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 3281（门禁 75 套）**。
 
 核心要求：
 
@@ -974,6 +974,44 @@ for (const sid in CFG.moduleSets) {
      不能只看它有没有在门禁清单里。** 删测试前先做这三步：
      `grep <模块名> index.html` → `grep <暴露的全局名> js/ index.html`（排除自身）→ 看是否仍有调用点。
 
+### 5.50 ✅ Boss 体验四件套（2026-10-09，基线 3281，门禁 75 套）
+
+对应设计文档 **17.9 的五条拍板**，一次落地四件套（#2 激光维持不计入弹幕预算，无代码改动）：
+
+1. **Boss 贴图区分**（`js/config.js` 怪物表 `sprite`）
+   - 10 只 BS 各配 1 张：`BS0001→enemy19`、`BS0002→enemy13`、`BS0003→enemy20`、`BS0004→enemy15`、
+     `BS0005→enemy12`、`BS0006→enemy21`、`BS0007→enemy03`、`BS0008→enemy07`、`BS0009→enemy14`、
+     `BS0010→enemy22`（终焉本体保留最强视觉）。
+   - 🔴 **与 NM/ED 零交集是硬护栏**：`js/main.js` 会把 Boss 贴图按 `130 * szMul` **覆写** `G.sprites[键]`，
+     若普通怪共用同一张键，**普通怪会被一起拉成 Boss 体型**（视觉事故）。加新 Boss 贴图前先查这个。
+   - `js/main.js` 改为**遍历怪物表里所有 `/^BS/` 键**自动 fit —— 新增 Boss 只改表，不用再逐条加代码。
+
+2. **弹幕吞噬反馈**（`js/combat.js`）
+   - `devourBullets(w)`：吞弹时 `spawnBurst` 吸收特效，**每帧 ≤ 3 个**（防刷屏护栏）；
+     颜色取 `CFG.boss.color.laser`（青）—— 让玩家对得上「是这条光柱在吞」。
+   - `renderLasers` 激活期：沿光柱朝发射点流动的箭头 + 源头脉冲环；**预警期不画**（反馈只属于激活期）。
+
+3. **招式名横幅**（`js/game.js` + `js/render.js`）
+   - `Monster` 新增 `skillName` / `skillNameT`；`bossFire()` 记录 `p.name || "未知招式"` 并启动计时；
+     `update()` 递减；`render.js` 在**屏幕空间**（不受相机位移影响）画「招式名」，末 0.4s 淡出。
+   - 停留时长 = `CFG.boss.skillNameTime`（1.5s）。
+
+4. **转阶段宝箱**（`js/game.js` 的 `bossPhaseChest(m)` + `CFG.boss.phaseChest`）
+   - `bossPhaseTick()` 阶段推进时调用；品质权重**直接复用当前关卡的宝箱档位**
+     （`CFG.levelCurve.rows[n-1].chest → chestTiers[CT].weights`），**不另开一套数值**；
+     无关卡表 / 无尽世界 → 回落 `CFG.boss.phaseChest.weights`。
+   - 走 `grantItemToRun(r, item, { full: "discard" })`，满包作废 + toast；**整段 try/catch 静默回落，不阻断战斗**。
+   - 与撤离结算的关系：宝箱按固定价值进「×0.5 折算率」→ **每转一次阶段多一份产出，是有意的经济增量**。
+   - 🩹 踩坑：`bossPhaseTick()` **没有 `w` 参数**，最初写成 `bossPhaseChest(w, this)` 直接 `ReferenceError`；
+     正确写法是 `bossPhaseChest(this)`（函数签名 `function bossPhaseChest(m)`）。
+
+5. **`boss_ux_test.js`**（27 条）：①贴图区分/零交集/BS0010 独占 ｜ ③吞噬护栏·颜色·箭头·脉冲环·预警期不画
+   ｜ ④记录→递减→横幅画出→归零消失 ｜ ⑤CT1 权重·入包·固定价值·满包不崩·回落兜底。
+
+**连带修复**：`sprite_view_test.js` 里「BS0001 回落 `enemy22`」写死了贴图键，换肤后**假红**。
+已改为**数据驱动**（`const BS_KEY = CFG.monsters.BS0001.sprite`，把该键覆盖成哨兵再断言）。
+**教训：测试断言不要写死「当前取值」，要断言「取值 = 配表里的值」这个关系。**
+
 ## 6. 并行开发切分（已验证可用）
 
 多路 Agent 并行时**按文件所有权切分**，一方不得碰另一方的文件：
@@ -1006,8 +1044,8 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 
 ## 8. 当前基线
 
-**全量 = 74 套 / `PASS 合计 = 3254` / `bad = 0`**（2026-10-09）。仓库现有 **74 个 `_test.js`**，
-门禁**全部编排（74 套）**，**口径统一、无差集**。
+**全量 = 75 套 / `PASS 合计 = 3281` / `bad = 0`**（2026-10-09）。仓库现有 **75 个 `_test.js`**，
+门禁**全部编排（75 套）**，**口径统一、无差集**。
 > ⚠️ 曾有一处误导（2026-10-09 已纠正）：`endless_affix/arena/record/team_test` 被说成「21.20 退役的死测试，别加回」。
 > 事实是它们覆盖的 4 个模块**至今仍被 `index.html` 加载并在运行**（`EndlessRecord` = 战绩榜在用，调用 10 处），
 > 21.20 只是连真正下线的 `endless_tier_test` 一起误摘。**已全部加回门禁，别再删。**

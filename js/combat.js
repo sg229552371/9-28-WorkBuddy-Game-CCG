@@ -928,11 +928,16 @@ class LaserBeam {
   devourBullets(w) {
     if (this.phase !== "active") return 0;
     let eaten = 0;
+    const fxColor = (CFG.boss && CFG.boss.color && CFG.boss.color.laser) || "#4dd6e5";
     for (const b of w.playerBullets) {
       if (b.dead) continue;
       if (laserHitsTarget(this, { x: b.x, y: b.y, r: this.halfW + 6 })) {
         b.dead = true;               // 吞掉：本体消亡，**不结算伤害**
         eaten++;
+        /* 吞噬反馈（17.9-③）：接触点出吸收特效。**每帧最多 3 个**——弹幕密集时全弹都出
+         * 特效会炸粒子预算，且视觉上糊成一片；3 个足以让玩家看懂「子弹被吃了」。
+         * 没有这个反馈，玩家只会觉得「输出凭空变低」，读不懂是激光在吞。 */
+        if (eaten <= 3 && typeof spawnBurst === "function") spawnBurst(b.x, b.y, fxColor, 2);
       }
     }
     this.devoured += eaten;
@@ -1030,6 +1035,27 @@ function renderLasers(ctx, w) {
       ctx.beginPath(); ctx.moveTo(lb.x, lb.y); ctx.lineTo(e.x, e.y); ctx.stroke();
       ctx.strokeStyle = "#ffffff"; ctx.lineWidth = lb.halfW * 0.7;
       ctx.beginPath(); ctx.moveTo(lb.x, lb.y); ctx.lineTo(e.x, e.y); ctx.stroke();
+      /* 吞噬标识（17.9-③）：沿光柱**往发射点流动**的箭头 + 源头脉冲环。
+       * 「往里吸」的方向感 = 玩家一眼读出「这条光柱在吃我的子弹」；
+       * 静止的光柱做不到这一点（17.9 待定 3 的核心痛点）。 */
+      const bdx = e.x - lb.x, bdy = e.y - lb.y;
+      const blen = Math.hypot(bdx, bdy) || 1;
+      const bux = bdx / blen, buy = bdy / blen;            // 发射点 → 端点 的单位向量
+      const bpx = -buy, bpy = bux;                          // 垂直方向
+      const bstep = 64, boff = (G.time * 150) % bstep;      // 流动速度 150px/s
+      ctx.strokeStyle = cyan; ctx.lineWidth = 2;
+      for (let d0 = blen - boff; d0 > 14; d0 -= bstep) {
+        const cx0 = lb.x + bux * d0, cy0 = lb.y + buy * d0, w0 = 5;
+        ctx.beginPath();
+        ctx.moveTo(cx0 + bpx * w0, cy0 + bpy * w0);
+        ctx.lineTo(cx0 - bux * w0, cy0 - buy * w0);         // 箭头尖指向发射点（被吸进去）
+        ctx.lineTo(cx0 - bpx * w0, cy0 - bpy * w0);
+        ctx.stroke();
+      }
+      const pr = Math.max(2, lb.halfW * 1.6 + 4 * Math.sin(G.time * 10));   // 源头「口」脉冲
+      ctx.globalAlpha = 0.55; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(lb.x, lb.y, pr, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 1;
     } else {
       // 收束：由粗变细、整体淡出
       const k = lb.fadeT > 0 ? Math.max(0, 1 - lb.t / lb.fadeT) : 0;

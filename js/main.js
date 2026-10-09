@@ -50,6 +50,16 @@ const Game = {
     G.sprites.enemy08 = Assets.fit("enemy08", 48 * szMul);
     G.sprites.enemy16 = Assets.fit("enemy16", 48 * szMul);
     G.sprites.enemy22 = Assets.fit("enemy22", 130 * szMul);
+    /* Boss 专属贴图（17.9-①）：每只 BS 按怪物表各自的 sprite 字段，统一按 **Boss 尺寸** 裁剪。
+     * fillSprites 只按 48px 兜底装载全部键，若不在此覆写，Boss 会用 48px 的小图放大发糊。
+     * 循环读表 = 新增 Boss 只改 CFG.monsters，不用回这里加行。 */
+    for (const bid in CFG.monsters) {
+      if (!/^BS/.test(bid)) continue;
+      const sp = CFG.monsters[bid].sprite;
+      if (sp && typeof Assets.fit === "function" && Assets.images[sp]) {
+        G.sprites[sp] = Assets.fit(sp, 130 * szMul);
+      }
+    }
     this.loadSettings();
     this.bindInput();
     this.bindEvents();

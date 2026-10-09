@@ -717,6 +717,7 @@ class Monster {
     this.patternTimer = 1.5;                            // 开场稍候再放第一招（给玩家反应时间）
     this.patternWarnT = 0; this.patternIdx = 0; this.warnP = null;
     this.spiralAng = 0; this.aimAng = 0;
+    this.skillName = ""; this.skillNameT = 0;            // 招式名横幅（17.9-④）：出招时屏幕上方显示
     this.sprite = G.sprites[spriteFor(defId) || d.sprite || "enemy00"];   // 20.4 线C：优先按 defId 映射新精灵表（NM/ED→enemyNN），回落配表显式键，再回落默认色块路径；Boss(BS) spriteFor→null 走旧 enemy22
     this.flashT = 0;
   }
@@ -741,6 +742,7 @@ class Monster {
     this.minionTimer = Math.max(this.minionTimer, 3.0);
     UI.toast(`${this.d.name} 进入第 ${this.phaseIdx + 1} 阶段！`, "bad");
     SFX.play("boom");
+    bossPhaseChest(this);      // 17.9-⑤：转阶段掉 1 个宝箱（品质取当前关卡的宝箱档位，实现见文件末尾区块）
   }
   /** 弹幕循环：电报（白圈）→ 发射 → 冷却。warnTime = 0 的招式（螺旋）不逐发电报，直接连发。 */
   bossPatternTick(w, dt) {
@@ -765,12 +767,17 @@ class Monster {
     this.aimAng = Math.atan2(tgt.y - this.y, tgt.x - this.x);
     this.spiralAng += (p.spin || 0);                      // 螺旋每次发射整体旋转（正反由 spin 符号决定）
     const n = PatternSystem.emit(w, this, p, this.aimAng, this.spiralAng);
+    /* 招式名横幅（17.9-④）：把这一招的名字顶到屏幕上方（停留 CFG.boss.skillNameTime 秒）。
+     * 白色电报只预告「哪里会有弹幕」，招式名才给「这是哪一招、该怎么躲」的语义。 */
+    this.skillName = p.name || "未知招式";
+    this.skillNameT = (CFG.boss && CFG.boss.skillNameTime) || 1.5;
     this.patternIdx++;
     this.patternTimer = p.cd != null ? p.cd : CFG.boss.patternCd;
     return n;
   }
   update(w, dt) {
     this.flashT -= dt;
+    if (this.skillNameT > 0) this.skillNameT -= dt;   // 招式名横幅倒计时（17.9-④）
     // 嘲讽（AT120）：倒计时；到点或嘲讽者倒下（含队友 alive=false / 队长死亡）即解除
     if (this.tauntT > 0) {
       this.tauntT -= dt;
@@ -1656,4 +1663,41 @@ function updateAltarTimeline(w, dt) {
       w._altarNextT += interval;
     }
   }
+}
+
+/* ============================================================================
+ * 17.9-⑤ 转阶段奖励：Boss 每次转阶段掉 1 个宝箱（2026-10-09 拍板落地）
+ * ----------------------------------------------------------------------------
+ * 链路：bossPhaseTick() 检测到阶段推进 → 调本函数 → **直接入包**（与精英必掉宝箱
+ * 同款 grantItemToRun 链路，背包满则作废并提示）。
+ *
+ * 品质权重 = **当前关卡的宝箱档位**（CFG.levelCurve.rows[].chest → chestTiers[CT].weights），
+ * 与祭坛宝箱（ALTAR_003）走同一套曲线 —— 不另开一套数值，避免「Boss 掉的箱子更欧」。
+ * 关卡表缺失 / 无尽等无关卡世界 → 回落 CFG.boss.phaseChest.weights。
+ *
+ * 与撤离结算的关系（用户已确认接受）：宝箱按 CFG.chestQualities[].value 的**固定价值**
+ * 进「×0.5 折算率」链路 —— 每多转一次阶段就多一份产出，属**有意的经济增量**，不是 bug。
+ * ========================================================================== */
+function bossPhaseChest(m) {
+  const cfg = CFG.boss && CFG.boss.phaseChest;
+  if (!cfg || !cfg.enabled || !m) return null;
+  let weights = cfg.weights;
+  try {
+    const mid = (G.levelCfg && G.levelCfg.id) ? String(G.levelCfg.id).match(/(\d+)\s*$/) : null;
+    const rows = CFG.levelCurve && CFG.levelCurve.rows;
+    const row = (mid && rows) ? rows[parseInt(mid[1], 10) - 1] : null;
+    const tier = row && row.chest ? CFG.levelCurve.chestTiers[row.chest] : null;
+    if (tier && tier.weights) weights = tier.weights;
+  } catch (e) { /* 曲线表缺失/结构变化 → 用兜底权重，不阻断战斗 */ }
+  const q = U.weightedPick(weights);
+  const item = makeChestItem(q);
+  const r = G.run;
+  if (r && grantItemToRun(r, item, { full: "discard" })) {
+    UI.toast(`▣ ${m.d.name} 转阶段掉落 ${item.name}`, "gold");
+  } else {
+    UI.toast("背包已满，转阶段宝箱作废", "bad");
+  }
+  spawnBurst(m.x, m.y, (CFG.chestQualities[q] && CFG.chestQualities[q].color) || "#ffd76a", 8);
+  SFX.play("chest");
+  return item;
 }
