@@ -310,6 +310,8 @@ const Game = {
     on("btn-endless-city", () => { if (UI.hideEndlessSettle) UI.hideEndlessSettle(); exitEndlessToCity(); });
     on("btn-endless-retry", () => { if (UI.hideEndlessSettle) UI.hideEndlessSettle(); restartEndless(); });
     on("btn-abyss-records", () => { if (typeof UI !== "undefined" && UI.showAbyssRecords) UI.showAbyssRecords("charSel"); });
+    /* 26.x：角色选择右上角「属性说明」图标 → tips 弹窗（再点关闭） */
+    on("btn-stat-help", () => { if (UI.toggleStatHelp) UI.toggleStatHelp(); });
     /* ---- 21.19 深渊新界面按钮绑定（选层界面 / 暂停菜单；模块未加载时安全跳过） ---- */
     if (typeof UI.initAbyssSelect === "function") UI.initAbyssSelect();
     if (typeof UI.initAbyssPause === "function") UI.initAbyssPause();

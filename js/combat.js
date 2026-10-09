@@ -6,6 +6,17 @@
  * ⚠️ 本文件由纯物理搬移生成：除本头部职责注释与 "use strict"; 外，代码逐字沿用原文件。
  * ============================================================ */
 "use strict";
+/* 智力 → 技能效果强度（26.x，CFG.baseStats.int.powPct）：
+ * 治疗量 / 光环幅度 / 护罩值统一 ×(1 + 智力 × powPct)。
+ * statSrc 由 cast() 透传（队长 = computeStats()，队友 = companionStats()，都带 int 原值）；
+ * 测试桩没传 statSrc 时安全回落 0（不加成、不抛错）。 */
+function supportPowPct(opts) {
+  const s = opts && opts.statSrc;
+  const bs = (typeof CFG !== "undefined" && CFG.baseStats && CFG.baseStats.int) || null;
+  if (!s || !bs || !bs.powPct) return 0;
+  return (s.int || 0) * bs.powPct;
+}
+
 /* ============ 技能执行器（P2：玩家 / 队友 / 召唤物共用同一套释放逻辑） ============
  * 释放形态由技能表的 type 决定：bullet 弹道 / summon 召唤物 / trap 陷阱。
  * 所有数值都来自 resolveSkill 的产物（队长 = G.run.weapon.*，队友 = c.skills.*），执行器本身不存数值。 */
@@ -129,10 +140,11 @@ const SkillSystem = {
     const R = sk.radius || 0;
     if (R > 0) explode(w, caster.x, caster.y, R, Math.max(1, Math.round(atk * (sk.dmgMul != null ? sk.dmgMul : 1))), "player", caster);
     const add = sk.scaleByAdd || 0;              // 属性加成积木产出的"效果量"（未声明 scaleBy 时为 0）
+    const pow = 1 + supportPowPct(opts);         // 智力 → 技能效果强度（26.x，三大基础属性之一）
     const heroes = aliveHeroes();
     const out = { kind, n: 0, radius: R, amount: 0 };
     if (kind === "heal") {
-      const amt = Math.max(1, Math.round((sk.healBase || 0) + add * (sk.healPerAdd != null ? sk.healPerAdd : 1)));
+      const amt = Math.max(1, Math.round(((sk.healBase || 0) + add * (sk.healPerAdd != null ? sk.healPerAdd : 1)) * pow));
       const r = (typeof G !== "undefined" && G.run) ? G.run : null;
       for (const h of heroes) {
         if (!h) continue;
@@ -155,7 +167,7 @@ const SkillSystem = {
       return out;
     }
     if (kind === "aura") {
-      const pct = (sk.auraPct || 0) + add * 0.01;         // 属性加成：每点加成 +1% 幅度
+      const pct = ((sk.auraPct || 0) + add * 0.01) * pow;  // 属性加成：每点加成 +1% 幅度；智力再乘技能效果强度
       const dur = sk.auraDuration || 10;
       SkillSystem.pushRunBuff("圣咏鼓舞", "atk", 1 + pct, dur);
       SkillSystem.pushRunBuff("圣咏迅捷", "spd", 1 + pct, dur);
@@ -165,7 +177,7 @@ const SkillSystem = {
       return out;
     }
     // barrier：全队防御护罩（def 走 runBonus().add.def，与装备/卡牌同一通道）
-    const defAdd = Math.max(1, Math.round((sk.barrierDef || 0) + add));
+    const defAdd = Math.max(1, Math.round(((sk.barrierDef || 0) + add) * pow));
     SkillSystem.pushRunBuff("灵能护罩", "def", defAdd, sk.barrierDuration || 12);
     out.n = heroes.length; out.amount = defAdd;
     spawnBurst(caster.x, caster.y, "#6cb2ff", 18, R * 0.8);

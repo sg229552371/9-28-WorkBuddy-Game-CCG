@@ -497,6 +497,7 @@ const UI = {
         unlockBtn +
         `<div class="cd-desc">${h.desc}</div>` +
         `<div class="cd-stats">HP ${h.hp} · 攻击 ${h.atk} · 防御 ${h.def} · 移速 ${h.spd}` +
+        `<span class="cd-id">　力量 ${h.str || 0} / 敏捷 ${h.agi || 0} / 智力 ${h.int || 0}</span>` +
         `<span class="cd-id">　（LV1 基础值 · 解锁后随局外等级成长）</span></div>` +
         this._statHelpHtml(this._statKeysOf(h)) +
         `<div class="cd-skill">⚔ <b>${wpn.name}</b> · 技能 LV1（解锁后可升级）<br>${skLine}</div>` +
@@ -528,6 +529,7 @@ const UI = {
       `<span class="cd-id">局外 LV${lv}${lv < CFG.outLevel.maxLevel ? "" : "（满级）"}</span></div>` +
       `<div class="cd-desc">${h.desc}</div>` +
       `<div class="cd-stats">HP ${h.hp + g.hp * n} · 攻击 ${h.atk + g.atk * n} · 防御 ${h.def + g.def * n} · 移速 ${h.spd}` +
+      `<span class="cd-id">　力量 ${h.str || 0} / 敏捷 ${h.agi || 0} / 智力 ${h.int || 0}</span>` +
       `<span class="cd-id">　（基础 HP ${h.hp} / 攻 ${h.atk} / 防 ${h.def}）</span></div>` +
       this._statHelpHtml(this._statKeysOf(h)) +
       `<div class="cd-skill">⚔ <b>${wpn.name}</b> · 技能 LV${skLv}${skLv < CFG.weaponLevel.maxLv ? `（上限 ${CFG.weaponLevel.maxLv}）` : "（满级）"}<br>${skLine}</div>`;
@@ -934,12 +936,26 @@ const UI = {
     this.updateSkillCd();
     // 全队技能栏（19.12）：底部居中，结构只建一次 + 变化检测更新（不每帧重建 DOM）
     this.renderPartySkillbar();
-    // 进度条
+    // 进度条（26.x 统一战斗 UI：深渊与主线共用同一条，只换文案与数据源）
     const lv = G.levelCfg;
     const pf = document.getElementById("progress-fill");
     const pt = document.getElementById("progress-txt");
-    if (r.bossDefeated) { pf.style.width = "100%"; pt.textContent = "已出现撤离点雕像 · 站进雕像圈内自动读条 8 秒撤离"; }
+    if (r.bossDefeated && !G.inEndless) { pf.style.width = "100%"; pt.textContent = "已出现撤离点雕像 · 站进雕像圈内自动读条 8 秒撤离"; }
     else if (r.bossSpawned) { pf.style.width = "100%"; pt.textContent = "BOSS 战斗中"; }
+    else if (G.inEndless) {
+      // 深渊：推进量 = 击杀 + 时间×权重，阈值 = 下一只 BOSS（复用 Endless 同一套数据，不另算一份）
+      let prog = r.kills, thr = 0;
+      try {
+        if (typeof Endless !== "undefined" && Endless) {
+          if (typeof Endless.progress === "function") prog = Endless.progress();
+          const bi = (Endless.state && typeof Endless.state.bossIndex === "number") ? Endless.state.bossIndex : 0;
+          if (typeof Endless.bossThreshold === "function") thr = Endless.bossThreshold(bi);
+        }
+      } catch (e) { }
+      if (!(thr > 0)) thr = (CFG.endless && CFG.endless.bossProgressBase) || 1;
+      pf.style.width = Math.min(100, Math.max(0, prog / thr * 100)) + "%";
+      pt.textContent = `深渊推进 ${Math.floor(prog)}/${thr}（${Math.floor(r.runTime)}s）`;
+    }
     else {
       const pct = Math.min(1, r.kills / lv.progressGoal);
       pf.style.width = pct * 100 + "%";
@@ -1033,9 +1049,10 @@ const UI = {
  * 设计要点：
  *   · `_statName(stat)`：属性键 → 中文名。优先读 CFG.statNames（另一路可能新增），
  *     缺失时回落内置映射（保证 CFG 未同步也不空白）。空值保护。
- *   · `#abyss-hud`（index.html 新增元素）：深渊专属经验条（LV + 进度 + 经验数值）。
- *     主线的「击杀进度条 / 等级·货币行」在深渊无意义，由 CSS（#hud.abyss-mode）隐藏；
- *     自动战斗按钮同样在 abyss-mode 下隐藏。
+ *   · **26.x 统一战斗 UI（用户要求）**：深渊复用与主线**完全相同**的战斗布局
+ *    （#hud-top 击杀/推进条 + #hud-tr 等级·货币·经验 + 底部全队技能栏），
+ *     数据同源 G.run、updateHUD 每帧照常写入；只隐藏深渊用不到的自动战斗按钮（CSS .abyss-mode）。
+ *     原 21.21 的独立 #abyss-hud 经验条已移除（与 #hud-tr 完全重复）。
  *   · 逐英雄武器技能栏**复用既有 #party-skillbar**（renderPartySkillbar，随 updateHUD 每帧刷新），
  *     不重复造结构；本区块不重建技能栏。
  *   · 位置：右上（与主线 #hud-tr 同区），不遮挡 canvas 绘制的深渊波次/BOSS 面板（左上）。
@@ -1056,10 +1073,11 @@ Object.assign(UI, {
   },
 
   /* 该英雄需要展示说明的属性键（26.x：解决「属性说明不够详细、看不出加成的是什么」）。
-   * 规则：4 项基础属性必有 + 能量上限；召唤物上限 / 陷阱上限只在**该英雄确实高于默认值**时列出
-   *（默认 2 / 1 属于通用值，列出来只会刷屏）。空值保护：h 缺失时返回基础 4 项。 */
+   * 规则：基础 4 项 + 能量上限 + 三大基础属性（力量/敏捷/智力，26.x 新增，每角不同必列）；
+   * 召唤物上限 / 陷阱上限只在**该英雄确实高于默认值**时列出（默认 2 / 1 属于通用值，列出来只会刷屏）。
+   * 空值保护：h 缺失时返回基础 4 项。 */
   _statKeysOf(h) {
-    const keys = ["atk", "def", "hp", "spd", "energyMax"];
+    const keys = ["atk", "def", "hp", "spd", "energyMax", "str", "agi", "int"];
     if (h && h.summonMax > 2) keys.push("summonMax");
     if (h && h.trapMax > 1) keys.push("trapMax");
     return keys;
@@ -1081,38 +1099,36 @@ Object.assign(UI, {
     return `<div class="cd-stathelp"><div class="cd-stathelp-t">📖 属性说明</div>${rows.join("")}</div>`;
   },
 
-  /* 深渊局内 HUD 刷新（每帧，由 updateHUD 单行调用）：
-   *   ① #hud 挂 .abyss-mode（CSS 据此隐藏自动战斗 + 主线专属块）；
-   *   ② #abyss-hud 经验条：LV + 进度条 + 经验数值（数据取 G.run.lv/exp/expNext，缺数据降级为 0）。 */
+  /* 角色选择右上角「属性说明」图标 → tips 弹窗（26.x，用户要求）。
+   * 内容 = CFG.statDesc 全量属性说明（复用 _statHelpHtml，同一数据源、不会两套文案）。
+   * 幂等：再点一次关闭；元素缺失安全跳过。 */
+  toggleStatHelp() {
+    if (typeof document === "undefined" || !document.getElementById) return;
+    const tip = document.getElementById("stat-help-tip");
+    if (!tip || !tip.classList) return;
+    if (!tip.classList.contains("hidden")) { tip.classList.add("hidden"); return; }
+    let keys = ["atk", "def", "hp", "spd"];
+    try { if (typeof CFG !== "undefined" && CFG.statDesc) keys = Object.keys(CFG.statDesc); } catch (e) { }
+    tip.innerHTML = this._statHelpHtml(keys);
+    tip.classList.remove("hidden");
+  },
+
+  /* 深渊局内 HUD 刷新（每帧，由 updateHUD 单行调用）—— 26.x 已统一：
+   * 深渊**复用与主线完全相同的战斗 UI**（#hud-top 击杀/推进条 + #hud-tr 等级·货币·经验，
+   * 数据同为 G.run，updateHUD 每帧照常写入），本函数只负责挂/摘 .abyss-mode 类
+   * （CSS 据此隐藏深渊用不到的自动战斗按钮），不再维护独立的 #abyss-hud 经验条。
+   * 口径：战斗 UI 高度统一，只允许功能级的新增/隐藏，布局不动。 */
   updateAbyssHud() {
     if (typeof document === "undefined" || !document.getElementById) return;
     const inEndless = !!(typeof G !== "undefined" && G && G.inEndless);
     const hud = document.getElementById("hud");
     if (hud && hud.classList) hud.classList.toggle("abyss-mode", inEndless);
-    const box = document.getElementById("abyss-hud");
-    if (!box || !box.classList) return;
-    box.classList.toggle("hidden", !inEndless);
-    if (!inEndless) return;                     // 非深渊：清态即可，不写数值
-    const r = (typeof G !== "undefined" && G && G.run) ? G.run : null;
-    const lv = (r && typeof r.lv === "number") ? r.lv : 1;
-    const exp = (r && typeof r.exp === "number") ? r.exp : 0;
-    const next = (r && typeof r.expNext === "number" && r.expNext > 0) ? r.expNext : 0;
-    const lvEl = document.getElementById("abyss-exp-lv");
-    if (lvEl) lvEl.textContent = "LV " + lv;
-    const fill = document.getElementById("abyss-exp-fill");
-    if (fill) fill.style.width = (next > 0 ? Math.max(0, Math.min(100, exp / next * 100)) : 0) + "%";
-    const txt = document.getElementById("abyss-exp-txt");
-    if (txt) txt.textContent = exp + " / " + next;
-    const coinEl = document.getElementById("abyss-coin");
-    if (coinEl) coinEl.textContent = "◈ " + ((r && typeof r.coin === "number") ? r.coin : 0);
   },
 
-  /* 离开深渊 / 战斗结束：复位深渊 HUD 态（幂等；元素缺失安全，不抛错）。 */
+  /* 离开深渊 / 战斗结束：复位 abyss-mode（幂等；元素缺失安全，不抛错）。 */
   clearAbyssHud() {
     if (typeof document === "undefined" || !document.getElementById) return;
     const hud = document.getElementById("hud");
     if (hud && hud.classList) hud.classList.remove("abyss-mode");
-    const box = document.getElementById("abyss-hud");
-    if (box && box.classList) box.classList.add("hidden");
   },
 });

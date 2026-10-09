@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="app-version" content="20261029">
+<meta name="app-version" content="20261030">
 <title>弹幕射击 Roguelike × 背包肉鸽 — HTML 原型</title>
 <script>
 /* ====== 缓存自愈：静态资源统一版本号 + 旧版自动强刷（必须先于其他脚本执行） ======
@@ -11,7 +11,7 @@
  * 机制：所有 js/css 引用统一带 ?v=版本号；localStorage.app_version 与当前版本不一致
  * （说明刚从旧版升上来）时，强制 location.reload 重拉一次（sessionStorage 标记防死循环）。
  * 整段包裹 try/catch：隐私模式 / 存储被禁时静默降级，绝不阻断页面加载。 */
-var APP_VERSION = "20261029";
+var APP_VERSION = "20261030";
 (function () {
   try {
     var alreadyReloaded = sessionStorage.getItem("app_version_reloaded");
@@ -26,7 +26,7 @@ var APP_VERSION = "20261029";
   } catch (e) { /* 存储不可用：静默降级，不阻断页面 */ }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261029">
+<link rel="stylesheet" href="css/style.css?v=20261030">
 </head>
 <body>
 <div id="app">
@@ -199,6 +199,9 @@ var APP_VERSION = "20261029";
       <div class="char-head">
         <h2>角色选择</h2>
         <div id="meta-line" class="meta-line"></div>
+        <!-- 26.x：右上角「属性说明」图标 → 点击弹出 tips（内容 = CFG.statDesc 全量说明） -->
+        <button id="btn-stat-help" class="ico-btn" type="button" title="属性说明" aria-label="属性说明">?</button>
+        <div id="stat-help-tip" class="stat-help-tip hidden"></div>
       </div>
       <div id="char-list"></div>
       <div id="char-detail" class="char-detail"></div>
@@ -238,20 +241,11 @@ var APP_VERSION = "20261029";
       <div class="bar exp"><div class="fill" id="bar-exp"></div></div>
       <div id="coin-line">◈ 货币 <b id="coin-num">0</b>　◆ 经验 <b id="exp-num">0</b></div>
     </div>
-    <!-- ====== 深渊（无尽）局内 HUD 补充区（21.21）======
-         仅在 G.inEndless 时由 UI.updateAbyssHud() 显示（#hud 同时挂 .abyss-mode）。
-         ① 经验条：当前等级 + 进度 + 经验数值（数据源 G.run.lv / exp / expNext）；
-         ② 逐英雄武器技能栏复用底部既有 #party-skillbar（不在本容器内重复造结构）；
-         ③ 自动战斗按钮在深渊不显示（见 css/style.css 的 #hud.abyss-mode #btn-autofight）。
-         位置与主线 #hud-tr 同区（右上、安全区内），不遮挡 canvas 绘制的深渊波次/BOSS 面板（左上）。 -->
-    <div id="abyss-hud" class="hidden">
-      <div id="abyss-exp-line">
-        <span id="abyss-exp-lv">LV 1</span>
-        <div class="bar exp" id="abyss-exp-bar"><div class="fill" id="abyss-exp-fill"></div></div>
-        <span id="abyss-exp-txt">0 / 0</span>
-      </div>
-      <div id="abyss-coin">◈ 0</div>
-    </div>
+    <!-- ====== 深渊（无尽）战斗 HUD —— 26.x 已统一 ======
+         深渊复用与主线**完全相同**的战斗 UI 布局（#hud-top 进度条 + #hud-tr 等级·货币·经验
+         + 底部 #party-skillbar，数据同源 G.run）。唯一差异 = CSS（#hud.abyss-mode）隐藏
+         深渊用不到的自动战斗按钮。原 21.21 独立 #abyss-hud 经验条已删除（与 #hud-tr 重复）。
+         口径：战斗 UI 高度统一，只允许功能级的新增/隐藏，布局不动。 -->
     <div id="hud-bl">
       <div id="weight-line">负重 <b id="weight-num">0</b> / 100</div>
       <div id="weight-pen"></div>
@@ -552,45 +546,45 @@ var APP_VERSION = "20261029";
   </div>
 </div>
 
-<script src="js/config.js?v=20261029"></script>
-<script src="js/core.js?v=20261029"></script>
-<script src="js/pool.js?v=20261029"></script>
-<script src="js/game.js?v=20261029"></script>
+<script src="js/config.js?v=20261030"></script>
+<script src="js/core.js?v=20261030"></script>
+<script src="js/pool.js?v=20261030"></script>
+<script src="js/game.js?v=20261030"></script>
 <!-- 21.16 物理搬移：原 game.js 拆为 5 个职责单一文件，加载顺序沿用原行序（game → items → combat → modes → render）。
      跨文件仅为函数调用（提升安全），顶层 const/class 各自唯一且初始化不跨文件引用 → 无 TDZ 风险。 -->
-<script src="js/items.js?v=20261029"></script>
-<script src="js/combat.js?v=20261029"></script>
-<script src="js/modes.js?v=20261029"></script>
-<script src="js/render.js?v=20261029"></script>
+<script src="js/items.js?v=20261030"></script>
+<script src="js/combat.js?v=20261030"></script>
+<script src="js/modes.js?v=20261030"></script>
+<script src="js/render.js?v=20261030"></script>
 <!-- 21.12 性能压测场景（独立模块，无 ?stress 参数时零开销；依赖 game.js 的 World/Monster/Bullet 类） -->
-<script src="js/stress.js?v=20261029"></script>
+<script src="js/stress.js?v=20261030"></script>
 <!-- 21.15 🅐 无尽模式核心（波次/刷怪/难度曲线；依赖 game.js 的 World/Monster/Player 类，须在 game.js 之后） -->
-<script src="js/endless.js?v=20261029"></script>
+<script src="js/endless.js?v=20261030"></script>
 <!-- 21.15 🅒 无尽模式 HUD 信息区（canvas 绘制左上角三项：波次/击杀/同屏）；依赖 game.js 的 G（render 内单行桥接） -->
-<script src="js/hud_endless.js?v=20261029"></script>
-<script src="js/ui.js?v=20261029"></script>
+<script src="js/hud_endless.js?v=20261030"></script>
+<script src="js/ui.js?v=20261030"></script>
 <!-- 21.16 物理搬移（第二阶段）：原巨型 const UI = {...} 按行号切成两段——ui.js 保留前半段（基础层），
      ui-screens.js 以 Object.assign(UI, {...}) 承载后半段（屏幕层）。故 ui-screens.js 必须在 ui.js 之后。 -->
-<script src="js/ui-screens.js?v=20261029"></script>
+<script src="js/ui-screens.js?v=20261030"></script>
 <!-- 21.16 物理搬移：原 ui.js 拆为「基础（ui.js + ui-screens.js）+ 面板（ui-panels.js）」，加载顺序沿用原行序。
      ui-panels.js 多处 UI.xxx = ... 挂载到 UI 对象（定义于 ui.js）→ 必须紧跟 ui.js/ui-screens.js 之后。 -->
-<script src="js/ui-panels.js?v=20261029"></script>
+<script src="js/ui-panels.js?v=20261030"></script>
 <!-- 21.16 物理搬移：原 main.js 拆为「quality.js（画质三档/性能护栏/加载遮罩）+ rewards.js（无尽奖励包装）+
      main.js（宿主）」。quality.js 必须在 main.js 之前——main.js 顶层 Game.loadSettings() 会调用
      _defaultQuality()/_migrateQuality()；rewards.js 依赖 endless.js/modes.js 且 main.js 依赖 rewards 接线。 -->
-<script src="js/quality.js?v=20261029"></script>
-<script src="js/rewards.js?v=20261029"></script>
+<script src="js/quality.js?v=20261030"></script>
+<script src="js/rewards.js?v=20261030"></script>
 <!-- 21.19 深渊功能模块（并行波次 W1~W7）：层级 / 词缀 / 世界内容（祭坛+奖励节点）/ 记录首通 / 组队。
      均为「末尾独立区块」式纯全局脚本，只消费 CFG.endless 与既有全局，不改既有中间逻辑；
      须在 endless.js / modes.js 之后加载（依赖 Endless / modes 侧接口）。 -->
-<script src="js/endless-affix.js?v=20261029"></script>
-<script src="js/endless-arena.js?v=20261029"></script>
-<script src="js/endless-record.js?v=20261029"></script>
-<script src="js/endless-team.js?v=20261029"></script>
+<script src="js/endless-affix.js?v=20261030"></script>
+<script src="js/endless-arena.js?v=20261030"></script>
+<script src="js/endless-record.js?v=20261030"></script>
+<script src="js/endless-team.js?v=20261030"></script>
 <!-- 21.19 深渊 UI 模块（依赖 ui.js / ui-screens.js / ui-panels.js 的 UI 对象） -->
-<script src="js/ui-abyss.js?v=20261029"></script>
-<script src="js/ui-abyss-pause.js?v=20261029"></script>
-<script src="js/main.js?v=20261029"></script>
+<script src="js/ui-abyss.js?v=20261030"></script>
+<script src="js/ui-abyss-pause.js?v=20261030"></script>
+<script src="js/main.js?v=20261030"></script>
 <!-- 20.6 JS 未加载兜底：main.js 之后立刻执行；若 window.Game 未定义（脚本全部/部分加载失败）
      则直接显示兜底面板。面板与按钮由 main.js 的 BootGuard.ensure() 建成（本行也可能在
      main.js 未执行时运行，故此处再自查一次并按需补按钮）。 -->

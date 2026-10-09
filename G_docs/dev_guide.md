@@ -254,7 +254,7 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/     ← 备用（push 后
 
 ## 3. 验证流程（必做）
 
-**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 3336（门禁 76 套）**。
+**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 3349（门禁 76 套）**。
 
 核心要求：
 
@@ -1074,6 +1074,51 @@ for (const sid in CFG.moduleSets) {
 **教训（复发型）：改「配表数值 / 分类计数 / 武器映射」时，先把全仓 `grep` 一遍写死的旧值。**
 断言要写**关系**（A = 配表里的 A）而不是**当前取值**（A = 100）。
 
+### 5.52 ✅ 三大基础属性 · 属性说明图标 · 统一战斗 UI · 测试期全解锁（2026-10-09，基线 3349，门禁 76 套）
+
+用户五条拍板：① 角色选择右上角加 ico 图标 → 弹「属性说明」tips；② 新增**力量/敏捷/智力**三基础属性并对技能有增益；
+③ 测试阶段**开启所有角色**；④⑤ image#2 的战斗 UI = **唯一战斗布局**，深渊也用它，只允许功能级增减、大体不变。
+
+1. **三大基础属性**（`js/config.js` + `js/items.js` + `js/combat.js`）
+   - `CFG.heroes[].str/agi/int`（12 角按定位+远近战差异化，组合互不相同）+ **`CFG.baseStats` 转换表**：
+     `str → hp+6/点、atk+0.5/点`（攻击通道 → 所有技能伤害受益）｜
+     `agi → spd+1.2/点、cdMul ×(1−0.4%/点)`（下限 ×0.5）｜
+     `int → energyMax+2/点、技能效果强度 +1%/点`。
+   - **结算点 = `computeStats()` / `companionStats()`**：折算与装备/增益同源、队长队友同表；
+     `str/agi/int` 原值挂上属性产物 → **`withScaleBy` 直接支持 `stat:"str"|"agi"|"int"`**（statSrc 就是它）。
+   - **技能效果强度**：`castSupport` 的治疗/光环/护罩量统一 ×(1 + `supportPowPct(opts)`)，
+     读 `opts.statSrc.int`——**测试桩没传 statSrc 时安全回落 0**。
+   - 🔴 **只折算不写回 `CFG.heroes`**——定位属性带 / 基础值的测试基线（hero_roster_test 五段、smoke_test）不受影响。
+   - ⚠️ **连锁**：`cdMul` / `atk` / `energyMax` 的**精确值断言**全部要改成「×敏捷折算 / +力量折算」的**动态期望**
+     （`smoke_test` 冷却卡、`skill_table_test` 攻速卡/队友冷却/Buff 乘算、`econ_test` 能量卡都撞过）。
+
+2. **属性说明图标 + tips**（`index.html` + `js/ui.js` + `js/main.js` + `css/style.css`）
+   - `#btn-stat-help`（圆形 `?` ico，`.char-head` 右上角）→ `UI.toggleStatHelp()` 弹 `#stat-help-tip`，
+     内容 = `Object.keys(CFG.statDesc)` 全量说明（**与角色详情同一数据源 `_statHelpHtml`**，不会两套文案）；再点关闭。
+
+3. **统一战斗 UI（深渊复用主线布局）**（`index.html` + `css/style.css` + `js/ui.js`）
+   - **删除** `#abyss-hud` 及其全部 CSS（三处：主规则 / 竖屏媒体块 / `body.portrait` 钩子）+ `ui.js` 的 DOM 写入点。
+   - `abyss-mode` **只隐藏** `#btn-autofight` / `#autofight-styles`，**不再隐藏** `#hud-top` / `#hud-tr`。
+   - `updateHUD` 新增深渊分支：进度条同一条，文案「深渊推进 击杀+时间加权 / 下一 BOSS 阈值」
+     （复用 `Endless.progress()` / `Endless.bossThreshold(bossIndex)`，**不另算一份数据**）；
+     `#hud-tr` 等级·货币·经验照常写入（数据同源 `G.run`）。
+   - `updateAbyssHud` 收敛为只挂/摘 `.abyss-mode` 类；`clearAbyssHud` 只摘类（幂等）。
+   - 🔧 桩要点：测试里调 `UI.updateHUD()` 需要 `G.levelCfg`、`G.mainWorld.altars`、`G.inRift`、
+     `G.run.backpack.items`（`insuranceCount` 会 `.filter`）与 `backpack.totalWeight()`——缺一个就崩。
+
+4. **测试期全解锁**（`js/config.js` + `js/modes.js`）
+   - `CFG.testUnlockAllHeroes = true`（**当前开启**）→ `isHeroUnlocked()` 首行短路，12 角全可选；
+     **正式上线前改回 false**，正式解锁链自动恢复。
+   - ⚠️ `unlock_ui_test` / `meta_growth_test` / `hero_roster_test` / `ui_layout_test` 专测正式解锁链路，
+     各自在**套件内** `vm.runInContext("CFG.testUnlockAllHeroes = false;", ctx)` 临时关掉（不改 config 默认值）。
+
+5. **测试**：`hero_kit_test.js` 新增第六段（折算增量法：单属性归零对比 `computeStats` 差值 / 技能效果强度 /
+   全解锁开关 / tips 弹窗）→ **62 条**；`endless_hud_test.js` 一/二/三/六段**整段重写**为统一布局口径（元素已删、CSS 已清、
+   abyss-mode 只藏自动战斗、updateHUD 深渊推进分支）。
+
+**教训（复发型）**：① 给既有数值通道「加一条折算来源」时，全仓 grep 该字段的**精确值断言**（`===` / `near`），
+全部改成动态期望；② 测试断言「某字符串不存在」时注意**注释里也会出现该词**，断言要锚定真实选择器 / DOM 读写点。
+
 ## 6. 并行开发切分（已验证可用）
 
 多路 Agent 并行时**按文件所有权切分**，一方不得碰另一方的文件：
@@ -1106,7 +1151,7 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 
 ## 8. 当前基线
 
-**全量 = 76 套 / `PASS 合计 = 3336` / `bad = 0`**（2026-10-09）。仓库现有 **76 个 `_test.js`**，
+**全量 = 76 套 / `PASS 合计 = 3349` / `bad = 0`**（2026-10-09）。仓库现有 **76 个 `_test.js`**，
 门禁**全部编排（76 套）**，**口径统一、无差集**。
 > ⚠️ 曾有一处误导（2026-10-09 已纠正）：`endless_affix/arena/record/team_test` 被说成「21.20 退役的死测试，别加回」。
 > 事实是它们覆盖的 4 个模块**至今仍被 `index.html` 加载并在运行**（`EndlessRecord` = 战绩榜在用，调用 10 处），

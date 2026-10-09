@@ -643,6 +643,7 @@ CFG.statNames = {
   energyMax: "能量上限", energyRegen: "能量回复",
   summonMax: "召唤物上限", trapMax: "陷阱上限",
   radius: "碰撞半径", cdMul: "冷却系数", lifesteal: "吸血",
+  str: "力量", agi: "敏捷", int: "智力",
 };
 
 /* ---------- 属性说明文案（玩家看得懂的一句话解释）----------
@@ -662,6 +663,22 @@ CFG.statDesc = {
   radius:       { name: "碰撞半径", unit: "px", desc: "受击判定半径。越大越容易被弹幕命中。" },
   cdMul:        { name: "冷却系数", unit: "倍", desc: "越小越快：0.7 表示冷却时间只有原来的 70%。" },
   lifesteal:    { name: "吸血", unit: "%", desc: "造成伤害时按比例回复自身生命（队友输出回队友自己）。" },
+  str:          { name: "力量", unit: "点", desc: "英雄的原始膂力：每点 +6 生命上限、+0.5 攻击——技能伤害随攻击水涨船高，近战重甲角（重炮手/守护者）的力量最高。" },
+  agi:          { name: "敏捷", unit: "点", desc: "身手与反应：每点 +1.2 移速、技能冷却 -0.4%（冷却缩减上限 50%）——高敏捷角出手与走位都更快。" },
+  int:          { name: "智力", unit: "点", desc: "技能的钻研深度：每点 +2 能量上限、技能效果强度 +1%——治疗量 / 光环幅度 / 护罩值都随智力提升，辅助角的智力最高。" },
+};
+
+/* ---------- 三大基础属性 → 派生加成（26.x，数据驱动转换表）----------
+ * 英雄表新增 str（力量）/ agi（敏捷）/ int（智力）三个**基础属性**，按本表折算进既有属性管线：
+ *   力量 → 生命上限 + hp/点、攻击 + atk/点（技能伤害 = 攻击 × 倍率，随力量水涨船高）；
+ *   敏捷 → 移速 + spd/点、技能冷却 ×(1 - cdPct×敏捷)（下限 cdFloor，防 0 冷却）；
+ *   智力 → 能量上限 + energyMax/点、**技能效果强度 +powPct/点**（castSupport 的治疗/光环/护罩量 ×(1+…)，属性加成积木 scaleBy 也认 int）。
+ * 结算点：computeStats() / companionStats()（js/items.js）——与装备、增益同源，全队生效。
+ * 折算只发生在运行时，**不写回 CFG.heroes**（定位属性带的测试基线不受影响）。 */
+CFG.baseStats = {
+  str: { hp: 6, atk: 0.5 },
+  agi: { spd: 1.2, cdPct: 0.004, cdFloor: 0.5 },
+  int: { energyMax: 2, powPct: 0.01 },
 };
 
 /* ---------- 技能系统（现阶段：普攻 + 主动技能自动施法；终极技局外解锁后续开发） ----------
@@ -1077,41 +1094,53 @@ CFG.boss = {
  *   防御 H004/H005/H008/H009、辅助 H007/H010/H011/H012）。 */
 CFG.heroes = [
   { id: "H001", name: "猎手", desc: "远程速射 / 能量爆发 · 均衡输出", role: "output", range: "ranged", sprite: "hero",
+    str: 6, agi: 8, int: 4,
     hp: 94, def: 2, atk: 16, energyMax: 100, energyRegen: 10,
     spd: 306, radius: 18, weapon: "W001", summonMax: 2, trapMax: 1 },
   { id: "H002", name: "散弹手", desc: "远程三向散射 / 震荡波 · 贴脸压制输出", role: "output", range: "ranged", sprite: "hero",
+    str: 8, agi: 6, int: 3,
     hp: 116, def: 3, atk: 23, energyMax: 100, energyRegen: 10,
     spd: 290, radius: 19, weapon: "W002", summonMax: 2, trapMax: 1 },
   { id: "H003", name: "穿甲者", desc: "远程穿透 / 贯穿射线 · 脆皮高攻输出", role: "output", range: "ranged", sprite: "hero",
+    str: 5, agi: 9, int: 3,
     hp: 84, def: 1, atk: 21, energyMax: 100, energyRegen: 10,
     spd: 300, radius: 18, weapon: "W003", summonMax: 2, trapMax: 1 },
   { id: "H004", name: "弹射手", desc: "远程跳弹 / 环形弹幕 · 牵制型防御", role: "defense", range: "ranged", sprite: "hero",
+    str: 8, agi: 5, int: 4,
     hp: 132, def: 6, atk: 9, energyMax: 110, energyRegen: 11,
     spd: 296, radius: 19, weapon: "W004", summonMax: 2, trapMax: 1 },
   { id: "H005", name: "快枪手", desc: "近战突刺 / 疾跑翻滚 · 高机动防御", role: "defense", range: "melee", sprite: "hero",
+    str: 8, agi: 9, int: 2,
     hp: 120, def: 5, atk: 10, energyMax: 105, energyRegen: 12,
     spd: 320, radius: 18, weapon: "W005", summonMax: 2, trapMax: 1 },
   { id: "H006", name: "重炮手", desc: "近战重锤 / 巨型爆破 · 重甲火力输出", role: "output", range: "melee", sprite: "hero",
+    str: 10, agi: 4, int: 3,
     hp: 138, def: 4, atk: 30, energyMax: 120, energyRegen: 8,
     spd: 258, radius: 21, weapon: "W006", summonMax: 1, trapMax: 1 },
   // 原型验证角（批次 E）：召唤/陷阱技能原型载体，后续按设计再作解锁门槛
   { id: "H007", name: "召唤师", desc: "远程无人机 / 机炮 · 召唤物原型角", role: "aux", range: "ranged", sprite: "hero",
+    str: 5, agi: 5, int: 8,
     hp: 106, def: 3, atk: 13, energyMax: 120, energyRegen: 12,
     spd: 300, radius: 18, weapon: "W007", summonMax: 6, trapMax: 1 },
   { id: "H008", name: "陷阱师", desc: "近战布雷 / 大地雷 · 陷阱原型角", role: "defense", range: "melee", sprite: "hero",
+    str: 9, agi: 6, int: 3,
     hp: 128, def: 6, atk: 11, energyMax: 110, energyRegen: 10,
     spd: 288, radius: 19, weapon: "W008", summonMax: 2, trapMax: 3 },
   // 铺量角（批次 F）：12 角补齐；26.x 起每位各挂 1 个**不重复**的特色技能（见 CFG.weapons）
   { id: "H009", name: "守护者", desc: "远程护盾 / 嘲讽战吼 · 阵地防御核心", role: "defense", range: "ranged", sprite: "hero",
+    str: 11, agi: 3, int: 4,
     hp: 155, def: 8, atk: 8, energyMax: 115, energyRegen: 9,
     spd: 274, radius: 21, weapon: "W009", summonMax: 2, trapMax: 1 },
   { id: "H010", name: "医疗兵", desc: "远程治疗弹 / 生命脉冲 · 续航恢复型", role: "aux", range: "ranged", sprite: "hero",
+    str: 5, agi: 6, int: 8,
     hp: 110, def: 4, atk: 12, energyMax: 125, energyRegen: 13,
     spd: 300, radius: 18, weapon: "W010", summonMax: 2, trapMax: 1 },
   { id: "H011", name: "圣歌者", desc: "近战圣咏 / 鼓舞光环 · 群体增益型", role: "aux", range: "melee", sprite: "hero",
+    str: 6, agi: 5, int: 8,
     hp: 120, def: 5, atk: 11, energyMax: 120, energyRegen: 13,
     spd: 294, radius: 19, weapon: "W011", summonMax: 2, trapMax: 1 },
   { id: "H012", name: "灵能者", desc: "近战灵能 / 灵能护罩 · 护盾自愈型", role: "aux", range: "melee", sprite: "hero",
+    str: 5, agi: 6, int: 9,
     hp: 116, def: 4, atk: 14, energyMax: 130, energyRegen: 12,
     spd: 298, radius: 19, weapon: "W012", summonMax: 2, trapMax: 1 },
 ];
@@ -2112,6 +2141,10 @@ CFG.audio = {
  *     crystal 条件（花结晶主动解锁，走 Meta.unlockHero）；两条都不配 = 暂不可解锁。 */
 CFG.unlockOrder = ["H001", "H002", "H003", "H004", "H005", "H006", "H007", "H008", "H009", "H010", "H011", "H012"];
 CFG.starterCount = 6;                  // 首发 6 角默认解锁
+/* ⚗️ 测试阶段开关（用户要求：目前是测试阶段，开启所有角色方便人工测试）。
+ * true = isHeroUnlocked() 首行短路、12 角全部可选中（解锁 UI 也随之全部点亮）。
+ * 🔴 正式上线前必须改回 false —— 届时 unlock_ui_test 的锁定态断言会自动恢复意义。 */
+CFG.testUnlockAllHeroes = true;
 CFG.unlockRules = {
   // H007/H008 为原型验证角（批次 E），按注释「后续按设计再作解锁门槛」落地：
   H007: { heroLv: { heroId: "H006", lv: 3 }, desc: "重炮手（H006）局外达到 LV3 后解锁召唤师" },

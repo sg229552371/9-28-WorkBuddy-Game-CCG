@@ -170,7 +170,9 @@ const driver = `
     computeStats();   // energyMax 卡应能被 computeStats 消费（不抛错）
     r.appliedCards.push({ attr: "energyMax", q: 2, value: 28 });
     const st = computeStats();
-    check("卡牌-能量上限生效 " + st.energyMax, st.energyMax === r.heroDef.energyMax + 28);
+    // 26.x：能量上限现含智力折算（int × CFG.baseStats.int.energyMax）
+    check("卡牌-能量上限生效 " + st.energyMax,
+      st.energyMax === r.heroDef.energyMax + 28 + (r.heroDef.int || 0) * CFG.baseStats.int.energyMax);
   }
 
   /* ============ 五、裂缝任务变体（待细化20） ============ */

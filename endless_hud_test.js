@@ -3,12 +3,12 @@
  * （node endless_hud_test.js）
  * ----------------------------------------------------------------------------
  * 覆盖：
- *   一、源码级：index.html 新增深渊 HUD 元素（#abyss-hud / #abyss-exp-*）+ 既有块仍在
- *   二、源码级：CSS 三处同步（主规则 + portrait 媒体块 + body.portrait 钩子）
- *   三、源码级：深渊模式隐藏自动战斗按钮 + 主线专属 HUD 块（#hud.abyss-mode）
+ *   一、源码级：26.x 统一战斗 UI —— 深渊独立 #abyss-hud 已删除，主线块保留（深渊复用）
+ *   二、源码级：CSS 已清空 #abyss-hud 全部规则；abyss-mode 不再隐藏主线块
+ *   三、源码级：深渊模式只隐藏自动战斗按钮（布局不动）+ ui.js 深渊推进分支
  *   四、行为级（规则 1）：升级「属性包」卡面 desc 显示「属性名 +N」+ 小字说明 + lu-num 高亮保留
  *   五、行为级（规则 1）：CFG.statNames 优先级 + 缺失回落本地映射（容错）
- *   六、行为级（规则 2）：深渊 HUD 经验条渲染（等级 / 进度 / 数值）+ abyss-mode 开关
+ *   六、行为级（规则 2）：深渊复用统一 HUD —— abyss-mode 开关 + updateHUD 数据照常写入
  *   七、行为级（规则 2）：逐英雄武器技能栏（主角 + 队友 = N 栏，含技能名 + 冷却态）
  *   八、空值保护：G / G.run / companions / DOM 缺失时全部不抛错
  *
@@ -84,42 +84,37 @@ const uiSrc = fs.readFileSync(path.join(__dirname, "js", "ui.js"), "utf8");
 let okStatic = true;
 const sc = (name, cond) => { console.log((cond ? "PASS" : "FAIL") + " " + name); if (!cond) okStatic = false; };
 
-/* 一、index.html：新增深渊 HUD 元素 + 既有块仍在 */
-sc("一1 index.html 存在深渊 HUD 容器 #abyss-hud", htmlIds.has("abyss-hud"));
-sc("一2 经验条四件套元素齐备（等级 / 进度条 / 填充 / 数值）",
-  htmlIds.has("abyss-exp-lv") && htmlIds.has("abyss-exp-bar") && htmlIds.has("abyss-exp-fill") && htmlIds.has("abyss-exp-txt"));
+/* 一、index.html：26.x 统一战斗 UI —— 深渊独立 #abyss-hud 已删除，主线块保留（深渊复用） */
+sc("一1 index.html 已删除深渊独立容器 #abyss-hud（统一战斗 UI）", !htmlIds.has("abyss-hud"));
+sc("一2 经验条四件套元素已随之移除（与 #hud-tr 重复）",
+  !htmlIds.has("abyss-exp-lv") && !htmlIds.has("abyss-exp-bar") && !htmlIds.has("abyss-exp-fill") && !htmlIds.has("abyss-exp-txt"));
 sc("一3 深渊 HUD 元素 id 不与现有冲突（各自唯一）", (() => {
   const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(m => m[1]);
   const uniq = new Set(ids);
   return uniq.size === ids.length;
 })());
-sc("一4 主线 HUD 块仍在（#hud-top / #hud-tr 未被物理删除，仅 CSS 隐藏）",
+sc("一4 主线 HUD 块仍在（#hud-top / #hud-tr —— 深渊复用同一布局）",
   htmlIds.has("hud-top") && htmlIds.has("hud-tr"));
-sc("一5 自动战斗按钮仍在 index.html（出征关卡需要；仅深渊隐藏）", htmlIds.has("btn-autofight"));
+sc("一5 自动战斗按钮仍在 index.html（主线需要；仅深渊隐藏）", htmlIds.has("btn-autofight"));
+sc("一6 统一口径注释落位（index.html 标注深渊复用同一战斗 UI）", html.indexOf("深渊复用与主线") >= 0);
 
-/* 二、CSS 三处同步：#abyss-hud 规则出现在主规则 + portrait 媒体块 + body.portrait 钩子 */
-sc("二1 主规则：#abyss-hud 定位存在", /#abyss-hud\s*\{[^}]*position:\s*absolute/.test(css));
-function portraitBlocks(src) {
-  const blocks = []; const re = /@media \(orientation: portrait\)\s*\{/g; let m;
-  while ((m = re.exec(src)) !== null) {
-    let i = m.index + m[0].length, depth = 1;
-    while (i < src.length && depth > 0) { if (src[i] === "{") depth++; else if (src[i] === "}") depth--; i++; }
-    blocks.push(src.slice(m.index, i));
-  }
-  return blocks;
-}
-const pBlocks = portraitBlocks(css);
-sc("二2 竖屏媒体块：#abyss-hud 右上窄块（right 锚定 + 经验条限宽，避开左上 canvas 面板）",
-  pBlocks.some(b => /#abyss-hud\s*\{[^}]*right:/.test(b) && /#abyss-exp-bar\s*\{[^}]*width:\s*130px/.test(b)));
-sc("二3 body.portrait 钩子：#abyss-hud 同步右上窄块",
-  /body\.portrait\s+#abyss-hud\s*\{[^}]*right:/.test(css) && /body\.portrait\s+#abyss-exp-bar\s*\{[^}]*width:\s*130px/.test(css));
+/* 二、CSS：#abyss-hud 全部规则已清空；abyss-mode 不再隐藏主线块 */
+sc("二1 CSS 不再有任何 #abyss-hud / #abyss-exp 选择器规则（样式随元素一起删除；注释提及不计）",
+  !/#abyss-hud\s*\{/.test(css) && !/abyss-exp-/.test(css));
+sc("二2 body.portrait 钩子同步清理（无残留定位规则）", !/body\.portrait\s+#abyss-hud/.test(css));
 
-/* 三、深渊模式隐藏自动战斗 + 主线专属块（源码级） */
+/* 三、深渊模式：只隐藏自动战斗（布局不动）+ ui.js 深渊推进分支 */
 sc("三1 #hud.abyss-mode 隐藏 #btn-autofight", /#hud\.abyss-mode\s+#btn-autofight[\s\S]{0,80}display:\s*none/.test(css));
 sc("三2 #hud.abyss-mode 隐藏风格选择器 #autofight-styles", /#hud\.abyss-mode\s+#autofight-styles[\s\S]{0,80}display:\s*none/.test(css));
-sc("三3 #hud.abyss-mode 隐藏主线击杀进度条 #hud-top", /#hud\.abyss-mode\s+#hud-top[\s\S]{0,80}display:\s*none/.test(css));
-sc("三4 #hud.abyss-mode 隐藏主线等级·货币行 #hud-tr", /#hud\.abyss-mode\s+#hud-tr[\s\S]{0,80}display:\s*none/.test(css));
+sc("三3 abyss-mode 不再隐藏主线击杀进度条 #hud-top（统一布局，只换数据文案）",
+  !/#hud\.abyss-mode\s+#hud-top/.test(css));
+sc("三4 abyss-mode 不再隐藏主线等级·货币行 #hud-tr（统一布局）",
+  !/#hud\.abyss-mode\s+#hud-tr/.test(css));
 sc("三5 ui.js 声明 updateAbyssHud / clearAbyssHud", /updateAbyssHud\s*\(/.test(uiSrc) && /clearAbyssHud\s*\(/.test(uiSrc));
+sc("三6 ui.js 已无 #abyss-hud / #abyss-exp 的 DOM 读写（getElementById 点随元素一起删除；注释提及不计）",
+  uiSrc.indexOf('getElementById("abyss-hud")') < 0 && uiSrc.indexOf("abyss-exp-") < 0);
+sc("三7 updateHUD 有深渊推进分支（复用 Endless 阈值，不另算一份数据）",
+  uiSrc.indexOf("深渊推进") >= 0 && uiSrc.indexOf("bossThreshold") >= 0);
 
 /* ============================================================
  * 运行时：加载脚本链
@@ -142,11 +137,15 @@ vm.runInContext(`(function(){
   G.run = {
     lv: 4, exp: 12, expNext: 30, coin: 55,
     companions: [], heroModules: {},
+    backpack: { totalWeight: function () { return 0; }, items: [] }, weaponInv: null,   // updateHUD 负重行需要
     weapon: { skill: { name: "测试技能", cd: 1.0 }, basic: null },
     buffs: [], drones: [], traps: [], scale: null, cardAssets: 0,
     bossSpawned: false, bossDefeated: false, kills: 0, runTime: 0,
   };
   G.player = { heroDef: CFG.heroes[0], x: 100, y: 100, skillTimer: 0 };
+  G.levelCfg = { progressGoal: 60, timeLimit: 180 };   // 主线进度条文案需要
+  G.mainWorld = { altars: [] };                        // updateHUD 中央提示需要
+  G.inRift = false;
 })();`, ctx, { filename: "setup" });
 
 /* ============================================================
@@ -184,33 +183,44 @@ check("五3 stat/value 缺失 → 降级为「属性 +0」不抛错", ctx.window
 /* ============================================================
  * 六 / 七、规则 2：深渊 HUD（经验条 + 多英雄技能栏 + abyss-mode）
  * ============================================================ */
+/* 六、深渊复用统一战斗 HUD（26.x）：abyss-mode 开关 + updateHUD 数据照常写入同一条 HUD */
 vm.runInContext(`(function(){
   G.inEndless = true;
   G.run.lv = 4; G.run.exp = 12; G.run.expNext = 30; G.run.coin = 55;
+  G.run.kills = 7; G.run.runTime = 42;
+  G.run.bossSpawned = false; G.run.bossDefeated = false;
   UI.updateAbyssHud();
-  window.__abyssHidden = document.getElementById("abyss-hud").classList.contains("hidden");
   window.__abyssMode = document.getElementById("hud").classList.contains("abyss-mode");
-  window.__abyssLv = document.getElementById("abyss-exp-lv").textContent;
-  window.__abyssFill = document.getElementById("abyss-exp-fill").style.width;
-  window.__abyssTxt = document.getElementById("abyss-exp-txt").textContent;
-  window.__abyssCoin = document.getElementById("abyss-coin").textContent;
+  UI.updateHUD();
+  window.__progTxt = document.getElementById("progress-txt").textContent;
+  window.__lvNum = document.getElementById("lv-num").textContent;
+  window.__coinNum = document.getElementById("coin-num").textContent;
+  window.__expFill = document.getElementById("bar-exp").style.width;
 })();`, ctx, { filename: "abyss-on" });
-check("六1 深渊：#abyss-hud 显示（无 hidden）", ctx.window.__abyssHidden === false);
-check("六2 深渊：#hud 挂上 .abyss-mode（CSS 据此隐藏自动战斗）", ctx.window.__abyssMode === true);
-check("六3 经验条显示当前等级（LV 4）", ctx.window.__abyssLv === "LV 4");
-check("六4 经验进度条宽度 = exp/expNext = 40%", ctx.window.__abyssFill === "40%");
-check("六5 经验数值显示 12 / 30", ctx.window.__abyssTxt === "12 / 30");
-check("六6 货币读数保留（◈ 55）", ctx.window.__abyssCoin.indexOf("55") >= 0);
+check("六1 深渊：#hud 挂上 .abyss-mode（CSS 据此隐藏自动战斗）", ctx.window.__abyssMode === true);
+check("六2 深渊进度条走「深渊推进」文案（同一条 #hud-top，布局不动）",
+  String(ctx.window.__progTxt).indexOf("深渊推进") >= 0);
+check("六3 深渊推进读数 = 击杀/阈值（7/300，阈值复用 CFG.endless.bossProgressBase）",
+  String(ctx.window.__progTxt).indexOf("7/300") >= 0);
+check("六4 等级·货币照常写入同一 #hud-tr（LV 4 / 货币 55）",
+  ctx.window.__lvNum === 4 && String(ctx.window.__coinNum) === "55");
+check("六5 经验条宽度 = exp/expNext = 40%（同一 #hud-tr 内）", ctx.window.__expFill === "40%");
 
-/* 非深渊：隐藏 + 无 abyss-mode */
+/* 非深渊：abyss-mode 摘除 + 文案回主线（同一布局，只换数据源） */
 vm.runInContext(`(function(){
   G.inEndless = false;
   UI.updateAbyssHud();
-  window.__abyssHiddenOff = document.getElementById("abyss-hud").classList.contains("hidden");
   window.__abyssModeOff = document.getElementById("hud").classList.contains("abyss-mode");
+  UI.updateHUD();
+  window.__progTxtOff = document.getElementById("progress-txt").textContent;
+  UI.clearAbyssHud();
+  window.__cleared = !document.getElementById("hud").classList.contains("abyss-mode");
+  UI.clearAbyssHud();
 })();`, ctx, { filename: "abyss-off" });
-check("六7 非深渊：#abyss-hud 隐藏", ctx.window.__abyssHiddenOff === true);
-check("六8 非深渊：#hud 无 .abyss-mode（自动战斗按钮在主线的显示不受影响）", ctx.window.__abyssModeOff === false);
+check("六6 非深渊：#hud 无 .abyss-mode（自动战斗按钮在主线的显示不受影响）", ctx.window.__abyssModeOff === false);
+check("六7 非深渊：进度条文案回主线「击杀进度」（同一布局）",
+  String(ctx.window.__progTxtOff).indexOf("击杀进度") >= 0);
+check("六8 clearAbyssHud 幂等摘类（可重复调用）", ctx.window.__cleared === true);
 
 /* 七、逐英雄技能栏：主角 + 2 队友 = 3 栏，各自含技能名 */
 vm.runInContext(`(function(){

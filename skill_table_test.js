@@ -440,7 +440,9 @@ const driver = `
       w.playerBullets.length === cs.bullets && cs.bullets > 1);
     check("队友技能-技能弹带 AoE 标记（走的是技能分支而非普攻）",
       w.playerBullets[0].isSkill === true);
-    check("队友技能-队友技能施放后进入冷却", c.skillTimer === cs.cd);
+    // 26.x：实际冷却 = 技能 cd × cdMul（cdMul 现含敏捷折算），期望值动态算
+    check("队友技能-队友技能施放后进入冷却（cd × 敏捷折算后 cdMul）",
+      near(c.skillTimer, cs.cd * companionStats(c).cdMul, 1e-9));
     check("队友冷却制-施放后能量不被扣除（冷却制已生效，" + en0 + " → " + c.energy.toFixed(2) + "）",
       near(c.energy, en0, 1e-6));
 
@@ -536,8 +538,10 @@ const driver = `
 
     // 属性卡（乘算项：攻速/冷却）对全队生效
     r.appliedCards.push({ attr: "cd", q: 2, value: 0.92 });
-    check("属性卡-攻速卡乘算对队长生效（×0.92）", near(computeStats().cdMul, 0.92, 1e-9));
-    check("属性卡-攻速卡乘算对队友生效（×0.92）", near(companionStats(c).cdMul, 0.92, 1e-9));
+    // 26.x：cdMul = 冷却卡乘算 × 敏捷折算（CFG.baseStats.agi），期望值随各成员敏捷动态算
+    const agiCdOf = (hd) => { const a = CFG.baseStats.agi; return Math.max(a.cdFloor || 0, 1 - (hd.agi || 0) * a.cdPct); };
+    check("属性卡-攻速卡乘算对队长生效（×0.92×敏捷折算）", near(computeStats().cdMul, 0.92 * agiCdOf(G.heroDef), 1e-9));
+    check("属性卡-攻速卡乘算对队友生效（×0.92×敏捷折算）", near(companionStats(c).cdMul, 0.92 * agiCdOf(c.heroDef), 1e-9));
 
     // 属性卡：弹道数量卡（走 tagCalc，天然全队同源）
     recomputeWeapon();
@@ -550,8 +554,10 @@ const driver = `
       c.skills.basic.bullets === bB + 2);
 
     // 战争雕像 Buff：乘算（攻击 ×1.3）+ 加算（吸血 +15%）对全队生效
-    const baseM = G.heroDef.atk + 2 * (r.lv - 1) + weaponGearBonus().atk;
-    const baseA = c.heroDef.atk + 2 * (r.lv - 1) + weaponGearBonus().atk;
+    // 26.x：基础攻击含力量折算（str × CFG.baseStats.str.atk）
+    const bsAtk = CFG.baseStats.str.atk;
+    const baseM = G.heroDef.atk + 2 * (r.lv - 1) + weaponGearBonus().atk + (G.heroDef.str || 0) * bsAtk;
+    const baseA = c.heroDef.atk + 2 * (r.lv - 1) + weaponGearBonus().atk + (c.heroDef.str || 0) * bsAtk;
 
     /* ---- Buff 等级（4.4）：重复触发同类 Buff **叠的是等级**，不是叠加多份效果 ---- */
     check("Buff等级-池内条目带出 skillId / stackable / maxLv",

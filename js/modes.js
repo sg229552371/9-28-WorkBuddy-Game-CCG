@@ -309,6 +309,7 @@ function outLevelStats(def, lv) {
 // 英雄是否已解锁（纯查询，无副作用）：① unlockOrder 前 starterCount 个 = 首发默认解锁；
 // ② 存档 unlockExtra[id] = 已花结晶主动解锁；③ heroLv 条件（指定英雄局外等级达标）达成即解锁。
 function isHeroUnlocked(id, data) {
+  if (CFG.testUnlockAllHeroes) return true;   // ⚗️ 测试阶段全解锁（CFG.testUnlockAllHeroes，上线前关）
   const order = CFG.unlockOrder || [];
   const idx = order.indexOf(id);
   if (idx >= 0 && idx < (CFG.starterCount || order.length)) return true;

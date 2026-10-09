@@ -99,8 +99,28 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   padding-bottom:max(10px, env(safe-area-inset-bottom));   /* 20.9：底部安全区，按钮永不贴边 */
   display:flex; flex-direction:column;
 }
-.char-head { flex-shrink:0; }
+.char-head { flex-shrink:0; position:relative; }
 .char-head h2 { margin-bottom:4px; font-size:18px; }
+
+/* ===== 26.x：角色选择右上角「属性说明」图标 + tips 弹窗 ===== */
+/* 圆形图标按钮（ico）：深色主题，悬停轻光晕；与面板右上角对齐 */
+.ico-btn {
+  position:absolute; right:0; top:-2px;
+  width:30px; height:30px; line-height:28px;
+  border-radius:50%;
+  border:1px solid #4a5a78; background:#1b2434; color:#c79bff;
+  font-size:16px; font-weight:bold; text-align:center; padding:0;
+  cursor:pointer; user-select:none;
+}
+.ico-btn:hover { border-color:#c79bff; box-shadow:0 0 8px rgba(199,155,255,.35); }
+/* tips 弹窗：贴按钮下方右对齐，可滚动（15 条属性说明在小屏也放得下），不挤占面板布局 */
+.stat-help-tip {
+  position:absolute; right:0; top:34px; z-index:30;
+  width:min(340px, 88vw); max-height:46vh; overflow-y:auto;
+  background:#141b28; border:1px solid #4a5a78; border-radius:10px;
+  padding:10px 12px; box-shadow:0 8px 24px rgba(0,0,0,.55);
+}
+.stat-help-tip.hidden { display:none; }
 /* 12 宫格头像：6 列 × 2 行（20.9 缩小 50%：99px→52px，小而美的苹果风），一屏看完 12 角。 */
 #char-list {
   flex-shrink:0;
@@ -255,23 +275,13 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 #lv-line { font-size:16px; color:#c79bff; margin-bottom:4px; }
 #coin-line { font-size:12px; color:#ffd76a; margin-top:4px; }
 
-/* ===== 深渊（无尽）局内 HUD 补充区（21.21）=====
- * #abyss-hud：深渊专属经验条（等级 + 进度 + 经验数值）。仅 G.inEndless 时显示。
- * 位置与主线 #hud-tr 同区（右上），避免遮挡 canvas 绘制的深渊波次/BOSS 面板（左上）。
- * 深渊下由 #hud.abyss-mode 隐藏主线专属块（击杀进度条 / 等级·货币行）与自动战斗按钮。 */
-#abyss-hud { position:absolute; right:20px; top:16px; display:flex; flex-direction:column; align-items:flex-end; gap:6px; text-align:right; }
-#abyss-hud.hidden { display:none; }
-#abyss-exp-line { display:flex; align-items:center; gap:8px; }
-#abyss-exp-lv { font-size:15px; font-weight:bold; color:#c79bff; text-shadow:0 1px 2px #000; }
-#abyss-exp-bar { width:180px; margin-bottom:0; }
-#abyss-exp-txt { font-size:11px; color:#9fb2cc; white-space:nowrap; text-shadow:0 1px 2px #000; }
-#abyss-coin { font-size:12px; color:#ffd76a; }
+/* ===== 深渊（无尽）战斗 HUD —— 26.x 已统一 =====
+ * 深渊复用与主线**完全相同**的战斗布局（#hud-top 进度条 + #hud-tr 等级·货币·经验 +
+ * 底部 #party-skillbar），数据同源 G.run。唯一差异 = #hud.abyss-mode 隐藏自动战斗按钮
+ *（用户口径：深渊没有自动战斗）。原 21.21 独立 #abyss-hud 经验条已删除（与 #hud-tr 重复）。 */
 /* 深渊模式（#hud.abyss-mode）：不显示自动战斗按钮 / 风格选择器（用户口径：深渊没有自动战斗） */
 #hud.abyss-mode #btn-autofight,
 #hud.abyss-mode #autofight-styles { display:none; }
-/* 深渊模式：隐藏主线专属 HUD（击杀进度条 / 等级·货币行），改由 #abyss-hud 表达 */
-#hud.abyss-mode #hud-top,
-#hud.abyss-mode #hud-tr { display:none; }
 
 #hud-bl { position:absolute; left:20px; bottom:18px; font-size:14px; }
 #weight-line { color:#cfe0ff; }
@@ -877,15 +887,6 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   }
   .bar.exp { width: 100%; max-width: 100%; }
 
-  /* 21.21 深渊经验条：竖屏下右上竖排小块（LV / 进度条 / 数值），限宽 130px，
-   * 避开左上角 canvas 绘制的深渊波次/BOSS 面板（不铺满整行，防止遮挡）。 */
-  #abyss-hud {
-    left: auto; right: calc(var(--sa-right) + 12px);
-    top: calc(var(--sa-top) + 8px); text-align: right;
-  }
-  #abyss-exp-line { flex-direction: column; align-items: flex-end; gap: 2px; }
-  #abyss-exp-bar { width: 130px; max-width: 130px; }
-
   /* #hud-tl：顶栏两行之下、左对齐，避开顶部状态与头像栏（不再压左上角） */
   #hud-tl {
     left: calc(var(--sa-left) + 12px);
@@ -1052,10 +1053,6 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 /* body.portrait 同步（JS 钩子；与上面媒体查询等效，作双保险） */
 body.portrait .party-skillbar { bottom: calc(var(--sa-bottom) + 170px); }
 body.portrait #hud-tl { top: calc(var(--sa-top) + 82px); }
-/* 21.21 深渊经验条：JS 钩子路径同样为右上窄块（与上方竖屏媒体块数值严格同步） */
-body.portrait #abyss-hud { left: auto; right: calc(var(--sa-right) + 12px); top: calc(var(--sa-top) + 8px); text-align: right; }
-body.portrait #abyss-exp-line { flex-direction: column; align-items: flex-end; gap: 2px; }
-body.portrait #abyss-exp-bar { width: 130px; max-width: 130px; }
 /* 21.3：浮动摇杆无固定锚点（触点即盘心），故不再需要 #joy-zone 定位规则；右下按钮区 / 顶栏信息区保留 */
 body.portrait #hud-br { right: calc(var(--sa-right) + 12px); top: calc(var(--sa-top) + 122px); bottom: auto; }
 body.portrait .bp-body { flex-direction: column; flex-wrap: nowrap; }

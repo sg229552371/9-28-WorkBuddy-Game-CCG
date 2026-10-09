@@ -184,7 +184,12 @@ vm.runInContext(`
   run.appliedCards.push({ attr: "bullets", q: 0, value: 1 });
   console.assert(tagCalc("弹道数量") === bulletsBase + 1, "弹道卡 +1 生效");
   run.appliedCards.push({ attr: "cd", q: 0, value: 0.96 });
-  console.assert(Math.abs(computeStats().cdMul - 0.96) < 1e-6, "冷却卡乘算生效");
+  { // 26.x：cdMul = 冷却卡乘算 × 敏捷折算（CFG.baseStats.agi），期望值随当前英雄的敏捷动态算
+    const bsA = (CFG.baseStats && CFG.baseStats.agi) || {};
+    const agiV = (G.heroDef && G.heroDef.agi) || 0;
+    const agiCd = Math.max(bsA.cdFloor || 0, 1 - agiV * (bsA.cdPct || 0));
+    console.assert(Math.abs(computeStats().cdMul - 0.96 * agiCd) < 1e-6, "冷却卡乘算生效（含敏捷折算）");
+  }
   run.appliedCards.push({ attr: "lifesteal", q: 0, value: 0.02 });
   console.assert(Math.abs(computeStats().lifesteal - 0.02) < 1e-6, "吸血卡生效");
   // 刷新次数（规则2：免费次数优先，用完后扣金币；金币不足则失败）

@@ -5,6 +5,7 @@
  *   三、12 角特色技能零重复 + 近战/远程普攻分流
  *   四、属性强化技能 scaleBy（AT120/AT122/AT123/AT124；属性越高效果越强）
  *   五、辅助三件套效果（AT122 全队回血 / AT123 全队增益 / AT124 全队护罩）+ 重复施放刷新不叠加
+ *   六、三大基础属性（力量/敏捷/智力折算 + 技能效果强度）+ 测试期全解锁开关 + 属性说明弹窗
  * 运行：node hero_kit_test.js（退出码 0 = 全绿，与 run_tests.sh 口径一致）
  * ⚠️ PASS 文案只含中文，禁止出现英文 error/FAIL（门禁口径：bad = grep -ci "Assertion failed|FAIL|Error"）。 */
 "use strict";
@@ -22,7 +23,14 @@ const ctxProxy = new Proxy({}, {
 class FakeEl {
   constructor(tag) {
     this.tag = tag; this.style = {}; this.dataset = {};
-    this.classList = { add() { }, remove() { }, toggle() { }, contains: () => false };
+    // 26.x：classList 升级为真实集合语义（toggleStatHelp 的展开/收起断言依赖 contains 判真）
+    this._cls = new Set();
+    this.classList = {
+      add: (...c) => c.forEach(x => this._cls.add(x)),
+      remove: (...c) => c.forEach(x => this._cls.delete(x)),
+      toggle: (c, f) => { if (f === undefined) { this._cls.has(c) ? this._cls.delete(c) : this._cls.add(c); } else if (f) this._cls.add(c); else this._cls.delete(c); },
+      contains: (c) => this._cls.has(c),
+    };
     this.children = []; this.innerHTML = ""; this.textContent = ""; this.disabled = false;
     this.width = 300; this.height = 150;
   }
@@ -285,6 +293,63 @@ const driver = `
           cap.def >= (G.run.heroDef.def || 0) + bo.add.def - 1e-6);
       }
     }
+  }
+
+  /* ============ 六、三大基础属性（力量/敏捷/智力）+ 测试期全解锁 + 属性说明弹窗 ============ */
+  {
+    const bs = CFG.baseStats;
+    check("六1 statNames / statDesc 登记力量/敏捷/智力",
+      CFG.statNames.str === "力量" && CFG.statNames.agi === "敏捷" && CFG.statNames.int === "智力" &&
+      CFG.statDesc.str && CFG.statDesc.agi && CFG.statDesc.int);
+    check("六2 12 角都有 str/agi/int 且组合互不相同（定位差异化）",
+      CFG.heroes.every(h => h.str > 0 && h.agi > 0 && h.int > 0) &&
+      new Set(CFG.heroes.map(h => h.str + "/" + h.agi + "/" + h.int)).size === 12);
+
+    /* 折算增量法：只改一个属性、其余归零，对比 computeStats 差值（不依赖完整公式） */
+    const keep = G.run.heroDef;
+    const withH = (o) => { G.run.heroDef = Object.assign({}, keep, o); return computeStats(); };
+    const stNone = withH({ str: 0, agi: 0, int: 0 });
+    const stStr = withH({ str: 10, agi: 0, int: 0 });
+    const stAgi = withH({ str: 0, agi: 10, int: 0 });
+    const stAgiMax = withH({ str: 0, agi: 500, int: 0 });
+    const stInt = withH({ str: 0, agi: 0, int: 10 });
+    G.run.heroDef = keep;
+    check("六3 力量 +10 → 生命 +" + (10 * bs.str.hp) + "、攻击 +" + (10 * bs.str.atk),
+      near(stStr.hpMax - stNone.hpMax, 10 * bs.str.hp) && near(stStr.atk - stNone.atk, 10 * bs.str.atk, 1e-6));
+    check("六4 敏捷 +10 → 移速 +" + (10 * bs.agi.spd) + "、冷却 ×" + (1 - 10 * bs.agi.cdPct).toFixed(2),
+      near(stAgi.spd - stNone.spd, 10 * bs.agi.spd) && near(stAgi.cdMul, stNone.cdMul * (1 - 10 * bs.agi.cdPct), 1e-6));
+    check("六5 冷却缩减有下限（敏捷 500 → 系数钳在 " + bs.agi.cdFloor + "）",
+      near(stAgiMax.cdMul, stNone.cdMul * bs.agi.cdFloor, 1e-6));
+    check("六6 智力 +10 → 能量上限 +" + (10 * bs.int.energyMax),
+      near(stInt.energyMax - stNone.energyMax, 10 * bs.int.energyMax));
+
+    /* 技能效果强度：castSupport 治疗量随 statSrc.int 提升（statSrc = computeStats 产物，同源） */
+    const caster = { x: 1000, y: 1000, atk: 20 };
+    const mkHeal = () => Object.assign({}, CFG.skills.AT122, { lv: 1, radius: 0 });   // radius 0 → 不触发 explode
+    const a0 = SkillSystem.castSupport(fakeW([]), caster, mkHeal(), { atk: 20, statSrc: { int: 0 } }, "heal").amount;
+    const a50 = SkillSystem.castSupport(fakeW([]), caster, mkHeal(), { atk: 20, statSrc: { int: 50 } }, "heal").amount;
+    check("六7 智力 → 技能效果强度（int50 治疗量 " + a50 + " > 基准 " + a0 + "）",
+      a50 > a0 && a0 >= CFG.skills.AT122.healBase);
+
+    /* 测试期全解锁开关（CFG.testUnlockAllHeroes）：开 = 12 角全解锁；关 = 恢复正式规则 */
+    check("六8 测试期全解锁：开关开时 12 角全部可选中",
+      CFG.testUnlockAllHeroes === true && CFG.heroes.every(h => Meta.isHeroUnlocked(h.id)));
+    CFG.testUnlockAllHeroes = false;
+    const lockedOk = !Meta.isHeroUnlocked("H007") && Meta.isHeroUnlocked("H001");
+    CFG.testUnlockAllHeroes = true;
+    check("六9 关掉开关恢复正式解锁规则（H007 未解锁 / H001 首发解锁）", lockedOk);
+
+    /* 属性说明 tips 弹窗（角色选择右上角图标）。
+     * ⚠️ DOM 桩的初始类集合为空（不解析 HTML 里的 class="... hidden"）→ 第一跳按「已展开」处理 = 收起，
+     *     故这里先跳一次对齐真实页面的初始 hidden 态，再断言 展开 → 收起。 */
+    UI.toggleStatHelp();          // 对齐初始态（等价于真实页面的 hidden 起始）
+    UI.toggleStatHelp();          // 展开
+    const tip = document.getElementById("stat-help-tip");
+    check("六10 属性说明 tips：点击展开且含力量/敏捷/智力说明",
+      tip && !tip.classList.contains("hidden") &&
+      tip.innerHTML.indexOf("力量") >= 0 && tip.innerHTML.indexOf("敏捷") >= 0 && tip.innerHTML.indexOf("智力") >= 0);
+    UI.toggleStatHelp();          // 收起
+    check("六11 属性说明 tips：再点关闭", tip.classList.contains("hidden"));
   }
 
   console.log(ok ? "HERO KIT TEST OK" : "HERO KIT TEST FAILED");

@@ -20,6 +20,9 @@ const fs = require("fs"), vm = require("vm");
 const ctx = vm.createContext(global);
 for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js"]) {
   vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: f });
+// ⚗️ 26.x：CFG.testUnlockAllHeroes（测试阶段全解锁）会短路 isHeroUnlocked ——
+// 本套件专测「正式解锁链路」，必须在规则生效态下断言，故在此临时关掉（不改 js/config.js 的默认值）。
+vm.runInContext("CFG.testUnlockAllHeroes = false;", ctx);   // ⚗️ 本套件专测正式解锁链路，临时关掉全解锁开关
 }
 
 /* ---- 断言都在 driver 内跑（const CFG 等在 vm 作用域，driver 可访问；主进程拿不到） ---- */

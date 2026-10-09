@@ -173,6 +173,8 @@ function makeSandbox(opts) {
   for (const f of ["js/config.js", "js/core.js", "js/game.js", "js/items.js", "js/combat.js", "js/modes.js", "js/render.js", "js/ui.js", "js/ui-screens.js", "js/ui-panels.js"]) {
     vm.runInContext(fs.readFileSync(path.join(root, f), "utf8"), ctx, { filename: f });
   }
+  // ⚗️ 26.x：本套件要断言「未解锁置灰/拦截」链路，须在正式解锁规则下运行（临时关掉测试期全解锁开关）
+  vm.runInContext("CFG.testUnlockAllHeroes = false;", ctx);
   vm.runInContext(`
     Assets.images = {};
     const keys = ${JSON.stringify(imageKeys)};

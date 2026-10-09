@@ -520,18 +520,23 @@ function runBonus() {
  *  队友是**独立个体**：有自己的生命 / 攻击 / 防御 / 移速，也有自己的**能量上限与能量回复**。 */
 function companionStats(c) {
   const r = G.run, g = weaponGearBonus(), bo = runBonus(), n = r.lv - 1;
+  /* 三大基础属性折算（26.x）：与队长 computeStats 同源同表（CFG.baseStats），全队一致生效。 */
+  const bs = CFG.baseStats || {};
+  const hd = c.heroDef || {};
+  const sv = (hd.str || 0), av = (hd.agi || 0), iv = (hd.int || 0);
   return {
-    hpMax: c.heroDef.hp + 8 * n + g.hp + bo.add.hp,
-    atk: Math.round((c.heroDef.atk + 2 * n + g.atk) * bo.mul.atk + bo.add.atk),
+    hpMax: c.heroDef.hp + 8 * n + g.hp + bo.add.hp + sv * ((bs.str && bs.str.hp) || 0),
+    atk: Math.round((c.heroDef.atk + 2 * n + g.atk + sv * ((bs.str && bs.str.atk) || 0)) * bo.mul.atk + bo.add.atk),
     def: (c.heroDef.def || 0) + g.def + bo.add.def,
-    spd: (c.heroDef.spd + g.spd + bo.add.spd) * bo.mul.spd,
-    energyMax: c.heroDef.energyMax + g.energyMax + bo.add.energyMax,   // 能量上限（英雄基础 + 装备 + 属性卡）
+    spd: (c.heroDef.spd + av * ((bs.agi && bs.agi.spd) || 0) + g.spd + bo.add.spd) * bo.mul.spd,
+    energyMax: c.heroDef.energyMax + iv * ((bs.int && bs.int.energyMax) || 0) + g.energyMax + bo.add.energyMax,   // 能量上限（英雄基础 + 三属性折算 + 装备 + 属性卡）
     regen: c.heroDef.energyRegen + g.regen + bo.add.regen,             // 能量回复
     // 召唤物 / 陷阱上限（英雄属性，限制该类型技能的上限）：同样走属性管线（基础 + 装备 + 局内增益）
     summonMax: heroUnitLimit(c.heroDef, "summon") + g.summonMax + bo.add.summonMax,
     trapMax: heroUnitLimit(c.heroDef, "trap") + g.trapMax + bo.add.trapMax,
-    cdMul: bo.mul.cd,                 // 冷却缩减（属性卡「攻速」+ 增益「迅击」）
+    cdMul: bo.mul.cd * Math.max((bs.agi && bs.agi.cdFloor) || 0, 1 - av * ((bs.agi && bs.agi.cdPct) || 0)),   // 冷却缩减（属性卡「攻速」+ 增益「迅击」+ 敏捷折算）
     lifesteal: bo.add.lifesteal,      // 吸血（属性卡「吸血」+ 增益「汲血」）
+    str: sv, agi: av, int: iv,        // 原值透出：scaleBy / 技能效果强度读这里
   };
 }
 
@@ -540,17 +545,24 @@ function companionStats(c) {
 function computeStats() {
   const r = G.run, h = r.heroDef;
   const g = weaponGearBonus(), bo = runBonus(), n = r.lv - 1;
+  /* 三大基础属性折算（26.x，CFG.baseStats）：力量→生命/攻击、敏捷→移速/冷却缩减、智力→能量/技能强度。
+   * 折算与装备、增益同源（英雄基础值 + 折算 + 装备 + 局内增益），str/agi/int 原值也挂到 st 上
+   * ——技能执行器 withScaleBy 的 statSrc 就是本对象，技能表可直接声明 scaleBy:{stat:"str"|"agi"|"int"}。 */
+  const bs = CFG.baseStats || {};
+  const sv = (h.str || 0), av = (h.agi || 0), iv = (h.int || 0);
   const st = {
-    hpMax: h.hp + 8 * n + g.hp + bo.add.hp,
-    atk: (h.atk + 2 * n + g.atk) * bo.mul.atk + bo.add.atk,
+    hpMax: h.hp + 8 * n + g.hp + bo.add.hp + sv * ((bs.str && bs.str.hp) || 0),
+    atk: (h.atk + 2 * n + g.atk + sv * ((bs.str && bs.str.atk) || 0)) * bo.mul.atk + bo.add.atk,
     def: h.def + g.def + bo.add.def,
-    spd: h.spd + g.spd + bo.add.spd,
-    energyMax: h.energyMax + g.energyMax + bo.add.energyMax,
+    spd: h.spd + av * ((bs.agi && bs.agi.spd) || 0) + g.spd + bo.add.spd,
+    energyMax: h.energyMax + iv * ((bs.int && bs.int.energyMax) || 0) + g.energyMax + bo.add.energyMax,
     regen: h.energyRegen + g.regen + bo.add.regen,
     summonMax: heroUnitLimit(h, "summon") + g.summonMax + bo.add.summonMax,
     trapMax: heroUnitLimit(h, "trap") + g.trapMax + bo.add.trapMax,
     lifesteal: bo.add.lifesteal,
-    spdMul: bo.mul.spd, cdMul: bo.mul.cd,
+    spdMul: bo.mul.spd,
+    cdMul: bo.mul.cd * Math.max((bs.agi && bs.agi.cdFloor) || 0, 1 - av * ((bs.agi && bs.agi.cdPct) || 0)),
+    str: sv, agi: av, int: iv,            // 原值透出：scaleBy / 技能效果强度（castSupport）读这里
   };
   st.atk = Math.round(st.atk);
   applyEndlessPlayerBuff(st);          // 21.17 深渊内玩家强化（非深渊原样返回）
