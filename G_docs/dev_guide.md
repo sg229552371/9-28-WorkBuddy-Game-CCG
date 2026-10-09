@@ -254,7 +254,7 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/     ← 备用（push 后
 
 ## 3. 验证流程（必做）
 
-**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 3115（门禁 69 套）**。
+**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 3254（门禁 74 套）**。
 
 核心要求：
 
@@ -950,6 +950,30 @@ for (const sid in CFG.moduleSets) {
    用 world 内部时钟（**开场冻结期不计时**），投放统一走 `placeAltar/spawnAltarFromSpec`。
    深渊/无尽改周期式（`CFG.endless.altarTimeline`）。新增祭坛机制只加 spec，别复活开局随机投放。
 
+### 5.49 ✅ 启动超时根治 + 门禁口径统一（2026-10-09，基线 3254）
+
+1. 🔴 **素材加载超时兜底（根治「[错误1]启动超时：boot() 在 12 秒内未进入首页」）**
+   - 根因：`Assets._loadOne`（`js/core.js`）原先只挂 `img.onload` / `img.onerror`。
+     **移动弱网下请求可能「既不返回也不报错」** → Promise 永不 settle → `Promise.all` 永不 resolve
+     → `main.js` 的 `await Assets.load(...)` **永久挂起** → 12 秒后 BootGuard 弹诊断面板。
+   - 修法：新增 `Assets.LOAD_TIMEOUT_MS = 8000`（**必须 < 12000 看门狗**），超时即 `finish(true)` 结算，
+     该键不进 `Assets.images` → 渲染侧既有 `if(img)` 分支自动走**色块兜底**。
+   - 三处细节：① `settled` 幂等闸门（onload / onerror / 超时 只结算一次，迟到 onload 仍采用图但**不重复计数**）；
+     ② `finish` 里 `clearTimeout`，正常加载不留残留；③ `typeof setTimeout === "function"` 守卫，
+     极简测试桩下退回改造前行为、不新增崩溃点。
+   - 测试：`asset_timeout_test.js`（23 条，**假定时器队列驱动、零真实等待**）。
+   - ⚠️ 场景判断：诊断面板显示 **「素材 N/36」卡在中途** = 素材挂起（本次修的路径）；
+     显示「Game：× 未定义」= 脚本没加载上，是另一回事。
+
+2. **门禁口径统一：74 文件 = 74 套（原「70 文件 / 66~69 套」的差集已消除）**
+   - 21.20「层级退役」误摘 4 套：`endless_affix/arena/record/team_test` 连同真正下线的
+     `endless_tier_test` 一起被移出 `run_tests.sh`。**但那 4 个模块至今仍被 `index.html` 加载并在运行**
+     （`EndlessRecord` = 战绩榜在用，被调用 10 处；`EndlessArena`/`EndlessTeam` 各 2 处），
+     摘掉纯属白丢 115 条覆盖 —— 已全部加回。
+   - **教训：判断一个测试是不是「死测试」，要看它覆盖的模块是否仍被 `index.html` 加载 / 是否仍被调用，
+     不能只看它有没有在门禁清单里。** 删测试前先做这三步：
+     `grep <模块名> index.html` → `grep <暴露的全局名> js/ index.html`（排除自身）→ 看是否仍有调用点。
+
 ## 6. 并行开发切分（已验证可用）
 
 多路 Agent 并行时**按文件所有权切分**，一方不得碰另一方的文件：
@@ -982,8 +1006,11 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 
 ## 8. 当前基线
 
-**全量 = 69 套 / `PASS 合计 = 3115` / `bad = 0`**（26.x 批，2026-10-09）。仓库现有 **73 个 `_test.js`**，
-门禁编排 69 套；差的 4 个（`endless_affix/arena/record/team_test`）是 21.20 层级退役有意摘掉的死测试，**别加回**。
+**全量 = 74 套 / `PASS 合计 = 3254` / `bad = 0`**（2026-10-09）。仓库现有 **74 个 `_test.js`**，
+门禁**全部编排（74 套）**，**口径统一、无差集**。
+> ⚠️ 曾有一处误导（2026-10-09 已纠正）：`endless_affix/arena/record/team_test` 被说成「21.20 退役的死测试，别加回」。
+> 事实是它们覆盖的 4 个模块**至今仍被 `index.html` 加载并在运行**（`EndlessRecord` = 战绩榜在用，调用 10 处），
+> 21.20 只是连真正下线的 `endless_tier_test` 一起误摘。**已全部加回门禁，别再删。**
 逐套明细以 `bash run_tests.sh --list` 与仓库根测试文件为准。历史各批次的逐套断言明细见下方旧记录（数字已过期，仅存档）。
 
 （以下为历史明细存档，数字以上一行为准）

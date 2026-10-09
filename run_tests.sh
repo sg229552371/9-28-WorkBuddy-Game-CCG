@@ -20,10 +20,14 @@
 set -u
 
 # --- 套件分组（组内顺序 = 原 TESTS 顺序；26.x 新增 battle_rules_test / altar_timeline_test）---
+# ⚠️ 21.20「层级退役」曾把 endless_affix/arena/record/team_test 连同已下线的 endless-tier_test 一起摘掉，
+#    但前 4 个模块（js/endless-affix|arena|record|team.js）**至今仍被 index.html 加载并在运行**
+#    （EndlessRecord 就是战绩榜在用的模块），摘掉 = 白丢覆盖。2026-10-09 已全部加回。
 CORE="smoke_test runtime_test econ_test backpack_test skill_module_test skill_table_test \
 chip_test chip_behavior_test levelup_test exp_test grant_test freeze_test \
 team_trigger_test content_test level_content_test level_tuning_test meta_growth_test \
 out_level_flow_test settle_crystal_test boot_guard_test cache_version_test perf_asset_test \
+asset_timeout_test \
 battle_rules_test"
 
 UI="ui_flow_test ui_v2_test ui_layout_test ui_global_test unlock_ui_test \
@@ -35,6 +39,7 @@ FEATURE="rift_test extract_test boss_test bugfix_test shop_test laser_test seaso
 levels_11_20_test special_monster_test assets_hook_test stress_test \
 endless_test endless_flow_test hud_endless_test endless_reward_test rift_extract_test rift_hud_test endless_growth_test \
 endless_restart_test \
+endless_affix_test endless_arena_test endless_record_test endless_team_test \
 ui_abyss_test endless_pause_test altar_timeline_test"
 
 PERF="perf_test perf_guard_test quality_tier_test render_opt_test spatial_test pool_test low_quality_test"

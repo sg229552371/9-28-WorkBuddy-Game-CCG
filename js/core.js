@@ -116,10 +116,33 @@ const Assets = {
     if (typeof requestAnimationFrame === "function") { requestAnimationFrame(fn); return; }
     setTimeout(fn, 0);
   },
+  /* 单张素材加载超时兜底（ms）。小于 BootGuard 的 12 秒首屏看门狗，留足后续 fillSprites 的时间。
+   * 触发后按「素材缺失」结算：该键不进 Assets.images，渲染侧既有 if(img) 分支自动走色块兜底。 */
+  LOAD_TIMEOUT_MS: 8000,
   _loadOne(key, src, tbg) {
     return new Promise((resolve) => {
       const img = new Image();
-      const finish = () => { this.progress.loaded = (this.progress.loaded + 1) | 0; resolve(); };
+      let settled = false;   // 幂等闸门：onload / onerror / 超时 三者只结算一次
+      let timer = null;
+      const finish = (timedOut) => {
+        if (settled) return;
+        settled = true;
+        if (timer !== null && typeof clearTimeout === "function") { clearTimeout(timer); timer = null; }
+        if (timedOut) console.warn("素材加载超时（按缺失降级，缺图走色块渲染）:", src);
+        this.progress.loaded = (this.progress.loaded + 1) | 0;
+        resolve();
+      };
+      /* 弱网兜底（会直接导致「启动超时」）：移动网络下请求可能「既不返回也不报错」，
+       * onload / onerror 都不触发 → 本 Promise 永不 settle → Promise.all 永不 resolve
+       * → main.js 的 `await Assets.load(...)` 永久挂起 → 12 秒后 BootGuard 弹诊断面板。
+       * 超时即结算，把「永久卡死」降级为「这张图缺了」，主角团仍能进场。
+       * setTimeout 不存在时（极简测试桩）跳过，行为与改造前一致。 */
+      if (typeof setTimeout === "function") {
+        timer = setTimeout(() => {
+          finish(true);
+          try { img.src = ""; } catch (e) { /* 置空 src 在个别环境会抛错，忽略即可 */ }
+        }, this.LOAD_TIMEOUT_MS);
+      }
       img.onload = () => {
         try {
           this.images[key] = tbg ? this._keyOut(img, tbg) : this._toCanvas(img);
@@ -128,9 +151,9 @@ const Assets = {
           console.warn("素材抠图失败，降级为原图（建议通过 HTTP 预览获得抠图效果）:", src);
           try { this.images[key] = this._toCanvas(img); } catch (e2) { /* 彻底失败则该素材缺失 */ }
         }
-        finish();
+        finish(false);
       };
-      img.onerror = () => { console.warn("素材加载失败:", src); finish(); };   // 单张失败不中断队列
+      img.onerror = () => { console.warn("素材加载失败:", src); finish(false); };   // 单张失败不中断队列
       img.src = src;
     });
   },
@@ -482,7 +505,7 @@ const BGM = {
 /* ---------- 版本上报（缓存自愈诊断；供排查新旧混合缓存） ----------
  * 与 index.html 顶部 APP_VERSION / <meta name="app-version"> 保持一致（发版时三处同步改）。
  * 纯静态字段赋值，不依赖 document/window —— 测试沙箱可无 DOM 独立加载本文件。 */
-Assets.buildVersion = "20261026";
+Assets.buildVersion = "20261027";
 try { console.log("[build] " + Assets.buildVersion); } catch (e) { /* 无 console 环境静默跳过 */ }
 
 /* ============================================================

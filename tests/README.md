@@ -4,13 +4,17 @@
 运行方式：
 
 ```bash
-bash run_tests.sh        # 全量 66 套（推荐）
+bash run_tests.sh        # 全量 74 套（推荐）
 node <name>_test.js      # 单项
 ```
 
-> 根目录实际有 **70 个 `_test.js`**，门禁编排 **66 套**：差的 4 个
-> （`endless_affix_test` / `endless_arena_test` / `endless_record_test` / `endless_team_test`）
-> 是 21.20「层级退役」时**有意摘掉**门禁、文件却忘了删，**别加回去凑数**。
+> 根目录现有 **74 个 `_test.js`**，门禁**全部编排（74 套）**，口径统一、无差集。
+>
+> 历史注记（2026-10-09 已纠正）：21.20「层级退役」曾把 `endless_affix_test` /
+> `endless_arena_test` / `endless_record_test` / `endless_team_test` 连同真正已下线的
+> `endless_tier_test` 一起从门禁摘掉。但**前 4 个模块至今仍被 `index.html` 加载并在运行**
+> （`EndlessRecord` 就是战绩榜在用的模块，被调用 10 处），摘掉等于白丢 115 条覆盖 ——
+> 已全部加回。**别再把它们当成「死测试」。**
 > 下面的分类索引目前只覆盖其中一部分（**待补全**）。
 
 > **判绿标准**：`exit=0` 且 `bad=0`。`bad` 由 run_tests.sh 用
