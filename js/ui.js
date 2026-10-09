@@ -22,7 +22,7 @@ const GOD_SCALE_ICONS = {
 
 const UI = {
   selectedChar: null,
-  selectedChars: [],   // 多角色组队（1~3 人，CFG.team.maxSize）
+  selectedChars: [],   // 多角色组队（1 ~ CFG.team.maxSize 人；扩容只改 CFG.team.maxSize 一处）
   selectedChestQ: null,
   drag: null,          // {item, fromInv, fromPending}
   hoverItem: null,
@@ -430,18 +430,26 @@ const UI = {
         }
         // 多角色组队：点击选中/取消，上限 CFG.team.maxSize
         const idx = this.selectedChars.findIndex(s => s.id === h.id);
-        if (idx >= 0) this.selectedChars.splice(idx, 1);
-        else {
-          if (this.selectedChars.length >= CFG.team.maxSize) { this.toast(`组队上限 ${CFG.team.maxSize} 人`, "bad"); return; }
+        if (idx >= 0) {
+          this.selectedChars.splice(idx, 1);
+          card.classList.remove("selected");
+        } else if (this.selectedChars.length >= CFG.team.maxSize) {
+          // ⚠️ 满员：不入队，但**详情照样切到该英雄**（26.x 体验修复）。
+          //    旧版在此直接 return，连「渲染详情」也一起跳过 → 满员后点任何角色都没反应，像「点不动」。
+          this.toast(`队伍已满（${this.selectedChars.length}/${CFG.team.maxSize}）· 再点一名队员可移出`, "bad");
+          this.renderCharDetail(h);
+          return;
+        } else {
           this.selectedChars.push(h);
+          card.classList.add("selected");
         }
-        card.classList.toggle("selected", idx < 0);
+        // 同步开始按钮（人数 + 禁用态）
         const startBtn = document.getElementById("btn-char-start");
         if (startBtn) {
           startBtn.disabled = this.selectedChars.length === 0;
           startBtn.textContent = `开始游戏（${this.selectedChars.length}/${CFG.team.maxSize}）`;
         }
-        // 详情区同步当前「刚点选」的英雄（取消选中时回落到队首，仍显示信息不空窗）。
+        // 详情区同步当前「刚点选」的英雄（取消选中时回落到队首，仍显示信息不空窗；25.x 语义不变）。
         this.renderCharDetail(idx < 0 ? h : (this.selectedChars[0] || null));
       };
       box.appendChild(card);

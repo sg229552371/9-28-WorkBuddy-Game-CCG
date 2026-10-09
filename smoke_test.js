@@ -278,11 +278,13 @@ vm.runInContext(`
   G.run.weaponInv.place(makeModule("M001", 0), 0, 0);
   recomputeWeapon();
   console.assert(!G.run.weapon.skill.bullets || G.run.weapon.skill.bullets === 1, "无标签的词条不影响技能");
-  // 16) 多角色组队（上限 3）
-  console.assert(CFG.team.maxSize === 3, "组队上限 3");
+  // 16) 多角色组队（上限 = CFG.team.maxSize，单点配置；此处断言「关系」而非具体取值，
+  //     扩容只改 CFG.team.maxSize 一处即可，本断言不假红）
+  const MAX = CFG.team.maxSize;
+  console.assert(Number.isInteger(MAX) && MAX >= 1, "组队上限为 >=1 的整数（当前 " + MAX + "）");
   G.team = [CFG.heroes[0], CFG.heroes[1], CFG.heroes[2]];
   const teamRun = createRun(G.team[0]);
-  console.assert(teamRun.companions.length === 2, "3 人小队 = 1 队长 + 2 队友");
+  console.assert(teamRun.companions.length === G.team.length - 1, "小队 = 1 队长 + (人数-1) 队友");
   console.assert(teamRun.companions[0].heroDef.id === "H002" && teamRun.companions[0].alive, "队友实体初始化");
   // 队友承伤/阵亡
   const comp = teamRun.companions[0];

@@ -740,7 +740,16 @@ CFG.autoFight = {
   },
 };
 
-/* ---------- 多角色组队（3 英雄上限） ---------- */
+/* ---------- 多角色组队 ----------
+ * 🔧 **扩容/缩容只改 `maxSize` 一处**（当前 3）。全链路已数据驱动、无需改代码：
+ *   ① 选人界面：按钮文案「开始游戏（n/maxSize）」、卡片选中态、满员拦截提示（js/ui.js buildCharList）；
+ *   ② 组队对象：Game.startRun/enterEndless 直接吃 selectedChars 切片（js/main.js）；
+ *   ③ 跟随队形：蛇形尾迹按**任意人数**横向错开（CFG.team.follow.lateralBase，见下方公式）；
+ *   ④ 底部技能栏 / AI 队友：逐 G.team 迭代、不假设人数（js/ui.js renderPartySkillbar、js/game.js）；
+ *   ⑤ 尾迹预铺长度：`js/game.js` 按 maxSize 动态算采样点数。
+ *   ⚠️ 扩容前请注意两条约束（数值需一起调）：
+ *     · **性能**：同屏角色越多，弹幕/特效压力越大（基线 = 每秒 100 发子弹、80 角色同屏）；
+ *     · **手感**：怪物强度曲线（CFG.waves / 主线 progressGoal）按当前队伍规模标定，扩队 = 变强，需同步上调。 */
 CFG.team = { maxSize: 3,
   follow: { trailStep: 5, depth: 58, lateralBase: 18, seedDir: [0, 1], seedDirArtisan: [0, -1] },
   // AI 队友行为：普攻 + 主动技能（技能释放不耗能量池，按各自技能冷却施放；首个技能的初始冷却错峰系数 秒/人）

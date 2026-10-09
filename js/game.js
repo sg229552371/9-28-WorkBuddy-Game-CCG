@@ -101,7 +101,7 @@ function createRun(heroDef) {
       chestsOpened: 0, altarsUsed: 0,
       timeToBoss: 0, bossFightTime: 0,
     },
-    // 多角色组队（CFG.team.maxSize=3）：队长由玩家操控，其余为 AI 队友
+    // 多角色组队（人数上限 = CFG.team.maxSize，当前 3）：队长由玩家操控，其余为 AI 队友
     companions: (G.team || []).slice(1).map((hd, i) => ({
       heroDef: hd, id: hd.id, name: hd.name,
       hp: hd.hp, hpMax: hd.hp, r: hd.radius,

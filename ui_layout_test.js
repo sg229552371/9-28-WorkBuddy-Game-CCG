@@ -268,6 +268,55 @@ check("回归：未选中时开始按钮仍 disabled", sb2 && sb2.disabled === t
 check("回归：空选中时详情区显示空态提示", store["char-detail"].innerHTML.indexOf("点击上方头像") >= 0);
 
 /* ============================================================
+ * ⑦ 队伍满员仍可查看详情（26.x 体验修复）
+ *    旧版满员时点击非队员会直接 return，连详情渲染一起跳过 → 点谁都「点不动」。
+ *    修正后：满员点击 = 不入队 + toast 提示 + **详情照常切到该英雄**。
+ * ============================================================ */
+vm.runInContext("UI.__lastToast = '';", ctx);
+// 队伍填满到 maxSize（用已解锁英雄；首发 6 角 ≥ 3）
+vm.runInContext(`(function(){
+  var a = CFG.heroes.filter(function(x){ return Meta.isHeroUnlocked(x.id); });
+  UI.selectedChars = a.slice(0, CFG.team.maxSize);
+  UI.buildCharList();
+})();`, ctx);
+const MAXSZ = vm.runInContext("CFG.team.maxSize", ctx);
+const teamIds = vm.runInContext("UI.selectedChars.map(function(s){return s.id;})", ctx);
+check("⑦1 队伍已填满 = CFG.team.maxSize（" + teamIds.length + " 人）", teamIds.length === MAXSZ);
+const outsiderId = vm.runInContext(`(function(){
+  var a = CFG.heroes.filter(function(x){ return Meta.isHeroUnlocked(x.id); });
+  var sel = UI.selectedChars.map(function(s){ return s.id; });
+  var out = a.find(function(x){ return sel.indexOf(x.id) < 0; });
+  return out ? out.id : null;
+})();`, ctx);
+const outsiderName = vm.runInContext(`(function(){
+  var a = CFG.heroes.filter(function(x){ return Meta.isHeroUnlocked(x.id); });
+  var sel = UI.selectedChars.map(function(s){ return s.id; });
+  var out = a.find(function(x){ return sel.indexOf(x.id) < 0; });
+  return out ? out.name : '';
+})();`, ctx);
+const outsiderCard = charBox.children.find(c => c.innerHTML.indexOf(outsiderId) >= 0);
+check("⑦2 存在一名未入选的已解锁英雄（" + outsiderId + "）", !!outsiderCard);
+outsiderCard.onclick({});
+check("⑦3 满员点击非队员 → 详情区仍更新为该英雄（修复点：不再无反应）",
+  store["char-detail"].innerHTML.indexOf(outsiderName) >= 0);
+check("⑦4 满员点击非队员 → toast 明确提示队伍已满（含 3/3 与「移出」指引）", (() => {
+  const t = vm.runInContext("UI.__lastToast || ''", ctx);
+  return t.indexOf("队伍已满") >= 0 && t.indexOf(String(MAXSZ) + "/" + String(MAXSZ)) >= 0 && t.indexOf("移出") >= 0;
+})());
+const afterFullClick = vm.runInContext("UI.selectedChars.map(function(s){return s.id;})", ctx);
+check("⑦5 满员点击非队员 → 不入队（人数不变、不含该英雄）",
+  afterFullClick.length === MAXSZ && afterFullClick.indexOf(outsiderId) < 0);
+// 满员点击「队员」→ 正常移出（选中态可取消，不被上限挡住）
+const memberCard = charBox.children.find(c => c.innerHTML.indexOf(teamIds[0]) >= 0);
+memberCard.onclick({});
+const afterKick = vm.runInContext("UI.selectedChars.map(function(s){return s.id;})", ctx);
+check("⑦6 满员点击队员 → 正常移出（人数 -1，上限不阻断取消）",
+  afterKick.length === MAXSZ - 1 && afterKick.indexOf(teamIds[0]) < 0);
+// 上限读 CFG 单点：文案与拦截都随 CFG.team.maxSize 变化（扩容不改代码）
+check("⑦7 上限为单点配置（CFG.team.maxSize 为正整数，扩容只改这一处）",
+  Number.isInteger(MAXSZ) && MAXSZ >= 1 && vm.runInContext("CFG.team.maxSize", ctx) === MAXSZ);
+
+/* ============================================================
  * 选关：单屏列表渲染（行为回归：卡数 = 关卡数 + 未解锁锁标）
  * ============================================================ */
 const levelCount = vm.runInContext("CFG.levels.length", ctx);
