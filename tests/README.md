@@ -4,9 +4,14 @@
 运行方式：
 
 ```bash
-bash run_tests.sh        # 全量 37 项（推荐）
+bash run_tests.sh        # 全量 66 套（推荐）
 node <name>_test.js      # 单项
 ```
+
+> 根目录实际有 **70 个 `_test.js`**，门禁编排 **66 套**：差的 4 个
+> （`endless_affix_test` / `endless_arena_test` / `endless_record_test` / `endless_team_test`）
+> 是 21.20「层级退役」时**有意摘掉**门禁、文件却忘了删，**别加回去凑数**。
+> 下面的分类索引目前只覆盖其中一部分（**待补全**）。
 
 > **判绿标准**：`exit=0` 且 `bad=0`。`bad` 由 run_tests.sh 用
 > `grep -ci "Assertion failed\|FAIL\|Error"` 统计 —— 所以**测试 PASS 文案里不要出现英文 `error`**。

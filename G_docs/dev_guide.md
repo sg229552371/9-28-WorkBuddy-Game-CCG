@@ -189,6 +189,33 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/     ← 备用（push 后
 - **这是验证「移动端表现」的实用手段**（本机 `agent-browser` 起不来，见第 7 节）。
 - 用 `gh api repos/sg229552371/9-28-WorkBuddy-Game-CCG/pages` 可查 Pages 状态。
 
+#### 线上域名盘点（2026-10-09 实测）
+
+| 域名 | `app-version` | 结论 |
+| --- | --- | --- |
+| `bagrogue-shooter.app.workbuddy.host` | 20261025 | **主入口**（手机优先） |
+| `sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` | 20261025 | **备用**，push 后自动最新 |
+| `ae6c0d4fb9b5c352d.app.workbuddy.host` | **20261021** | 旧沙箱，**已冻结**（未失效但不再更新）|
+
+⚠️ **不要在两个域名之间来回切换。** 两者版本号不同 → `index.html` 头部的「缓存自愈」
+（`localStorage.app_version` 对不上就 `location.reload` 强刷）每次切换都会触发一次强刷，
+并让 24 个 `js/css` + 36 张素材（约 2MB）全部 cache miss。手机弱网下很容易撞上
+首屏 12 秒看门狗，表现就是下面这个面板。**统一认准主入口或 Pages 其中一个。**
+
+#### 「启动超时：boot() 在 12 秒内未进入首页」怎么读
+
+- 看门狗：`js/main.js:36` 的 `BootGuard.arm()`（`TIMEOUT_MS = 12000`，定义在 `main.js:982`）；
+  首屏 `UI.showScreen("screen-main")` 之后由 `BootGuard.done()`（`main.js:71`）解除。
+- `boot()` 里**唯一的异步阻塞点** = `await Assets.load(ASSET_MANIFEST)`（`main.js:45`）。
+- 🔴 **已知缺口（尚未修）**：`Assets._loadOne`（`js/core.js:119`）只挂 `img.onload` / `img.onerror`，
+  **没有任何超时兜底**。若某个素材请求「既不返回也不报错」（移动网络被挂起），
+  该 Promise 永不 settle → `Promise.all`（`core.js:81`）永不 resolve → `boot()` **永久卡住**，
+  12 秒后看门狗弹面板。
+- 因此这个面板**不等于崩溃**：它会同时显示素材进度（`Assets.progress`）、脚本加载状态、
+  错误列表。先看「素材」那一行 —— **停在 `N/36` 就是素材加载被卡住了**。
+- 现场处理：**先刷新一次**（多半是弱网丢包）。若反复出现，正解是给 `_loadOne` 加超时兜底
+  （超时即按既有「缺图 → 色块渲染」路径降级，保证 `boot()` 必定走完）。
+
 ### 0.6 手机端开发的三条纪律
 
 1. **先 `git pull` 再动手**，避免和电脑端改动分叉。

@@ -27,7 +27,7 @@ python3 -m http.server 8123
 ├── G_docs/             # 设计文档（随仓库携带的「随身上下文」）
 │   ├── dev_guide.md    # 开发指南：铁律、已踩的坑、测试基线 ← 新会话先读这份
 │   └── game_design_proposal.md   # 游戏设计提案（规则与数值）
-├── *_test.js           # 测试（63 个，见 tests/README.md 分类索引）
+├── *_test.js           # 测试文件 70 个（门禁编排 66 套，见 tests/README.md 分类索引）
 ├── run_tests.sh        # 全量测试运行器（判绿 = 每项 exit=0 且 bad=0）
 └── push.sh             # 测试全绿才提交并推送 GitHub
 ```
@@ -35,7 +35,7 @@ python3 -m http.server 8123
 ## 测试
 
 ```bash
-bash run_tests.sh          # 全量：70 项，3184+ 条断言
+bash run_tests.sh          # 全量：66 套，3019 条断言（4 套件并发，约 1.5 分钟）
 node smoke_test.js         # 单个测试
 ```
 
@@ -65,12 +65,16 @@ node smoke_test.js         # 单个测试
 |---|---|
 | **正式试玩链接（主入口）** | `https://bagrogue-shooter.app.workbuddy.host/`（push 后需重新发布 + 指纹复验）|
 | 备用试玩链接（自动最新） | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` |
-| GitHub 仓库（唯一真源） | `https://github.com/sg229552371/9-28-WorkBuddy-Game-CCG`（私有）|
+| GitHub 仓库（唯一真源） | `https://github.com/sg229552371/9-28-WorkBuddy-Game-CCG`（**公开**；clone 无需登录，push 需令牌）|
 | PC 本地工作区 | `D:/AI-game-All/HTML_TEST_002` |
 | 云端沙箱工作区 | `/workspace/9-28-WorkBuddy-Game-CCG` |
 | 本地预览 | `python3 -m http.server 8123` → <http://127.0.0.1:8123/index.html> |
 
-> ⚠️ 旧沙箱域名 `ae6c0d4fb9b5c352d.app.workbuddy.host` **已失效**，不要再使用。
+> ⚠️ 旧沙箱域名 `ae6c0d4fb9b5c352d.app.workbuddy.host` **已冻结**：还能打开，但停在
+> `app-version=20261021`（4 天前的旧版），不再跟随发布更新。**不要再用，也不要与新版混用** ——
+> 两个域名版本号不同，来回切换会让「缓存自愈」每次都触发强刷 + 全量重新下载素材，
+> 在手机弱网下容易撞上首屏 12 秒看门狗（表现为「启动超时」诊断面板）。
+> 统一用上面的**主入口**或 **GitHub Pages**。
 
 ## 换行符约定
 
