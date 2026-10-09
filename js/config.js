@@ -21,6 +21,13 @@ CFG.levels = [
     progressGoal: 60,         // 击杀进度目标
     timeLimit: 180,           // 秒；先到者触发 Boss
     artisanAtKills: 20,       // 首次工匠雕像的击杀里程碑（后续投放由 CFG.artisan 雕像池控制）
+    /* 26.x 祭坛时间轴（t = 秒，相对本关开场冻结结束）：前期稀疏、固定指定与随机池混用。
+     * 宝箱（ALTAR_003）不在开局 10 秒内给；邪神系（ALTAR_004*）少量。 */
+    altarTimeline: [
+      { t: 20, id: "ALTAR_001" },
+      { t: 60, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_001"], pick: 1 },
+      { t: 110, pool: ["ALTAR_003", "ALTAR_002"], pick: 1 },
+    ],
     // 宝箱不由怪物掉落：宝箱作为雕像在祭坛随机池中刷出（CFG.altars.ALTAR_003，weight 26）
     // 怪物掉落：金币 + 经验宝石（地上拾取物，走过自动拾取）
   },
@@ -34,6 +41,12 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC02", count: 4 }],
     progressGoal: 72, timeLimit: 200, artisanAtKills: 24,
+    altarTimeline: [
+      { t: 18, id: "ALTAR_001" },
+      { t: 55, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 100, pool: ["ALTAR_003", "ALTAR_001", "ALTAR_002"], pick: 1 },
+      { t: 150, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_003", name: "第 3 关 · 深渊回廊", theme: "#201a2a",
@@ -45,6 +58,12 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC02", count: 4 }, { tpl: "SC03", count: 3 }],
     progressGoal: 85, timeLimit: 220, artisanAtKills: 28,
+    altarTimeline: [
+      { t: 16, id: "ALTAR_002" },
+      { t: 50, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 95, pool: ["ALTAR_003", "ALTAR_002", "ALTAR_004a"], pick: 1 },
+      { t: 150, pool: ["ALTAR_001", "ALTAR_002", "ALTAR_003"], pick: 1 },
+    ],
   },
   /* ---------- 第 3→10 关铺量（B 线并行批）----------
    * 设计口径：难度沿关卡单调递增（monsterLevel / eliteBase / progressGoal / timeLimit / artisanAtKills），
@@ -63,6 +82,13 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC02", count: 4 }, { tpl: "SC03", count: 3 }],
     progressGoal: 100, timeLimit: 240, artisanAtKills: 32,
+    altarTimeline: [
+      { t: 15, id: "ALTAR_001" },
+      { t: 45, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 85, id: "ALTAR_003" },
+      { t: 130, pool: ["ALTAR_001", "ALTAR_002", "ALTAR_004a"], pick: 1 },
+      { t: 185, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_001"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_005", name: "第 5 关 · 熔核哨塔", theme: "#2a1c12",
@@ -81,6 +107,14 @@ CFG.levels = [
     // 补给最慷慨（曲线档 SP1）：3 个点、读条仅 2.5 秒、单点回血 25%——教学期鼓励学习「进圈回血」节奏
     supplyEnabled: true,
     supply: { count: 3, channelSeconds: 2.5, effect: { type: "heal", pct: 0.25 } },
+    altarTimeline: [
+      { t: 14, id: "ALTAR_002" },
+      { t: 42, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 80, id: "ALTAR_001" },
+      { t: 120, pool: ["ALTAR_003", "ALTAR_002", "ALTAR_004c"], pick: 1 },
+      { t: 170, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 225, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_002"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_006", name: "第 6 关 · 棱镜圣殿", theme: "#141f2a",
@@ -98,6 +132,14 @@ CFG.levels = [
     // 补给转增益型（SP2）：数量降到 2、读条 3 秒——治疗变少（回复压力开始显现），改发战前增益
     supplyEnabled: true,
     supply: { count: 2, channelSeconds: 3.0, effect: { type: "buff", buffPool: "war", duration: 20 } },
+    altarTimeline: [
+      { t: 13, id: "ALTAR_003" },
+      { t: 40, pool: ["ALTAR_001", "ALTAR_002"], pick: 1 },
+      { t: 78, pool: ["ALTAR_003", "ALTAR_001", "ALTAR_004b"], pick: 1 },
+      { t: 118, id: "ALTAR_002" },
+      { t: 165, pool: ["ALTAR_003", "ALTAR_002"], pick: 1 },
+      { t: 220, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_002"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_007", name: "第 7 关 · 裂空回廊", theme: "#1a1426",
@@ -109,6 +151,15 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 6 }, { tpl: "SC01", count: 4 }],
     progressGoal: 150, timeLimit: 330, artisanAtKills: 44,
+    altarTimeline: [
+      { t: 12, id: "ALTAR_001" },
+      { t: 38, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 72, pool: ["ALTAR_003", "ALTAR_004a", "ALTAR_001"], pick: 1 },
+      { t: 110, id: "ALTAR_002" },
+      { t: 155, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 205, pool: ["ALTAR_003", "ALTAR_002", "ALTAR_004d"], pick: 1 },
+      { t: 265, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_002"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_008", name: "第 8 关 · 虫巢深渊", theme: "#1c2418",
@@ -126,6 +177,15 @@ CFG.levels = [
     // 补给回血回落（SP3）：单点 20%、读条 3 秒——比 L5 明显变抠，毒圈压力开始占上风
     supplyEnabled: true,
     supply: { count: 2, channelSeconds: 3.0, effect: { type: "heal", pct: 0.20 } },
+    altarTimeline: [
+      { t: 12, id: "ALTAR_002" },
+      { t: 36, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 68, pool: ["ALTAR_003", "ALTAR_001", "ALTAR_004c"], pick: 1 },
+      { t: 105, id: "ALTAR_001" },
+      { t: 148, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 195, pool: ["ALTAR_003", "ALTAR_002", "ALTAR_004e"], pick: 1 },
+      { t: 250, pool: ["ALTAR_001", "ALTAR_002", "ALTAR_003"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_009", name: "第 9 关 · 领主王座", theme: "#26161a",
@@ -143,6 +203,16 @@ CFG.levels = [
     // 补给转经济型（SP4）：不回血改发结晶 50——毒伤走高后回血性价比下降，改为资源补偿
     supplyEnabled: true,
     supply: { count: 2, channelSeconds: 3.5, effect: { type: "crystal", amount: 50 } },
+    altarTimeline: [
+      { t: 11, id: "ALTAR_001" },
+      { t: 34, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 66, pool: ["ALTAR_003", "ALTAR_004a", "ALTAR_002"], pick: 1 },
+      { t: 100, id: "ALTAR_003" },
+      { t: 142, pool: ["ALTAR_001", "ALTAR_002"], pick: 1 },
+      { t: 188, pool: ["ALTAR_003", "ALTAR_004d", "ALTAR_001"], pick: 1 },
+      { t: 240, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_001"], pick: 1 },
+      { t: 300, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_004b"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_010", name: "第 10 关 · 终焉神域", theme: "#220f16",
@@ -160,6 +230,17 @@ CFG.levels = [
     // 补给最稀缺（SP5）：仅 1 个点、读条 4 秒、回血 15%——终局生存靠走位而非站桩奶
     supplyEnabled: true,
     supply: { count: 1, channelSeconds: 4.0, effect: { type: "heal", pct: 0.15 } },
+    altarTimeline: [
+      { t: 11, id: "ALTAR_002" },
+      { t: 32, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 62, pool: ["ALTAR_003", "ALTAR_004a", "ALTAR_001"], pick: 1 },
+      { t: 95, id: "ALTAR_003" },
+      { t: 134, pool: ["ALTAR_002", "ALTAR_001"], pick: 1 },
+      { t: 178, pool: ["ALTAR_003", "ALTAR_004e", "ALTAR_002"], pick: 1 },
+      { t: 228, pool: ["ALTAR_001", "ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 285, pool: ["ALTAR_003", "ALTAR_004c", "ALTAR_001"], pick: 1 },
+      { t: 350, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_001"], pick: 1 },
+    ],
   },
 
   /* ---------- 第 11→20 关铺量（第 11~20 关扩展批）----------
@@ -184,6 +265,19 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 7 }, { tpl: "SC02", count: 5 }, { tpl: "SC01", count: 3 }],
     progressGoal: 220, timeLimit: 450, artisanAtKills: 60,
+    // 26.x 祭坛时间轴（同 1~10 关口径：前期稀疏、固定指定与随机池混用，宝箱不在开局 10 秒）
+    altarTimeline: [
+      { t: 14, id: "ALTAR_001" },
+      { t: 42, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 76, pool: ["ALTAR_003", "ALTAR_001", "ALTAR_004a"], pick: 1 },
+      { t: 114, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 156, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_004b"], pick: 1 },
+      { t: 202, pool: ["ALTAR_002", "ALTAR_001"], pick: 1 },
+      { t: 252, pool: ["ALTAR_003", "ALTAR_004c", "ALTAR_002"], pick: 1 },
+      { t: 306, pool: ["ALTAR_001", "ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 364, pool: ["ALTAR_003", "ALTAR_004d", "ALTAR_001"], pick: 1 },
+      { t: 426, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_001"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_012", name: "第 12 关 · 紫晶洞窟", theme: "#1e1426",
@@ -195,6 +289,18 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 8 }, { tpl: "SC02", count: 5 }, { tpl: "SC01", count: 4 }],
     progressGoal: 240, timeLimit: 480, artisanAtKills: 64,
+    altarTimeline: [
+      { t: 13, id: "ALTAR_002" },
+      { t: 42, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 78, pool: ["ALTAR_003", "ALTAR_002", "ALTAR_004a"], pick: 1 },
+      { t: 118, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 162, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_004b"], pick: 1 },
+      { t: 210, pool: ["ALTAR_001", "ALTAR_002"], pick: 1 },
+      { t: 262, pool: ["ALTAR_003", "ALTAR_004c", "ALTAR_001"], pick: 1 },
+      { t: 318, pool: ["ALTAR_002", "ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 378, pool: ["ALTAR_003", "ALTAR_004d", "ALTAR_002"], pick: 1 },
+      { t: 442, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_002"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_013", name: "第 13 关 · 幽沼泽国", theme: "#101f22",
@@ -206,6 +312,18 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 8 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 4 }],
     progressGoal: 262, timeLimit: 510, artisanAtKills: 68,
+    altarTimeline: [
+      { t: 13, id: "ALTAR_001" },
+      { t: 42, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 79, pool: ["ALTAR_003", "ALTAR_001", "ALTAR_004a"], pick: 1 },
+      { t: 120, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 165, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_004b"], pick: 1 },
+      { t: 214, pool: ["ALTAR_002", "ALTAR_001"], pick: 1 },
+      { t: 268, pool: ["ALTAR_003", "ALTAR_004c", "ALTAR_002"], pick: 1 },
+      { t: 326, pool: ["ALTAR_001", "ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 388, pool: ["ALTAR_003", "ALTAR_004e", "ALTAR_001"], pick: 1 },
+      { t: 454, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_001"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_014", name: "第 14 关 · 沙金遗迹", theme: "#26201a",
@@ -217,6 +335,19 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 9 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 4 }],
     progressGoal: 284, timeLimit: 540, artisanAtKills: 72,
+    altarTimeline: [
+      { t: 12, id: "ALTAR_002" },
+      { t: 41, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 79, pool: ["ALTAR_003", "ALTAR_002", "ALTAR_004a"], pick: 1 },
+      { t: 121, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 167, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_004b"], pick: 1 },
+      { t: 217, pool: ["ALTAR_001", "ALTAR_002"], pick: 1 },
+      { t: 272, pool: ["ALTAR_003", "ALTAR_004c", "ALTAR_001"], pick: 1 },
+      { t: 332, pool: ["ALTAR_002", "ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 396, pool: ["ALTAR_003", "ALTAR_004d", "ALTAR_002"], pick: 1 },
+      { t: 464, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_002"], pick: 1 },
+      { t: 536, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_004e"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_015", name: "第 15 关 · 熔血祭坛", theme: "#2a1220",
@@ -228,6 +359,19 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 9 }, { tpl: "SC02", count: 7 }, { tpl: "SC01", count: 5 }],
     progressGoal: 308, timeLimit: 570, artisanAtKills: 76,
+    altarTimeline: [
+      { t: 12, id: "ALTAR_001" },
+      { t: 41, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 80, pool: ["ALTAR_003", "ALTAR_001", "ALTAR_004a"], pick: 1 },
+      { t: 123, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 170, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_004b"], pick: 1 },
+      { t: 221, pool: ["ALTAR_002", "ALTAR_001"], pick: 1 },
+      { t: 277, pool: ["ALTAR_003", "ALTAR_004c", "ALTAR_002"], pick: 1 },
+      { t: 338, pool: ["ALTAR_001", "ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 404, pool: ["ALTAR_003", "ALTAR_004d", "ALTAR_001"], pick: 1 },
+      { t: 474, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_001"], pick: 1 },
+      { t: 548, pool: ["ALTAR_003", "ALTAR_004e", "ALTAR_002"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_016", name: "第 16 关 · 寒潮海沟", theme: "#12222a",
@@ -239,6 +383,19 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 10 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 5 }],
     progressGoal: 332, timeLimit: 600, artisanAtKills: 80,
+    altarTimeline: [
+      { t: 12, id: "ALTAR_002" },
+      { t: 41, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 80, pool: ["ALTAR_003", "ALTAR_002", "ALTAR_004a"], pick: 1 },
+      { t: 124, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 172, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_004b"], pick: 1 },
+      { t: 224, pool: ["ALTAR_001", "ALTAR_002"], pick: 1 },
+      { t: 281, pool: ["ALTAR_003", "ALTAR_004c", "ALTAR_001"], pick: 1 },
+      { t: 343, pool: ["ALTAR_002", "ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 410, pool: ["ALTAR_003", "ALTAR_004d", "ALTAR_002"], pick: 1 },
+      { t: 482, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_002"], pick: 1 },
+      { t: 558, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_004e"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_017", name: "第 17 关 · 虚空神殿", theme: "#221a30",
@@ -250,6 +407,19 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 10 }, { tpl: "SC02", count: 7 }, { tpl: "SC01", count: 5 }],
     progressGoal: 358, timeLimit: 630, artisanAtKills: 84,
+    altarTimeline: [
+      { t: 11, id: "ALTAR_001" },
+      { t: 40, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 80, pool: ["ALTAR_003", "ALTAR_001", "ALTAR_004a"], pick: 1 },
+      { t: 125, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 174, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_004b"], pick: 1 },
+      { t: 228, pool: ["ALTAR_002", "ALTAR_001"], pick: 1 },
+      { t: 287, pool: ["ALTAR_003", "ALTAR_004c", "ALTAR_002"], pick: 1 },
+      { t: 351, pool: ["ALTAR_001", "ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 420, pool: ["ALTAR_003", "ALTAR_004d", "ALTAR_001"], pick: 1 },
+      { t: 494, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_001"], pick: 1 },
+      { t: 566, pool: ["ALTAR_003", "ALTAR_004e", "ALTAR_002"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_018", name: "第 18 关 · 瘟疫林海", theme: "#1a2e1a",
@@ -261,6 +431,19 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 11 }, { tpl: "SC02", count: 7 }, { tpl: "SC01", count: 5 }],
     progressGoal: 384, timeLimit: 660, artisanAtKills: 88,
+    altarTimeline: [
+      { t: 11, id: "ALTAR_002" },
+      { t: 40, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 81, pool: ["ALTAR_003", "ALTAR_002", "ALTAR_004a"], pick: 1 },
+      { t: 126, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 176, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_004b"], pick: 1 },
+      { t: 231, pool: ["ALTAR_001", "ALTAR_002"], pick: 1 },
+      { t: 291, pool: ["ALTAR_003", "ALTAR_004c", "ALTAR_001"], pick: 1 },
+      { t: 356, pool: ["ALTAR_002", "ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 426, pool: ["ALTAR_003", "ALTAR_004d", "ALTAR_002"], pick: 1 },
+      { t: 501, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_002"], pick: 1 },
+      { t: 578, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_004e"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_019", name: "第 19 关 · 猩红王庭", theme: "#2e1a1a",
@@ -272,6 +455,19 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 11 }, { tpl: "SC02", count: 8 }, { tpl: "SC01", count: 6 }],
     progressGoal: 412, timeLimit: 690, artisanAtKills: 92,
+    altarTimeline: [
+      { t: 11, id: "ALTAR_001" },
+      { t: 41, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 81, pool: ["ALTAR_003", "ALTAR_001", "ALTAR_004a"], pick: 1 },
+      { t: 127, pool: ["ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 177, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_004b"], pick: 1 },
+      { t: 233, pool: ["ALTAR_002", "ALTAR_001"], pick: 1 },
+      { t: 294, pool: ["ALTAR_003", "ALTAR_004c", "ALTAR_002"], pick: 1 },
+      { t: 360, pool: ["ALTAR_001", "ALTAR_002", "ALTAR_003"], pick: 1 },
+      { t: 431, pool: ["ALTAR_003", "ALTAR_004d", "ALTAR_001"], pick: 1 },
+      { t: 507, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_001"], pick: 1 },
+      { t: 586, pool: ["ALTAR_003", "ALTAR_004e", "ALTAR_002"], pick: 1 },
+    ],
   },
   {
     id: "LEVEL_020", name: "第 20 关 · 终夜之幕", theme: "#0f0f16",
@@ -283,20 +479,38 @@ CFG.levels = [
     monsterCap: 120,
     circles: [{ tpl: "SC03", count: 12 }, { tpl: "SC02", count: 8 }, { tpl: "SC01", count: 6 }],
     progressGoal: 440, timeLimit: 720, artisanAtKills: 96,
+    altarTimeline: [
+      { t: 12, id: "ALTAR_002" },
+      { t: 41, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 80, pool: ["ALTAR_003", "ALTAR_002", "ALTAR_004a"], pick: 1 },
+      { t: 126, pool: ["ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 177, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_004b"], pick: 1 },
+      { t: 233, pool: ["ALTAR_001", "ALTAR_002"], pick: 1 },
+      { t: 295, pool: ["ALTAR_003", "ALTAR_004c", "ALTAR_001"], pick: 1 },
+      { t: 362, pool: ["ALTAR_002", "ALTAR_001", "ALTAR_003"], pick: 1 },
+      { t: 434, pool: ["ALTAR_003", "ALTAR_004d", "ALTAR_002"], pick: 1 },
+      { t: 511, pool: ["ALTAR_001", "ALTAR_003", "ALTAR_002"], pick: 1 },
+      { t: 592, pool: ["ALTAR_002", "ALTAR_003", "ALTAR_004e"], pick: 1 },
+      { t: 672, pool: ["ALTAR_003", "ALTAR_004e", "ALTAR_001"], pick: 1 },
+    ],
   },
 ];
 
 /* ---------- 刷怪圆模板表（表 B） ----------
- * pool 权重混入冲锋特殊怪（NM0027~0030），并新增 SC04 高阶混编圆（L8~L10 挂载）：
- * 冲锋特殊怪在场占比 SC01 ≈ 6%、SC02 ≈ 20%、SC03 ≈ 24%、SC04 ≈ 53%，
- * 配合 monsterUnlock 错峰解锁 → 中盘起每段进度都能见到新的冲撞表现。 */
+ * pool 权重混入冲锋特殊怪（NM0027~0030），并新增 SC04 高阶混编圆（L8~L10 挂载）；
+ * 配合 monsterUnlock 错峰解锁 → 中盘起每段进度都能见到新的冲撞表现。
+ * ⚠️ 26.x 重配：全场敌人构成目标改为 **远程 70% / 近战 30%**（旧口径为冲锋怪占比 6%~53%）——
+ *    冲锋怪仍保留差异化表现，但不再作为主要占比来源；权重折算见下方逐池注释。 */
+/* ⚠️ 26.x 权重重配：目标「远程:近战 ≈ 7:3」——按池内每只怪的 type 折算（charger 归近战线），
+ *    同组内按旧权重同比缩放后取整，四池总和归一到 100（远程组 70 / 近战组 30）。
+ *    远程 = ranged；近战 = melee + charger。改前占比：SC01 远程 20% / SC02 20% / SC03 32% / SC04 18.6%。 */
 CFG.spawnCircles = {
-  SC01: { radius: 180, waveSize: 2, pool: "NM0010:62/NM0011:20/NM0012:12/NM0027:6", interval: 7.0, trigger: "immediate" },
-  SC02: { radius: 200, waveSize: 2, pool: "NM0010:30/NM0011:20/NM0012:16/NM0013:14/NM0027:10/NM0028:10", interval: 6.0, trigger: "immediate" },
-  SC03: { radius: 220, waveSize: 3, pool: "NM0013:26/NM0011:18/NM0012:18/NM0014:14/NM0028:10/NM0029:8/NM0030:6", interval: 5.5, trigger: "immediate" },
+  SC01: { radius: 180, waveSize: 2, pool: "NM0010:23/NM0011:70/NM0012:5/NM0027:2", interval: 7.0, trigger: "immediate" },
+  SC02: { radius: 200, waveSize: 2, pool: "NM0010:11/NM0011:70/NM0012:6/NM0013:5/NM0027:4/NM0028:4", interval: 6.0, trigger: "immediate" },
+  SC03: { radius: 220, waveSize: 3, pool: "NM0011:39/NM0013:11/NM0012:8/NM0014:31/NM0028:4/NM0029:4/NM0030:3", interval: 5.5, trigger: "immediate" },
   /* SC04 高阶混编圆：只服务 L8~L10（怪物池上限 NM0026，无低编号怪）——
-   * 权重配比：老面孔基础怪 40 / 冲锋特殊怪（NM0029/30/26/20/23）46，特殊怪过半制造压迫感 */
-  SC04: { radius: 220, waveSize: 3, pool: "NM0020:14/NM0021:10/NM0022:8/NM0023:12/NM0025:8/NM0029:14/NM0030:12/NM0026:8", interval: 5.0, trigger: "immediate" },
+   * 权重配比同按 7:3：远程 NM0022/NM0025 各 35，近战（charger 为主）合计 30。 */
+  SC04: { radius: 220, waveSize: 3, pool: "NM0020:6/NM0021:4/NM0022:35/NM0023:5/NM0025:35/NM0029:6/NM0030:5/NM0026:4", interval: 5.0, trigger: "immediate" },
 };
 
 /* ---------- 刷怪规则（全局） ---------- */
@@ -390,6 +604,39 @@ CFG.camera = {
  * 仍在清晰可辨区间，**本次不调整**；若后续觉得怪物偏小，可把本值 1.5 微调到 1.7~1.8（会同步放大碰撞半径）。
  * ⚠️ 注意：碰撞半径随本值放大，调大需回归战斗手感。 */
 CFG.monsterSizeMul = 1.5;
+
+/* ---------- 敌人体型分层倍率（在 monsterSizeMul 基础上再乘一次） ----------
+ * 口径（用户拍板「小怪为原来 70%」）：**最终体型 = 当前渲染大小 × 分层倍率**。
+ *   普通怪（NM 前缀）= normal、精英（ED 前缀）= elite、BOSS（BS 前缀）= boss。
+ *   生成时把倍率乘进 m.r（碰撞圈）并记到 m.sizeMul（渲染侧 render.js 同乘）→ 命中圈与精灵同步缩放。
+ *   BOSS 允许在 CFG.monsters[BSxxxx].sizeMul 里逐只覆盖（缺省取本表 boss 值）。
+ *   ⚠️ 精英另有 CFG.elites.sizeMul（applyElite 二次放大），两者叠乘，见 applyElite。 */
+CFG.monsterSizeTier = {
+  normal: 0.7,             // 普通小怪：原渲染大小的 70%
+  elite:  0.9,             // 精英（ED / 词缀转化）：原渲染大小的 90%
+  boss:   1.35,            // BOSS：原渲染大小的 135%（可被怪物表 sizeMul 逐只覆盖）
+};
+
+/* ---------- 掉落物（地上拾取物：金币 / 结晶 / 经验宝石）----------
+ * 停留时间 life：单位为秒；**-1 = 永不消失**（persistent，不会随时间衰减）。
+ *   coin    金币：永不消失（用户拍板）
+ *   crystal 结晶：永不消失（用户拍板；当前主线未产生该类型，配置先就位）
+ *   exp     经验宝石：30 秒后消失（用户只说金币/结晶永不消失）
+ * defaultLife = 未登记类型（如测试用的 "gem"）的回退停留秒数。
+ * maxPickups 性能兜底（**3000 敌性能主线下的保护**）：同屏掉落物超过该上限时，
+ *   把「最旧的」掉落物自动磁吸给玩家——直接结算入账（等价于提前捡起，价值不丢失），
+ *   避免地上物件无限堆积拖垮拾取循环与渲染；<=0 表示不启用上限保护。 */
+CFG.pickup = {
+  coin:    { life: -1 },   // 金币：永不消失
+  crystal: { life: -1 },   // 结晶：永不消失
+  exp:     { life: 30 },   // 经验宝石：30 秒
+  defaultLife: 30,         // 未登记类型的停留秒数
+  maxPickups: 200,         // 同屏掉落物上限：超出 → 最旧的自动磁吸结算
+};
+
+/* ---------- 属性名 → 中文（界面文案用：如「攻击 +3」）----------
+ * 提供表即可；显示拼接由界面线消费（本表不含显示逻辑）。 */
+CFG.statNames = { atk: "攻击", hp: "生命", def: "防御", spd: "速度" };
 
 /* ---------- 技能系统（现阶段：普攻 + 主动技能自动施法；终极技局外解锁后续开发） ----------
  * 注：技能局外等级已并入武器等级（Meta.weaponUp/weaponUpCost），此处仅保留自动施法开关。 */
@@ -661,21 +908,21 @@ CFG.monsters = {
       { hp: 1.0, skills: ["AT211", "AT212"] },        // 放射炮台：触手放射 / 触手追瞄
       { hp: 0.5, skills: ["AT217", "AT220"] },        // 变奏：邪神花形 / 触手狂潮
     ], patternCd: 3.2,
-    hp: 600, atk: 15, def: 3, spd: 72, radius: 46, exp: 60, coin: 80 },
+    hp: 600, atk: 15, def: 3, spd: 72, radius: 46, exp: 60, coin: 80, sizeMul: 1.2 },
   BS0002: { name: "腐化树母", type: "boss", sprite: "enemy22",
     skillList: ["AT208", "AT213", "AT214", "AT219"],
     phases: [
       { hp: 1.0, skills: ["AT213", "AT214"] },        // 扇形压制：藤蔓扇射 / 根系翻涌
       { hp: 0.5, skills: ["AT219", "AT213"] },        // 变奏：藤蔓绞杀（双螺旋）
     ], patternCd: 3.4,
-    hp: 950, atk: 18, def: 4, spd: 64, radius: 54, exp: 90, coin: 130 },
+    hp: 950, atk: 18, def: 4, spd: 64, radius: 54, exp: 90, coin: 130, sizeMul: 1.35 },
   BS0003: { name: "深渊吞噬者", type: "boss", sprite: "enemy22",
     skillList: ["AT209", "AT215", "AT218", "AT216"],
     phases: [
       { hp: 1.0, skills: ["AT215", "AT218"] },        // 冲锋践踏：落地冲击环 / 深渊波幕
       { hp: 0.5, skills: ["AT216", "AT218"] },        // 变奏：深渊漩涡（三臂螺旋）
     ], patternCd: 3.0,
-    hp: 1400, atk: 22, def: 5, spd: 80, radius: 60, exp: 130, coin: 200 },
+    hp: 1400, atk: 22, def: 5, spd: 80, radius: 60, exp: 130, coin: 200, sizeMul: 1.5 },
 
   /* ---------- BOSS 4~10（第十七章 17.7 第 4 步：后 7 关新 Boss）----------
    * 设计依据 17.5 关卡阵容：每只对应一种弹幕原型；阶段推进 = **换招式池**（加机制不加血）。
@@ -781,43 +1028,43 @@ CFG.boss = {
 
 /* ---------- 英雄配置表（8.5 表 1，首发 6 角） ---------- */
 CFG.heroes = [
-  { id: "H001", name: "猎手", desc: "远程速射 / 能量爆发 · 均衡型", sprite: "hero",
+  { id: "H001", name: "猎手", desc: "远程速射 / 能量爆发 · 均衡型", role: "output", range: "ranged", sprite: "hero",
     hp: 100, def: 2, atk: 14, energyMax: 100, energyRegen: 10,
     spd: 300, radius: 18, weapon: "W001", summonMax: 2, trapMax: 1 },
-  { id: "H002", name: "散弹手", desc: "三向散射 / 震荡波 · 近战压制型", sprite: "hero",
+  { id: "H002", name: "散弹手", desc: "三向散射 / 震荡波 · 近战压制型", role: "output", range: "ranged", sprite: "hero",
     hp: 110, def: 3, atk: 8, energyMax: 100, energyRegen: 10,
     spd: 290, radius: 18, weapon: "W002", summonMax: 2, trapMax: 1 },
-  { id: "H003", name: "穿甲者", desc: "高穿透直线弹 / 贯穿射线 · 阵地输出型", sprite: "hero",
+  { id: "H003", name: "穿甲者", desc: "高穿透直线弹 / 贯穿射线 · 阵地输出型", role: "output", range: "ranged", sprite: "hero",
     hp: 90, def: 1, atk: 16, energyMax: 100, energyRegen: 10,
     spd: 295, radius: 18, weapon: "W003", summonMax: 2, trapMax: 1 },
-  { id: "H004", name: "弹射手", desc: "弹射跳弹 / 环形弹幕 · 走位牵制型", sprite: "hero",
+  { id: "H004", name: "弹射手", desc: "弹射跳弹 / 环形弹幕 · 走位牵制型", role: "defense", range: "ranged", sprite: "hero",
     hp: 95, def: 2, atk: 11, energyMax: 110, energyRegen: 11,
     spd: 305, radius: 18, weapon: "W004", summonMax: 2, trapMax: 1 },
-  { id: "H005", name: "快枪手", desc: "极限射速 / 疾跑翻滚 · 高机动型", sprite: "hero",
+  { id: "H005", name: "快枪手", desc: "极限射速 / 疾跑翻滚 · 高机动型", role: "defense", range: "ranged", sprite: "hero",
     hp: 85, def: 1, atk: 7, energyMax: 100, energyRegen: 12,
     spd: 330, radius: 17, weapon: "W005", summonMax: 2, trapMax: 1 },
-  { id: "H006", name: "重炮手", desc: "低速重弹 / 巨型爆破 · 火力覆盖型", sprite: "hero",
+  { id: "H006", name: "重炮手", desc: "低速重弹 / 巨型爆破 · 火力覆盖型", role: "output", range: "ranged", sprite: "hero",
     hp: 120, def: 4, atk: 26, energyMax: 120, energyRegen: 8,
     spd: 265, radius: 19, weapon: "W006", summonMax: 1, trapMax: 1 },
   // 原型验证角（批次 E）：召唤/陷阱技能原型载体，后续按设计再作解锁门槛
-  { id: "H007", name: "召唤师", desc: "无人机协战 / 机炮 · 召唤物原型角", sprite: "hero",
+  { id: "H007", name: "召唤师", desc: "无人机协战 / 机炮 · 召唤物原型角", role: "aux", range: "ranged", sprite: "hero",
     hp: 90, def: 1, atk: 12, energyMax: 120, energyRegen: 12,
     spd: 300, radius: 18, weapon: "W007", summonMax: 6, trapMax: 1 },
-  { id: "H008", name: "陷阱师", desc: "大地雷封锁 / 掷雷 · 陷阱原型角", sprite: "hero",
+  { id: "H008", name: "陷阱师", desc: "大地雷封锁 / 掷雷 · 陷阱原型角", role: "defense", range: "melee", sprite: "hero",
     hp: 95, def: 2, atk: 15, energyMax: 110, energyRegen: 10,
     spd: 295, radius: 18, weapon: "W008", summonMax: 2, trapMax: 3 },
   // 铺量角（批次 F）：12 角补齐，定位与武器数值均落在同定位现有角平衡带内；
   // 武器技能复用 CFG.skills 已有条目（技能表已铺满，不新增技能条目）。
-  { id: "H009", name: "守护者", desc: "重型护盾 / 贯穿射线 · 阵地防御型", sprite: "hero",
+  { id: "H009", name: "守护者", desc: "重型护盾 / 贯穿射线 · 阵地防御型", role: "defense", range: "ranged", sprite: "hero",
     hp: 100, def: 2, atk: 12, energyMax: 110, energyRegen: 9,
     spd: 295, radius: 19, weapon: "W009", summonMax: 2, trapMax: 1 },
-  { id: "H010", name: "医疗兵", desc: "随行治疗 / 震荡波 · 续航恢复型", sprite: "hero",
+  { id: "H010", name: "医疗兵", desc: "随行治疗 / 震荡波 · 续航恢复型", role: "aux", range: "ranged", sprite: "hero",
     hp: 92, def: 1, atk: 12, energyMax: 120, energyRegen: 12,
     spd: 300, radius: 18, weapon: "W010", summonMax: 2, trapMax: 1 },
-  { id: "H011", name: "圣歌者", desc: "光环鼓舞 / 环形弹幕 · 群疗恢复型", sprite: "hero",
+  { id: "H011", name: "圣歌者", desc: "光环鼓舞 / 环形弹幕 · 群疗恢复型", role: "aux", range: "ranged", sprite: "hero",
     hp: 88, def: 1, atk: 11, energyMax: 115, energyRegen: 12,
     spd: 305, radius: 18, weapon: "W011", summonMax: 2, trapMax: 1 },
-  { id: "H012", name: "灵能者", desc: "灵能护罩 / 能量爆发 · 灵力恢复型", sprite: "hero",
+  { id: "H012", name: "灵能者", desc: "灵能护罩 / 能量爆发 · 灵力恢复型", role: "aux", range: "ranged", sprite: "hero",
     hp: 90, def: 1, atk: 13, energyMax: 125, energyRegen: 11,
     spd: 300, radius: 18, weapon: "W012", summonMax: 2, trapMax: 1 },
 ];
@@ -864,9 +1111,9 @@ CFG.weapons = {
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数", "陷阱"],
     skills: { basic: "AT116", skill: "AT114" } },
   // 铺量武器（批次 F）：专属绑定，技能引用 CFG.skills 既有条目（不新增技能）
-  W009: { id: "W009", name: "堡垒炮", desc: "重型护盾炮，技能为高穿透贯穿射线",
+  W009: { id: "W009", name: "堡垒炮", desc: "重型护盾炮，技能为嘲讽战吼（拉怪聚拢）",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT107", skill: "AT106" } },
+    skills: { basic: "AT107", skill: "AT120" } },   // 26.x：防御定位载体挂嘲讽样板技能 AT120
   W010: { id: "W010", name: "生命枪", desc: "随行治疗枪，技能为震荡波压制",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
     skills: { basic: "AT101", skill: "AT104" } },
@@ -900,6 +1147,16 @@ CFG.weapons = {
  * type（主动技能的释放形态）：bullet 弹道 ｜ summon 召唤物（可被敌人攻击）｜ trap 陷阱（触发后延迟爆炸）
  * kind：basic 普攻（不吃主动技能能量/手动触发）｜ skill 主动技能 */
 CFG.skillCat = { active: "主动", passive: "被动", buff: "增益", debuff: "减益" };
+
+/* ---------- 属性加成积木 scaleBy（通用技能字段）----------
+ * 技能条目可声明 scaleBy: { stat: "def", pct: 0.02 }，结算时把「施法者属性」折算后叠加到**效果值**上：
+ *     最终值 = 技能锚点固定值（anchors 插值，already 走既有曲线） + 属性 × pct × 等级系数
+ *     等级系数 = 1 + (skillLv - 1) × levelGrowth
+ * 只作用于技能声明了 scaleBy 的条目；未声明时行为与既有完全一致（零足迹）。
+ * 结算入口 = SkillSystem.cast（js/combat.js，见 withScaleBy）。 */
+CFG.skillScaleBy = {
+  levelGrowth: 0.06,       // 等级系数成长率（与技能 +6%/级 同源）
+};
 
 CFG.skills = {
   /* ===== 表 4a 视图：主动技能（含普攻） ===== */
@@ -958,6 +1215,20 @@ CFG.skills = {
     cd: 0.8, energy: 0, dmgMul: 0.9, bullets: 1, bulletSpd: 560, pierce: 0, bounce: 0 },
   AT116: { name: "掷雷", cat: "active", kind: "basic", type: "bullet",
     cd: 1.1, energy: 0, dmgMul: 1.2, bullets: 1, bulletSpd: 480, pierce: 0, bounce: 0 },
+
+  /* ===== 26.x 新增主动技能（表 4a 视图）=====
+   * AT120 嘲讽战吼 —— **属性加成积木 scaleBy 的样板技能**（防御定位载体）。
+   * 效果 = 半径内敌人强制攻击施法者 duration 秒（怪物 tauntedBy/tauntT，见 Monster.update），
+   *        同时造成一次小额 AOE 伤害（全局口径：所有主动技能都必须有伤害）。
+   * scaleBy（通用字段）：最终半径 = 技能锚点固定值 + 施法者对应属性 × pct × 等级系数
+   *   等级系数 = 1 + (lv - 1) × CFG.skillScaleBy.levelGrowth（与技能 +6%/级 同源）
+   *   固定值部分仍走既有 anchors 锚点插值（radius: 1→180 / 50→260 / 100→340）。 */
+  AT120: { name: "嘲讽战吼", cat: "active", kind: "skill", type: "taunt",
+    cd: 3.5, energy: 0, tags: ["伤害", "范围", "冷却"],
+    dmgMul: 0.5, duration: 4,               // duration = 强制嘲讽时长（秒）
+    scaleBy: { stat: "def", pct: 0.02 },    // 半径额外 + 防御 × 0.02 × 等级系数
+    desc: "战吼嘲讽：半径内敌人强制攻击自身 4 秒（半径 = 锚点固定值 + 防御×2%×等级系数）",
+    anchors: { radius: { 1: 180, 50: 260, 100: 340 } } },
 
   /* ===== 表 4e 视图：敌人技能（8.2：怪物攻击行为也是技能条目） =====
    * 攻击参数（伤害间隔/弹速/保持距离/冲锋/爆炸/召唤）由本表提供，怪物表不再重复硬编码；
@@ -1180,24 +1451,26 @@ CFG.basicAttack = {
 };
 
 /* ---------- 英雄定位（19.2，取代旧的"均衡/压制"风格描述） ----------
- * 三定位：output 输出 / defense 防御 / recovery 恢复。
- * 🔴 伤害口径（已澄清）：三者**都有伤害**，防御/恢复是**低伤害**而非**无伤害**；
+ * 三定位：output 输出 / defense 防御 / aux 辅助。
+ * 🔴 伤害口径（已澄清）：三者**都有伤害**，防御/辅助是**低伤害**而非**无伤害**；
  *    差异体现在「伤害倍率 + 附加效果」，不是「有没有伤害」。
  *    因此无需额外机制即可击杀敌人 → 获得经验（见 CFG.levelUp.expSource），绕开"无伤害卡死升级"的死结。
  * 本表只标注定位与技能分工，具体技能 ID 仍由 CFG.weapons[].skills.skill 承担；
- * 具体伤害倍率由技能表 dmgMul 填。 */
+ * 具体伤害倍率由技能表 dmgMul 填。
+ * ⚠️ 26.x 定位改名：原 recovery（恢复）→ **aux（辅助）**，口径扩为「治疗/增益/减益/召唤」，
+ *    dmgBand 保持原「低（约 0.4~0.6）」不变（辅助同样有伤害）。 */
 CFG.heroRoles = {
-  output:   { name: "输出", color: "#ff6b6b", dmgBand: "高（基准 1.0）",      desc: "以直接伤害为主，清场效率最高" },
-  defense:  { name: "防御", color: "#6cb2ff", dmgBand: "低（约 0.5~0.7）",    desc: "高生存 + 护盾/减伤，低伤害 + 附加效果" },
-  recovery: { name: "恢复", color: "#6bd88a", dmgBand: "低（约 0.4~0.6）",    desc: "持续治疗/回复队友，低伤害 + 附加效果" },
+  output:  { name: "输出", color: "#ff6b6b", dmgBand: "高（基准 1.0）",   desc: "以直接伤害为主，清场效率最高" },
+  defense: { name: "防御", color: "#6cb2ff", dmgBand: "低（约 0.5~0.7）", desc: "高生存 + 护盾/减伤，低伤害 + 附加效果" },
+  aux:     { name: "辅助", color: "#6bd88a", dmgBand: "低（约 0.4~0.6）", desc: "治疗/增益/减益/召唤类，强化队伍" },
   byHero: {
     H001: "output", H002: "output", H003: "output",
     H004: "defense", H005: "defense",
-    H006: "output", H007: "recovery", H008: "defense",
-    H009: "defense", H010: "recovery", H011: "recovery", H012: "recovery",
+    H006: "output", H007: "aux", H008: "defense",
+    H009: "defense", H010: "aux", H011: "aux", H012: "aux",
   },
   // 断言用：三定位必须齐全（全部导向同一路径 = 设计失衡，测试会报错）
-  requireAll: ["output", "defense", "recovery"],
+  requireAll: ["output", "defense", "aux"],
 };
 
 /* ---------- 技能释放资源 = 冷却制（19.3） ----------
@@ -1611,7 +1884,7 @@ CFG.outLevel = {
   growthByRole: {                      // 按定位差异化成长（方向3 新增）：输出偏 atk、防御偏 hp/def；缺定位回落 growth
     output:   { hp: 8,  atk: 2, def: 1 },
     defense:  { hp: 12, atk: 1, def: 2 },
-    recovery: { hp: 10, atk: 2, def: 1 },
+    aux:      { hp: 10, atk: 2, def: 1 },   // 26.x：原 recovery → aux（定位改名，数值不变）
   },
   crystalKill: 1,                      // 🔴 已退役（19.8）：小怪击杀不给结晶，保留值仅为兼容现有逻辑
   crystalBoss: 60,                     // ✅ 来源①：击杀 BOSS 直接得结晶（20.10 30→60，配平后与折算源同量级）
@@ -2059,6 +2332,23 @@ CFG.endless = {
   dmgMulPerWave: 0.06,      // [退役] 旧伤害倍率每波增量；保留兼容（改由 atkMul 常量消费）
   reward: { base: 8, exp: 1.15 },   // 每波结晶 = round(base * wave ^ exp)
   chestEvery: 5,            // 每 N 波额外掉一枚宝箱（wave % chestEvery === 0）
+  /* ---------- 26.x 深渊「祭坛周期式时间轴」----------
+   * 取代原「开局一次性随机 5 座」（旧口径已废）。到点（相对进图冻结结束）随机投 1 座，
+   * 之后每隔 interval 秒再投 1 座；池会与 abyssAltarPool("endless") 求交（仍排除 RIFT）。
+   * 调度实现见 game.js 的 updateAltarTimeline（World.update 单行调用）。 */
+  altarTimeline: {
+    enabled: true,
+    firstDelay: 25,          // 进图后首座祭坛延迟（秒）
+    interval: 40,            // 此后每 interval 秒投放 1 座
+    pick: 1,
+    pool: ["ALTAR_001", "ALTAR_002", "ALTAR_003", "ALTAR_004a", "ALTAR_004b"],
+  },
+  /* ---------- 26.x 敌人构成：远程 : 近战 = 7 : 3 ----------
+   * 作用域 = 无尽/深渊普通小怪池（_fillQueue 消费）；主线由各刷怪圆池权重承担。
+   * rangedPct = 抽到远程（type:"ranged"）的概率，其余为近战线（melee + charger）。 */
+  composition: {
+    rangedPct: 0.7,
+  },
   spawnRingMargin: 100,     // 刷怪点距摄像机可视边界的外扩像素（从视野外生成，避免"凭空出现"）
   firstWaveDelay: 5.0,      // 进入无尽世界到第 1 波的缓冲（秒）：真机重定 1.5→5.0
   mapW: 1920,               // 无尽竞技场宽（首版固定竞技场，不做随机地图生成）

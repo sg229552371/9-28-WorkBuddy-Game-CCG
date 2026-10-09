@@ -61,10 +61,15 @@ vm.runInContext(`
   const pen = calcDeathPenalty(run);
   console.assert(pen.lost.filter(i => i.kind === "chest").length >= 1, "宝箱全损");
   console.assert(pen.lostValue >= pen.totalValue * 0.69, "损失>=70%: lost=" + pen.lostValue + " total=" + pen.totalValue);
-  // 5) 世界构建 & 祭坛
+  // 5) 世界构建 & 祭坛（26.x：主关卡开局不再随机刷 5 座，改 altarTimeline 时间轴到点投放）
   G.mainWorld = new World(1920,1080,true);
   console.assert(G.mainWorld.monsters.length > 0, "初始刷怪");
-  console.assert(G.mainWorld.altars.length === 5, "祭坛 5 个");
+  console.assert(G.mainWorld.altars.length === 0, "开局祭坛为 0（改时间轴投放）");
+  // 冻结期不计时 → 推进到首个投放点才落地
+  G.levelCfg = CFG.levels[0];
+  G.mainWorld.freezeTimer = 0;
+  updateAltarTimeline(G.mainWorld, CFG.levels[0].altarTimeline[0].t + 0.1);
+  console.assert(G.mainWorld.altars.length === 1, "时间轴到点投放 1 座祭坛, got " + G.mainWorld.altars.length);
   for (const a of G.mainWorld.altars)
     console.assert(!G.mainWorld.obstacles.some(o => a.x>o.x-60 && a.x<o.x+o.w+60 && a.y>o.y-60 && a.y<o.y+o.h+60), "祭坛不与障碍重叠（净空60）");
   // 6) 工匠世界

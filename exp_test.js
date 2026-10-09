@@ -202,12 +202,12 @@ const driver = `
     check("定位-H001/H002/H003/H006 = output",
       by.H001 === "output" && by.H002 === "output" && by.H003 === "output" && by.H006 === "output");
     check("定位-H004/H005/H008 = defense", by.H004 === "defense" && by.H005 === "defense" && by.H008 === "defense");
-    check("定位-H007 = recovery（维修型）", by.H007 === "recovery");
+    check("定位-H007 = aux（辅助型）", by.H007 === "aux");
     // ③ requireAll 三定位齐全
     const need = CFG.heroRoles.requireAll || [];
     const got = new Set(Object.keys(by).map(k => by[k]));
-    check("定位-requireAll 三定位齐全（output/defense/recovery）",
-      need.every(r => got.has(r)) && need.indexOf("output") >= 0 && need.indexOf("defense") >= 0 && need.indexOf("recovery") >= 0);
+    check("定位-requireAll 三定位齐全（output/defense/aux）",
+      need.every(r => got.has(r)) && need.indexOf("output") >= 0 && need.indexOf("defense") >= 0 && need.indexOf("aux") >= 0);
     check("定位-三定位定义均有 name/color", need.every(r => CFG.heroRoles[r] && CFG.heroRoles[r].name && CFG.heroRoles[r].color));
 
     // ④ 冷却制：能量为 0 时队长技能仍释放（无能量门槛）

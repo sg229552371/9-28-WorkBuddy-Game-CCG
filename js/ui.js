@@ -131,7 +131,12 @@ const UI = {
       card.className = "levelup-card lu-v2" + (locked ? " lu-locked" : "");
       if (i === recIdx) card.classList.add("lu-rec");
       const kindLabel = c.kind === "module" ? "武器模块" : (c.kind === "statPack" ? "属性小包" : (c.kind || ""));
-      const desc = c.kind === "statPack" ? `+${c.value}` : (c.desc || "");
+      /* 21.21 属性小包卡面：desc 显示「属性名 +N」（原实现只有 +N，看不出加的是什么属性）。
+       * 属性名走 UI._statName（优先 CFG.statNames，缺失回落本地映射，config 未同步也不空白）。 */
+      const packStat = c.stat || c.attr || "";
+      const packStatName = this._statName(packStat);
+      const packVal = (typeof c.value === "number") ? c.value : 0;
+      const desc = c.kind === "statPack" ? `${packStatName} +${packVal}` : (c.desc || "");
       // 数值高亮（21.4 参考图：40%概率炮弹数量+1 → 数字橙色加粗）
       const descHl = String(desc).replace(/([+\-]?\d+(?:\.\d+)?%?)/g, '<b class="lu-num">$1</b>');
       const owner = this._candOwner(c);
@@ -157,6 +162,10 @@ const UI = {
       const fullWarn = (!locked && c.kind === "module" && owner.slotKnown && owner.slotUsed === perHero - 1);
       card.classList.toggle("lu-will-full", fullWarn);
       const warnLine = fullWarn ? `<span class="lu-full">⚠ 该队友槽位将满（${perHero}/${perHero}）</span>` : "";
+      /* 属性小包：再补一行更明确的说明（小字）——「全队攻击提升 3 点」级别。
+       * 注意：数值高亮（lu-num 正则）只作用于主 desc；本行做纯文本说明，不重复高亮。 */
+      const subLine = (c.kind === "statPack")
+        ? `<span class="lu-sub">全队${packStatName}提升 ${packVal} 点</span>` : "";
       // 顶部彩色标题栏（21.4 参考图）：底色 = 归属英雄定位色（无归属 → 品质色）
       const q = CFG.itemQualities && CFG.itemQualities[c.itemQ] ? CFG.itemQualities[c.itemQ] : null;
       const headColor = owner.color || (q ? q.color : "#7aa0dc");
@@ -171,6 +180,7 @@ const UI = {
         `<span class="lu-kind">${kindLabel}</span>` +
         `<div class="lu-icon">${ico}</div>` +
         `<div class="lu-desc">${descHl}</div>` +
+        subLine +
         /* 20.3 功能保留：归属英雄 + 槽位 + 将满警示（测试 ⑪A 契约，漏拼即 9 项失败） */
         ownerLine + slotLine + warnLine +
         `<div class="lu-chip">${chip}</div>` +
@@ -355,7 +365,7 @@ const UI = {
   heroRole(heroId) {
     const HR = CFG.heroRoles;
     if (!HR || !HR.byHero) return null;
-    const role = HR.byHero[heroId];     // byHero: heroId → 定位 key（output/defense/recovery）
+    const role = HR.byHero[heroId];     // byHero: heroId → 定位 key（output/defense/aux）
     return role ? (HR[role] || null) : null;
   },
 
@@ -657,7 +667,8 @@ const UI = {
     const info = document.createElement("div");
     info.className = "ps-info";
     info.innerHTML = `<b class="ps-name" style="color:${role.color || "#cfe0ff"}">${member.name || member.id}</b>
-      <small class="ps-role" style="color:${role.color || "#9fb4cc"}">${role.name || ""}</small>`;
+      <small class="ps-role" style="color:${role.color || "#9fb4cc"}">${role.name || ""}</small>
+      <small class="ps-skill" title="主动技能">${skillName || "技能"}</small>`;
     row.appendChild(info);
     // 模块槽 ×4
     const slotsBox = document.createElement("div");
@@ -899,6 +910,7 @@ const UI = {
    * 处理：清空结构（令 :empty 规则重新生效）+ 复位缓存（下次进战斗按新队伍重建）。
    * 幂等：可重复调用；元素缺失只跳过，不抛异常。 */
   clearBattleHud() {
+    this.clearAbyssHud();       // 21.21 离开战斗：复位深渊 HUD 态，防 abyss-mode 残留到主城
     const bar = document.getElementById("party-skillbar");
     if (bar) bar.innerHTML = "";
     this.hideModuleTip();       // 20.3：顺带关掉模块槽词条浮窗（防残留）
@@ -908,6 +920,7 @@ const UI = {
   },
 
   updateHUD() {
+    this.updateAbyssHud();   // 21.21 深渊局内 HUD：abyss-mode 类 + 经验条（非深渊自动降级，空值保护）
     const r = G.run;
     if (!r || G.state !== "playing") return;
     // 队长血/能量条已移到角色头顶（与队友同款），左上角只保留技能冷却环 + Buff 图标区
@@ -1006,3 +1019,72 @@ const UI = {
     } else hint.textContent = "";
   },
 };
+
+/* ============================================================================
+ * 21.21 独立区块：属性小包卡面属性名 + 深渊（无尽）局内 HUD 补齐
+ * ----------------------------------------------------------------------------
+ * 背景（用户拍板）：
+ *   ① 升级 4 选 1 的「属性包」卡面原来只显示「+3」，看不出加的是哪条属性；
+ *   ② 深渊（无尽）局内 HUD 需要 经验条（等级 + 进度）、逐英雄武器技能栏，
+ *      且**深渊不显示自动战斗按钮**（用户原话）。
+ *
+ * 设计要点：
+ *   · `_statName(stat)`：属性键 → 中文名。优先读 CFG.statNames（另一路可能新增），
+ *     缺失时回落内置映射（保证 CFG 未同步也不空白）。空值保护。
+ *   · `#abyss-hud`（index.html 新增元素）：深渊专属经验条（LV + 进度 + 经验数值）。
+ *     主线的「击杀进度条 / 等级·货币行」在深渊无意义，由 CSS（#hud.abyss-mode）隐藏；
+ *     自动战斗按钮同样在 abyss-mode 下隐藏。
+ *   · 逐英雄武器技能栏**复用既有 #party-skillbar**（renderPartySkillbar，随 updateHUD 每帧刷新），
+ *     不重复造结构；本区块不重建技能栏。
+ *   · 位置：右上（与主线 #hud-tr 同区），不遮挡 canvas 绘制的深渊波次/BOSS 面板（左上）。
+ *
+ * 安全约束：G / G.run / DOM 任一缺失都安全跳过，绝不抛错（headless 空值调用必需）。
+ * ========================================================================== */
+Object.assign(UI, {
+  /* 属性键 → 中文属性名。优先 CFG.statNames（另一路 agent 新增），缺失回落本地映射。 */
+  _statName(stat) {
+    const key = (typeof stat === "string" && stat) ? stat : "";
+    const FALLBACK = { atk: "攻击", hp: "生命", hpMax: "生命", def: "防御", spd: "速度", energyMax: "能量上限" };
+    let name = "";
+    try {
+      if (typeof CFG !== "undefined" && CFG && CFG.statNames && key && CFG.statNames[key]) name = CFG.statNames[key];
+    } catch (e) { name = ""; }
+    if (!name) name = FALLBACK[key] || (key ? key : "属性");
+    return name;
+  },
+
+  /* 深渊局内 HUD 刷新（每帧，由 updateHUD 单行调用）：
+   *   ① #hud 挂 .abyss-mode（CSS 据此隐藏自动战斗 + 主线专属块）；
+   *   ② #abyss-hud 经验条：LV + 进度条 + 经验数值（数据取 G.run.lv/exp/expNext，缺数据降级为 0）。 */
+  updateAbyssHud() {
+    if (typeof document === "undefined" || !document.getElementById) return;
+    const inEndless = !!(typeof G !== "undefined" && G && G.inEndless);
+    const hud = document.getElementById("hud");
+    if (hud && hud.classList) hud.classList.toggle("abyss-mode", inEndless);
+    const box = document.getElementById("abyss-hud");
+    if (!box || !box.classList) return;
+    box.classList.toggle("hidden", !inEndless);
+    if (!inEndless) return;                     // 非深渊：清态即可，不写数值
+    const r = (typeof G !== "undefined" && G && G.run) ? G.run : null;
+    const lv = (r && typeof r.lv === "number") ? r.lv : 1;
+    const exp = (r && typeof r.exp === "number") ? r.exp : 0;
+    const next = (r && typeof r.expNext === "number" && r.expNext > 0) ? r.expNext : 0;
+    const lvEl = document.getElementById("abyss-exp-lv");
+    if (lvEl) lvEl.textContent = "LV " + lv;
+    const fill = document.getElementById("abyss-exp-fill");
+    if (fill) fill.style.width = (next > 0 ? Math.max(0, Math.min(100, exp / next * 100)) : 0) + "%";
+    const txt = document.getElementById("abyss-exp-txt");
+    if (txt) txt.textContent = exp + " / " + next;
+    const coinEl = document.getElementById("abyss-coin");
+    if (coinEl) coinEl.textContent = "◈ " + ((r && typeof r.coin === "number") ? r.coin : 0);
+  },
+
+  /* 离开深渊 / 战斗结束：复位深渊 HUD 态（幂等；元素缺失安全，不抛错）。 */
+  clearAbyssHud() {
+    if (typeof document === "undefined" || !document.getElementById) return;
+    const hud = document.getElementById("hud");
+    if (hud && hud.classList) hud.classList.remove("abyss-mode");
+    const box = document.getElementById("abyss-hud");
+    if (box && box.classList) box.classList.add("hidden");
+  },
+});

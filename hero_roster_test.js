@@ -41,13 +41,13 @@ check("一2 id 序列 = H001~H012 且无重复", ids.join() === "H001,H002,H003,
   const disp = CFG.heroDisplayOrder.map(id => byId[id]);
   check("一2a heroDisplayOrder 恰含 12 角无重复", disp.length === 12 && new Set(disp.map(h => h.id)).size === 12);
   const rounds = [0, 1, 2, 3].map(r => disp.slice(r * 3, r * 3 + 3).map(h => role[h.id]));
-  check("一2b 展示顺序 4 轮循环（输出→防御→治疗）",
-    rounds.every(r4 => r4[0] === "output" && r4[1] === "defense" && r4[2] === "recovery"));
-  const idsByRole = { output: [], defense: [], recovery: [] };
+  check("一2b 展示顺序 4 轮循环（输出→防御→辅助）",
+    rounds.every(r4 => r4[0] === "output" && r4[1] === "defense" && r4[2] === "aux"));
+  const idsByRole = { output: [], defense: [], aux: [] };
   for (const h of disp) idsByRole[role[h.id]].push(h.id);
   check("一2c 输出类内 id 升序（H001,H002,H003,H006）", idsByRole.output.join() === "H001,H002,H003,H006");
   check("一2d 防御类内 id 升序（H004,H005,H008,H009）", idsByRole.defense.join() === "H004,H005,H008,H009");
-  check("一2e 治疗类内 id 升序（H007,H010,H011,H012）", idsByRole.recovery.join() === "H007,H010,H011,H012");
+  check("一2e 辅助类内 id 升序（H007,H010,H011,H012）", idsByRole.aux.join() === "H007,H010,H011,H012");
   check("一2f 物理首角仍 H001（默认队长契约）", CFG.heroes[0].id === "H001");
   check("一2g unlockOrder 首发逻辑不受影响（前 6 = H001~H006）",
     CFG.unlockOrder.slice(0, CFG.starterCount).join() === "H001,H002,H003,H004,H005,H006");
@@ -148,17 +148,17 @@ function bandOf(role) {
       h[k] >= lo && h[k] <= hi);
   });
 });
-check("五2 三定位分布：output/defense/recovery 齐全且新角补稀缺 recovery",
-  (() => { const got = new Set(ids.map(id => CFG.heroRoles.byHero[id])); return got.has("output") && got.has("defense") && got.has("recovery"); })());
-check("五3 新角 3 为 recovery / 1 为 defense（补稀缺定位）",
-  CFG.heroRoles.byHero.H010 === "recovery" && CFG.heroRoles.byHero.H011 === "recovery" && CFG.heroRoles.byHero.H012 === "recovery"
+check("五2 三定位分布：output/defense/aux 齐全且新角补稀缺 aux",
+  (() => { const got = new Set(ids.map(id => CFG.heroRoles.byHero[id])); return got.has("output") && got.has("defense") && got.has("aux"); })());
+check("五3 新角 3 为 aux / 1 为 defense（补稀缺定位）",
+  CFG.heroRoles.byHero.H010 === "aux" && CFG.heroRoles.byHero.H011 === "aux" && CFG.heroRoles.byHero.H012 === "aux"
   && CFG.heroRoles.byHero.H009 === "defense");
 
 /* ============ 六、定位映射 byHero 对 12 角全有条目 ============ */
 check("六1 byHero 恰 12 条", Object.keys(CFG.heroRoles.byHero).length === 12);
 check("六2 byHero 覆盖全部英雄 id", CFG.heroes.every(h => !!CFG.heroRoles.byHero[h.id]));
 check("六3 byHero 取值均为合法定位",
-  CFG.heroes.every(h => ["output", "defense", "recovery"].indexOf(CFG.heroRoles.byHero[h.id]) >= 0));
+  CFG.heroes.every(h => ["output", "defense", "aux"].indexOf(CFG.heroRoles.byHero[h.id]) >= 0));
 
 /* ============ 七、回归：H001~H008 数值与既有口径不变 ============ */
 /* ⚠️ 这些数值是 smoke/exp/meta_growth 等既有测试锁定的平衡基线，改动会破坏其它线。 */
@@ -186,7 +186,7 @@ check("七3 H007/H008 解锁规则口径不变（H006 LV3 / 300 结晶）",
   CFG.unlockRules.H007.heroLv.heroId === "H006" && CFG.unlockRules.H007.heroLv.lv === 3 && CFG.unlockRules.H008.crystal === 300);
 check("七4 定位基线不变（H001~H008 定位映射）",
   CFG.heroRoles.byHero.H001 === "output" && CFG.heroRoles.byHero.H004 === "defense"
-  && CFG.heroRoles.byHero.H007 === "recovery" && CFG.heroRoles.byHero.H008 === "defense");
+  && CFG.heroRoles.byHero.H007 === "aux" && CFG.heroRoles.byHero.H008 === "defense");
 
 console.log(ok ? "ALL PASS" : "HAS FAIL");
 if (!ok) process.exit(1);

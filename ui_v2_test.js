@@ -206,7 +206,7 @@ vm.runInContext(`
   check("CFG.heroRoles.byHero 就绪", !!CFG.heroRoles && !!CFG.heroRoles.byHero);
   const role = UI.heroRole("H001");
   check("H001 定位 = 输出（红）", role && role.name === "输出" && role.color === CFG.heroRoles.output.color);
-  check("H007 定位 = 恢复（绿）", UI.heroRole("H007") && UI.heroRole("H007").name === "恢复");
+  check("H007 定位 = 辅助（绿）", UI.heroRole("H007") && UI.heroRole("H007").name === "辅助");
   check("未知英雄定位返回 null（判空）", UI.heroRole("H999") === null);
 
   UI.buildCharList();
@@ -214,10 +214,10 @@ vm.runInContext(`
   check("角色卡数量 = 英雄数", charCards.length === CFG.heroes.length);
   const h1Html = charCards[0].innerHTML;
   check("角色卡含定位徽章 HTML + 输出配色", h1Html.indexOf("role-badge") >= 0 && h1Html.indexOf(CFG.heroRoles.output.color) >= 0);
-  // 恢复型英雄卡（H007；21.6 卡片按 heroDisplayOrder 展示序渲染 → 按展示序取卡）
+  // 辅助型英雄卡（H007；21.6 卡片按 heroDisplayOrder 展示序渲染 → 按展示序取卡）
   const h7Idx = CFG.heroDisplayOrder.indexOf("H007");
   const h7Html = charCards[h7Idx].innerHTML;
-  check("恢复型英雄卡含恢复配色（绿）", h7Html.indexOf(CFG.heroRoles.recovery.color) >= 0);
+  check("辅助型英雄卡含辅助配色（绿）", h7Html.indexOf(CFG.heroRoles.aux.color) >= 0);
 
   /* ============ ③ 升级 4 选 1 暂停弹窗（19.4 方案 7） ============ */
   const ov = get("levelup-overlay");
@@ -598,7 +598,7 @@ vm.runInContext(`
   const h2 = CFG.heroes[1];
   G.run.heroModules = { [h1.id]: [null, null, null, null], [h2.id]: [null, null, null, null] };
   G.run.companions = [{ heroDef: h2 }];   // 混抽队伍：归属行有决策价值 → 渲染
-  const roleDef = CFG.heroRoles.defense || CFG.heroRoles.recovery || { color: "#6cb2ff" };
+  const roleDef = CFG.heroRoles.defense || CFG.heroRoles.aux || { color: "#6cb2ff" };
   const otherOwnerCands = [
     { kind: "module", heroId: h2.id, defId: "M001", name: "弹头扩容", desc: "弹道数量 +1", lv: 1, locked: false,
       ownerName: "盾卫", ownerRoleColor: roleDef.color },

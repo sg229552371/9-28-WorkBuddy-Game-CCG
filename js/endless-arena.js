@@ -78,12 +78,9 @@ var EndlessArena = (function () {
     if (w.__arenaPopulated) return true;                   // 防重复注入（幂等）
     w.__arenaPopulated = true;
 
-    /* ① 祭坛接线（补上「从未被调用」的真缺口）：rollAbyssAltars 内部
-     *    按 kind="endless" 排除屏蔽白名单（默认 RIFT），且只写 w.altars。 */
-    if (typeof rollAbyssAltars === "function") {
-      var rc = rewardCfg();
-      rollAbyssAltars(w, rc.altarCount || FALLBACK.altarCount);
-    }
+    /* ① 祭坛投放：26.x 改「周期式时间轴」——开局**不再**一次性随机 5 座，
+     *    由 game.js 的 updateAltarTimeline 读 CFG.endless.altarTimeline 到点投 1 座
+     *    （内部仍经 abyssAltarPool 排除 RIFT）。此处不再主动投放。 */
 
     /* ② 奖励节点：按 types 权重抽 kind，投放 count 个 → world.rewardNodes */
     var c = rewardCfg();

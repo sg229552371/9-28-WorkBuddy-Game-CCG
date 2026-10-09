@@ -281,7 +281,8 @@ function render() {
     if (m.x + cullMargin < camX || m.x - cullMargin > camX + viewW ||
         m.y + cullMargin < camY || m.y - cullMargin > camY + viewH) continue;
     const img = m.sprite;
-    const size = (m.d.type === "boss" ? 130 : 48) * szMul * (m.isElite ? CFG.elites.sizeMul : 1);
+    // 体型分层（26.x）：精灵与碰撞圈同乘 m.sizeMul（NM 0.7 / ED 0.9 / BS 1.35，见 Monster 构造）
+    const size = (m.d.type === "boss" ? 130 : 48) * szMul * (m.sizeMul || 1) * (m.isElite ? CFG.elites.sizeMul : 1);
     // 精英光环 + 词缀名
     if (m.isElite) {
       const affixes = m.eliteAffixes || [];

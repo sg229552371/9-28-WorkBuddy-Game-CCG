@@ -251,7 +251,7 @@ https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/     ← 备用（push 后
 
 ## 3. 验证流程（必做）
 
-**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 1468**。
+**首选一行命令：`bash run_tests.sh`**（仓库根，跨平台，自动探测 node）。全绿时退出码 0 并打印「全绿」，末尾给 `PASS 合计` 汇总 —— **当前基线 PASS 合计 = 3115（门禁 69 套）**。
 
 核心要求：
 
@@ -669,7 +669,7 @@ Boss 从「血多的精英怪」变成**会发弹幕的 2 阶段 Boss**。
 | 配置 | 内容 |
 | ---- | ---- |
 | `CFG.basicAttack` | 普攻移除开关（`removed: true`） |
-| `CFG.heroRoles` | 英雄三定位 output/defense/recovery + `byHero` 映射（三者**都有伤害**，防御/恢复是**低伤害**） |
+| `CFG.heroRoles` | 英雄三定位 output/defense/aux（**26.x 起 recovery 已改名 aux＝辅助**，口径＝治疗/增益/减益/召唤；三者**都有伤害**，防御/辅助是**低伤害**）+ `byHero` 映射 |
 | `CFG.skillResource` | 技能资源 = 冷却制（`mode: "cooldown"`） |
 | `CFG.levelUp` | 经验来源 `participation` + 前期快后期慢曲线 + 4 选 1 |
 | `CFG.moduleSlot` | 每英雄 4 模块槽，不限个数，同名叠加上限 9 级 |
@@ -755,7 +755,7 @@ for (const sid in CFG.moduleSets) {
   第 34 条改「能量不再被消耗」。
 - **UI 6 件套（B 线，`ui_v2_test` 49 条锁定）**：
   1. `updateSkillCd()` 技能冷却环（`#hud-skill-cd`，ui.js:234）
-  2. `heroRole` 定位徽章（output/defense/recovery）
+  2. `heroRole` 定位徽章（output/defense/aux）
   3. `onLevelUpChoice(candidates, onPick)` 升级 4 选 1 弹窗（ui.js:50，手机端触点 ≥64px）
   4. 背包三段布局：搜刮区 / 芯片 6×5 / 模块槽 4 格
   5. 工匠页新增「芯片工坊」页签（`chipForgeService` / `_renderForgeList`）
@@ -924,6 +924,29 @@ for (const sid in CFG.moduleSets) {
 - **`bugfix_test.js` 的「画布-竖屏」断言被 B 线改写**（旧断言锁的是「竖屏钳 4:3」，
   与本次需求**正好相反**）——需求反转时，旧断言必须同步反转，这不算「放松断言」。
 
+### 5.48 ✅ 26.x 玩法规则批（用户 6 条规则落地，基线 3115）
+
+1. **掉落永不消失**：`CFG.pickup`（coin/crystal `life:-1` = 永不消失、exp 30 不变）；
+   `spawnPickup` 读 `pickupLife(type)`，过滤逻辑兼容 -1。🔴 **性能兜底必须留着**：`maxPickups 200`，
+   超上限自动磁吸**最旧的**（直接结算入账，价值不掉）——3000 敌性能主线下掉落无限积累会炸。
+2. **体型分层**：`CFG.monsterSizeTier = { normal:0.7, elite:0.9, boss:1.35 }`，BOSS 可被
+   `CFG.monsters[].sizeMul` 逐只覆盖（BS0001~0003 = 1.2/1.35/1.5）。口径 = **现在的渲染大小 × 分层倍率**，
+   命中圈与精灵同步缩放（渲染在 `render.js` 乘 `m.sizeMul`，别只改 radius 一处）。
+3. **敌人构成 7:3**：远程:近战 ≈ 7:3（charger 归近战线）。主线走 SC01~SC04 池权重，无尽走
+   `CFG.endless.composition.rangedPct` + `_pickNormalId` 均匀抽样。**改比例会动难度曲线**，
+   动池后必跑 `level_tuning_test` / `levels_11_20_test`。
+4. **三定位 = output / defense / aux（辅助）**：🔴 26.x 起 **recovery 已改名 aux**（口径 = 治疗/增益/减益/召唤），
+   别再写 recovery；`CFG.heroes[]` 每人有结构化 `role` + `range` 字段（12 人归类见 `battle_rules_test` 六4）。
+   `CFG.statNames = {atk:攻击,hp:生命,def:防御,spd:速度}` 供 UI 显示「攻击 +3」。
+5. **属性加成积木 `scaleBy` + 嘲讽**：技能表可带 `scaleBy:{stat,pct}` → 效果值 = 锚点固定值 + 施法者属性×pct
+   （结算在 `SkillSystem.withScaleBy`）。嘲讽 = `type:"taunt"`（AT120「嘲讽战吼」，绑 H009 守护者 W009）：
+   半径内敌人 `tauntedBy/tauntT` 强制攻击施法者；怪物选目标统一走 `monsterTarget()`（优先嘲讽者）——
+   **新增「改变怪物选目标」的机制必须接这里**，别在 AI 各处分叉。
+6. **雕像时间轴**：🔴 **主关卡不再「开局随机刷 5 座」**，全部 20 关由关卡表 `altarTimeline` 驱动：
+   `{t:10.05, id:"ALTAR_003"}` 固定指定 / `{t:25, pool:[...], pick:1}` 池随机；调度器 `updateAltarTimeline`
+   用 world 内部时钟（**开场冻结期不计时**），投放统一走 `placeAltar/spawnAltarFromSpec`。
+   深渊/无尽改周期式（`CFG.endless.altarTimeline`）。新增祭坛机制只加 spec，别复活开局随机投放。
+
 ## 6. 并行开发切分（已验证可用）
 
 多路 Agent 并行时**按文件所有权切分**，一方不得碰另一方的文件：
@@ -955,6 +978,12 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
   不要指望它做界面验证，改用无头 DOM 桩测试。
 
 ## 8. 当前基线
+
+**全量 = 69 套 / `PASS 合计 = 3115` / `bad = 0`**（26.x 批，2026-10-09）。仓库现有 **73 个 `_test.js`**，
+门禁编排 69 套；差的 4 个（`endless_affix/arena/record/team_test`）是 21.20 层级退役有意摘掉的死测试，**别加回**。
+逐套明细以 `bash run_tests.sh --list` 与仓库根测试文件为准。历史各批次的逐套断言明细见下方旧记录（数字已过期，仅存档）。
+
+（以下为历史明细存档，数字以上一行为准）
 
 测试 **28/28 全绿**，**PASS 合计 = 1468**：
 

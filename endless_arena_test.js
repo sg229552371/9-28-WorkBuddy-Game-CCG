@@ -96,7 +96,7 @@ vm.runInContext(`
     typeof EndlessArena.install === "function");
   check("一4 猴子补丁已加载即接线（__arenaWrapped 标记）", Endless.__arenaWrapped === true);
 
-  /* ============ 二、建世界自动注入（祭坛真缺口修复） ============ */
+  /* ============ 二、建世界自动注入（26.x：祭坛改「周期式时间轴」） ============ */
   /* G.player / G.run 桩提前：World.findFreeSpot 内部会读 G.player 位置（避玩家投放） */
   G.player = { x: -9999, y: -9999, r: 12, hp: 40, hpMax: 100,
     heal(p) { this.hp = Math.min(this.hpMax, this.hp + this.hpMax * p); } };
@@ -104,8 +104,13 @@ vm.runInContext(`
   G.inEndless = true;
   const w1 = Endless.makeWorld(1600, 1200);
   check("二1 makeWorld 产出无尽世界", w1 && w1.kind === "endless");
-  check("二2 祭坛已投放（rollAbyssAltars 真缺口已补）", Array.isArray(w1.altars) && w1.altars.length > 0);
-  check("二3 祭坛不含 RIFT（深渊屏蔽白名单生效）", w1.altars.every(a => a.id !== "RIFT"));
+  check("二2 开局不投祭坛（26.x：旧「开局随机 5 座」已废，改周期式时间轴；" + w1.altars.length + " 座）",
+    Array.isArray(w1.altars) && w1.altars.length === 0);
+  // 26.x：到首刷延迟后由 updateAltarTimeline 周期式投放（仍走深渊屏蔽白名单，不含 RIFT）
+  const wAltar = Endless.makeWorld(1600, 1200);
+  updateAltarTimeline(wAltar, (CFG.endless.altarTimeline.firstDelay || 25) + 1);
+  check("二3 到首刷延迟后周期式投放祭坛（" + wAltar.altars.length + " 座）", wAltar.altars.length > 0);
+  check("二4 深渊祭坛不含 RIFT（屏蔽白名单生效）", wAltar.altars.every(a => a.id !== "RIFT"));
 
   /* ============ 三、奖励节点投放 ============ */
   check("三1 奖励节点数量 = rewardNodes.count", Array.isArray(w1.rewardNodes) && w1.rewardNodes.length === rc.count);

@@ -1271,9 +1271,13 @@ function rollAbyssAltars(world, count) {
   for (var i = 0; i < n; i++) {
     var id = U.weightedPick(pool);
     if (!id) break;
-    var pos = w.findFreeSpot ? w.findFreeSpot(100) : null;
-    var x = pos ? pos.x : U.rand(200, w.w - 200), y = pos ? pos.y : U.rand(200, w.h - 200);
-    w.altars.push({ cfg: CFG.altars[id], x: x, y: y, id: id });
+    // 落地统一走公共函数 placeAltar（game.js 末尾区块）：主关卡时间轴 / 深渊周期式 / 此处共用一份实现
+    if (typeof placeAltar === "function") placeAltar(w, id);
+    else {
+      var pos = w.findFreeSpot ? w.findFreeSpot(100) : null;
+      var x = pos ? pos.x : U.rand(200, w.w - 200), y = pos ? pos.y : U.rand(200, w.h - 200);
+      w.altars.push({ cfg: CFG.altars[id], x: x, y: y, id: id });
+    }
     made.push(id);
   }
   return made;

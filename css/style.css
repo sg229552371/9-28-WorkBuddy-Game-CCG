@@ -245,6 +245,24 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 #lv-line { font-size:16px; color:#c79bff; margin-bottom:4px; }
 #coin-line { font-size:12px; color:#ffd76a; margin-top:4px; }
 
+/* ===== 深渊（无尽）局内 HUD 补充区（21.21）=====
+ * #abyss-hud：深渊专属经验条（等级 + 进度 + 经验数值）。仅 G.inEndless 时显示。
+ * 位置与主线 #hud-tr 同区（右上），避免遮挡 canvas 绘制的深渊波次/BOSS 面板（左上）。
+ * 深渊下由 #hud.abyss-mode 隐藏主线专属块（击杀进度条 / 等级·货币行）与自动战斗按钮。 */
+#abyss-hud { position:absolute; right:20px; top:16px; display:flex; flex-direction:column; align-items:flex-end; gap:6px; text-align:right; }
+#abyss-hud.hidden { display:none; }
+#abyss-exp-line { display:flex; align-items:center; gap:8px; }
+#abyss-exp-lv { font-size:15px; font-weight:bold; color:#c79bff; text-shadow:0 1px 2px #000; }
+#abyss-exp-bar { width:180px; margin-bottom:0; }
+#abyss-exp-txt { font-size:11px; color:#9fb2cc; white-space:nowrap; text-shadow:0 1px 2px #000; }
+#abyss-coin { font-size:12px; color:#ffd76a; }
+/* 深渊模式（#hud.abyss-mode）：不显示自动战斗按钮 / 风格选择器（用户口径：深渊没有自动战斗） */
+#hud.abyss-mode #btn-autofight,
+#hud.abyss-mode #autofight-styles { display:none; }
+/* 深渊模式：隐藏主线专属 HUD（击杀进度条 / 等级·货币行），改由 #abyss-hud 表达 */
+#hud.abyss-mode #hud-top,
+#hud.abyss-mode #hud-tr { display:none; }
+
 #hud-bl { position:absolute; left:20px; bottom:18px; font-size:14px; }
 #weight-line { color:#cfe0ff; }
 #weight-line.over { color:#ff5b5b; font-weight:bold; }
@@ -287,6 +305,8 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 .ps-info { display:flex; flex-direction:column; justify-content:center; min-width:52px; }
 .ps-name { font-size:13px; line-height:1.2; }
 .ps-role { font-size:10px; opacity:.9; }
+/* 21.21 技能名小字（逐英雄技能栏显示主动技能名，原仅有首字图标）：窄屏截断不撑破行 */
+.ps-skill { font-size:10px; color:#9fb2cc; max-width:76px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 /* 模块槽 ×4：空槽虚线 / 已选品质色边框 */
 .ps-slots { display:flex; gap:6px; }
 .ps-slot {
@@ -564,6 +584,9 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 /* 描述（参考图）：浅底深字，数值橙色加粗 */
 .levelup-card .lu-desc { font-size:13px; color:#3a4356; line-height:1.55; padding:0 10px; min-height:40px; }
 .levelup-card .lu-desc .lu-num { color:#ff7a3c; font-weight:bold; font-size:14px; }
+/* 21.21 属性小包补充说明（小字）：卡面 desc 已示「攻击 +3」，此行补「全队攻击提升 3 点」级别说明。
+ * 浅底深字，弱于主 desc，不与 lu-num 高亮冲突。 */
+.levelup-card .lu-sub { display:block; font-size:11px; color:#6b7488; line-height:1.4; padding:0 10px 2px; }
 /* 底部进度胶囊（参考图紫底白字「量子护盾 (0/3)」） */
 .levelup-card .lu-chip {
   margin:0 10px; padding:5px 10px; border-radius:14px;
@@ -844,6 +867,15 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
   }
   .bar.exp { width: 100%; max-width: 100%; }
 
+  /* 21.21 深渊经验条：竖屏下右上竖排小块（LV / 进度条 / 数值），限宽 130px，
+   * 避开左上角 canvas 绘制的深渊波次/BOSS 面板（不铺满整行，防止遮挡）。 */
+  #abyss-hud {
+    left: auto; right: calc(var(--sa-right) + 12px);
+    top: calc(var(--sa-top) + 8px); text-align: right;
+  }
+  #abyss-exp-line { flex-direction: column; align-items: flex-end; gap: 2px; }
+  #abyss-exp-bar { width: 130px; max-width: 130px; }
+
   /* #hud-tl：顶栏两行之下、左对齐，避开顶部状态与头像栏（不再压左上角） */
   #hud-tl {
     left: calc(var(--sa-left) + 12px);
@@ -1010,6 +1042,10 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 /* body.portrait 同步（JS 钩子；与上面媒体查询等效，作双保险） */
 body.portrait .party-skillbar { bottom: calc(var(--sa-bottom) + 170px); }
 body.portrait #hud-tl { top: calc(var(--sa-top) + 82px); }
+/* 21.21 深渊经验条：JS 钩子路径同样为右上窄块（与上方竖屏媒体块数值严格同步） */
+body.portrait #abyss-hud { left: auto; right: calc(var(--sa-right) + 12px); top: calc(var(--sa-top) + 8px); text-align: right; }
+body.portrait #abyss-exp-line { flex-direction: column; align-items: flex-end; gap: 2px; }
+body.portrait #abyss-exp-bar { width: 130px; max-width: 130px; }
 /* 21.3：浮动摇杆无固定锚点（触点即盘心），故不再需要 #joy-zone 定位规则；右下按钮区 / 顶栏信息区保留 */
 body.portrait #hud-br { right: calc(var(--sa-right) + 12px); top: calc(var(--sa-top) + 122px); bottom: auto; }
 body.portrait .bp-body { flex-direction: column; flex-wrap: nowrap; }

@@ -97,7 +97,9 @@ vm.runInContext(`
   G.keys[" "] = false;
 
   // ---- 阶段2.5：祭坛进度条规则（圈内积累/移动受击不中断/离开缓慢衰退120%） ----
-  const altar = G.mainWorld.altars.find(a => a.id === "ALTAR_001") || G.mainWorld.altars[0];
+  // 26.x：主关卡祭坛改由 altarTimeline 到点投放，开局无祭坛 → 测试内直接投放一座，验证读条规则
+  const altar = placeAltar(G.mainWorld, "ALTAR_001");
+  if (!altar) throw new Error("测试前置失败：未能投放祭坛 ALTAR_001");
   G.player.x = altar.x; G.player.y = altar.y;
   G.keys["a"] = true; G.keys["d"] = true;   // 模拟按键抖动，不应影响积累
   frames(60);
@@ -206,7 +208,8 @@ vm.runInContext(`
   if (G.mainWorld.w !== 1920 || G.mainWorld.h !== 1920) throw new Error("地图应为固定 1920×1920: " + G.mainWorld.w + "x" + G.mainWorld.h);
   if (G.mainWorld.w !== G.mainWorld.h) throw new Error("地图应为正方形");
   if (G.run.weapon.basic.bullets !== 3) throw new Error("散弹手弹道应为 3");
-  if (G.mainWorld.altars.length !== 5) throw new Error("第 2 关祭坛应为 5 个");
+  // 26.x：祭坛改由 altarTimeline 到点投放（不再「开局随机 5 座」）→ 开局应为 0 座
+  if (G.mainWorld.altars.length !== 0) throw new Error("第 2 关开局不应有祭坛（时间轴投放），实际 " + G.mainWorld.altars.length);
   frames(600);   // 10 秒战斗
   const killed = G.run.kills;
   if (killed < 1) throw new Error("第 2 关 10 秒内应有击杀");

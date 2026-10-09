@@ -10,6 +10,22 @@
  * 释放形态由技能表的 type 决定：bullet 弹道 / summon 召唤物 / trap 陷阱。
  * 所有数值都来自 resolveSkill 的产物（队长 = G.run.weapon.*，队友 = c.skills.*），执行器本身不存数值。 */
 const SkillSystem = {
+  /** 属性加成积木 scaleBy（26.x，通用技能字段）：把「施法者某属性」按 pct 折算后叠加到技能效果值。
+   *  公式（写死在此，便于审计）：最终值 = 技能锚点固定值 + 属性 × pct × 等级系数，
+   *    等级系数 = 1 + (skillLv - 1) × CFG.skillScaleBy.levelGrowth。
+   *  固定值部分仍走既有 anchors 锚点插值（resolveSkill 产物），本函数只加「属性部分」。
+   *  未声明 scaleBy / 属性缺失 / 加成 <=0 → 返回原技能对象（零足迹，行为等价）。 */
+  withScaleBy(sk, stats) {
+    const sb = sk && sk.scaleBy;
+    if (!sb || sb.stat == null) return sk;
+    const raw = stats ? stats[sb.stat] : undefined;
+    const base = (typeof raw === "number") ? raw : 0;
+    const grow = (CFG.skillScaleBy && CFG.skillScaleBy.levelGrowth) || 0;
+    const lvCoef = 1 + ((sk.lv || 1) - 1) * grow;
+    const add = base * (sb.pct || 0) * lvCoef;
+    if (!(add > 0)) return sk;
+    return { ...sk, radius: (sk.radius || 0) + add, scaleByAdd: add };
+  },
   /** 弹道技能：按 bullets 数散射，命中带 AoE 半径（技能弹）。
    *  opts: { side, isSkill, atk, spread } */
   castBullet(w, caster, sk, ang, opts = {}) {
@@ -73,11 +89,28 @@ const SkillSystem = {
     });
     return { n: mine().length, cap };
   },
+  /** 嘲讽战吼（AT120）：半径内敌人强制攻击施法者 duration 秒，并造成一次小额 AOE 伤害。
+   *  半径 = sk.radius（锚点固定值 + scaleBy 的防御加成，见 withScaleBy）。
+   *  归属：嘲讽者 = caster（怪物 tauntedBy/tauntT，AI 选目标优先嘲讽者，见 game.js）。 */
+  castTaunt(w, caster, sk, opts = {}) {
+    const R = sk.radius || 0;
+    const dur = (sk.duration != null) ? sk.duration : ((CFG.taunt && CFG.taunt.duration) || 4);
+    const atk = opts.atk != null ? opts.atk : caster.atk;
+    let n = 0;
+    for (const m of w.monsters) {
+      if (m.dead) continue;
+      if (U.dist(caster.x, caster.y, m.x, m.y) <= R + (m.r || 0)) { m.tauntedBy = caster; m.tauntT = dur; n++; }
+    }
+    if (R > 0) explode(w, caster.x, caster.y, R, Math.max(1, Math.round(atk * (sk.dmgMul != null ? sk.dmgMul : 1))), "player", caster);
+    return { kind: "taunt", n, radius: R, duration: dur };
+  },
   /** 释放总入口：按 type 分发；返回本次释放的表现类型 + 数量信息（n / cap），供调用方播放音效/提示。 */
   cast(w, caster, sk, target, opts = {}) {
+    sk = this.withScaleBy(sk, opts.statSrc);   // 属性加成积木 scaleBy（未声明则原样返回）
     const ang = target ? Math.atan2(target.y - caster.y, target.x - caster.x) : (opts.ang || 0);
     if (sk.type === "summon") return { kind: "summon", ...this.castSummon(w, caster, sk, opts.atk) };
     if (sk.type === "trap") return { kind: "trap", ...this.castTrap(w, caster, sk, opts.atk) };
+    if (sk.type === "taunt") return { ...this.castTaunt(w, caster, sk, opts) };
     return { kind: "bullet", n: this.castBullet(w, caster, sk, ang, opts) };
   },
 };
@@ -601,7 +634,7 @@ function onMonsterKilled(w, m, killer) {
 function spawnPickup(w, x, y, type, value) {
   const a = U.rand(0, Math.PI * 2), s = U.rand(40, 110);
   w.pickups.push({ type, value, x: x + U.rand(-10, 10), y: y + U.rand(-10, 10),
-    vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 30 });
+    vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: pickupLife(type) });   // life 读 CFG.pickup（-1 = 永不消失）
 }
 
 /* ---------- 工匠雕像池（4.6）：配额池 + 限制器 + 多触发条件 ----------

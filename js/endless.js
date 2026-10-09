@@ -327,7 +327,7 @@ var Endless = {
     for (i = 0; i < r.boss; i++) q.push(bosses.length ? bosses[i % bosses.length] : null);
     for (i = 0; i < r.elite; i++) q.push(elites.length ? elites[i % elites.length] : null);
     var normals = this._pool();
-    for (i = 0; i < r.normal; i++) q.push(normals[i % normals.length]);
+    for (i = 0; i < r.normal; i++) q.push(this._pickNormalId(normals));   // 26.x：远程:近战 ≈ 7:3 加权抽
     // 过滤空槽（池缺失时产生）：只数不足时用小怪补足，保证 waveCap 恒成立（只数不缩水）
     var out = [];
     for (i = 0; i < q.length; i++) if (q[i]) out.push(q[i]);
@@ -725,3 +725,25 @@ Endless.waveComposition = function (wave) {
 };
 
 /* 21.17 怪物构成曲线区块结束 */
+
+/* ============================================================================
+ * ====== 26.x 深渊敌人构成：远程 : 近战 = 7 : 3（普通小怪池加权抽取）======
+ * ----------------------------------------------------------------------------
+ * 独立追加区块：_fillQueue 只**单行调用** _pickNormalId，本文不改其结构。
+ * 口径：普通小怪池里 type==="ranged" 者按 CFG.endless.composition.rangedPct（默认 0.7）抽取，
+ *      其余（melee / charger 归并到近战线）按 1-rangedPct 抽取；组内均匀抽（顺序与 _normalPool 一致）。
+ * ========================================================================== */
+Endless._pickNormalId = function (normals) {
+  if (normals && normals.length === 1) return normals[0];
+  if (!normals || !normals.length) return "NM0010";
+  var cfg = (typeof CFG !== "undefined" && CFG.endless && CFG.endless.composition) || null;
+  var rangedPct = (cfg && typeof cfg.rangedPct === "number") ? cfg.rangedPct : 0.7;
+  var isRanged = function (id) { var d = CFG.monsters[id]; return !!d && d.type === "ranged"; };
+  var ranged = [], melee = [];
+  for (var i = 0; i < normals.length; i++) (isRanged(normals[i]) ? ranged : melee).push(normals[i]);
+  if (!ranged.length) return U.pick(melee.length ? melee : normals);
+  if (!melee.length) return U.pick(ranged);
+  return U.pick(U.rand(0, 1) < rangedPct ? ranged : melee);
+};
+
+/* 26.x 深渊敌人构成区块结束 */

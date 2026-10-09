@@ -302,7 +302,7 @@ class Player {
     const s = G.run.weapon.skill;
     // 19.3：冷却制不再扣能量（能量池退役）
     // 释放形态由技能表 type 决定（bullet / summon / trap），统一走 SkillSystem
-    const res = SkillSystem.cast(w, this, s, target, { side: "player", isSkill: true, atk: st.atk });
+    const res = SkillSystem.cast(w, this, s, target, { side: "player", isSkill: true, atk: st.atk, statSrc: st });
     SFX.play("skill");
     // 召唤 / 陷阱返回 { n: 现存量, cap: 实际上限 }（上限 = min(技能锚点数量, 英雄该类型上限)）
     if (res.kind === "summon") UI.toast(`${s.name}！我的无人机编队 ${res.n}/${res.cap}（上限＝英雄召唤物上限）`, "gold");
@@ -491,7 +491,7 @@ function updateCompanions(w, dt) {
     const cs = c.skills && c.skills.skill;
     const tgt = nearestMonster(w, c.x, c.y);
     if (CFG.team.aiSkill !== false && tgt && cs && c.skillTimer <= 0) {
-      SkillSystem.cast(w, c, cs, tgt, { side: "player", isSkill: true, atk: st.atk });
+      SkillSystem.cast(w, c, cs, tgt, { side: "player", isSkill: true, atk: st.atk, statSrc: st });
       c.skillTimer = cs.cd * st.cdMul;
       c.faceDir = tgt.x > c.x ? 1 : -1;
     }
@@ -694,7 +694,11 @@ class Monster {
   constructor(defId, x, y, lv) {
     const d = CFG.monsters[defId];
     this.defId = defId; this.d = d; this.x = x; this.y = y;
-    this.r = d.radius * (CFG.monsterSizeMul || 1);   // 体积倍数：碰撞与贴图同步
+    // 体型：全局倍数 × 分层倍率（NM 0.7 / ED 0.9 / BS 1.35，BS 可逐只覆盖）——碰撞圈与贴图同步缩放
+    this.sizeMul = monsterSizeTierMul(defId, d);
+    this.r = d.radius * (CFG.monsterSizeMul || 1) * this.sizeMul;
+    // 嘲讽（AT120）：被强制攻击施法者；tauntT<=0 或嘲讽者倒下时解除（见 monsterTarget）
+    this.tauntedBy = null; this.tauntT = 0;
     const lvMul = 1 + (lv - 1) * 0.12;
     const cu = G.run && G.run.curse;   // 诅咒道具（待细化36）：向新生成的敌人附加属性修改器
     // 邪神雕像倍率不在此处套用（区分 BOSS/精英/小怪类别），由生成方调用 applyMonsterScale
@@ -757,7 +761,7 @@ class Monster {
   /** 真正发射：更新瞄准角与螺旋相位 → 展开形状 → 交护栏裁剪 → 重置冷却。 */
   bossFire(w, p) {
     if (!p || !p.pattern) { this.patternTimer = CFG.boss.patternCd; return 0; }
-    const tgt = nearestTarget(w, this.x, this.y);
+    const tgt = monsterTarget(w, this);
     this.aimAng = Math.atan2(tgt.y - this.y, tgt.x - this.x);
     this.spiralAng += (p.spin || 0);                      // 螺旋每次发射整体旋转（正反由 spin 符号决定）
     const n = PatternSystem.emit(w, this, p, this.aimAng, this.spiralAng);
@@ -767,6 +771,11 @@ class Monster {
   }
   update(w, dt) {
     this.flashT -= dt;
+    // 嘲讽（AT120）：倒计时；到点或嘲讽者倒下（含队友 alive=false / 队长死亡）即解除
+    if (this.tauntT > 0) {
+      this.tauntT -= dt;
+      if (this.tauntT <= 0 || !tauntAlive(this.tauntedBy)) { this.tauntT = 0; this.tauntedBy = null; }
+    }
     if (monsterBurnTick(this, w, dt)) return;   // 行为芯片（19.12）：燃蚀灼烧结算（致死则跳过本帧 AI）
     if (extractWaveSiegeTick(this, w, dt)) return;   // 方向4：撤离波次怪读条期间围攻雕像护盾（不伤害英雄）
     const px0 = this.x, py0 = this.y;   // 帧初位置（供 resolveObstacles 计算切向滑动，防卡障碍）
@@ -775,7 +784,7 @@ class Monster {
     const ak = this.ak;   // 攻击技能参数（来自技能表 4e 视图，见 monsterAttackSkill）
     switch (this.d.type) {
       case "melee": {
-        const h = nearestTarget(w, this.x, this.y);
+        const h = monsterTarget(w, this);
         const ang = Math.atan2(h.y - this.y, h.x - this.x);
         this.x += Math.cos(ang) * this.effSpd * dt;
         this.y += Math.sin(ang) * this.effSpd * dt;
@@ -786,7 +795,7 @@ class Monster {
         break;
       }
       case "ranged": {
-        const h = nearestTarget(w, this.x, this.y);
+        const h = monsterTarget(w, this);
         const ang = Math.atan2(h.y - this.y, h.x - this.x);
         const distH = U.dist(this.x, this.y, h.x, h.y);
         const los = losClear(w, this.x, this.y, h.x, h.y);   // 视线：障碍物挡弹道，没视线不开火
@@ -808,7 +817,7 @@ class Monster {
         break;
       }
       case "charger": {
-        const h = nearestTarget(w, this.x, this.y);
+        const h = monsterTarget(w, this);
         const distH = U.dist(this.x, this.y, h.x, h.y);
         this.stateT -= dt;
         if (this.state === "chase") {
@@ -864,7 +873,7 @@ class Monster {
           }
         }
         this.touchTimer -= dt;
-        const hb = nearestTarget(w, this.x, this.y);
+        const hb = monsterTarget(w, this);
         if (U.dist(this.x, this.y, hb.x, hb.y) < this.r + hb.r && this.touchTimer <= 0) {
           targetTakeDamage(w, hb, this.atk * ak.touchMul); this.touchTimer = ak.touchCd;
         }
@@ -873,7 +882,7 @@ class Monster {
     }
     // 障碍物推挤（带目标偏置：被挡时沿墙向目标侧绕行，防卡死）
     this._mdx = this.x - px0; this._mdy = this.y - py0;
-    resolveObstacles(this, w, nearestTarget(w, this.x, this.y));
+    resolveObstacles(this, w, monsterTarget(w, this));
     this.x = U.clamp(this.x, this.r, w.w - this.r);
     this.y = U.clamp(this.y, this.r, w.h - this.r);
   }
@@ -893,6 +902,9 @@ class World {
     this.npc = null; this.exitBeacon = null; this.returnBeacon = null;
     // 子地图开场冻结（5.1）：>0 时全员静止 + 全员无敌，只推进倒计时；0 = 正常战斗
     this.freezeTimer = 0;
+    // 祭坛时间轴（26.x）：altarClock = 本关开场冻结结束后的已进行秒数（冻结期不推进）；
+    // _altarIdx = 主关卡时间轴已消费到的下标；_altarNextT = 深渊/无尽周期式下一次投放时刻
+    this.altarClock = 0; this._altarIdx = 0; this._altarNextT = null;
     // 子地图交互读条进度：显式初始化，避免"未跑过 update 时为 undefined"造成的取值歧义
     this.returnProgress = 0; this.npcProgress = 0; this.exitProgress = 0;
     if (isMain) this.setupMain();
@@ -921,15 +933,9 @@ class World {
         this.circles.push({ ...tpl, x: pos.x, y: pos.y, timer: U.rand(0.5, 2.5) });
       }
     }
-    // 祭坛随机刷出（按权重，不与障碍/圆重叠）
-    const pool = Object.entries(CFG.altars).filter(([k, a]) => a.weight > 0);
-    const weights = {}; pool.forEach(([k, a]) => weights[k] = a.weight);
-    const count = 5;
-    for (let i = 0; i < count; i++) {
-      const id = U.weightedPick(weights);
-      const pos = this.findFreeSpot(100);
-      if (pos) this.altars.push({ cfg: CFG.altars[id], x: pos.x, y: pos.y, id });
-    }
+    // 祭坛改「时间轴投放」（26.x，用户拍板）：开局**不再**一次性随机刷 5 座——
+    // 由 G.levelCfg.altarTimeline 到点投放（见 updateAltarTimeline，World.update 单行调用）。
+    // 工匠雕像（ALTAR_005）仍走击杀里程碑（updateArtisanPool），不在此列。
     // 初始一波怪
     for (const c of this.circles) this.spawnWave(c);
     initLevelMechanics(this);   // 毒圈 + 补给点（B 线独立区块）：初始化本关机制状态
@@ -1145,6 +1151,7 @@ class World {
       return;
     }
     if (this.isMain) r.runTime += dt;
+    updateAltarTimeline(this, dt);   // 26.x 祭坛时间轴：主关卡按关卡表 / 深渊按周期式（冻结期不计时）
     // 刷怪：每个圆独立计时（圆模板的刷新间隔生效）
     if (this.isMain && !r.bossDefeated) {
       const bossActive = r.bossSpawned && this.boss && !this.boss.dead;
@@ -1257,23 +1264,29 @@ class World {
         }
       }
     }
-    // 掉落物（金币/经验宝石）：弹开散落 → 走近自动拾取
+    // 掉落物（金币/结晶/经验宝石）：弹开散落 → 走近自动拾取；life=-1 为永不消失（见 CFG.pickup）
+    // 性能兜底（3000 敌性能主线下的保护）：同屏掉落物超上限 → 把「最旧的」自动磁吸结算（等价提前捡起，不掉价值）
+    const cap = pickupCap();
+    if (cap > 0 && this.pickups.length > cap) {
+      const overflow = this.pickups.length - cap;
+      for (let i = 0; i < overflow; i++) grantPickup(this.pickups[i]);
+      this.pickups.splice(0, overflow);
+    }
     for (const pk of this.pickups) {
       pk.x += pk.vx * dt; pk.y += pk.vy * dt; pk.vx *= 0.88; pk.vy *= 0.88;
       pk.x = U.clamp(pk.x, 24, this.w - 24); pk.y = U.clamp(pk.y, 24, this.h - 24);
-      pk.life -= dt;
+      pk.life = pk.life < 0 ? -1 : Math.max(0, pk.life - dt);   // -1 恒为 -1（永不消失）
       // 拾取判定：任意存活英雄（队长或队友）靠近均可拾取
       let picked = false;
       for (const h of aliveHeroes()) {
-        if (pk.life > 0 && U.dist(h.x, h.y, pk.x, pk.y) < h.r + 16) {
-          if (pk.type === "coin") { r.coin += pk.value; spawnFloat(pk.x, pk.y - 18, `+${pk.value}`, "#ffd76a"); SFX.play("coin"); }
-          else { gainExp(pk.value); spawnFloat(pk.x, pk.y - 18, `+${pk.value} 经验`, "#c79bff"); SFX.play("coin"); }
+        if (pickupAlive(pk) && U.dist(h.x, h.y, pk.x, pk.y) < h.r + 16) {
+          grantPickup(pk);
           pk.life = 0; picked = true; break;
         }
       }
       if (picked) continue;
     }
-    this.pickups = this.pickups.filter(pk => pk.life > 0);
+    this.pickups = this.pickups.filter(pk => pickupAlive(pk));
     // 祭坛 / 雕像 / 信标 / NPC 交互：统一走 judgeChannel（判定圈规则见其注释）
     // 判定半径 = 虚线绘制半径 × altarJudgeMul（1.2，外扩 20% 容差）
     for (const a of this.altars.slice()) {
@@ -1523,3 +1536,124 @@ function heroDefNameOf(heroId) {
 }
 
 
+
+/* ============================================================================
+ * ====== 26.x 战斗/数值规则新增区块（掉落 / 体型分层 / 嘲讽 / 祭坛时间轴）======
+ * ----------------------------------------------------------------------------
+ * 独立追加区块（§5.45 铁律）：既有函数只插**单行调用**，新增判定/计算全部落在这里。
+ * ========================================================================== */
+
+/* ---------- 掉落物（CFG.pickup）----------
+ * life：掉落实例的剩余停留秒数；-1 = 永不消失（见 CFG.pickup）。 */
+/** 某类型掉落物的停留时长：未登记类型回落 CFG.pickup.defaultLife（缺省 30）。 */
+function pickupLife(type) {
+  const p = (typeof CFG !== "undefined" && CFG.pickup) || null;
+  const e = p && p[type];
+  if (e && typeof e.life === "number") return e.life;
+  return (p && typeof p.defaultLife === "number") ? p.defaultLife : 30;
+}
+/** 掉落物是否仍在场（未被拾取 / 未过期）。-1 视为永久存活。 */
+function pickupAlive(pk) { return !!pk && pk.life !== 0; }
+/** 同屏掉落物上限（性能兜底，见 CFG.pickup.maxPickups）：<=0 表示不启用。 */
+function pickupCap() {
+  const p = (typeof CFG !== "undefined" && CFG.pickup) || null;
+  const n = p && p.maxPickups;
+  return (typeof n === "number" && n > 0) ? n : 0;
+}
+/** 结算一次掉落入账（金币入 G.run.coin；其余按经验入队池）。自动磁吸与走近拾取共用同一入口。 */
+function grantPickup(pk) {
+  const r = (typeof G !== "undefined" && G) ? G.run : null;
+  if (!r || !pk) return;
+  if (pk.type === "coin") {
+    r.coin += pk.value; spawnFloat(pk.x, pk.y - 18, `+${pk.value}`, "#ffd76a"); SFX.play("coin");
+  } else {
+    gainExp(pk.value); spawnFloat(pk.x, pk.y - 18, `+${pk.value} 经验`, "#c79bff"); SFX.play("coin");
+  }
+}
+
+/* ---------- 敌人体型分层（CFG.monsterSizeTier）----------
+ * 口径：最终体型 = 当前渲染大小 × 分层倍率。NM=normal / ED=elite / BS=boss。
+ * BOSS 允许 CFG.monsters[defId].sizeMul 逐只覆盖（缺省取 tier.boss）。 */
+function monsterSizeTierMul(defId, d) {
+  const t = (typeof CFG !== "undefined" && CFG.monsterSizeTier) || {};
+  const id = String(defId || "");
+  if (id.slice(0, 2) === "BS") {
+    if (d && typeof d.sizeMul === "number") return d.sizeMul;   // 逐只覆盖
+    return typeof t.boss === "number" ? t.boss : 1;
+  }
+  if (id.slice(0, 2) === "ED") return typeof t.elite === "number" ? t.elite : 1;
+  return typeof t.normal === "number" ? t.normal : 1;
+}
+
+/* ---------- 嘲讽（AT120）----------
+ * 怪物加了 tauntedBy / tauntT 后，AI 选目标优先嘲讽者；嘲讽者倒下或超时即回落到最近目标。 */
+/** 嘲讽者是否仍然有效（存活且在同局）：队长看 G.run.hp，队友看 alive/hp。 */
+function tauntAlive(h) {
+  if (!h) return false;
+  if (h === (typeof G !== "undefined" && G ? G.player : null)) return !!(G.run && G.run.hp > 0);
+  return h.alive !== false && (h.hp === undefined || h.hp > 0);
+}
+/** 怪物当前索敌目标：被嘲讽且嘲讽者有效 → 优先嘲讽者；否则回落到最近的敌方目标（原 nearestTarget）。 */
+function monsterTarget(w, m) {
+  if (m && m.tauntT > 0 && tauntAlive(m.tauntedBy)) return m.tauntedBy;
+  return nearestTarget(w, m.x, m.y);
+}
+
+/* ---------- 祭坛投放（三处投放点收敛的唯一公共函数）----------
+ * 主关卡时间轴 / 深渊周期式 / modes.rollAbyssAltars 全部走这里落地，避免三份拷贝。 */
+/** 在 w 上落地一座指定祭坛（找空位，失败回落随机点）。返回该祭坛对象；id 非法返回 null。 */
+function placeAltar(w, id) {
+  const cfg = (typeof CFG !== "undefined" && CFG.altars) ? CFG.altars[id] : null;
+  if (!w || !cfg) return null;
+  const pos = (w.findFreeSpot ? w.findFreeSpot(100) : null)
+    || { x: U.rand(200, Math.max(400, w.w - 200)), y: U.rand(200, Math.max(400, w.h - 200)) };
+  const a = { cfg: cfg, x: pos.x, y: pos.y, id: id };
+  w.altars.push(a);
+  return a;
+}
+/** 按时间轴条目投放一座祭坛：{ t, id } 固定指定，或 { t, pool, pick } 从池随机 1 座。
+ *  池会剔除非法 id 与「深渊屏蔽白名单」（RIFT），深渊/无尽仍不刷空间裂隙。 */
+function spawnAltarFromSpec(w, spec) {
+  if (!w || !spec) return null;
+  let id = spec.id;
+  if (!id && Array.isArray(spec.pool) && spec.pool.length) {
+    const blocked = (typeof isAbyssWorld === "function" && isAbyssWorld(w)
+      && typeof abyssBlockedAltarIds === "function") ? abyssBlockedAltarIds() : [];
+    const allowed = spec.pool.filter(function (x) {
+      return CFG.altars[x] && blocked.indexOf(x) < 0;
+    });
+    if (!allowed.length) return null;
+    id = U.pick(allowed);
+  }
+  return id ? placeAltar(w, id) : null;
+}
+/** 祭坛时间轴调度器（World.update 单行调用）：
+ *   主关卡 → 读 G.levelCfg.altarTimeline（固定指定 + 随机池）。
+ *   深渊/无尽 → 读 CFG.endless.altarTimeline（首刷延迟 + 间隔 + 池，周期式投 1 座）。
+ *  计时用世界内部时钟 altarClock，**只在冻结结束后推进**（update 见 freezeTimer>0 会提前 return）。 */
+function updateAltarTimeline(w, dt) {
+  if (!w || w.freezeTimer > 0) return;
+  w.altarClock = (w.altarClock || 0) + dt;
+  const t = w.altarClock;
+  if (w.isMain) {
+    const tl = (typeof G !== "undefined" && G.levelCfg && G.levelCfg.altarTimeline) || null;
+    if (!Array.isArray(tl) || !tl.length) return;
+    if (w._altarIdx == null) w._altarIdx = 0;
+    while (w._altarIdx < tl.length && t >= (tl[w._altarIdx].t || 0)) {
+      spawnAltarFromSpec(w, tl[w._altarIdx]);
+      w._altarIdx++;
+    }
+    return;
+  }
+  if (w.kind === "endless") {
+    const c = (typeof CFG !== "undefined" && CFG.endless && CFG.endless.altarTimeline) || null;
+    if (!c || c.enabled === false) return;
+    const first = c.firstDelay != null ? c.firstDelay : 25;
+    const interval = (c.interval > 0) ? c.interval : 40;
+    if (w._altarNextT == null) w._altarNextT = first;
+    while (t >= w._altarNextT) {
+      spawnAltarFromSpec(w, { pool: c.pool, pick: c.pick || 1 });
+      w._altarNextT += interval;
+    }
+  }
+}
