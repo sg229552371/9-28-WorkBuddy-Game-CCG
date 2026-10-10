@@ -2,7 +2,7 @@
 # ============================================================
 #  克隆一致性校验（AI-Game / 弹幕背包搜打撤）
 #  用法：在仓库根目录执行   bash verify_clone.sh
-#  作用：核对当前工作区是否 == 指定快照（2026-10-10 收工版 · APP_VERSION 20261034）
+#  作用：核对当前工作区是否 == 指定快照（2026-10-10 收工版 · APP_VERSION 20261035）
 #
 #  原理：比对的是 **git 对象哈希**（git rev-parse HEAD:<file>），
 #        只看仓库内容，不受 core.autocrlf / 编辑器换行设置影响，
@@ -15,19 +15,19 @@
 set -u
 cd "$(dirname "$0")" || { echo "❌ 无法进入脚本所在目录"; exit 1; }
 
-EXPECT_VERSION="20261034"
+EXPECT_VERSION="20261035"
 
 # 核心文件 → 期望的 git blob 哈希（该快照的权威指纹）
 EXPECT_FILES="
-index.html dc5a3d228ec1b333d0eb65a23113026411e05dc8
+index.html 623a1d0b2ee203c8a400c88ee6848451699f8352
 js/config.js 456b36cded3f26ea1a52f1b4ec4fec639a0cf7ea
 js/game.js 9af37652c4ff17c6b5dbe49b87ba94c35a764f3c
 js/combat.js e3b97ce18f5256eaeab48f27f5c346b98621233b
 js/items.js 9694445260b5b97b3a4cf6336113afb753510577
-js/ui.js d1901b685994e3f7b0a69e50e58c8517719f89f3
+js/ui.js 0c4cc03c3af11316a2e769720004d1831df47197
 js/ui-panels.js 8c50b06869ace1e8e64c158f58d1e4486e8ba5b5
 js/main.js 3e304c7c67c0961e935dfe35e155963b8a2470fa
-js/core.js c7999993c6d8386347e11991fed4fa105fb0b0ea
+js/core.js 4f2929665de846b55f42c9c0012d4a601ae9dee3
 js/modes.js 003c55448bb3e68714d171558cdb9a84c22ac681
 css/style.css ebb513f69789bdecf74e8a41cad7baa4ffa670d2
 run_tests.sh 4ff715e7e7e28e7bd46e1b66d9e0ac52f0b41c36
@@ -84,7 +84,7 @@ echo "============================================================"
 if [ "$BAD" = "0" ]; then
   echo " ✅ 一致：本工作区 == 2026-10-10 收工快照（APP_VERSION $EXPECT_VERSION）"
   echo "    继续开发前可跑一次全量门禁：bash run_tests.sh"
-  echo "    期望结果：76 套 / PASS 合计 = 3368 / bad = 0 / 全绿"
+  echo "    期望结果：76 套 / PASS 合计 = 3375 / bad = 0 / 全绿"
 else
   echo " ❌ 不一致：本地不是该快照，请先同步远程："
   echo "     git fetch origin && git reset --hard origin/main"
