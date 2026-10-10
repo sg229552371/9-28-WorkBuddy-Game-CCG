@@ -7,8 +7,9 @@
  *   行为 ⑤ 未解锁英雄不可被选中（点击后 selectedChars 不含它）；
  *   行为 ⑥ 选中项变化 → 详情区 #char-detail 文本更新含该英雄名；
  *   行为 ⑦ #char-list 子元素数量 === CFG.heroes.length；
- *   行为 ⑧ 无 DOM 沙箱下 buildCharList() / renderCharDetail() 不抛错；
- *   回归 ⑨ 未选中时 #btn-char-start 仍 disabled；默认选中后应为可用。
+ *   行为 ⑧ PC 端悬停预览：悬停卡片 → 详情区即切到该英雄；不改 selectedChars、不加 selected 类、同卡不重绘；
+ *   行为 ⑨ 无 DOM 沙箱下 buildCharList() / renderCharDetail() 不抛错；
+ *   回归 ⑩ 未选中时 #btn-char-start 仍 disabled；默认选中后应为可用。
  * DOM 桩参考同目录 hero_portrait_test.js / unlock_ui_test.js。
  * 断言输出：PASS/FAIL 每行，末尾「PASS 合计 / 失败数」，失败则 throw。
  * 注意：PASS 文案里不含英文 error/Error（run_tests.sh 的 bad 统计口径）。 */
@@ -317,6 +318,40 @@ check("⑦7 上限为单点配置（CFG.team.maxSize 为正整数，扩容只改
   Number.isInteger(MAXSZ) && MAXSZ >= 1 && vm.runInContext("CFG.team.maxSize", ctx) === MAXSZ);
 
 /* ============================================================
+ * ⑧ PC 端悬停预览（26.x 用户需求）
+ *    鼠标移入角色卡 → 详情区即切到该英雄，不必先点击；
+ *    悬停**不改 selectedChars**（出战选择仍只由点击决定），卡片也不加 selected 类。
+ * ============================================================ */
+// 复位到「刚进入选人界面」的干净态（默认选中首个已解锁英雄）
+vm.runInContext("G.state = 'charSel'; UI.selectedChars = []; UI.buildCharList();", ctx);
+const hcBox = store["char-list"];
+const hoverCardB = hcBox.children.find(c => c.innerHTML.indexOf(secondUnlockedId) >= 0);
+check("⑧1 角色卡已暴露 onmouseenter（PC 悬停入口）", !!hoverCardB && typeof hoverCardB.onmouseenter === "function");
+if (hoverCardB) {
+  const selBefore = vm.runInContext("UI.selectedChars.map(function(s){return s.id;})", ctx);
+  hoverCardB.onmouseenter();
+  check("⑧2 悬停卡片 → 详情区切到该英雄（无需点击）",
+    store["char-detail"].innerHTML.indexOf(secondUnlockedName) >= 0);
+  check("⑧3 悬停 ≠ 选中：selectedChars 一字未变", (() => {
+    const after = vm.runInContext("UI.selectedChars.map(function(s){return s.id;})", ctx);
+    return after.length === selBefore.length && after.join(",") === selBefore.join(",");
+  })());
+  check("⑧4 悬停不给卡片加 selected 类（选中态只由点击产生）",
+    !hoverCardB.classList.contains("selected"));
+  check("⑧5 详情焦点已同步（UI._detailHeroId === 悬停英雄）",
+    vm.runInContext("UI._detailHeroId", ctx) === secondUnlockedId);
+  // 去重：重复悬停同一张卡不重绘（防高频 mouseenter 闪烁）
+  vm.runInContext("UI.__rdCount = 0; UI.__origRD = UI.renderCharDetail; UI.renderCharDetail = function(h){ UI.__rdCount++; return UI.__origRD.call(UI, h); };", ctx);
+  hoverCardB.onmouseenter();
+  check("⑧6 重复悬停同一卡片 → 去重不重绘", vm.runInContext("UI.__rdCount", ctx) === 0);
+  vm.runInContext("UI.renderCharDetail = UI.__origRD;", ctx);
+  // 空参回落：previewCharDetail(null) → 回到「已选中队首」
+  vm.runInContext("UI._previewCharDetail(null);", ctx);
+  check("⑧7 悬停回退（空参）→ 详情回落已选中队首",
+    store["char-detail"].innerHTML.indexOf(firstUnlockedNameOf(ctx)) >= 0);
+}
+
+/* ============================================================
  * 选关：单屏列表渲染（行为回归：卡数 = 关卡数 + 未解锁锁标）
  * ============================================================ */
 const levelCount = vm.runInContext("CFG.levels.length", ctx);
@@ -330,7 +365,7 @@ check("选关：已解锁卡含目标击杀/时限信息", levelBox.children[0].
 check("选关：已解锁卡含 BOSS 名", levelBox.children[0].innerHTML.indexOf("BOSS") >= 0);
 
 /* ============================================================
- * ⑧ 无 DOM 沙箱：buildCharList / renderCharDetail 不抛错
+ * ⑨ 无 DOM 沙箱：buildCharList / renderCharDetail 不抛错
  * ============================================================ */
 (function noDomCheck() {
   const sandbox = {

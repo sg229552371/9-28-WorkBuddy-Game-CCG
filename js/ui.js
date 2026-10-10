@@ -26,6 +26,7 @@ const UI = {
   selectedChestQ: null,
   drag: null,          // {item, fromInv, fromPending}
   hoverItem: null,
+  _detailHeroId: null, // 选人详情区当前展示的英雄 id（供悬停预览去重，见 _previewCharDetail）
 
   /* ---------- 界面切换 ---------- */
   // 全部全屏界面（首页 / 关卡选择 / 角色选择 / 结算 / 死亡 / 帮助 / 设置 / 图鉴 / 告别）
@@ -421,6 +422,10 @@ const UI = {
         `<div class="char-badges">${h.id}${roleBadge}${lockLine}</div>`;
       const cv = card.querySelector(".char-face");
       if (cv) drawHeroPortrait(cv, heroPortraitKey(h), !unlocked, HERO_PORTRAIT_CARD_H);
+      /* PC 端悬停预览（26.x 用户需求）：鼠标移到卡片上即把下方详情区切到该英雄，
+       * 无需先点击 → 便于快速浏览角色内容。点击语义完全不变（点击 = 选出战 / 取消）。
+       * 触屏不产生 mouseenter，移动端行为与旧版一致。 */
+      card.onmouseenter = () => { this._previewCharDetail(h); };
       card.onclick = () => {
         // 未解锁 → 拦截：toast 解锁条件 + 详情区持续展示（21.6 用户要求：未解锁角色可选中查看解锁条件）
         if (!Meta.isHeroUnlocked(h.id)) {
@@ -466,10 +471,23 @@ const UI = {
     if (metaLine) metaLine.innerHTML = `◆ 结晶 <b>${Meta.data.crystals}</b><small>　撤离/击杀获得 · 升级见主城「强化导师」</small>`;
   },
 
+  /* 悬停预览（26.x 用户需求）：鼠标移入角色卡 → 详情区切到该英雄，不必点击。
+   * 语义边界：**不改 selectedChars**（出战选择仍只由点击决定），只切详情区内容。
+   * 取舍：**不回落** —— 悬停后详情保持在最后浏览的英雄上，方便从容阅读；
+   *       点击卡片时仍按既有逻辑把详情同步到所点英雄（见 buildCharList 的 card.onclick）。
+   * 去重：与当前详情同一英雄则不重绘（防高频 mouseenter 造成无谓闪烁）。
+   * hero 为空 → 回落「已选中队首」。无 DOM 沙箱时 renderCharDetail 静默返回。 */
+  _previewCharDetail(hero) {
+    const target = hero || this.selectedChars[0] || null;
+    if ((target ? target.id : null) === this._detailHeroId) return;
+    this.renderCharDetail(target);
+  },
+
   /* 选人详情区渲染（用户明确要求：下方显示当前选中英雄的「技能说明 + 角色说明」）。
    * - 固定高度由 CSS 保证（切换选中只更新内容，不改总高度 → 无布局跳动）。
    * - hero 为空 → 空态提示；所有 DOM 访问判空，无 DOM 沙箱静默返回。 */
   renderCharDetail(hero) {
+    this._detailHeroId = hero ? hero.id : null;   // 供悬停预览去重（无 DOM 沙箱下也保持同步）
     if (typeof document === "undefined" || !document.getElementById) return;   // 无 DOM 沙箱防御
     const box = document.getElementById("char-detail");
     if (!box) return;
