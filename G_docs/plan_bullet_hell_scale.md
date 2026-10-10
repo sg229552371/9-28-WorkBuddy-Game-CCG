@@ -39,7 +39,7 @@
 
 **存档安全**：击杀写盘有 `!monsters[defId]` 守卫（`game.js:444`），**不会**每杀一怪写盘 ✅
 
-**已有护栏**：PerfGuard（`main.js:50-102`，仅告警不降级）、isLowQuality 全套（`game.js:4703/4726`、剔除/粒子×0.4/网格×2/跳描边）、`CFG.monsterCap:120`、`boss.bulletBudget:40`。
+**已有护栏**：PerfGuard（`main.js:50-102`，仅告警不降级）、isLowQuality 全套（`game.js:4703/4726`、剔除/粒子×0.4/网格×2/跳描边）、`CFG.monsterCap`（26.x 起按关卡分档 120→160→220→300，旧口径为全程 120）、`boss.bulletBudget:40`。
 
 **测试可扩展性**：`perf_test.js` 已有 World 桩 + `testPoolVsNew` GC 压测（`perf_test.js:257-343/442`），扩规模只需改 `monsterCount` 常量。
 
@@ -136,5 +136,5 @@
 | `ctx.filter` 使用 | `js/game.js:3600` |
 | 索敌每帧新数组 | `js/game.js:1517-1518` |
 | 池化范式参考 | `js/game.js:1841`（`_tmpArr`） |
-| 性能护栏 CFG | `js/config.js:744-748`、`monsterCap:120` |
+| 性能护栏 CFG | `js/config.js:744-748`、`monsterCap`（分档 120/160/220/300；深渊走 `CFG.endless.capMax` 3000） |
 | 压测脚手架 | `perf_test.js:257-343`、`442` |

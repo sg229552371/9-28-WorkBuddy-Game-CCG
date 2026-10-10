@@ -468,6 +468,26 @@ vm.runInContext(`
     Endless.update({ kind: "rift" }, 5);
     return Endless.state.timeLeft === t;
   })());
+  /* ============ ⑭ monsterCap 深渊短路（真机回归：深渊被主线 cap 误卡在 120） ============ */
+  (function () {
+    const bakCfg = G.levelCfg, bakIn = G.inEndless, bakRun = G.run;
+    /* 模拟「enterEndless 还原了上一个主关卡配置」的现场（monsterCap: 120） */
+    G.levelCfg = { monsterLevel: 1, monsterCap: 120, progressGoal: 9999 };
+    G.inEndless = false;
+    check("113 非深渊：monsterCap 取关卡表值（120）", monsterCap() === 120);
+    G.inEndless = true;
+    check("114 深渊：monsterCap 短路到 CFG.endless.capMax（" + CFG.endless.capMax + "）", monsterCap() === CFG.endless.capMax);
+    /* 深渊世界真造怪：越过主线上限 120 仍能生成（旧代码在 120 处直接 return null） */
+    G.run = G.run || { kills: 0 };
+    const w3 = Endless.makeWorld(1920, 1920);
+    let made = 0;
+    for (let i = 0; i < 200; i++) {
+      if (w3.spawnMonster("NM0010", 100 + (i % 40) * 5, 100 + Math.floor(i / 40) * 5)) made++;
+    }
+    check("115 深渊世界同屏可越过主线上限 120（实际生成 " + made + " 只）", made > 120);
+    G.levelCfg = bakCfg; G.inEndless = bakIn; G.run = bakRun;
+  })();
+
   Endless.reset();
 
   window.__edFail = () => fails;

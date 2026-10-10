@@ -665,6 +665,13 @@ function applyMonsterScale(m, targetName) {
 }
 // 全场怪物上限（"小怪数量"开 applyCap 时 ×mul，默认关闭；有性能风险）
 function monsterCap() {
+  /* ⚠️ 深渊（无尽）必须最先短路：enterEndless 构建完 run 后会把 G.levelCfg 还原成
+   * 上一个主关卡配置（modes.js:917），而深渊自己的硬顶在 CFG.endless.capMax（=3000）。
+   * 若不短路，无尽世界的 spawnMonster 会被主线的 monsterCap（120）误卡 ——
+   * 真机复现：深渊同屏 120 只即停止刷怪（Endless.fieldCap 的 3000 闸门形同虚设）。 */
+  if (typeof G !== "undefined" && G && G.inEndless && typeof CFG !== "undefined" && CFG.endless) {
+    return CFG.endless.capMax || 3000;
+  }
   const base = (G.levelCfg && G.levelCfg.monsterCap) || 200;
   const tcfg = CFG.monsterScale.targets["小怪数量"];
   if (tcfg && tcfg.applyCap) return Math.max(1, Math.round(base * monsterScaleMul(tcfg.key)));

@@ -16,7 +16,7 @@ CFG.levels = [
     eliteBase: 2,             // 独立精英怪基础数量（可被邪神雕像"精英数量"倍率增减，见 4.5）
     elitePool: "ED0001:60/ED0002:30/ED0003:10",   // 本关精英怪池（编号:权重；编号:权重）
     boss: "BS0001",
-    monsterCap: 120,          // 全场怪物上限（性能红线，首版原型降低）
+    monsterCap: 120,          // 全场同屏怪物上限（分档①：L1~L5；随关卡递增 120→160→220→300）
     circles: [{ tpl: "SC01", count: 3 }],   // 引用圆模板
     progressGoal: 60,         // 击杀进度目标
     timeLimit: 180,           // 秒；先到者触发 Boss
@@ -123,7 +123,7 @@ CFG.levels = [
     eliteBase: 6,
     elitePool: "ED0001:35/ED0002:32/ED0003:33",
     boss: "BS0006",
-    monsterCap: 120,
+    monsterCap: 160,          // 分档②（L6~L10）
     circles: [{ tpl: "SC03", count: 5 }, { tpl: "SC02", count: 4 }],
     progressGoal: 132, timeLimit: 300, artisanAtKills: 40,
     // 毒圈进阶档（HZ2）：预警期 -2s、收缩提速到 75s，圈外每 1.0 秒扣 8 点（满血约 12.5 秒）
@@ -148,7 +148,7 @@ CFG.levels = [
     eliteBase: 7,
     elitePool: "ED0001:30/ED0002:34/ED0003:36",
     boss: "BS0007",
-    monsterCap: 120,
+    monsterCap: 160,
     circles: [{ tpl: "SC03", count: 6 }, { tpl: "SC01", count: 4 }],
     progressGoal: 150, timeLimit: 330, artisanAtKills: 44,
     altarTimeline: [
@@ -168,7 +168,7 @@ CFG.levels = [
     eliteBase: 7,
     elitePool: "ED0001:28/ED0002:34/ED0003:38",
     boss: "BS0008",
-    monsterCap: 120,
+    monsterCap: 160,
     circles: [{ tpl: "SC03", count: 6 }, { tpl: "SC02", count: 5 }, { tpl: "SC04", count: 2 }],
     progressGoal: 168, timeLimit: 360, artisanAtKills: 48,
     // 毒圈压迫档（HZ3）：tick 缩到 0.8s（DPS 10，满血约 10.4 秒），预警 16s、终圈 330
@@ -194,7 +194,7 @@ CFG.levels = [
     eliteBase: 8,
     elitePool: "ED0001:24/ED0002:34/ED0003:42",
     boss: "BS0009",
-    monsterCap: 120,
+    monsterCap: 160,
     circles: [{ tpl: "SC03", count: 7 }, { tpl: "SC02", count: 5 }, { tpl: "SC04", count: 2 }],
     progressGoal: 184, timeLimit: 390, artisanAtKills: 52,
     // 毒圈高压档（HZ4）：预警 14s、终圈 310，DPS 11.25（满血约 9.6 秒）
@@ -221,7 +221,7 @@ CFG.levels = [
     eliteBase: 9,
     elitePool: "ED0001:20/ED0002:34/ED0003:46",
     boss: "BS0010",
-    monsterCap: 120,
+    monsterCap: 160,
     circles: [{ tpl: "SC03", count: 7 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 4 }, { tpl: "SC04", count: 3 }],
     progressGoal: 200, timeLimit: 420, artisanAtKills: 56,
     // 毒圈终局档（HZ5）：预警 12s、终圈 290、收缩 55s——DPS 12.5（满血 8 秒，压力带最紧端）
@@ -247,7 +247,8 @@ CFG.levels = [
    * 设计口径：难度沿第 9/10 关斜率继续外推，单调无断崖回落：
    *   progressGoal 200→440（步长 20~28）、timeLimit 420→720（+30/关）、
    *   artisanAtKills 56→96（+4/关）、eliteBase 9→15（两小步一档）；
-   *   monsterCap 维持 120（性能红线，与 1~10 关一致）；
+   *   monsterCap 改用**分档递增**（L6~L10 = 160 / L11~L15 = 220 / L16~L20 = 300，
+   *     与 countMul 的难度斜率同向抬升；旧的「全程 120 性能红线」口径退役）；
    *   monsterLevel 封顶 10（属性成长口径 ≤10，压力改由 levelCurve 的 countMul/hpMul 外推承载）。
    * 地图：正方形（smoke 断言 mapW===mapH），1980→2400 随关卡缓增（区间 [1920,3000]）。
    * Boss：11~20 关按序复用 BS0001~BS0010 组成「二周目」第二轮（每只 Boss 恰好对应 2 关，
@@ -262,7 +263,7 @@ CFG.levels = [
     eliteBase: 10,
     elitePool: "ED0001:19/ED0002:34/ED0003:47",
     boss: "BS0001",
-    monsterCap: 120,
+    monsterCap: 220,          // 分档③（L11~L15）
     circles: [{ tpl: "SC03", count: 7 }, { tpl: "SC02", count: 5 }, { tpl: "SC01", count: 3 }],
     progressGoal: 220, timeLimit: 450, artisanAtKills: 60,
     // 26.x 祭坛时间轴（同 1~10 关口径：前期稀疏、固定指定与随机池混用，宝箱不在开局 10 秒）
@@ -286,7 +287,7 @@ CFG.levels = [
     eliteBase: 10,
     elitePool: "ED0001:18/ED0002:33/ED0003:49",
     boss: "BS0002",
-    monsterCap: 120,
+    monsterCap: 220,
     circles: [{ tpl: "SC03", count: 8 }, { tpl: "SC02", count: 5 }, { tpl: "SC01", count: 4 }],
     progressGoal: 240, timeLimit: 480, artisanAtKills: 64,
     altarTimeline: [
@@ -309,7 +310,7 @@ CFG.levels = [
     eliteBase: 11,
     elitePool: "ED0001:17/ED0002:33/ED0003:50",
     boss: "BS0003",
-    monsterCap: 120,
+    monsterCap: 220,
     circles: [{ tpl: "SC03", count: 8 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 4 }],
     progressGoal: 262, timeLimit: 510, artisanAtKills: 68,
     altarTimeline: [
@@ -332,7 +333,7 @@ CFG.levels = [
     eliteBase: 11,
     elitePool: "ED0001:16/ED0002:32/ED0003:52",
     boss: "BS0004",
-    monsterCap: 120,
+    monsterCap: 220,
     circles: [{ tpl: "SC03", count: 9 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 4 }],
     progressGoal: 284, timeLimit: 540, artisanAtKills: 72,
     altarTimeline: [
@@ -356,7 +357,7 @@ CFG.levels = [
     eliteBase: 12,
     elitePool: "ED0001:15/ED0002:32/ED0003:53",
     boss: "BS0005",           // 中盘 BOSS 关：熔核暴君（冲锋践踏 + 熔岩波幕）
-    monsterCap: 120,
+    monsterCap: 220,
     circles: [{ tpl: "SC03", count: 9 }, { tpl: "SC02", count: 7 }, { tpl: "SC01", count: 5 }],
     progressGoal: 308, timeLimit: 570, artisanAtKills: 76,
     altarTimeline: [
@@ -380,7 +381,7 @@ CFG.levels = [
     eliteBase: 12,
     elitePool: "ED0001:14/ED0002:31/ED0003:55",
     boss: "BS0006",
-    monsterCap: 120,
+    monsterCap: 300,          // 分档④（L16~L20）
     circles: [{ tpl: "SC03", count: 10 }, { tpl: "SC02", count: 6 }, { tpl: "SC01", count: 5 }],
     progressGoal: 332, timeLimit: 600, artisanAtKills: 80,
     altarTimeline: [
@@ -404,7 +405,7 @@ CFG.levels = [
     eliteBase: 13,
     elitePool: "ED0001:13/ED0002:31/ED0003:56",
     boss: "BS0007",
-    monsterCap: 120,
+    monsterCap: 300,
     circles: [{ tpl: "SC03", count: 10 }, { tpl: "SC02", count: 7 }, { tpl: "SC01", count: 5 }],
     progressGoal: 358, timeLimit: 630, artisanAtKills: 84,
     altarTimeline: [
@@ -428,7 +429,7 @@ CFG.levels = [
     eliteBase: 13,
     elitePool: "ED0001:12/ED0002:30/ED0003:58",
     boss: "BS0008",
-    monsterCap: 120,
+    monsterCap: 300,
     circles: [{ tpl: "SC03", count: 11 }, { tpl: "SC02", count: 7 }, { tpl: "SC01", count: 5 }],
     progressGoal: 384, timeLimit: 660, artisanAtKills: 88,
     altarTimeline: [
@@ -452,7 +453,7 @@ CFG.levels = [
     eliteBase: 14,
     elitePool: "ED0001:11/ED0002:30/ED0003:59",
     boss: "BS0009",
-    monsterCap: 120,
+    monsterCap: 300,
     circles: [{ tpl: "SC03", count: 11 }, { tpl: "SC02", count: 8 }, { tpl: "SC01", count: 6 }],
     progressGoal: 412, timeLimit: 690, artisanAtKills: 92,
     altarTimeline: [
@@ -476,7 +477,7 @@ CFG.levels = [
     eliteBase: 15,
     elitePool: "ED0001:10/ED0002:29/ED0003:61",
     boss: "BS0010",           // 终局 BOSS 关：终焉·邪神本体（全表最厚血量、三阶段弹幕）
-    monsterCap: 120,
+    monsterCap: 300,
     circles: [{ tpl: "SC03", count: 12 }, { tpl: "SC02", count: 8 }, { tpl: "SC01", count: 6 }],
     progressGoal: 440, timeLimit: 720, artisanAtKills: 96,
     altarTimeline: [

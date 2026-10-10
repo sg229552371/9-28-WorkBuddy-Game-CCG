@@ -4,7 +4,7 @@
  *   一、LEVEL_011~020 连续存在无缺号、字段齐全、name 中文格式
  *   二、theme 深色系互不相同且不与 1~10 关撞色；地图正方形、区间 [1920,3000]、缓增无断崖
  *   三、难度曲线单调：progressGoal/timeLimit/artisanAtKills/eliteBase 沿 9/10 关斜率外推；
- *       monsterCap 维持 120 性能红线；monsterLevel 封顶 10
+ *       monsterCap 分档递增（1~5=120 / 6~10=160 / 11~15=220 / 16~20=300）；monsterLevel 封顶 10
  *   四、circles：模板 id 全部存在、count 为正；SC04 不挂新关（锁定 L8~L10 恰 3 关）；
  *       SC03 主力递增、圆总数递增（快慢节奏搭配）
  *   五、BOSS：全部为存在的 BS 模板、11~20 关去重恰 10（二周目每只两关）；
@@ -99,7 +99,8 @@ if (CFG) {
     NEW.every((l, i) => i === 0 ? l.artisanAtKills > L[9].artisanAtKills : l.artisanAtKills > NEW[i - 1].artisanAtKills));
   check("三 eliteBase 单调不减（" + L[9].eliteBase + "→" + NEW[9].eliteBase + "）",
     NEW.every((l, i) => i === 0 ? l.eliteBase >= L[9].eliteBase : l.eliteBase >= NEW[i - 1].eliteBase));
-  check("三 monsterCap 维持 120 性能红线（与 1~10 关一致）", NEW.every(l => l.monsterCap === 120));
+  check("三 monsterCap 四档递增无回落（1~5=120 / 6~10=160 / 11~15=220 / 16~20=300）",
+    CFG.levels.length === 20 && CFG.levels.every((l, i) => l.monsterCap === [120, 160, 220, 300][Math.floor(i / 5)]));
   check("三 monsterLevel 封顶 10（全表口径 ≤10，压力由曲线倍率承载）", NEW.every(l => l.monsterLevel === 10));
 
   /* ---- 四、circles 引用与节奏 ---- */
