@@ -3,7 +3,8 @@
 #  克隆一致性校验（AI-Game / 弹幕背包搜打撤）
 #  用法：在仓库根目录执行   bash verify_clone.sh
 #  作用：核对当前工作区是否 == 指定快照
-#        （2026-10-12 技能迁移批 2：H007~H012 全量迁移 + effect 扩展 6 kind + summonUnit 模板 · APP_VERSION 20261050 · 102 套 / 4320）
+#        （2026-10-13 B 类落库 + A4 前摇 + B4 宝箱主来源：B1 整数锚点/B2 Buff 锚点/B3 祭坛加权/B5 货物占格
+#         + A4 castTime「不可打断+可移动」+ B4「精英几率低级箱/BOSS 几率中高级箱/落地/读条拾取」· APP_VERSION 20261051 · 106 套 / 4506）
 #
 #  原理：比对的是 **git 对象哈希**（git rev-parse HEAD:<file>），
 #        只看仓库内容，不受 core.autocrlf / 编辑器换行设置影响，
@@ -31,38 +32,40 @@ if [ -n "$REPO_ROOT" ]; then
   esac
 fi
 
-EXPECT_VERSION="20261050"
+EXPECT_VERSION="20261051"
 
-# 核心文件 → 期望的 git blob 哈希（该快照的权威指纹；28 个）
+# 核心文件 → 期望的 git blob 哈希（该快照的权威指纹；30 个）
 EXPECT_FILES="
-index.html 9d2e427a94ce5a5c4de5adc083df22d654048253
-js/config.js ed30af5c5187e82f3615d38abfcc00adc50cfe7f
-js/game.js c39f87462e0470c24964a7c2958095350fceea69
-js/combat.js a1edcd52e0175757af96e469b09ccf5acf2c9c68
-js/items.js 57c3fe551b8c24baf5ca237f4e9f04ec7390564a
+index.html e393aa729e45a2b036222761d6a8309605810303
+js/config.js 5550dc01c462437fb7c2c4fe59e756b3a508b94c
+js/game.js 9a10473e7b3c098c2fbb7a46f0600fae34348829
+js/combat.js c092387b598e3a84084842ea03ee7e5401163aa8
+js/items.js e727d5f28b47da8c38e179b99f4d70472e288a7f
 js/ui.js d8ae96866382904b7140e88ef82a11f2606214f8
 js/ui-panels.js c04f72855cdf1daa5de016d71afdc88a21adc9b9
 js/main.js f535f112baaa290e3c34049ee642c9e59f9797ac
-js/core.js 0bd841339a7e30f7c16e18169989eb2ebd5ad66d
+js/core.js b24ae85a5179b4e33eebbbc987d6837fdd22bc9c
 js/modes.js 274ba9e319b532e451efab24f0c80523e0879122
 css/style.css 49a277f655d8e5f9db426e994aac80e67513b891
-run_tests.sh b95ffe41f89221d58b3bfed418ba93324a111370
+run_tests.sh d6a99faf21a622357bee53fb9aa1a419d6c2843c
 js/skill-compiler.js 61f92b5cc89886f9c567f8b735fce3fac6564784
 js/skill-playtest.js da357b70fe57a56a06617a35a21e32d68c39efe8
-js/skill-scheduler.js b4d4598650d601293667c58829689f6886f4a346
+js/skill-scheduler.js ee30f6d3810410080afb01aa4574e22b712c86a5
 js/skill-config.js 47aba0aaea00c645ecf50d098c83f296027bfd3b
-js/skill-runtime.js b2698e7f0d0bc60debdaaed301b4b51480f52a69
+js/skill-runtime.js 9684af1113ebc1c44c49786091b964ca1263e828
 js/skill-events.js a2fa6c17807b6ba7242a0197b58b87f4d9f1fe7e
 skill_playtest_test.js 1f1b60d290c8dc2466be6bd7b8527ab424549aa5
-skill_rule_binding_test.js 4ba831ca8b4f3990d82eb89ff8de825f02769790
+skill_rule_binding_test.js 1984a54fd39b303432ac4e39bb5b00837324b8eb
 crystal_ui_test.js 982376add0ca3bcd7ec0b773e03371cfc7b681aa
 crystal_expansion_test.js d511b80d71a4c9c0f0b4b23de64dc8eb770ffee5
 skill_enable_runtime_test.js 023642f33e8ec3467933ce88c31f29c0cf49386c
 hero_skill_migration_test.js bf4c75f6a82a012ca82c6187311bd33bb1834738
 skill_save_session_test.js 30170e7d16a40edf6e05cf2cf2bb60733229e173
 hero_nondamage_skill_test.js ceaa972085bc7d4ff132c49e7ca1920ef1b09575
-skill_effect_runtime_test.js 50f966983b603da1b271494e214701ef6023e8e6
+skill_effect_runtime_test.js fa7cca4d8d3313297ee80e632bfc830c0325e719
 skill_integration_test.js 7f06e350c96624b38818429745391977eb979320
+skill_balance_anchors_test.js d61f2b555d263ff8b7961e2aed74d78cc0a4c4c1
+chest_drop_source_test.js 42548c9cbab3ad170363e7be4ef64c0c80adeedb
 "
 
 echo "============================================================"
@@ -115,9 +118,9 @@ fi
 # ④ 结论
 echo "============================================================"
 if [ "$BAD" = "0" ]; then
-  echo " ✅ 一致：本工作区 == 2026-10-12 技能迁移批 2 快照（H001~H012 全量走新路径 · effect 扩展 6 kind · APP_VERSION $EXPECT_VERSION）"
+  echo " ✅ 一致：本工作区 == 2026-10-13 B 类落库快照（B1/B2/B3/B5 + A4 前摇 + B4 宝箱主来源 · APP_VERSION $EXPECT_VERSION）"
   echo "    继续开发前可跑一次全量门禁：bash run_tests.sh"
-  echo "    期望结果：102 套 / PASS 合计 = 4320 / bad = 0 / 全绿"
+  echo "    期望结果：106 套 / PASS 合计 = 4506 / bad = 0 / 全绿"
 else
   echo " ❌ 不一致：本地不是该快照，请先同步远程："
   echo "     git fetch origin && git reset --hard origin/main"
