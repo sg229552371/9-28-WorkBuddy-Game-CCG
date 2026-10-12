@@ -7,7 +7,7 @@
 每套件必须 `exit=0` 且 `bad=0`；`bad`检查 `Assertion failed|FAIL|Error`。`console.assert`失败可能不改变退出码，不能只看退出码。PASS文案不能出现英文`error`或`FAIL`子串。当前 `run_tests.sh`实际五组、94套、skill18；历史AGENTS/README中93套/4083和skill14/17均是过时基线。
 
 已保留证据：
-- 首次红测：`evidence/sh-12-failure.log`，原始摘要为 `skill_enable_runtime_test`⑥旧路径“10秒内 kills ≥ 1”失败，exit=1、PASS4110、bad=1。根因尚未诊断。
+- 首次红测：`evidence/sh-12-failure.log`，原始摘要为 `skill_enable_runtime_test`⑥旧路径“10秒内 kills ≥ 1”失败，exit=1、PASS4110、bad=1。~~根因尚未诊断。~~ ⚠️ **已被取代（2026-10-12）**：根因**已确诊** = **测试桩喂钟非单调**（⑥ 段把时钟重置为 0，而 `Game.lastT` 已被 ④ 推到 ~10020 → 负步长 ≈ −10.02s → 施放计时器被甩到窗口末尾），**非产品逻辑缺陷**；已由提交 `8b0e1a2` 双重加固（产品侧 dt 钳制 + 测试侧单调续帧），现 25 条全绿。诊断全文 → `G_docs/full_dev_plan_v1.md` §6.3。
 - `full-tests.log`、`full-tests-r2.log`、`verified-run.log`三份绿证据：94项、PASS4111、bad=0。`full-tests.log`是全绿，不能称为红测。
 - `full-tests.exit`原文件为异常文本`0n`，`full-tests-r2.exit`和`verified-run.exit`为有效`0\n`。不覆写原证据。
 
@@ -31,7 +31,7 @@ bash verify_clone.sh
 ## 差异登记
 | 主题 | 批准/实现事实 | 当前差异 | 下一步 |
 |---|---|---|---|
-| 技能启用 | H001已启用，其他英雄旧路径 | 旧路红测尚未诊断 | 保留断言，先复现定位 |
+| 技能启用 | H001已启用，其他英雄旧路径 | ~~旧路红测尚未诊断~~ → ✅ **已确诊（2026-10-12）：测试桩喂钟非单调，`8b0e1a2` 已双重修复）** | 保留断言，先复现定位 |
 | 事件深度 | 全局预算2与策略约束同时成立 | 配置出现3，文案易混淆 | 明确表格/测试期望 |
 | castTime | CFG生成与校验存在 | 未发现调度消费证据 | 调用链核验后提案 |
 | 存档 | SkillSave序列化/迁移存在 | 未发现宿主实际调用 | 只读搜索真实接线 |

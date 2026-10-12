@@ -36,8 +36,8 @@
 | A2 | **资源清单接线** | ⚠️ **判定为「半个改动」，暂缓**：清单 15 条**磁盘存在 0**；且实测「清单侧 `AssetHooks` 真实消费点 = 0」→ 单个挂载 = 每局 15 个 404 + 零收益 + 打破 7 条现状断言。**必须连同渲染/音频消费接线一起做**（`Assets.images` / `SFX.play` 优先查 `AssetHooks`），且需素材就绪才有端到端验收条件 | `index.html` + `js/core.js` | ❌ 共享文件（整批） |
 | A3 | **`SkillSave` 宿主闭环** | 模块本身完备（`serialize`/`migrate`/`saveTo`/`loadFrom`/`_persist`），**仅缺宿主调用** ❌；但「是否跨局保存 / 保存时机」**属设计决策未定** | `js/game.js` / `js/main.js` | ❌ 需先拍板 |
 | A4 | **`castTime` 调度消费** | `config.js` 生成 + `skill-config.js` 校验；**调度器未读** ❌；前摇语义（能否被打断）**未定** | `js/skill-scheduler.js` | ⚠️ 需先定语义 |
-| A5 | **全部 12 英雄技能** | ✅ **已全部交付（H001~H012 全走新路径）**：批 1（H001~H006，2026-10-12）+ 批 2（H007~H012，2026-10-12 · 决策 `D012`）——批 2 只需 1 个模板 kind（`summonUnit`）+ 1 个节点字段（`effect`），已拆 2A（H009~H012）/ 2B（H007/H008）全部实现 | `js/config.js` 的 `skillDefs`（表 → 归 config，非独立文件） | ✅ 已完成（测试 37+42 断言）|
-| A6 | **旧路红测根因** | 报告登记 `skill_enable_runtime_test` 曾 `kills≥1` 失败；**当前实测全绿**（25 条），根因未诊断 | 诊断报告 | ✅ 只读核验 |
+| A5 | **全部 12 英雄技能** | ✅ **已全部交付（H001~H012 全走新路径）**：批 1（H001~H006，2026-10-12）+ 批 2（H007~H012，2026-10-12 · 决策 `D012`）——批 2 只需 1 个模板 kind（`summonUnit`）+ 1 个节点字段（`effect`），已拆 2A（H009~H012）/ 2B（H007/H008）全部实现 | `js/config.js` 的 `skillDefs`（表 → 归 config，非独立文件） | ✅ 已完成（测试 38+43 断言）|
+| A6 | **旧路红测根因** | ✅ **已确诊（2026-10-12，见 §6.3）**：= **测试桩喂钟非单调**（⑥ 段把时钟重置为 0，`Game.lastT` 已被 ④ 推到 ~10020 → `main.js` 的 `dt=(t-lastT)/1000` 得 **负步长 ≈ −10.02s**）→ 施放计时器被甩到窗口末尾 → 偶发假红；**非产品逻辑缺陷**。修复 = 同提交 `8b0e1a2` 双重加固（产品侧 dt 钳制 + 测试侧单调续帧）。**书中「根因未诊断」为过期表述，已回写** | 诊断报告 | ✅ 已完成 |
 | A7 | ~~X-GAMe 四张卡~~ | ✅ **实测已全部存在**（非未创建）：`xgame_assets_consumption` / `xgame_save_integration` / `xgame_redtest_clock` / `xgame_boss_crystal` / `xgame_chip_fold` / `xgame_skill_save_wire` —— 书中 task-cards 的「未来交付物」在公司侧那轮已落地 | — | 已完成 |
 
 ### B 类 · 数值填表（规则已定，AI 可提案）
@@ -129,7 +129,7 @@ P3 串行验收：门禁全绿 → commit → push → 重新发布 → 真机�
 - [x] **执行（`skill-runtime.js`）**：`_SR_CAT_DEFAULT_KEY` += `summonUnit`；`eff.effect` 透传；**文件末尾独立区块**新增 `_applySpawnEffects` / `_applyEffect` / 6 个 `_effectXxx` / `_statOf` / `_effectAmount` / `_effectRadius` / `_pushRunBuff`
 - [x] 🔴 **实现期纠正**：接线点由「`_applyDamage` 命中级」改为「`spawnEffect` 施放级」—— AOE 命中 N 目标会把全队效果触发 N 次；施放级 = 每实例恰一次，与旧实现同源（详见 `hero_skill_interface_v2.md` §9.2）
 - [x] 🔴 **实现期揪出的真实缺陷**：`heal`/`barrier` 把「缩放值」与「生属性」重复相加 → 由 `skill_effect_runtime_test.js` 复算断言揪出并修正（§9.3）
-- [x] **测试（并行代理产出，主会话登记）**：`hero_nondamage_skill_test.js`（**37 断言**）+ `skill_effect_runtime_test.js`（**42 断言**）
+- [x] **测试（并行代理产出，主会话登记）**：`hero_nondamage_skill_test.js`（**38 断言**）+ `skill_effect_runtime_test.js`（**43 断言**）
 - [x] **现状记录型断言随批更新**：`hero_skill_migration_test.js` ②（未迁移 → 全量，含绑定键集双向一致性）+ ④（非伤害节点豁免/双向断言）；`skill_integration_test.js` ①（模板 4 → ≥4 且含 `TP_SUMMON_UNIT`）
 - [x] **平衡表**：`G_docs/skill_effect_balance_v0.1.md`（数值策划代理提案，未批准）
 - [x] 门禁 **4239 → 4320 / bad = 0 全绿**（+81）
@@ -157,3 +157,31 @@ P3 串行验收：门禁全绿 → commit → push → 重新发布 → 真机�
 | **H007~H012 表达口径** | ✅ **已拍板（`D012`）：AI 直接设计**，设计已落库 → `hero_skill_interface_v2.md` |
 | **A4 `castTime` 语义** | ⏳ 待拍板：前摇期间能否被打断 / 是否可移动 |
 | **B 类数值填表（5 组）** | ⏳ 待拍板：是否授权 AI 直接提案并落库 |
+
+### 6.3 A6 诊断报告：旧路红测（`skill_enable_runtime_test` ⑥ `kills ≥ 1`）根因
+
+**结论**：**测试桩喂钟非单调**，**非产品逻辑缺陷**。已于 `8b0e1a2` 双重修复，当前 25 条全绿。
+
+**现象**：`skill_enable_runtime_test` ⑥「关掉开关 → 回落旧路径 → 10 秒内 `kills ≥ 1`」，历史上偶发红（`evidence/sh-12-failure.log`：`exit=1 / PASS 4110 / bad=1`），**约 12% 概率**。
+
+**机理（三段链）**：
+1. ④ 段跑 600 帧（`t` 从 0 起，`t += 16.7`）→ `Game.lastT` 被推到 **≈10020ms**。
+2. ⑥ 段**重新开局**却把时钟**重置为 `let t = 0`** → `js/main.js:869` 的
+   `dt = (t - this.lastT) / 1000 = (0 - 10020)/1000 = **−10.02s**`（**负步长**）。
+3. 负 `dt` 把玩家「施放计时器」**一次性甩到窗口末尾**（+10 秒）→ 后续 10 秒内不再施放 →
+   断言依赖的那次击杀丢失 → 假红。
+
+> 之所以是**概率**红：首帧的初始施放仍会打出 1 发，是否造成击杀取决于命中/散布，故只在部分运行中丢断言。
+
+**修复（同一提交 `8b0e1a2`，提交标题即「门禁去随机化」）**：
+- **产品侧加固**（`js/main.js:867~869`）：步长**双钳制** `dt = Math.min(0.05, Math.max(0, (t-lastT)/1000) || 0.016)` —— 下界 0 挡负步长、上界 0.05 挡大步长、`|| 0.016` 兜 0 值。线上 rAF 时间戳本单调，此钳制只针对「注入或回拨」。
+- **测试侧修复**（`skill_enable_runtime_test.js:239~245`）：⑥ 段**改为从 `Game.lastT` 续帧**（`let t = (typeof Game.lastT === "number" && isFinite(Game.lastT)) ? Game.lastT : 0`），与线上单调 rAF 一致。
+- 同提交两处 diff：`js/main.js`（+16/−3）、`skill_enable_runtime_test.js`（+8/−1）。
+
+**为何书中一直写「根因未诊断」（流程教训）**：
+- X-GAMe 书（`X-GAMe-v1.md` / `07-verification-roadmap.md`）是**与修复同批并行产出**的，**未回读修复提交的代码注释** → 状态滞留为「尚未诊断」。
+- 🔴 这是本项目**同源第 3 次「凭文档不读代码」**（前两次：v1 接口文档判「需扩 6 种模板」被推翻；本条）。**凡「未诊断/未实现/不可行」类文档结论，开工前必须回查代码与提交记录。**
+
+**可复用守卫（防复发）**：
+- 测试内跨段推进主循环时，**禁止重置时钟**；一律 `t = Game.lastT` 续帧（或单调递增喂 `__raf`）。
+- 断言「10 秒内击杀」这类**窗口型行为**前，先断言前提（效果已生成 / 施放已发生），避免把喂钟缺陷伪装成玩法缺陷。
