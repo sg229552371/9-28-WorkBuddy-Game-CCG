@@ -43,6 +43,32 @@ function skillSteps(n, base, target) {
   return out;
 }
 
+/** 锚点式整数曲线（8.5 ② 口径 · B1 落库 2026-10-12）：spec 形如 { 1:3, 25:4, 60:5, 100:6 }。
+ *  3~5 行关键锚点，区间内**分段线性插值**；**锚点值全为整数 → 向下取整**（与 js/items.js 的
+ *  `anchorLerp` 同口径，保证「同一份数值两种填法结果一致」）；超出首/末锚点的等级取端点值（不外推）。
+ *  为什么需要它：两点 `[base, target]` 只能表达一条直线，无法表达「前段快涨、后段放缓」的关键段
+ *  （见 G_docs/balance_proposal_b1_b2_v0.1.md §1/§2）。旧两点写法**完全保留**（数组入参走原路径）。 */
+function skillStepsAnchors(n, spec) {
+  const cnt = n || SKILL_LEVEL_MAX;
+  const ks = Object.keys(spec || {}).map(Number).filter((k) => isFinite(k)).sort((a, b) => a - b);
+  const out = [];
+  if (!ks.length) { for (let i = 0; i < cnt; i++) out.push(0); return out; }
+  const allInt = ks.every((k) => Number.isInteger(spec[k]));
+  const rnd = (v) => (allInt ? Math.floor(v) : Math.round(v * 100) / 100);
+  const last = ks[ks.length - 1];
+  const at = (lv) => {
+    if (lv <= ks[0]) return rnd(spec[ks[0]]);
+    if (lv >= last) return rnd(spec[last]);
+    for (let i = 0; i < ks.length - 1; i++) {
+      const a = ks[i], b = ks[i + 1];
+      if (lv >= a && lv <= b) return rnd(spec[a] + (spec[b] - spec[a]) * (lv - a) / (b - a));
+    }
+    return rnd(spec[last]);
+  };
+  for (let i = 0; i < cnt; i++) out.push(at(i + 1));
+  return out;
+}
+
 /** 生成完整 100 级等级表。
  *  @param n      级数（省略 = 100）
  *  @param cast   施放层字段：{ cooldown: [base, target], castTime: [base, target] }（可缺）
@@ -55,7 +81,13 @@ function skillLevels(n, cast, floats, ints) {
   const ctC = (cast && cast.castTime) ? skillCurve(cnt, cast.castTime[0], cast.castTime[1]) : null;
   const curves = {};
   for (const k in (floats || {})) curves[k] = skillCurve(cnt, floats[k][0], floats[k][1]);
-  for (const k in (ints || {})) curves[k] = skillSteps(cnt, ints[k][0], ints[k][1]);
+  /* 整数项两种填法（B1 落库 2026-10-12）：
+   *   数组 [base, target] → 旧两点线性（skillSteps，行为不变）；
+   *   对象 { 1:0, 25:1, 60:2, 100:3 } → 锚点插值（skillStepsAnchors，8.5 ② 口径）。 */
+  for (const k in (ints || {})) {
+    const spec = ints[k];
+    curves[k] = Array.isArray(spec) ? skillSteps(cnt, spec[0], spec[1]) : skillStepsAnchors(cnt, spec);
+  }
   const out = [];
   for (let i = 0; i < cnt; i++) {
     const row = {};
@@ -1142,13 +1174,12 @@ CFG.boss = {
   laserDmgMul: 0.5,      // 单段伤害 = Boss atk × 此倍率
   /* ---- 招式名横幅（17.9-④：东方符卡式出招提示）---- */
   skillNameTime: 1.5,    // 出招时招式名在屏幕上方停留秒数（淡出由渲染按剩余时间算）
-  /* ---- 转阶段奖励（17.9-⑤）----
-   * 每次转阶段掉 1 个宝箱，品质权重**取当前关卡的宝箱档位**（CFG.levelCurve.rows[].chest
-   * → chestTiers[CT].weights），与祭坛宝箱（ALTAR_003）同一套曲线，不另开一套数值。
-   * weights 仅作兜底（关卡表缺失 / 无尽等无关卡世界时用）。 */
+  /* ---- 转阶段奖励（17.9-⑤，B4 落库 2026-10-13 改写）----
+   * 旧口径：每转阶段**必掉** 1 个宝箱，品质权重取当前关卡宝箱档位。
+   * 新口径（用户拍板）：BOSS **有几率**掉落**中高级宝箱**，且**掉落在地面**（走近读条拾取，参考雕像）。
+   * 品质池与几率真源统一收到 `CFG.chestDrop.boss`；本处只保留开关与几率覆盖（chance 缺省取 chestDrop.boss.chance）。 */
   phaseChest: {
     enabled: true,
-    weights: { normal: 40, advanced: 30, epic: 20, divine: 8, mythic: 2 },
   },
 };
 
@@ -1546,17 +1577,17 @@ CFG.skills = {
    * 效果值 = `anchors.mul` 按等级插值（沿用技能表的等级曲线体系，见 8.5 表 4）。
    * stackable=false 的 Buff 重复触发**只刷新持续时间、不升级**；等级上限取 maxLv（默认 CFG.buffLevel.maxLv）。 */
   BF001: { name: "狂力", cat: "buff", pool: "war", tags: ["攻击"], duration: 20,
-    stat: "atk", mul: 1.30, label: "攻击力 +30%", stackable: true,
-    anchors: { mul: { 1: 1.30, 10: 1.55, 30: 1.95, 99: 3.00 } } },
+    stat: "atk", mul: 1.30, label: "攻击力 +30%", stackable: true, maxLv: 10,
+    anchors: { mul: { 1: 1.30, 3: 1.36, 6: 1.44, 10: 1.55 } } },
   BF002: { name: "迅击", cat: "buff", pool: "war", tags: ["冷却"], duration: 20,
-    stat: "cdMul", mul: 0.70, label: "攻速 +30%", stackable: true,
-    anchors: { mul: { 1: 0.70, 10: 0.62, 30: 0.50, 99: 0.34 } } },   // cdMul 越小越快：用锚点保证有下限
+    stat: "cdMul", mul: 0.70, label: "攻速 +30%", stackable: true, maxLv: 10,
+    anchors: { mul: { 1: 0.70, 3: 0.68, 6: 0.66, 10: 0.62 } } },   // cdMul 越小越快：用锚点保证有下限
   BF003: { name: "疾风", cat: "buff", pool: "war", tags: ["移速"], duration: 20,
-    stat: "spd", mul: 1.30, label: "移速 +30%", stackable: true,
-    anchors: { mul: { 1: 1.30, 10: 1.50, 30: 1.85, 99: 2.60 } } },
+    stat: "spd", mul: 1.30, label: "移速 +30%", stackable: true, maxLv: 10,
+    anchors: { mul: { 1: 1.30, 3: 1.34, 6: 1.41, 10: 1.50 } } },
   BF004: { name: "汲血", cat: "buff", pool: "war", tags: ["吸血"], duration: 20,
-    stat: "lifesteal", mul: 0.15, label: "吸血 15%", stackable: true,
-    anchors: { mul: { 1: 0.15, 10: 0.22, 30: 0.35, 99: 0.60 } } },
+    stat: "lifesteal", mul: 0.15, label: "吸血 15%", stackable: true, maxLv: 10,
+    anchors: { mul: { 1: 0.15, 3: 0.17, 6: 0.19, 10: 0.22 } } },
 
   /* ===== 26.x：技能施加的临时增益（pool:"skill" = **不进战争雕像池**）=====
    * 由辅助技能 AT123 / AT124 在释放时直接写入 G.run.buffs（带动态 mul，不带 skillId）。
@@ -1609,21 +1640,24 @@ CFG.altars = {
   ALTAR_002: { name: "战争雕像", color: "#e5484d", icon: "⚔", radius: 117, channel: 2.5, weight: 20,
     effects: [{ type: "randomBuff", pool: "war", duration: 20 }] },
   ALTAR_003: { name: "宝箱", color: "#ffd76a", icon: "▣", radius: 91, channel: 1.2, weight: 26,
-    effects: [{ type: "giveChest", weights: { normal: 48, advanced: 28, epic: 16, divine: 6, mythic: 2 } }] },
-  ALTAR_004a: { name: "邪神雕像·小怪数量", color: "#9a5cf5", icon: "☠", radius: 117, channel: 2.5, weight: 5,
+    /* B3 落库（2026-10-12）：品质权重改为**读当前关卡宝箱档**（weightsFrom），与 BOSS 转阶段同链路，
+     * 消除「祭坛箱比 Boss 箱更欧」的双口径。`weights` 保留为 CT2 基准兜底（无关卡/无尽时回落）。 */
+    effects: [{ type: "giveChest", weightsFrom: "levelChestTier",
+      weights: { normal: 48, advanced: 28, epic: 16, divine: 6, mythic: 2 } }] },
+  ALTAR_004a: { name: "邪神雕像·小怪数量", color: "#9a5cf5", icon: "☠", radius: 117, channel: 2.5, weight: 3,
     effects: [{ type: "adjustMonsters", target: "小怪数量", range: [-100, 100], duration: 30 }] },
-  ALTAR_004b: { name: "邪神雕像·小怪属性", color: "#8e6cf0", icon: "☣", radius: 117, channel: 2.5, weight: 5,
+  ALTAR_004b: { name: "邪神雕像·小怪属性", color: "#8e6cf0", icon: "☣", radius: 117, channel: 2.5, weight: 3,
     effects: [{ type: "adjustMonsters", target: "小怪属性", range: [-100, 100], duration: 30 }] },
-  ALTAR_004c: { name: "邪神雕像·精英数量", color: "#a86cf0", icon: "❖", radius: 117, channel: 2.5, weight: 5,
+  ALTAR_004c: { name: "邪神雕像·精英数量", color: "#a86cf0", icon: "❖", radius: 117, channel: 2.5, weight: 3,
     effects: [{ type: "adjustMonsters", target: "精英数量", range: [-100, 100], duration: 30 }] },
-  ALTAR_004d: { name: "邪神雕像·精英属性", color: "#b06cf0", icon: "✷", radius: 117, channel: 2.5, weight: 5,
+  ALTAR_004d: { name: "邪神雕像·精英属性", color: "#b06cf0", icon: "✷", radius: 117, channel: 2.5, weight: 3,
     effects: [{ type: "adjustMonsters", target: "精英属性", range: [-100, 100], duration: 30 }] },
-  ALTAR_004e: { name: "邪神雕像·BOSS属性", color: "#c06cf5", icon: "☢", radius: 117, channel: 2.5, weight: 5,
+  ALTAR_004e: { name: "邪神雕像·BOSS属性", color: "#c06cf5", icon: "☢", radius: 117, channel: 2.5, weight: 3,
     effects: [{ type: "adjustMonsters", target: "BOSS属性", range: [-100, 100], duration: 30 }] },
   ALTAR_005: { name: "工匠雕像", color: "#6cb2ff", icon: "⚒", radius: 117, channel: 2.5, weight: 0,
     effects: [{ type: "teleport", submap: "artisan" }] },   // 非随机刷出，由击杀进度触发
-  RIFT: { name: "空间裂缝", color: "#5ad0ff", icon: "◈", radius: 117, channel: 2.0, weight: 3,
-    effects: [{ type: "rift" }] },                          // 空间裂缝入口：读条进入战斗子地图
+  RIFT: { name: "空间裂缝", color: "#5ad0ff", icon: "◈", radius: 117, channel: 2.0, weight: 0,
+    effects: [{ type: "rift" }] },                          // B3 落库：首版 weight 0（不刷；当前亦无任何池引用）；后续恢复 3
 };
 
 /* ---------- 主关卡开场冻结（出征进入主地图时的「停留 3 秒」） ----------
@@ -1914,8 +1948,28 @@ CFG.elites = {
     "狂暴": { atkMul: 1.7, spdMul: 1.15, color: "#ff5b5b" },
     "护盾": { shieldHp: 60, hpMul: 1.5, color: "#6cb2ff" },
   },
-  dropChest: { normal: 30, advanced: 40, epic: 20, divine: 8, mythic: 2 },   // 必掉宝箱品质权重
+  /* B4 落库（2026-10-13，用户拍板）：精英掉落由「**必掉**宝箱 + 直接入包」改为
+   * 「**有几率**掉**低级宝箱** + **落地**（拾取方式参考雕像）」。数值真源 = `CFG.chestDrop.elite`。 */
   extraExp: 2,            // 额外经验宝石数
+};
+
+/* ---------- 宝箱主来源表（B4 落库 2026-10-13，用户原话逐条对应）----------
+ *   ①「精英怪有几率掉落低级宝箱」   → chestDrop.elite  { chance, weights（前两阶） }
+ *   ②「BOSS 有几率掉落中高级宝箱」   → chestDrop.boss   { chance, weights（后三阶） }
+ *   ③「宝箱掉落在地面，拾取方式参考雕像」→ chestDrop.ground { radius, channel }（落地为祭坛实体，进圈读条）
+ *   ④「宝箱就是雕像的一种形态表现」  → 宝箱与雕像同属 `world.altars` 实体族，共用同一读条/渲染/触发链路
+ *   ⑤「同名宝箱在背包中可叠加」      → CFG.chestQualities[].stackMax + Backpack.tryStackChest（已实现，回归锁定）
+ *
+ * 品质池口径（与 CFG.chestQualities 的阶次一一对应）：
+ *   低级 = 前两阶（普通 normal / 高级 advanced）；中高级 = 后三阶（史诗 epic / 神圣 divine / 神话 mythic）。
+ * 首版范围闸门 `gateByDropW`：品质池按 `CFG.chestQualities[q].dropW > 0` 过滤（首版只做前 3 阶），
+ *   故 boss 池在首版实际只留「史诗」；后续把 divine / mythic 的 `dropW` 打开即自动进池，**无需改代码**。 */
+CFG.chestDrop = {
+  enabled: true,
+  elite: { chance: 0.35, weights: { normal: 70, advanced: 30 } },         // 精英：低级宝箱（几率）
+  boss:  { chance: 0.60, weights: { epic: 55, divine: 35, mythic: 10 } }, // BOSS：中高级宝箱（几率）
+  ground: { radius: 91, channel: 1.2 },   // 地面宝箱判定/绘制半径与读条秒数（与 ALTAR_003 宝箱雕像同款）
+  gateByDropW: true,                      // 首版范围闸门：true = 只保留 dropW > 0 的品质
 };
 
 /* ---------- 邪神雕像倍率作用点配置（4.5 / 16.9，配置表驱动，策划可后续丰富） ----------
@@ -1947,6 +2001,10 @@ CFG.buffLevel = {
   maxLv: 99,             // 单条 Buff 的等级上限（条目可用 maxLv 覆盖）
   stackPerTrigger: 1,    // 每次重复触发提升的等级数
   stackable: true,       // 默认可叠等级；条目可用 stackable:false 关闭
+  /* B2 落库（2026-10-13，需确认 #8）：冷却类 Buff（`stat:"cdMul"`）乘算因子的**防御性下限**。
+   * 锚点（BF002 末锚点 0.62）已保证下限，此处再加一道全局钳制，防止后续锚点/词条叠加后冷却趋 0。
+   * 消费点：`js/items.js` runBonus() —— mul.cd 不低于本值。 */
+  cdMulFloor: 0.30,
 };
 
 /* ---------- 战争雕像增益池（4.4，各 20 秒） ----------
@@ -1963,13 +2021,17 @@ CFG.warBuffs = Object.keys(CFG.skills)
       stackPerTrigger: s.stackPerTrigger || CFG.buffLevel.stackPerTrigger };
   });
 
-/* ---------- 宝箱品质表（6.2，首发 5 阶） ---------- */
+/* ---------- 宝箱品质表（6.2，首发 5 阶） ----------
+ * B5 落库（2026-10-12）：新增 `shape` = 占格（原硬编码在 js/items.js 的 makeChestItem，
+ * 违反「数值一律进 CFG」契约，现已收回配表；同品质叠加恒占 1 格，见 §6.3）。
+ * 字段口径：weight = **单件重量**（非掉落权重；掉落在 dropW / chestTiers）、
+ *          value = 固定价值（撤离折算 ×0.5 → 结晶）、dropW = 掉落权重（0 = 首版暂缓）。 */
 CFG.chestQualities = {
-  normal:   { name: "普通宝箱", color: "#9aa7b8", weight: 8,  stackMax: 5, value: 20,   dropW: 70 },
-  advanced: { name: "高级宝箱", color: "#6cb2ff", weight: 12, stackMax: 5, value: 60,   dropW: 25 },
-  epic:     { name: "史诗宝箱", color: "#c79bff", weight: 18, stackMax: 5, value: 150,  dropW: 5 },
-  divine:   { name: "神圣宝箱", color: "#ffd76a", weight: 26, stackMax: 5, value: 400,  dropW: 0 },
-  mythic:   { name: "神话宝箱", color: "#ff8c5a", weight: 36, stackMax: 3, value: 1000, dropW: 0 },
+  normal:   { name: "普通宝箱", color: "#9aa7b8", shape: [1, 1], weight: 8,  stackMax: 5, value: 20,   dropW: 70 },
+  advanced: { name: "高级宝箱", color: "#6cb2ff", shape: [1, 1], weight: 12, stackMax: 5, value: 60,   dropW: 25 },
+  epic:     { name: "史诗宝箱", color: "#c79bff", shape: [1, 1], weight: 18, stackMax: 5, value: 150,  dropW: 5 },
+  divine:   { name: "神圣宝箱", color: "#ffd76a", shape: [1, 1], weight: 26, stackMax: 5, value: 400,  dropW: 0 },
+  mythic:   { name: "神话宝箱", color: "#ff8c5a", shape: [1, 1], weight: 36, stackMax: 3, value: 1000, dropW: 0 },
 };
 
 /* ---------- 装备定义（首版：固定形状、不可旋转） ---------- */
@@ -2556,7 +2618,7 @@ CFG.endless = {
   altarTimeline: {
     enabled: true,
     firstDelay: 25,          // 进图后首座祭坛延迟（秒）
-    interval: 40,            // 此后每 interval 秒投放 1 座
+    interval: 35,            // 此后每 interval 秒投放 1 座（B3 落库：40 → 35，匹配清波节奏）
     pick: 1,
     pool: ["ALTAR_001", "ALTAR_002", "ALTAR_003", "ALTAR_004a", "ALTAR_004b"],
   },
@@ -2993,7 +3055,8 @@ CFG.skillSystem = {
       levels: skillLevels(SKILL_LEVEL_MAX,
         { cooldown: [1.80, 0.90], castTime: [0, 0] },
         { coefficient: [1.50, 6.50], speed: [480, 715], life: [1.60, 2.20], radius: [8, 12] },
-        { count: [1, 1] }),
+        /* B1 锚点（4 行）：单体法球，弹道数**永久锁 1**（增发走词条/水晶，见 b1_b2 提案需确认 #1）。 */
+        { count: { 1: 1, 25: 1, 60: 1, 100: 1 } }),
       baseGraph: {
         nodes: [
           {
@@ -3070,7 +3133,8 @@ CFG.skillSystem = {
       levels: skillLevels(SKILL_LEVEL_MAX,
         { cooldown: [1.90, 0.95], castTime: [0, 0] },
         { coefficient: [1.30, 5.60], speed: [520, 760], life: [1.50, 2.00], radius: [9, 13] },
-        { count: [3, 3] }),
+        /* B1 锚点：三向散射 3→6（LV1=3 对齐旧 AT103；LV100=6 约 2×，≤ affixTags 弹道数量 max 8）。 */
+        { count: { 1: 3, 25: 4, 60: 5, 100: 6 } }),
       baseGraph: {
         nodes: [
           {
@@ -3095,7 +3159,8 @@ CFG.skillSystem = {
       levels: skillLevels(SKILL_LEVEL_MAX,
         { cooldown: [1.80, 0.90], castTime: [0, 0] },
         { coefficient: [1.60, 6.90], speed: [760, 980], life: [1.40, 1.90], radius: [7, 10] },
-        { extraPierceCount: [2, 6] }),
+        /* B1 锚点：穿透 2→5（LV1=2 对齐旧 AT105；LV100=5 = affixTags 穿透 max 5，收口 6→5）。 */
+        { extraPierceCount: { 1: 2, 25: 3, 60: 4, 100: 5 } }),
       baseGraph: {
         nodes: [
           {
@@ -3120,7 +3185,8 @@ CFG.skillSystem = {
       levels: skillLevels(SKILL_LEVEL_MAX,
         { cooldown: [2.00, 1.00], castTime: [0, 0] },
         { coefficient: [1.20, 5.20], speed: [560, 800], life: [1.60, 2.10], radius: [9, 12] },
-        { count: [8, 12] }),
+        /* B1 锚点：环形弹幕 8→12（基础 8 已 = 词条上限 → 技能基础单独越过，词条上限另算，需确认 #3）。 */
+        { count: { 1: 8, 25: 9, 60: 11, 100: 12 } }),
       baseGraph: {
         nodes: [
           {
@@ -3145,7 +3211,8 @@ CFG.skillSystem = {
       levels: skillLevels(SKILL_LEVEL_MAX,
         { cooldown: [1.50, 0.75], castTime: [0, 0] },
         { coefficient: [1.20, 5.20], speed: [640, 880], life: [1.20, 1.70], radius: [8, 11] },
-        { count: [3, 6] }),
+        /* B1 锚点：疾风连爆 3→6（与 SK_SCATTER 共用同一曲线，便于横向对齐）。 */
+        { count: { 1: 3, 25: 4, 60: 5, 100: 6 } }),
       baseGraph: {
         nodes: [
           {
@@ -3170,7 +3237,8 @@ CFG.skillSystem = {
       levels: skillLevels(SKILL_LEVEL_MAX,
         { cooldown: [2.30, 1.15], castTime: [0.10, 0.08] },
         { coefficient: [1.90, 7.80], speed: [430, 620], life: [1.80, 2.40], radius: [12, 17] },
-        { count: [1, 1] }),
+        /* B1 锚点：单体重炮，弹道数**永久锁 1**（威力体现在伤害与爆炸半径）。 */
+        { count: { 1: 1, 25: 1, 60: 1, 100: 1 } }),
       baseGraph: {
         nodes: [
           {
@@ -3326,7 +3394,10 @@ CFG.skillSystem = {
        * 批 2B：effect.kind = "trap" → 运行时不在施放点立即结算伤害，而是延迟引爆（伤害基准照旧传递）。 */
       levels: skillLevels(SKILL_LEVEL_MAX,
         { cooldown: [5.00, 2.50], castTime: [0, 0] },
-        { coefficient: [2.60, 10.40], radius: [110, 180], life: [0.12, 0.18] }),
+        { coefficient: [2.60, 10.40], radius: [110, 180], life: [0.12, 0.18] },
+        /* B1 锚点：陷阱数 1→3（与旧 AT114 锚点逐值一致；LV100=3 = H008 trapMax 3）。
+         * 运行时 _effectTrap 优先读本表 params.trapCount（等级驱动），effect.trapCount 仅作缺省兜底。 */
+        { trapCount: { 1: 1, 25: 2, 60: 2, 100: 3 } }),
       baseGraph: {
         nodes: [
           {
@@ -3338,7 +3409,8 @@ CFG.skillSystem = {
             parameters: { radius: 110, moreDamageMul: 1 },
             damageBasis: { baseRef: "hero.atk", coefficient: 2.6, inheritFactorKeys: [] },
             hitPolicyId: "HP_INSTANT_AREA",
-            effect: { kind: "trap", armDelay: 0.5, trapCount: 3 },
+            /* trapCount 仅为**缺省兜底**（= LV1 值，B1 落库）；实际布雷数由 levels.params.trapCount 等级驱动（1→3）。 */
+            effect: { kind: "trap", armDelay: 0.5, trapCount: 1 },
           },
         ],
         edges: [],
@@ -3355,7 +3427,8 @@ CFG.skillSystem = {
       levels: skillLevels(SKILL_LEVEL_MAX,
         { cooldown: [5.50, 2.75], castTime: [0, 0] },
         { orbit: [66, 90], hp: [40, 260], atk: [6, 48], fireCd: [0.80, 0.50] },
-        { count: [3, 6] }),
+        /* B1 锚点：召唤数 3→6（与旧 AT113 锚点逐值一致；LV100=6 = H007 summonMax 6，由 min() 钳制）。 */
+        { count: { 1: 3, 25: 4, 60: 5, 100: 6 } }),
       baseGraph: {
         nodes: [
           {
@@ -3366,6 +3439,8 @@ CFG.skillSystem = {
             capabilities: ["summonUnit", "orbitContact"],
             parameters: { count: 3, orbit: 66, hp: 40, atk: 6, fireCd: 0.80 },
             hitPolicyId: "HP_MAIN_BOLT",
+            /* summonCount 仅为**声明基线**（= LV1 值）；实际召唤数量由 spawnEffect 读 levels.params.count
+             * 决定实例数（等级曲线 3→6），每实例 = 1 架 Drone（见 skill-runtime _effectSummon）。 */
             effect: { kind: "summon", summonId: "DRONE_REPAIR", summonCount: 3 },
           },
         ],

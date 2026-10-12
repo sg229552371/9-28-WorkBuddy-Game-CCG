@@ -364,12 +364,22 @@ vm.runInContext(`
     if (em.hpMax > baseM.hpMax) hpBoosted = true;
   }
   console.assert(hpBoosted, "精英血量提升（词缀乘算，抽样）");
-  // 精英击杀必掉宝箱
+  // 精英击杀：B4 落库（2026-10-13）——「**有几率**掉**低级宝箱** + **掉在地面**」（宝箱=雕像形态，进圈读条拾取）
   const em3 = new Monster("NM0010", 800, 800, 1); applyElite(em3); em3.dead = true;
   G.run.backpack = new Inventory(6, 4, "backpack");
   G.activeWorld = G.mainWorld;
+  const altarsBefore = G.mainWorld.altars.length;
+  eliteDropChest._rng = () => 0;                 // 固定「必中」→ 可确定断言（rng 挂钩，见 game.js eliteDropChest）
   onMonsterKilled(G.mainWorld, em3);
-  console.assert(G.run.backpack.items.some(i => i.kind === "chest"), "精英击杀必掉宝箱入包");
+  eliteDropChest._rng = null;
+  const dropAltar = G.mainWorld.altars[G.mainWorld.altars.length - 1];
+  console.assert(G.mainWorld.altars.length === altarsBefore + 1 && !!dropAltar
+    && dropAltar.cfg.effects[0].type === "giveChest" && !!dropAltar.cfg.effects[0].fixed
+    && dropAltar.cfg.channel > 0, "精英击杀几率掉低级宝箱（落在地面，读条拾取）");
+  console.assert(!G.run.backpack.items.some(i => i.kind === "chest"), "掉落阶段不入包（须走近读条拾取）");
+  G.mainWorld.triggerAltar(dropAltar);           // 走雕像同款读条 → 触发入包
+  console.assert(G.run.backpack.items.some(i => i.kind === "chest" && ["normal", "advanced"].indexOf(i.chestQ) >= 0),
+    "地面宝箱拾取后入包（低级品质：普通/高级）");
 
   // 21) 独立精英怪 ED（3.3 原方案：关卡层定点投放，不进随机圆）
   {
@@ -416,7 +426,8 @@ vm.runInContext(`
     const w = new World(1920, 1920, true); G.mainWorld = w;
     const ids = ["ALTAR_004a", "ALTAR_004b", "ALTAR_004c", "ALTAR_004d", "ALTAR_004e"];
     const keyOf = { ALTAR_004a: "smallCount", ALTAR_004b: "smallStat", ALTAR_004c: "eliteCount", ALTAR_004d: "eliteStat", ALTAR_004e: "bossStat" };
-    console.assert(ids.every(k => CFG.altars[k] && CFG.altars[k].weight >= 4 && CFG.altars[k].effects[0].type === "adjustMonsters"
+    // B3 落库（2026-10-12）：邪神 5 变体池权重 5 → 3（降低负面祭坛合计占比），故阈值由 >=4 放宽到 >=3
+    console.assert(ids.every(k => CFG.altars[k] && CFG.altars[k].weight >= 3 && CFG.altars[k].effects[0].type === "adjustMonsters"
       && CFG.altars[k].effects[0].range[0] === -100 && CFG.altars[k].effects[0].range[1] === 100), "邪神 5 行配置（adjustMonsters / ±100）");
     console.assert(Object.keys(CFG.monsterScale.targets).length === 5 && CFG.monsterScale.targets["精英数量"].key === "eliteCount", "monsterScale 5 目标映射");
     const trig = (id, ov) => {

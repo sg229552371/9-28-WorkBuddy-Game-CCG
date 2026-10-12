@@ -741,12 +741,11 @@ function onMonsterKilled(w, m, killer) {
       }
     }
   }
-  // 精英怪（独立 ED 或词缀转化）：必掉宝箱（按权重自动入包）+ 额外经验
+  // 精英怪（独立 ED 或词缀转化）：B4 落库（2026-10-13）——「**有几率**掉**低级宝箱**」，
+  // 且宝箱**掉在地面**（祭坛实体，进圈读条拾取，与雕像同款；见 game.js 的 eliteDropChest / spawnGroundChest）。
+  // 旧口径「必掉 + 直接入包」已作废；背包满与否在**拾取时**判定，不再静默丢弃。
   if (m.isElite) {
-    const item = makeChestItem(U.weightedPick(CFG.elites.dropChest));
-    if (grantItemToRun(r, item, { full: "discard" })) {
-      UI.toast(`★ 精英「${(m.eliteAffixes || []).join("·")}」掉落 ${item.name}`, "gold");
-    } else UI.toast("背包已满，精英宝箱作废", "bad");
+    if (typeof eliteDropChest === "function") eliteDropChest(w, m);
     for (let i = 0; i < CFG.elites.extraExp; i++) spawnPickup(w, m.x, m.y, "exp", Math.max(2, Math.round(m.d.exp)));
   }
   dropEndlessExp(w, m);              // 21.17 深渊局内升级：掉落经验宝石（非深渊世界立即返回）

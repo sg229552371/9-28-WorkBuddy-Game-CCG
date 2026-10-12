@@ -562,13 +562,27 @@ const driver = `
     /* ---- Buff 等级（4.4）：重复触发同类 Buff **叠的是等级**，不是叠加多份效果 ---- */
     check("Buff等级-池内条目带出 skillId / stackable / maxLv",
       CFG.warBuffs.every(b => b.skillId && b.stackable !== undefined && b.maxLv > 0));
-    // 效果按等级走锚点插值（狂力：Lv1 = 1.30，锚点 10 / 30 / 99）
+    // 效果按等级走锚点插值（B2 落库 2026-10-12：锚点等级 {1,3,6,10} + maxLv 10；
+    // 超出末锚点的等级取端点值、**不外推** —— 旧口径 {1,10,30,99} 已弃用，见 balance_proposal_b1_b2 §3）
     check("Buff等级-狂力 Lv1 效果 = 锚点 Lv1（×1.30）", near(skillEntry("BF001", 1).mul, 1.30, 1e-9));
-    const e10 = skillEntry("BF001", 10).mul, e30 = skillEntry("BF001", 30).mul;
-    check("Buff等级-狂力 Lv10 = 1.55 / Lv30 = 1.95（锚点命中）",
-      near(e10, 1.55, 1e-9) && near(e30, 1.95, 1e-9));
-    check("Buff等级-狂力 Lv20 在锚点间插值（1.55～1.95）", e10 < skillEntry("BF001", 20).mul && skillEntry("BF001", 20).mul < e30);
-    check("Buff等级-迅击 cdMul 随等级下降且有下限（Lv99 = 0.34）", near(skillEntry("BF002", 99).mul, 0.34, 1e-9));
+    const e3 = skillEntry("BF001", 3).mul, e6 = skillEntry("BF001", 6).mul, e10 = skillEntry("BF001", 10).mul;
+    check("Buff等级-狂力 锚点命中（Lv3=1.36 / Lv6=1.44 / Lv10=1.55）",
+      near(e3, 1.36, 1e-9) && near(e6, 1.44, 1e-9) && near(e10, 1.55, 1e-9));
+    check("Buff等级-狂力 Lv2 在锚点间插值（1.30 < v < 1.36）",
+      skillEntry("BF001", 1).mul < skillEntry("BF001", 2).mul && skillEntry("BF001", 2).mul < e3);
+    check("Buff等级-狂力 超出末锚点不外推（Lv20 / Lv99 均钳到 Lv10 端点 1.55）",
+      near(skillEntry("BF001", 20).mul, 1.55, 1e-9) && near(skillEntry("BF001", 99).mul, 1.55, 1e-9));
+    check("Buff等级-迅击 cdMul 锚点单调不增（Lv3=0.68 / Lv6=0.66）",
+      near(skillEntry("BF002", 3).mul, 0.68, 1e-9) && near(skillEntry("BF002", 6).mul, 0.66, 1e-9));
+    check("Buff等级-迅击 cdMul 末锚点保下限（Lv99 = 0.62，不再下探 0.34）", near(skillEntry("BF002", 99).mul, 0.62, 1e-9));
+    check("Buff等级-冷却类乘算因子设防御性下限（CFG.buffLevel.cdMulFloor = 0.30，runBonus 兜底钳制）",
+      CFG.buffLevel.cdMulFloor === 0.30 && (function () {
+        const saved = r.buffs; r.buffs = [{ skillId: "BF002", id: "迅击", lv: 1, remain: 20 }];
+        const v = runBonus().mul.cd; r.buffs = saved;
+        return v >= CFG.buffLevel.cdMulFloor && v <= 1;
+      })());
+    check("Buff等级-maxLv 由 99 收到 10（BF001~BF004 全组统一）",
+      ["BF001", "BF002", "BF003", "BF004"].every(id => CFG.warBuffs.find(b => b.skillId === id).maxLv === 10));
     check("Buff等级-文案随等级变化", buffEffectLabel("BF001", 1) === "攻击力 +30%" &&
       buffEffectLabel("BF001", 10) === "攻击力 +55%" && buffEffectLabel("BF002", 1) === "攻速 +30%");
 

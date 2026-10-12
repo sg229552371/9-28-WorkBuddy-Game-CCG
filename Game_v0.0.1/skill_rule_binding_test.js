@@ -321,7 +321,9 @@ const TWO_SKILL_STATE = `
   check("⑦ 行为：范围内目标照常施放并结算（确认上一条不是整体失效）",
     nearCase.spawned > 0 && nearCase.dmg > 0);
 
-  /* 行为③：无目标时，requiresTarget=false 的技能仍施放；true 的技能保持就绪 */
+  /* 行为③：无目标时，requiresTarget=false 的技能仍施放；true 的技能保持就绪。
+   * ⚠️ A4 落库（2026-10-12）：SK_SHOCKWAVE 带前摇 castTime=0.15（config.js skillLevels cast 层），
+   *    故「照常施放」= 走完前摇后施放，**不是**首帧即放 —— 须逐帧推进到读条满再断言。 */
   const noTarget = ev(`(function () {
     var t = CFG.skillSystem;
     var keepOn = t.enabled, keepList = t.migratedHeroIds, keepCast = t.skillDefs.SK_SHOCKWAVE.castPolicyId;
@@ -330,17 +332,23 @@ const TWO_SKILL_STATE = `
     var hero = { id: "H001", x: 100, y: 100, r: 14, alive: true, stats: { atk: 100, cdMul: 1 },
       skillState: { heroId: "H001", skills: { SK_SHOCKWAVE: { id: "SK_SHOCKWAVE", level: 1, cdLeft: 0 } }, crystals: [] } };
     var enabled = !!SkillScheduler._tables().enabled;
+    var ct = SkillScheduler.castTimeFor(t.skillDefs.SK_SHOCKWAVE, 1);      // 前摇真源（>0 才有下列语义）
     var a = SkillScheduler.tick(w, hero, 1 / 60).requests.length;          // requiresTarget:true → 0
     t.skillDefs.SK_SHOCKWAVE.castPolicyId = "CAST_ORBIT";                  // 临时改绑（仅内存）
     hero.skillState.skills.SK_SHOCKWAVE.cdLeft = 0;
-    var b = SkillScheduler.tick(w, hero, 1 / 60).requests.length;          // requiresTarget:false → 1
+    hero.skillState.skills.SK_SHOCKWAVE.castLeft = null;
+    var firstFree = SkillScheduler.tick(w, hero, 1 / 60).requests.length;  // 前摇首帧 → 0（读条中）
+    var free = 0, idle = 0;
+    for (var i = 0; i < 60 && free === 0; i++) { free += SkillScheduler.tick(w, hero, 1 / 60).requests.length; }
     t.skillDefs.SK_SHOCKWAVE.castPolicyId = keepCast;
     t.enabled = keepOn; t.migratedHeroIds = keepList;
-    return { enabled: enabled, locked: a, free: b };
+    return { enabled: enabled, ct: ct, locked: a, firstFree: firstFree, free: free, idle: idle };
   })()`);
   check("⑦ 前提：调度器已通电（防「恒空转」造成空真）", noTarget.enabled === true);
+  check("⑦ 前提：SK_SHOCKWAVE 前摇真源 > 0（A4 生效前提，防「无前摇」造成空真）", noTarget.ct > 0);
   check("⑦ 行为：无目标时 requiresTarget:true 技能保持就绪（不空放）", noTarget.locked === 0);
-  check("⑦ 行为：无目标时 requiresTarget:false 技能照常施放", noTarget.free === 1);
+  check("⑦ 行为：前摇读条中（castTime 未满）不施放", noTarget.firstFree === 0);
+  check("⑦ 行为：无目标时 requiresTarget:false 技能走完前摇照常施放", noTarget.free === 1);
 }
 
 /* ================== ⑧ 静态接线自检（单行接入点确实存在） ================== */

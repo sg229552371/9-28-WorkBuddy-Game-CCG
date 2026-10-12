@@ -222,7 +222,14 @@ function healExpect(statVal, lv, e) {
   var sid = "SK_MINEFIELD";
   var e = effectOf(sid);
   var node = nodeOf(sid);
-  check("6.0 前提：节点 effect.kind = trap 且 trapCount 直读 CFG", !!e && e.kind === "trap" && e.trapCount === 3);
+  /* B1 落库（2026-10-12）：布雷数从「节点静态 effect.trapCount=3」改为**等级驱动**
+   * （levels[].parameters.trapCount，1→3）。前提断言必须同时锁住「等级表里真有该参数」，
+   * 否则会退化成「断言一个永不被消费的静态字段」的空真陷阱。 */
+  var lvTbl = defOf(sid).levels;
+  var lv1Trap = lvTbl[0].parameters.trapCount;
+  var maxTrap = lvTbl[lvTbl.length - 1].parameters.trapCount;
+  check("6.0 前提：节点 effect.kind = trap，且布雷数由**等级表**驱动（LV1=" + lv1Trap + " / LV100=" + maxTrap + "）",
+    !!e && e.kind === "trap" && lv1Trap === 1 && maxTrap === 3);
 
   var o = { id: "H008", x: 0, y: 0 };
   var run = setEnv(o, { hp: 0, hpMax: 1000, companions: [], buffs: [], traps: [], drones: [] });
@@ -233,9 +240,9 @@ function healExpect(statVal, lv, e) {
   SkillRuntime.spawnEffect(w, snap, "n_minefield", { step: 1 });
   var added = run.traps.slice(before);
 
-  check("6.1 布雷数量 = trapCount（G.run.traps 增加 3 条）", added.length === e.trapCount && added.length === 3);
+  check("6.1 布雷数量 = 等级表 trapCount（LV1 → G.run.traps 增加 " + lv1Trap + " 条）", added.length === lv1Trap);
 
-  var shapeOk = added.length === e.trapCount && added.every(function (t) {
+  var shapeOk = added.length === lv1Trap && added.every(function (t) {
     return typeof t.x === "number" && typeof t.y === "number" && typeof t.radius === "number" &&
       typeof t.armDelay === "number" && t.armed === false && t.fuse === 0 &&
       t.owner === o && t.world === w && typeof t.dmg === "number";
@@ -248,6 +255,11 @@ function healExpect(statVal, lv, e) {
     added.length > 0 && added.every(function (t) { return t.dmg > 0 && t.dmg === expDmg; }));
   check("6.4 radius === 节点 parameters.radius（直读 CFG）",
     added.length > 0 && added.every(function (t) { return t.radius === cnode.parameters.radius; }));
+
+  /* 6.7 等级驱动复核：编译到 LV100 后该参数必须真的变大（否则「等级驱动」只是口号） */
+  var cnode100 = compileOne(sid, 100).nodes["n_minefield"];
+  check("6.7 等级驱动复核：LV100 编译后 parameters.trapCount = " + cnode100.parameters.trapCount + "（LV1 = " + lv1Trap + "）",
+    cnode100.parameters.trapCount === maxTrap && cnode100.parameters.trapCount !== lv1Trap);
 
   var eff = w.__skillEffects[0];
   check("6.5 布雷不立即结算：效果实例 state = dead", !!eff && eff.state === "dead");
@@ -278,6 +290,12 @@ function healExpect(statVal, lv, e) {
 
   check("7.1 注入 Drone：G.run.drones 增加 params.count 条",
     run.drones.length === cnode.parameters.count && cnode.parameters.count === 3);
+
+  /* 7.1b 等级驱动复核（B1 落库）：LV100 编译后 count 必须变大（3→6），
+   * 否则「等级曲线」只是配置上的装饰字段。 */
+  var cnode100 = compileOne(sid, 100).nodes["n_droneswarm"];
+  check("7.1b 等级驱动复核：LV100 编译后 parameters.count = " + cnode100.parameters.count + "（LV1 = " + cnode.parameters.count + "）",
+    cnode100.parameters.count === 6 && cnode100.parameters.count !== cnode.parameters.count);
   check("7.2 每架 d.world === world 且 d.owner === 施放者实体",
     run.drones.length > 0 && run.drones.every(function (d) { return d.world === w && d.owner === o; }));
   check("7.3 召唤物数值来自节点 parameters（hp / atk / fireCd）",

@@ -224,7 +224,10 @@ function makeChip(defId, q) {
 
 function makeChestItem(chestQ, count = 1) {
   const c = CFG.chestQualities[chestQ];
-  return { uid: UID++, kind: "chest", chestQ, name: c.name, shape: [1, 1],
+  /* B5 落库（2026-10-12）：占格改读配表 `CFG.chestQualities[].shape`（原为硬编码 [1,1]，
+   * 违反「数值一律进 CFG」契约）；缺省仍回落 [1,1] 保证老配置不崩。 */
+  const shape = (c && Array.isArray(c.shape)) ? c.shape.slice() : [1, 1];
+  return { uid: UID++, kind: "chest", chestQ, name: c.name, shape: shape,
     weight: c.weight, value: c.value * count, count };
 }
 /* ---------- 保险契约（方案 A：背包道具） ----------
@@ -497,6 +500,10 @@ function runBonus() {
     else if (c.attr === "bullets") { /* 弹道数量在 tagCalc / resolveSkill 内生效（全队同源） */ }
     else if (add[c.attr] != null) add[c.attr] += c.value;
   }
+  /* B2 落库（2026-10-13，需确认 #8）：冷却类 Buff 的乘算因子设**防御性下限**（数值进 CFG）。
+   * 目的：即便后续锚点/词条叠加，冷却也不会趋 0（锚点已保证，这里只加一道兜底钳制）。 */
+  const cdFloorB = (CFG.buffLevel && CFG.buffLevel.cdMulFloor != null) ? CFG.buffLevel.cdMulFloor : 0;
+  if (cdFloorB > 0 && mul.cd < cdFloorB) mul.cd = cdFloorB;
   // 19.4：升级即时属性（原属性卡牌「升级 +1 资产」职能并入）——每升 1 级全队 +baseStatGain，LV1 无加成
   const g19 = CFG.levelUp && CFG.levelUp.baseStatGain;
   if (g19) {

@@ -1183,7 +1183,13 @@ SkillRuntime._effectTrap = function (world, snapshot, eff) {
   if (!R) return false;
   if (!Array.isArray(R.traps)) R.traps = [];
   const armDelay = (typeof e.armDelay === "number") ? e.armDelay : 0.5;
-  const count = (typeof e.trapCount === "number" && e.trapCount > 0) ? Math.floor(e.trapCount) : 1;
+  /* 陷阱数（B1 落库 2026-10-12）：**等级驱动优先** —— 读节点 parameters.trapCount（编译器已并入等级行参数），
+   * 缺失时回落 effect.trapCount（缺省兜底）。旧实现只读 effect.trapCount → 等级不成长（LV1=LV100）。
+   * ⚠️ 此处必须就地读 eff.rt.params —— 下方 `const params` 尚未声明，提前引用会触发 TDZ。 */
+  const p0 = (eff.rt && eff.rt.params) || {};
+  const pTrap = (typeof p0.trapCount === "number" && p0.trapCount > 0) ? p0.trapCount : null;
+  const eTrap = (typeof e.trapCount === "number" && e.trapCount > 0) ? e.trapCount : null;
+  const count = Math.floor(pTrap != null ? pTrap : (eTrap != null ? eTrap : 1));
   const b = SkillRuntime._resolveBasis(eff, snapshot);
   const dmg = Math.max(1, Math.round((b.baseRef || 0) * (b.coefficient || 1)));
   const params = (eff.rt && eff.rt.params) || {};

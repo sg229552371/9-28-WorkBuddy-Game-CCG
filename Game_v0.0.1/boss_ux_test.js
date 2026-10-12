@@ -184,49 +184,86 @@ const driver = `
     if (idx >= 0) G.activeWorld.monsters.splice(idx, 1);
   }
 
-  /* ============ 四、⑤ 转阶段宝箱 ============ */
+  /* ============ 四、⑤ 转阶段宝箱（B4 落库 2026-10-13 改写为「几率 + 中高级 + 落地」） ============ */
   {
     check("⑤ CFG.boss.phaseChest.enabled === true",
       !!(CFG.boss.phaseChest && CFG.boss.phaseChest.enabled === true));
-    check("⑤ 兜底权重五阶齐全",
-      ["normal", "advanced", "epic", "divine", "mythic"].every(k => CFG.boss.phaseChest.weights[k] != null));
+    /* 新口径真源 = CFG.chestDrop.boss（中高级池：后三阶），并由 dropW 闸门过滤首版范围（只剩史诗）。 */
+    check("⑤ 中高级品质池真源迁到 CFG.chestDrop.boss（后三阶：史诗/神圣/神话）",
+      !!(CFG.chestDrop && CFG.chestDrop.boss && CFG.chestDrop.boss.weights)
+      && ["epic", "divine", "mythic"].every(k => CFG.chestDrop.boss.weights[k] != null)
+      && ["normal", "advanced"].every(k => CFG.chestDrop.boss.weights[k] == null));
+    check("⑤ 掉落改为几率（0 < chance < 1，非必掉）",
+      typeof CFG.chestDrop.boss.chance === "number" && CFG.chestDrop.boss.chance > 0 && CFG.chestDrop.boss.chance < 1);
+    check("⑤ 首版闸门生效：dropW = 0 的 divine / mythic 被滤除，实际池只剩 epic",
+      (function () { const p = chestDropWeights(CFG.chestDrop.boss.weights); return !!p && !!p.epic && !p.divine && !p.mythic && !p.normal; })());
 
-    // 劫持 weightedPick：抓「实际传进去的权重对象」
+    // 劫持 weightedPick：抓「实际传进去的权重对象」（应为闸门过滤后的池）
     const wp = U.weightedPick;
     let picked = null;
     U.weightedPick = function (wts) { picked = wts; return wp.call(U, wts); };
 
-    const chestCount = () => G.run.backpack.items.filter(it => it && it.kind === "chest").length;
-    const c0 = chestCount();
-
     const bm5 = new Monster("BS0010", 900, 900, 5);      // 三阶段 Boss，降到 20% 血必连转两段
     G.activeWorld.monsters.push(bm5);
-    bm5.hp = bm5.hpMax * 0.2;
-    bm5.bossPhaseTick();
-    check("⑤ 转阶段确实发生了（phaseIdx 0 → 2）", bm5.phaseIdx === 2);
-    check("⑤ 品质权重取当前关卡的宝箱档位（第 1 关 → CT1）",
-      picked === CFG.levelCurve.chestTiers.CT1.weights);
-    check("⑤ 转阶段后背包多了宝箱（" + (chestCount() - c0) + " 个）", chestCount() > c0);
-    check("⑤ 新增宝箱带固定价值（进撤离「×0.5 折算率」链路）",
-      G.run.backpack.items.some(it => it && it.kind === "chest" && typeof it.value === "number" && it.value > 0));
 
-    // 背包满：作废但不崩
+    /* ---- ⑤a 几率未中 → 地面无箱、背包无箱（零副作用） ---- */
+    const chestCount = () => G.run.backpack.items.filter(it => it && it.kind === "chest").length;
+    const c0 = chestCount();
+    const altarCount = () => G.activeWorld.altars.filter(a => a && a.cfg && a.cfg.effects[0] && a.cfg.effects[0].type === "giveChest").length;
+    const a0 = altarCount();
+    bossPhaseChest._rng = () => 0.999;                   // 恒 > chance → 必不中
+    picked = null;
+    const missed = bossPhaseChest(bm5);
+    bossPhaseChest._rng = null;
+    check("⑤ 几率未中 → 不产生宝箱（返回 null，背包与地面均无新增）",
+      missed === null && chestCount() === c0 && altarCount() === a0);
+
+    /* ---- ⑤b 几率命中 → **掉在地面**（altars 新增宝箱实体），且**不入包** ---- */
+    bossPhaseChest._rng = () => 0;                        // 恒 < chance → 必中
+    picked = null;
+    const dropA = bossPhaseChest(bm5);
+    bossPhaseChest._rng = null;
+    check("⑤ 命中 → 地面新增宝箱实体（宝箱 = 雕像形态，落在 world.altars）",
+      !!dropA && altarCount() === a0 + 1 && dropA.cfg.effects[0].type === "giveChest");
+    check("⑤ 命中 → 品质权重取自 CFG.chestDrop.boss 过滤后的池",
+      !!picked && !!picked.epic && !picked.divine && !picked.mythic);
+    check("⑤ 命中 → 地面宝箱带读条（拾取方式参考雕像：channel > 0）",
+      typeof dropA.cfg.channel === "number" && dropA.cfg.channel > 0 && dropA.cfg.radius > 0);
+    check("⑤ 命中 → 掉落阶段**不入包**（须走近读条拾取）", chestCount() === c0);
+
+    /* ---- ⑤c 走近读条 → 走雕像同款链路入包（fixed 品质不再二次掷骰） ---- */
+    G.activeWorld.triggerAltar(dropA);
+    check("⑤ 拾取后入包且品质 = 掉落时所见（fixed，不再二次掷骰）",
+      chestCount() === c0 + 1 && G.run.backpack.items.some(it => it && it.kind === "chest" && it.chestQ === "epic"
+        && typeof it.value === "number" && it.value > 0));
+
+    /* ---- ⑤d 转阶段真实链路：必定转阶段，但箱子可有可无（不崩） ---- */
+    bm5.hp = bm5.hpMax * 0.2;
+    bossPhaseChest._rng = () => 0;
+    bm5.bossPhaseTick();
+    bossPhaseChest._rng = null;
+    check("⑤ 转阶段确实发生了（phaseIdx 0 → 2）", bm5.phaseIdx === 2);
+
+    // 地面宝箱在背包满时：拾取才判作废，不抛异常
     const gir = grantItemToRun;
     grantItemToRun = function () { return false; };
     let boom = null;
-    try { bossPhaseChest(bm5); } catch (e) { boom = e; }
+    bossPhaseChest._rng = () => 0;
+    let dropBoom = null;
+    try { dropBoom = bossPhaseChest(bm5); } catch (e) { boom = e; }
+    bossPhaseChest._rng = null;
+    try { if (dropBoom) G.activeWorld.triggerAltar(dropBoom); } catch (e) { boom = e; }
     grantItemToRun = gir;
-    check("⑤ 背包满时作废不抛异常", boom === null);
+    check("⑤ 背包满时拾取作废但不抛异常", boom === null);
 
-    // 无关卡表：回落兜底权重，不抛异常
-    const savedLc = G.levelCfg;
-    G.levelCfg = {};                                     // 无 id → 取不到曲线行
-    picked = null;
-    let boom2 = null;
-    try { bossPhaseChest(bm5); } catch (e) { boom2 = e; }
-    G.levelCfg = savedLc;
-    check("⑤ 无关卡表时回落兜底权重且不抛异常",
-      boom2 === null && picked === CFG.boss.phaseChest.weights);
+    // chestDrop 关闭 → 零介入
+    const savedEnabled = CFG.chestDrop.enabled;
+    CFG.chestDrop.enabled = false;
+    bossPhaseChest._rng = () => 0;
+    const offRes = bossPhaseChest(bm5);
+    bossPhaseChest._rng = null;
+    CFG.chestDrop.enabled = savedEnabled;
+    check("⑤ chestDrop.enabled=false 时零介入（返回 null）", offRes === null);
 
     U.weightedPick = wp;
     const i5 = G.activeWorld.monsters.indexOf(bm5);

@@ -110,6 +110,20 @@ const SkillScheduler = {
     return cd;
   },
 
+  /** 前摇（读条）秒数 —— A4 落库（2026-10-13，用户拍板「**不可打断 + 可移动**」）。
+   *  真源：`levels[level-1].castTime`（config.js 的 skillLevels cast 层生成）→ 回落技能级 def.castTime → 0。
+   *  语义边界（本函数只做「取值」，不做打断判定 —— 打断与否是 tick 的事）：
+   *    · 不可打断 = 受击不清进度（tick 内**不读** hero.hp / 受伤事件）；
+   *    · 可移动 = 移动不清进度（tick 内**不读** mvx/mvy）。
+   *  历史坑：旧代码 `castTime` 只被生成与校验、**从未被调度器消费**（见 full_dev_plan A4）→ 配了也不生效。 */
+  castTimeFor(def, level) {
+    if (!def) return 0;
+    const row = SkillScheduler._levelRow(def, level);
+    if (row && typeof row.castTime === "number" && isFinite(row.castTime)) return Math.max(0, row.castTime);
+    if (typeof def.castTime === "number" && isFinite(def.castTime)) return Math.max(0, def.castTime);
+    return 0;
+  },
+
   /** 英雄进攻属性（快照来源）：优先 hero.stats，其次既有 computeStats（守卫），最后空表。 */
   _statsOf(hero) {
     if (hero && hero.stats && typeof hero.stats === "object") return hero.stats;
@@ -187,6 +201,20 @@ const SkillScheduler = {
 
       const target = SkillScheduler._acquireTarget(world, hero, range, tp);
       if (!target && !allowNoTarget) continue;          // 无目标 → 保持就绪，不消耗冷却
+
+      /* ---------- A4 前摇（读条）—— 用户 2026-10-13 拍板：**不可打断 + 可移动** ----------
+       * 实现即「唯一真相」：前摇进度只随时间推进，本段**刻意不做任何打断判定** ——
+       *   · 受击：不读 hero.hp / 不订阅受伤事件 → 进度不清零；
+       *   · 移动：不读 mvx/mvy → 进度不清零。
+       * 目标丢失（上方 continue）→ 进度**暂停**（既不推进也不清零），与「不可打断」一致。
+       * castTime = 0 的技能（当前多数）此段恒等 no-op → 零回归。 */
+      const ct = SkillScheduler.castTimeFor(def, st.level);
+      if (ct > 0) {
+        if (typeof st.castLeft !== "number") st.castLeft = ct;   // 首次就绪 → 起读条
+        st.castLeft -= dt;
+        if (st.castLeft > 0) continue;                            // 读条未满 → 本帧不施放
+      }
+      st.castLeft = null;                                         // 施放完成 → 复位，下次重新起读条
 
       const castId = ++SkillScheduler._castSeq;
       st.cdLeft = SkillScheduler.intervalFor(def, st.level, stats, cp);   // 环绕 = max(冷却, 持续)

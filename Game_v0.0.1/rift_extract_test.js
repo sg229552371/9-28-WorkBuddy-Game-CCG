@@ -9,7 +9,8 @@
  *   四、走撤离点读条到点 → 撤离成功，标记为**全收益**（extracted=true，不走 30% 折扣）
  *   五、读条受击 → 归零（对齐主线 exitBeacon 的打断语义）
  *   六、超时 → 失败结算（保留 30%），与死亡同口径
- *   七、屏蔽 RIFT：深渊世界祭坛抽取 100 次**不含 RIFT**；主线世界仍含 RIFT（不误伤）
+ *   七、屏蔽 RIFT：深渊世界祭坛抽取 100 次**不含 RIFT**；首版 RIFT 全局 weight=0（不刷），
+ *       并临时恢复 weight=3 验证白名单机制独立于权重（深渊仍排除 / 主线恢复含 RIFT）
  *   八、无 DOM 沙箱安全：核心逻辑在仅 console 的 vm 沙箱内跑通
  *
  * ⚠️ PASS 文案**禁用英文 error/Error/FAIL**（run_tests.sh 以 grep -ci 统计失败，坑 4）。
@@ -202,9 +203,9 @@ vm.runInContext(`
   var poolEndless = abyssAltarPool("endless");
   var poolMain = abyssAltarPool("main");
   check("38 深渊祭坛池排除 RIFT（不含 RIFT）", !poolEndless.RIFT);
-  check("39 主线祭坛池仍含 RIFT（不误伤）", !!poolMain.RIFT);
+  check("39 首版 RIFT 全局关闭（weight 0）→ 主线祭坛池亦不含 RIFT", !poolMain.RIFT);
   check("40 深渊池仍有可用祭坛（非空）", Object.keys(poolEndless).length > 0);
-  check("41 不改 CFG.altars 本体：RIFT 仍在全局表中且有权重", !!CFG.altars.RIFT && CFG.altars.RIFT.weight > 0);
+  check("41 不改 CFG.altars 本体：RIFT 条目仍在全局表中（weight = 0，首版关闭，后续恢复 3）", !!CFG.altars.RIFT && CFG.altars.RIFT.weight === 0);
   /* 抽 100 次深渊祭坛：结果恒不含 RIFT */
   var wR = freshAbyss();
   wR.altars = [];
@@ -212,10 +213,20 @@ vm.runInContext(`
   check("42 深渊连抽 100 次祭坛：数量 = 100", drew.length === 100);
   check("43 深渊 100 次祭坛抽取不含 RIFT（屏蔽生效）", drew.every(function (id) { return id !== "RIFT"; }));
   check("44 深渊 100 次抽取全部来自合法池", drew.every(function (id) { return !!poolEndless[id]; }));
-  /* 对照：主线池 100 次能抽到 RIFT（证明屏蔽只作用于深渊） */
+  /* 对照：临时把 RIFT 权重设回 3（模拟后续版本恢复裂缝玩法），验证两件事 ——
+   *   ① 主线池恢复含 RIFT（屏蔽确实**只**作用于深渊，不误伤主线）；
+   *   ② 深渊池**仍**排除 RIFT（白名单机制独立于 weight，不因首版 weight 0 而失效）。
+   *   完成后还原为 0（首版口径）。 */
+  var keepRiftW = CFG.altars.RIFT.weight;
+  CFG.altars.RIFT.weight = 3;
+  var poolMain3 = abyssAltarPool("main"), poolEndless3 = abyssAltarPool("endless");
   var hitRift = false;
-  for (var k = 0; k < 500; k++) { if (U.weightedPick(poolMain) === "RIFT") { hitRift = true; break; } }
-  check("45 主线池可抽到 RIFT（屏蔽只作用于深渊，不误伤主线）", hitRift === true);
+  for (var k = 0; k < 500; k++) { if (U.weightedPick(poolMain3) === "RIFT") { hitRift = true; break; } }
+  var riftInEndless = false;
+  for (var k2 = 0; k2 < 500; k2++) { if (U.weightedPick(poolEndless3) === "RIFT") { riftInEndless = true; break; } }
+  CFG.altars.RIFT.weight = keepRiftW;   // 还原（首版关闭）
+  check("45 恢复 weight=3 后主线池可抽到 RIFT（屏蔽只作用于深渊，不误伤主线）", hitRift === true);
+  check("45b 恢复 weight=3 后深渊池仍排除 RIFT（白名单独立于权重）", poolEndless3.RIFT === undefined && riftInEndless === false);
   /* Endless.installRiftFilter 兜底接口同样排除 RIFT */
   var wR2 = freshAbyss(); wR2.altars = [];
   var drew2 = Endless.installRiftFilter(wR2, 50);

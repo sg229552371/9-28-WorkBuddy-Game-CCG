@@ -771,7 +771,7 @@ class Monster {
     this.minionTimer = Math.max(this.minionTimer, 3.0);
     UI.toast(`${this.d.name} 进入第 ${this.phaseIdx + 1} 阶段！`, "bad");
     SFX.play("boom");
-    bossPhaseChest(this);      // 17.9-⑤：转阶段掉 1 个宝箱（品质取当前关卡的宝箱档位，实现见文件末尾区块）
+    bossPhaseChest(this);      // 17.9-⑤ / B4：转阶段**有几率**掉**中高级宝箱**，掉在地面（走近读条拾取）
   }
   /** 弹幕循环：电报（白圈）→ 发射 → 冷却。warnTime = 0 的招式（螺旋）不逐发电报，直接连发。 */
   bossPatternTick(w, dt) {
@@ -1396,7 +1396,11 @@ class World {
         break;
       }
       case "giveChest": {
-        const q = U.weightedPick(ef.weights);
+        /* B3 落库：weightsFrom = "levelChestTier" → 品质权重读当前关卡宝箱档（与祭坛宝箱同源）。
+         * B4 落库（2026-10-13）：`fixed` = 品质已定（地面掉落箱由 spawnGroundChest 携带），
+         * 直接取用不再掷骰 —— 保证「地面看到的箱子 = 捡起来的箱子」。 */
+        const w = (ef.weightsFrom === "levelChestTier") ? levelChestWeights(ef.weights) : ef.weights;
+        const q = ef.fixed || U.weightedPick(w);
         const item = makeChestItem(q);
         if (grantItemToRun(r, item, { full: "discard" })) {
           UI.toast(`获得 ${item.name}`, "gold");
@@ -1659,7 +1663,16 @@ function spawnAltarFromSpec(w, spec) {
       return CFG.altars[x] && blocked.indexOf(x) < 0;
     });
     if (!allowed.length) return null;
-    id = U.pick(allowed);
+    /* B3 落库（2026-10-12）：池选择由「等概率 U.pick」改为**按 CFG.altars[].weight 加权**——
+     * 与无尽侧 `endless.js` 的 U.weightedPick 统一口径（此前主关卡不读 weight，两条路口径不一致）。
+     * 权重合计为 0 时回落等概率，避免「整池权重 0 → 永不刷出」。 */
+    let wtotal = 0;
+    const wmap = {};
+    for (const x of allowed) {
+      const w = (CFG.altars[x] && CFG.altars[x].weight > 0) ? CFG.altars[x].weight : 0;
+      wmap[x] = w; wtotal += w;
+    }
+    id = (wtotal > 0) ? U.weightedPick(wmap) : U.pick(allowed);
   }
   return id ? placeAltar(w, id) : null;
 }
@@ -1707,26 +1720,99 @@ function updateAltarTimeline(w, dt) {
  * 与撤离结算的关系（用户已确认接受）：宝箱按 CFG.chestQualities[].value 的**固定价值**
  * 进「×0.5 折算率」链路 —— 每多转一次阶段就多一份产出，属**有意的经济增量**，不是 bug。
  * ========================================================================== */
-function bossPhaseChest(m) {
-  const cfg = CFG.boss && CFG.boss.phaseChest;
-  if (!cfg || !cfg.enabled || !m) return null;
-  let weights = cfg.weights;
+/* ---------- B3 落库（2026-10-12）：当前关卡宝箱品质权重统一入口 ----------
+ * 真源 = CFG.levelCurve.rows[关卡].chest → chestTiers[CT].weights；
+ * 关卡表缺失 / 无尽等无关卡世界 / 结构变化 → 返回 fallback（不阻断战斗）。
+ * 消费点两处、同源：祭坛宝箱 ALTAR_003（effects[].weightsFrom = "levelChestTier"）与
+ * BOSS 转阶段宝箱 —— 消除「祭坛箱比 Boss 箱更欧」的双口径。 */
+function levelChestWeights(fallback) {
   try {
     const mid = (G.levelCfg && G.levelCfg.id) ? String(G.levelCfg.id).match(/(\d+)\s*$/) : null;
     const rows = CFG.levelCurve && CFG.levelCurve.rows;
     const row = (mid && rows) ? rows[parseInt(mid[1], 10) - 1] : null;
     const tier = row && row.chest ? CFG.levelCurve.chestTiers[row.chest] : null;
-    if (tier && tier.weights) weights = tier.weights;
+    if (tier && tier.weights) return tier.weights;
   } catch (e) { /* 曲线表缺失/结构变化 → 用兜底权重，不阻断战斗 */ }
-  const q = U.weightedPick(weights);
-  const item = makeChestItem(q);
-  const r = G.run;
-  if (r && grantItemToRun(r, item, { full: "discard" })) {
-    UI.toast(`▣ ${m.d.name} 转阶段掉落 ${item.name}`, "gold");
-  } else {
-    UI.toast("背包已满，转阶段宝箱作废", "bad");
+  return fallback;
+}
+function bossPhaseChest(m) {
+  const cfg = CFG.boss && CFG.boss.phaseChest;
+  if (!cfg || !cfg.enabled || !m) return null;
+  /* ---------- B4 落库（2026-10-13，用户拍板）：改写为「**有几率**掉**中高级宝箱** + **落地**」 ----------
+   * 旧口径（必掉 1 箱、直接入包、权重取关卡档位）已作废；新口径与精英掉宝箱共用一套机制：
+   *   ① 几率：chance（CFG.chestDrop.boss.chance，phaseChest.chance 可单独覆盖）；
+   *   ② 品质：CFG.chestDrop.boss.weights（后三阶）经「首版 dropW 闸门」过滤；
+   *   ③ 形态：**掉落在地面**（spawnGroundChest → world.altars 祭坛实体），走近读条 channel 秒后入包
+   *      —— 即「宝箱 = 雕像的一种形态表现」，拾取方式与雕像完全一致。 */
+  const cd = CFG.chestDrop;
+  const c = cd && cd.boss;
+  if (!cd || cd.enabled === false || !c) return null;
+  const R = (typeof bossPhaseChest._rng === "function") ? bossPhaseChest._rng : Math.random;   // 测试可注入
+  const chance = (cfg.chance != null) ? cfg.chance : c.chance;
+  if (!(R() < chance)) return null;                       // 几率未中 → 本次转阶段无箱（零副作用）
+  const pool = chestDropWeights(c.weights);
+  if (!pool) return null;
+  const a = spawnGroundChest(G.activeWorld || G.mainWorld, U.weightedPick(pool), m.x, m.y);
+  if (a) UI.toast(`▣ ${m.d.name} 转阶段掉落 ${a.cfg.name}（走近读条拾取）`, "gold");
+  return a;
+}
+
+/* ============================================================================
+ * B4 宝箱主来源（2026-10-13 用户拍板 · 落库实现）
+ * ----------------------------------------------------------------------------
+ * 用户原话 → 实现映射：
+ *   ①「精英怪有几率掉落低级宝箱」 → eliteDropChest()：几率 + 低级池（普通/高级）+ 落地
+ *   ②「BOSS 有几率掉落中高级宝箱」 → bossPhaseChest()（上方）改几率 + 中高级池（史诗/神圣/神话）+ 落地
+ *   ③「宝箱掉落在地面，拾取方式参考雕像」 → spawnGroundChest()：落为 world.altars 实体，
+ *        走与雕像同一套 judgeChannel（进圈读条 cfg.channel 秒 → triggerAltar）
+ *   ④「宝箱就是雕像的一种形态表现」 → 同一实体族（{cfg,x,y,id}）+ 同一渲染 + 同一读条
+ *   ⑤「同名宝箱在背包中可叠加」 → triggerAltar("giveChest") → grantItemToRun → Backpack.tryStackChest
+ *
+ * 与旧实现的关键差异：**不再「必掉 + 直接入包」**；背包满与否在**拾取时**才判定
+ * （箱子已落地，拾取失败则提示作废，不会静默丢弃）。
+ * ========================================================================== */
+/** 品质池权重：按 CFG.chestDrop.gateByDropW 过滤「首版暂缓」品质（dropW = 0）。
+ *  过滤后为空 → 返回 null（调用方安全跳过掉落，不抛错、不刷空箱）。 */
+function chestDropWeights(pool) {
+  if (!pool) return null;
+  const cd = CFG.chestDrop || {};
+  const out = {};
+  let any = false;
+  for (const q in pool) {
+    const cq = CFG.chestQualities && CFG.chestQualities[q];
+    if (!cq) continue;
+    if (cd.gateByDropW !== false && !(cq.dropW > 0)) continue;   // 首版闸门：仅 dropW > 0 的品质可掉
+    out[q] = pool[q]; any = true;
   }
-  spawnBurst(m.x, m.y, (CFG.chestQualities[q] && CFG.chestQualities[q].color) || "#ffd76a", 8);
-  SFX.play("chest");
-  return item;
+  return any ? out : null;
+}
+/** 在地面投放一个宝箱（祭坛实体，与雕像同族：进圈读条 cfg.channel 秒后触发入包）。
+ *  x/y = 掉落点（±40 抖动 + 场界夹取，避免多次掉落完全重叠）；返回祭坛对象或 null。 */
+function spawnGroundChest(w, chestQ, x, y) {
+  const cq = (CFG.chestQualities || {})[chestQ];
+  if (!w || !cq || !Array.isArray(w.altars)) return null;
+  const g = (CFG.chestDrop && CFG.chestDrop.ground) || {};
+  const px = U.clamp((typeof x === "number" ? x : w.w / 2) + U.rand(-40, 40), 60, w.w - 60);
+  const py = U.clamp((typeof y === "number" ? y : w.h / 2) + U.rand(-40, 40), 60, w.h - 60);
+  const a = {
+    cfg: { name: cq.name, color: cq.color, icon: "▣",
+      radius: (g.radius != null ? g.radius : 91), channel: (g.channel != null ? g.channel : 1.2),
+      effects: [{ type: "giveChest", fixed: chestQ }] },   // fixed = 品质已定（不再二次掷骰）
+    x: px, y: py, id: "DROP_" + chestQ,
+  };
+  w.altars.push(a);
+  if (typeof spawnBurst === "function") spawnBurst(px, py, cq.color || "#ffd76a", 8);
+  return a;
+}
+/** 精英怪掉宝箱（几率 + 低级池 + 落地）。返回投放的地面宝箱或 null。
+ *  随机源可注入：第三参 rng 优先，其次 `eliteDropChest._rng`（测试挂钩），最后 Math.random。 */
+function eliteDropChest(w, m, rng) {
+  const cd = CFG.chestDrop;
+  const c = cd && cd.elite;
+  if (!cd || cd.enabled === false || !c || !m) return null;
+  const R = rng || ((typeof eliteDropChest._rng === "function") ? eliteDropChest._rng : Math.random);
+  if (!(R() < c.chance)) return null;
+  const pool = chestDropWeights(c.weights);
+  if (!pool) return null;
+  return spawnGroundChest(w, U.weightedPick(pool), m.x, m.y);
 }

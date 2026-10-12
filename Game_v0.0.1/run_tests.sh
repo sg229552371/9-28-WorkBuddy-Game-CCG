@@ -31,14 +31,14 @@ team_trigger_test content_test level_content_test level_tuning_test meta_growth_
 out_level_flow_test settle_crystal_test boot_guard_test cache_version_test perf_asset_test \
 asset_timeout_test \
 battle_rules_test \
-xgame_chip_fold_test xgame_boss_crystal_test"
+xgame_chip_fold_test xgame_boss_crystal_test xgame_assets_consumption_test xgame_save_integration_test"
 
 UI="ui_flow_test ui_v2_test ui_layout_test ui_global_test unlock_ui_test \
 mobile_test mobile_ctrl_test mobile_polish_test artisan_test artisan_layout_test \
 hero_roster_test hero_kit_test hero_portrait_test sprite_view_test camera_view_test audio_sprite_test autofight_test \
 endless_hud_test"
 
-FEATURE="rift_test extract_test boss_test boss_ux_test bugfix_test shop_test laser_test season_test \
+FEATURE="rift_test extract_test boss_test boss_ux_test chest_drop_source_test bugfix_test shop_test laser_test season_test \
 levels_11_20_test special_monster_test assets_hook_test stress_test \
 endless_test endless_flow_test hud_endless_test endless_reward_test rift_extract_test rift_hud_test endless_growth_test \
 endless_restart_test \
@@ -54,7 +54,7 @@ skill_scheduler_test skill_runtime_test skill_reward_test skill_presenter_test s
 skill_sweep_test skill_integration_test skill_fps_test skill_playtest_test skill_rule_binding_test \
 skill_level_binding_test crystal_ui_test crystal_expansion_test skill_enable_runtime_test \
 hero_skill_migration_test skill_save_session_test \
-hero_nondamage_skill_test skill_effect_runtime_test \
+hero_nondamage_skill_test skill_effect_runtime_test skill_balance_anchors_test \
 xgame_redtest_clock_test xgame_skill_save_wire_test"
 
 SUITES="core ui feature perf skill"

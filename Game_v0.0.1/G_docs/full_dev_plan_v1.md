@@ -35,7 +35,7 @@
 | A1 | **`killer` 伤害归属** | ✅ **已修**：`skill-damage.js:252` 早已透传；本轮补 `skill-runtime.js` 两处（`_applyDamage` 主路径 + `_fallbackDamage` 兜底）→ 技能伤害不再恒 `null`（深渊逐角色统计/吸血/裂变读 owner 恢复） | `js/skill-runtime.js` | ❌ 共享文件 |
 | A2 | **资源清单接线** | ⚠️ **判定为「半个改动」，暂缓**：清单 15 条**磁盘存在 0**；且实测「清单侧 `AssetHooks` 真实消费点 = 0」→ 单个挂载 = 每局 15 个 404 + 零收益 + 打破 7 条现状断言。**必须连同渲染/音频消费接线一起做**（`Assets.images` / `SFX.play` 优先查 `AssetHooks`），且需素材就绪才有端到端验收条件 | `index.html` + `js/core.js` | ❌ 共享文件（整批） |
 | A3 | **`SkillSave` 宿主闭环** | 模块本身完备（`serialize`/`migrate`/`saveTo`/`loadFrom`/`_persist`），**仅缺宿主调用** ❌；但「是否跨局保存 / 保存时机」**属设计决策未定** | `js/game.js` / `js/main.js` | ❌ 需先拍板 |
-| A4 | **`castTime` 调度消费** | `config.js` 生成 + `skill-config.js` 校验；**调度器未读** ❌；前摇语义（能否被打断）**未定** | `js/skill-scheduler.js` | ⚠️ 需先定语义 |
+| A4 | **`castTime` 调度消费** | ✅ **已落库（2026-10-13，`D015`）**：用户拍板语义 = **不可打断 + 可移动**。实现 = `skill-scheduler.js` 新增 `castTimeFor(def, level)`（真源 `levels[lv-1].castTime` → 回落 `def.castTime` → 0）+ `tick()` 前摇段（**刻意不做任何打断判定**：不读 hp / 不读 mvx,mvy；目标丢失 → 进度**暂停**不归零；`castTime=0` 恒 no-op 零回归）。测试 = `skill_scheduler_test.js` 31 断言（新增 9.1~9.8 共 12 条前摇断言）+ `skill_rule_binding_test` ⑦ 口径同步 | `js/skill-scheduler.js` | ✅ 已完成 |
 | A5 | **全部 12 英雄技能** | ✅ **已全部交付（H001~H012 全走新路径）**：批 1（H001~H006，2026-10-12）+ 批 2（H007~H012，2026-10-12 · 决策 `D012`）——批 2 只需 1 个模板 kind（`summonUnit`）+ 1 个节点字段（`effect`），已拆 2A（H009~H012）/ 2B（H007/H008）全部实现 | `js/config.js` 的 `skillDefs`（表 → 归 config，非独立文件） | ✅ 已完成（测试 38+43 断言）|
 | A6 | **旧路红测根因** | ✅ **已确诊（2026-10-12，见 §6.3）**：= **测试桩喂钟非单调**（⑥ 段把时钟重置为 0，`Game.lastT` 已被 ④ 推到 ~10020 → `main.js` 的 `dt=(t-lastT)/1000` 得 **负步长 ≈ −10.02s**）→ 施放计时器被甩到窗口末尾 → 偶发假红；**非产品逻辑缺陷**。修复 = 同提交 `8b0e1a2` 双重加固（产品侧 dt 钳制 + 测试侧单调续帧）。**书中「根因未诊断」为过期表述，已回写** | 诊断报告 | ✅ 已完成 |
 | A7 | ~~X-GAMe 四张卡~~ | ✅ **实测已全部存在**（非未创建）：`xgame_assets_consumption` / `xgame_save_integration` / `xgame_redtest_clock` / `xgame_boss_crystal` / `xgame_chip_fold` / `xgame_skill_save_wire` —— 书中 task-cards 的「未来交付物」在公司侧那轮已落地 | — | 已完成 |
@@ -155,8 +155,11 @@ P3 串行验收：门禁全绿 → commit → push → 重新发布 → 真机�
 |---|---|
 | **③ 技能是否跨局保存** | ✅ **已拍板（`D013`）：每局重置**（不跨局）。见 `decision_log_v1.md` D013 / `game_design_proposal.md` §20.10 |
 | **H007~H012 表达口径** | ✅ **已拍板（`D012`）：AI 直接设计**，设计已落库 → `hero_skill_interface_v2.md` |
-| **A4 `castTime` 语义** | ⏳ 待拍板：前摇期间能否被打断 / 是否可移动 |
-| **B 类数值填表（5 组）** | ⏳ 待拍板：是否授权 AI 直接提案并落库 |
+| **A4 `castTime` 语义** | ✅ **已拍板（`D015`）：不可打断 + 可移动**（前摇进度只随时间推进，不读 hp / 不读位移；目标丢失则暂停不归零） |
+| **A4 实现** | ✅ **已落库**（`js/skill-scheduler.js` + 31 条断言） |
+| **B 类数值填表（5 组）** | ✅ **已拍板（`D014`）：全部落库**。B1 技能整数锚点 / B2 Buff 锚点 / B3 祭坛刷出 / B5 宝箱货物（含硬编码收口）**已进 `CFG`**；B5 的「等级成长曲线形态」仍阻塞于 C2 |
+| **宝箱主来源（冲突 7.2-1）** | ✅ **已拍板（`D016`）：精英几率掉低级箱 / BOSS 几率掉中高级箱 / 掉落在地面 / 拾取参考雕像 / 宝箱=雕像形态 / 同名可叠加** —— 已落库（`CFG.chestDrop` + `eliteDropChest` + `spawnGroundChest` + `chest_drop_source_test.js` 30 断言） |
+| **C2 / C6** | ⏳ 待拍板（方案已产出 → `G_docs/decision_options_c2_c6_v0.1.md`；C2 解 B5 阻塞，C6 解卡牌规则矛盾） |
 
 ### 6.3 A6 诊断报告：旧路红测（`skill_enable_runtime_test` ⑥ `kills ≥ 1`）根因
 
@@ -228,7 +231,6 @@ P3 串行验收：门禁全绿 → commit → push → 重新发布 → 真机�
 
 | 组 | 待定内容 | 影响面 |
 |---|---|---|
-| **A4** | `castTime` 前摇语义：能否被打断 / 是否可移动 | `js/skill-scheduler.js` 调度消费 |
-| **B 落库** | 是否授权把三份提案的数字**落进 `CFG`**（或先只批 B1/B2 等子集） | `js/config.js` |
-| **C1~C7** | 角色差异化与专属武器 / 等级成长公式（= §12-38）/ 局内保险来源 / 结晶获取速率 / 难度与赛季曲线 / **卡牌系统去向（规则自相矛盾）** / 技能栏排布偏差 | 多系统 |
-| **冲突 7.2-1** | 宝箱主来源：祭坛雕像 **vs** 怪物掉落 | 祭坛 + 掉落 + B4 |
+| **C2** | 等级成长口径：**加算 `1+0.06×(lv−1)`** vs 乘算 vs 混合（解 B5「货物/属性数值随等级成长」阻塞） | `js/config.js` + `js/items.js` |
+| **C6** | 卡牌系统去向（**规则自相矛盾**：入口已断但函数/配置/读取通道仍在） | `index.html` + `js/config.js` + `js/items.js` |
+| **C1/C3/C4/C5/C7** | 角色差异化与专属武器 / 局内保险来源 / 结晶获取速率 / 难度与赛季曲线 / 技能栏排布偏差 | 多系统 |
