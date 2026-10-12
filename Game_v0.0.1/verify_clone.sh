@@ -3,7 +3,7 @@
 #  克隆一致性校验（AI-Game / 弹幕背包搜打撤）
 #  用法：在仓库根目录执行   bash verify_clone.sh
 #  作用：核对当前工作区是否 == 指定快照
-#        （2026-10-12 改名 + 技能等级接线 + W2/W3/W4 接口接线 + 22.8 扩容启用 + 22.9 接线热修 · APP_VERSION 20261046 · 94 套 / 4111）
+#        （2026-10-12 经济修复：秘宝撤离折算 + Boss 结晶击败即发 + 门禁去随机化 · APP_VERSION 20261047 · 98 套 / 4187）
 #
 #  原理：比对的是 **git 对象哈希**（git rev-parse HEAD:<file>），
 #        只看仓库内容，不受 core.autocrlf / 编辑器换行设置影响，
@@ -31,22 +31,22 @@ if [ -n "$REPO_ROOT" ]; then
   esac
 fi
 
-EXPECT_VERSION="20261046"
+EXPECT_VERSION="20261047"
 
 # 核心文件 → 期望的 git blob 哈希（该快照的权威指纹；23 个）
 EXPECT_FILES="
-index.html b527670f35986856d3c81011ad4ebc1818817efa
-js/config.js 9bb2786c82904c10f1f3309f4743cec6232f316a
-js/game.js 6fdb96b1dd2d9bb6255f81939c17a4bd9f18feaf
-js/combat.js 64ac80d6f01aacc552d04e338ea5fcb1799bc96c
+index.html 85ae0057cb0c3451fcd2040608114cffa2de4bce
+js/config.js 1ebca588ff5346e592a5aec9ac7a2219c635c071
+js/game.js c39f87462e0470c24964a7c2958095350fceea69
+js/combat.js a1edcd52e0175757af96e469b09ccf5acf2c9c68
 js/items.js 57c3fe551b8c24baf5ca237f4e9f04ec7390564a
 js/ui.js d8ae96866382904b7140e88ef82a11f2606214f8
 js/ui-panels.js c04f72855cdf1daa5de016d71afdc88a21adc9b9
-js/main.js bb4f5c97143facb37fcdc2b3288a7bede641a98d
-js/core.js 976e4039a334b4b528c8aece5d018233b39ab5cb
-js/modes.js 934957a450734aebe7a3c11c0fb9da538346d057
+js/main.js f535f112baaa290e3c34049ee642c9e59f9797ac
+js/core.js 680e8c0a5bb1f84f623482ed79de5707b9056f03
+js/modes.js 274ba9e319b532e451efab24f0c80523e0879122
 css/style.css 49a277f655d8e5f9db426e994aac80e67513b891
-run_tests.sh d4d3afdeadff2debe405630273e1407b9da10116
+run_tests.sh 98597cf50a7fd726d635756a2d5208db80d405b6
 js/skill-compiler.js 7e92332cc376979f069273532646ff12a99a3e73
 js/skill-playtest.js da357b70fe57a56a06617a35a21e32d68c39efe8
 js/skill-scheduler.js b4d4598650d601293667c58829689f6886f4a346
@@ -57,7 +57,7 @@ skill_playtest_test.js ee6be680cd83bcab7c5c458642e04e978797c913
 skill_rule_binding_test.js ee36d2281b59b8f384a7a1082fc81a5ab22d0bf2
 crystal_ui_test.js 68adf392e953f33913a96472c397c05117ef8d75
 crystal_expansion_test.js a8a4e5fdc54689694a9f214616d2aba315b9baff
-skill_enable_runtime_test.js ef9986d74c6446f42a8f4511def7a012f62e243f
+skill_enable_runtime_test.js 436cefdd5f3208d5a69a4ba569f3c39233ed5871
 "
 
 echo "============================================================"
@@ -110,9 +110,9 @@ fi
 # ④ 结论
 echo "============================================================"
 if [ "$BAD" = "0" ]; then
-  echo " ✅ 一致：本工作区 == 2026-10-12 改名 + 技能等级接线 + W2 界面接入 + 22.8 扩容 + 22.9 热修快照（APP_VERSION $EXPECT_VERSION）"
+  echo " ✅ 一致：本工作区 == 2026-10-12 经济修复快照（秘宝折算 + Boss 结晶即发 + 门禁去随机化 · APP_VERSION $EXPECT_VERSION）"
   echo "    继续开发前可跑一次全量门禁：bash run_tests.sh"
-  echo "    期望结果：94 套 / PASS 合计 = 4111 / bad = 0 / 全绿"
+  echo "    期望结果：98 套 / PASS 合计 = 4187 / bad = 0 / 全绿"
 else
   echo " ❌ 不一致：本地不是该快照，请先同步远程："
   echo "     git fetch origin && git reset --hard origin/main"

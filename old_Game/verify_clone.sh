@@ -3,7 +3,7 @@
 #  克隆一致性校验（AI-Game / 弹幕背包搜打撤）
 #  用法：在仓库根目录执行   bash verify_clone.sh
 #  作用：核对当前工作区是否 == 指定快照
-#        （2026-10-12 文件瘦身：根目录 123→7 / 测试入 tests/ / 脚本入 tools/ / js 34→32 · APP_VERSION 20261047 · 94 套 / 4110）
+#        （2026-10-12 文件瘦身：根目录 123→7 / 测试入 tests/ / 脚本入 tools/ / js 34→32 · APP_VERSION 20261047 · 98 套 / 4187）
 #
 #  原理：比对的是 **git 对象哈希**（git rev-parse HEAD:<file>），
 #        只看仓库内容，不受 core.autocrlf / 编辑器换行设置影响，
@@ -34,8 +34,10 @@ fi
 EXPECT_VERSION="20261047"
 
 # 核心文件 → 期望的 git blob 哈希（该快照的权威指纹；23 个）
+# 注意：本目录（old_Game）已于 2026-10-12 文件瘦身 —— 测试全部移入 tests/、脚本移入 tools/，
+#       故期望路径同步带 tests/ 前缀。
 EXPECT_FILES="
-index.html b527670f35986856d3c81011ad4ebc1818817efa
+index.html 1d6a4f7306eb0216a607b28cf9d2d096ef39a43b
 js/config.js 9bb2786c82904c10f1f3309f4743cec6232f316a
 js/game.js 6fdb96b1dd2d9bb6255f81939c17a4bd9f18feaf
 js/combat.js 64ac80d6f01aacc552d04e338ea5fcb1799bc96c
@@ -43,21 +45,21 @@ js/items.js 57c3fe551b8c24baf5ca237f4e9f04ec7390564a
 js/ui.js d8ae96866382904b7140e88ef82a11f2606214f8
 js/ui-panels.js c04f72855cdf1daa5de016d71afdc88a21adc9b9
 js/main.js bb4f5c97143facb37fcdc2b3288a7bede641a98d
-js/core.js 976e4039a334b4b528c8aece5d018233b39ab5cb
+js/core.js 680e8c0a5bb1f84f623482ed79de5707b9056f03
 js/modes.js 934957a450734aebe7a3c11c0fb9da538346d057
 css/style.css 49a277f655d8e5f9db426e994aac80e67513b891
-run_tests.sh d4d3afdeadff2debe405630273e1407b9da10116
+run_tests.sh 362cd252178d096c7222f1de96a839b9ff8b6287
 js/skill-compiler.js 7e92332cc376979f069273532646ff12a99a3e73
 js/skill-playtest.js da357b70fe57a56a06617a35a21e32d68c39efe8
 js/skill-scheduler.js b4d4598650d601293667c58829689f6886f4a346
 js/skill-config.js 0f90f3e750c6bfd3bb4fc3fe30a4f65ac4e2c411
 js/skill-runtime.js a097de59f79dec4d4c5c158079424039d1fb786a
 js/skill-events.js a2fa6c17807b6ba7242a0197b58b87f4d9f1fe7e
-skill_playtest_test.js ee6be680cd83bcab7c5c458642e04e978797c913
-skill_rule_binding_test.js ee36d2281b59b8f384a7a1082fc81a5ab22d0bf2
-crystal_ui_test.js 68adf392e953f33913a96472c397c05117ef8d75
-crystal_expansion_test.js a8a4e5fdc54689694a9f214616d2aba315b9baff
-skill_enable_runtime_test.js ef9986d74c6446f42a8f4511def7a012f62e243f
+tests/skill_playtest_test.js 69c6287474f83688554470b2ad1559b9bb4be158
+tests/skill_rule_binding_test.js b93fbdaedb34c383bb70c37cea5ecc980a291aa2
+tests/crystal_ui_test.js 18eebb9474edabe516a6d2e62117b2ce67cc4515
+tests/crystal_expansion_test.js 21b6fe0cb8ccf5398f644f9ce12173771c171507
+tests/skill_enable_runtime_test.js 45bc3d6aa75fec0aa7d9a67ada17a97e17e7bfac
 "
 
 echo "============================================================"
@@ -110,9 +112,9 @@ fi
 # ④ 结论
 echo "============================================================"
 if [ "$BAD" = "0" ]; then
-  echo " ✅ 一致：本工作区 == 2026-10-12 改名 + 技能等级接线 + W2 界面接入 + 22.8 扩容 + 22.9 热修快照（APP_VERSION $EXPECT_VERSION）"
+  echo " ✅ 一致：本工作区 == 2026-10-12 文件瘦身快照（APP_VERSION $EXPECT_VERSION）"
   echo "    继续开发前可跑一次全量门禁：bash run_tests.sh"
-  echo "    期望结果：94 套 / PASS 合计 = 4111 / bad = 0 / 全绿"
+  echo "    期望结果：98 套 / PASS 合计 = 4187 / bad = 0 / 全绿"
 else
   echo " ❌ 不一致：本地不是该快照，请先同步远程："
   echo "     git fetch origin && git reset --hard origin/main"
