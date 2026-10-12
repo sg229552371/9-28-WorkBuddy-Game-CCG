@@ -39,6 +39,8 @@
 4. **门禁口径**：每项 `exit=0 且 bad=0`；**PASS 文案绝不能含英文 "error"**（用中文「错误」）
 5. **CSS 改动必须三处同步**：主规则 / `@media (orientation: portrait)` / `body.portrait`
 6. **改任何 js 脚本后要 bump 版本号**：`index.html` 里 10 处 `?v=YYYYMMDD` + `<meta name="app-version">`
+7. **拍板即回写**（🔴 2026-10-12 立规）：用户每做一次取舍 → 当轮**必须** ① 在 `G_docs/decision_log_v1.md` **新增一行**；② 在**权威章节**做**替换或新增**（玩法 → `game_design_proposal.md`；机制 → `dev_guide.md`；工程 → 合同/接口文档）；替换时旧表述加「**已被取代**」横幅。
+   **禁止只把拍板记在对话里**——依据 `plan_architecture_and_ai_development_v1.md` §5/§6。
 
 ---
 
@@ -150,9 +152,10 @@ bash run_tests.sh --list           # 列出套件
 1. 定方案（写 `G_docs/plan_*.md`）→ 用户确认关键选项
 2. **多代理并行开发**（按 `G_docs/dev_standard_and_playbook.md` §5 六步法：文档冻结 → 主会话冻结共享文件 → 拆子任务 → 并行 → 串行集成）
 3. `bash run_tests.sh` 全绿 + 真机 e2e 验证
-4. **同步文档**：玩法变 → `game_design_proposal.md`（旧表述加「已被取代」横幅）；机制变 → `dev_guide.md`；技能变 → `skill_system_master_v1.md`；数字变 → 各 README / `verify_clone.sh`
-5. commit → push 到 GitHub（远程 `main`；异地自检用 `bash verify_clone.sh`）
-6. **重新发布托管站**（WorkBuddy 托管站是独立部署，不跟随 GitHub）→ **给的试玩链接**
+4. **决策回写**（铁律 7）：本轮所有拍板 → `G_docs/decision_log_v1.md` 新增行 + 权威章节更新（新决策 2026-10-12 起强制）
+5. **同步文档**：玩法变 → `game_design_proposal.md`（旧表述加「已被取代」横幅）；机制变 → `dev_guide.md`；技能变 → `skill_system_master_v1.md`；数字变 → 各 README / `verify_clone.sh`
+6. commit → push 到 GitHub（远程 `main`；异地自检用 `bash verify_clone.sh`）
+7. **重新发布托管站**（WorkBuddy 托管站是独立部署，不跟随 GitHub）→ **给的试玩链接**
 
 ## 七、归档位置
 

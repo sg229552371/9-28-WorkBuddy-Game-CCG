@@ -3,7 +3,7 @@
 #  克隆一致性校验（AI-Game / 弹幕背包搜打撤）
 #  用法：在仓库根目录执行   bash verify_clone.sh
 #  作用：核对当前工作区是否 == 指定快照
-#        （2026-10-12 经济修复：秘宝撤离折算 + Boss 结晶击败即发 + 门禁去随机化 · APP_VERSION 20261049 · 99 套 / 4210）
+#        （2026-10-12 经济修复：秘宝撤离折算 + Boss 结晶击败即发 + 门禁去随机化 · APP_VERSION 20261049 · 100 套 / 4239）
 #
 #  原理：比对的是 **git 对象哈希**（git rev-parse HEAD:<file>），
 #        只看仓库内容，不受 core.autocrlf / 编辑器换行设置影响，
@@ -33,7 +33,7 @@ fi
 
 EXPECT_VERSION="20261049"
 
-# 核心文件 → 期望的 git blob 哈希（该快照的权威指纹；24 个）
+# 核心文件 → 期望的 git blob 哈希（该快照的权威指纹；25 个）
 EXPECT_FILES="
 index.html 4f2124883fac93858b499c8c87cdb1276f19d173
 js/config.js 640c46408d5b4a73ff7a439e37d3075052d6dee9
@@ -46,7 +46,7 @@ js/main.js f535f112baaa290e3c34049ee642c9e59f9797ac
 js/core.js 30ef80823c4ddf069baa567b51fb6ca93bdf1956
 js/modes.js 274ba9e319b532e451efab24f0c80523e0879122
 css/style.css 49a277f655d8e5f9db426e994aac80e67513b891
-run_tests.sh 758c574a07188c48a08752158143706ca149cfce
+run_tests.sh aa4f6a51b494ca8b5c82e668728592ca5ebbc1ee
 js/skill-compiler.js 7e92332cc376979f069273532646ff12a99a3e73
 js/skill-playtest.js da357b70fe57a56a06617a35a21e32d68c39efe8
 js/skill-scheduler.js b4d4598650d601293667c58829689f6886f4a346
@@ -59,6 +59,7 @@ crystal_ui_test.js 982376add0ca3bcd7ec0b773e03371cfc7b681aa
 crystal_expansion_test.js d511b80d71a4c9c0f0b4b23de64dc8eb770ffee5
 skill_enable_runtime_test.js 023642f33e8ec3467933ce88c31f29c0cf49386c
 hero_skill_migration_test.js 50ac3ef262a85bf58e002e3dc9139b22e7a0313e
+skill_save_session_test.js 30170e7d16a40edf6e05cf2cf2bb60733229e173
 "
 
 echo "============================================================"
