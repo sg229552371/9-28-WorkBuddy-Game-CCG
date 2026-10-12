@@ -188,3 +188,67 @@ SkillRuntime._applyEffect = function (world, eff, target, simTime) { ... }
 3. 🟠 **`summon` 复用无人机实体**（`CFG.skills2.repairDrone`）——需确认该实体是否已迁入新路径可复用；若耦合旧路径，H007 落后到批 2C。
 4. 🟡 **效果数值全为迁移占位**（沿用旧表数值），**未平衡**；平衡表见 `skill_balance_table_v0.1.md`。
 5. 🟡 **`auraStats` 的 `spd`** 需确认角色移速加成入口（旧 AT123 已实现，落点待核）。
+
+---
+
+## 9. 实现落地记录（2026-10-12 · 本文件从「设计冻结」推进到「已实现」）
+
+> 施工真源：`js/skill-config.js`（校验）/ `js/config.js`（表）/ `js/skill-compiler.js`（编译）/ `js/skill-runtime.js`（执行）。
+
+### 9.1 ✅ 已实现（与 §1~§6 设计的差异逐条列出）
+
+| 项 | 设计（§3~§5） | 实现 | 差异说明 |
+|---|---|---|---|
+| 校验层 `effect` | `_FIELDS.node` 加字段 + `_EFFECT_KINDS` + `_validateEffect` | 同 | 另加 `_EFFECT_STATS` 白名单（scaleStat/auraStats 取值）；`_PARAM_RULES` 补 12 个效果字段名 + 4 个召唤字段名 |
+| 条件必填 | `_NON_DAMAGE_KINDS` 白名单放宽 | 同 | **两处副本**：`skill-config.js._NON_DAMAGE_KINDS`（校验）+ `skill-compiler.js._NON_DAMAGE_KINDS`（编译），由 `hero_nondamage_skill_test.js` 源码级守卫断言两侧一致 |
+| 编译层 | 放宽 bref + `effect` 随节点克隆 | 同 | `_cloneNode` 补 `effect` 透传；`convertNode` **不需改**（它只重置 `parameters`，`effect` 自然保留） |
+| 运行时 | 「`_applyDamage` 末尾单行接线」 | 🔴 **改为施放级接线** | 见 §9.2 |
+
+### 9.2 🔴 实现期设计纠正：接线点由「命中级」改为「施放级」
+
+- **原设计（§5）**：在 `_applyDamage` 末尾单行调用 `_applyEffect`。
+- **实测问题**：`_applyDamage` 是**逐目标**调用的。AOE（`TP_INSTANT_AREA`）命中 N 个怪 → 全队治疗 / 全队增益 / 全队护罩会被触发 **N 次**（重复叠加、超额回血）。
+- **修正实现**：接线点改为 `spawnEffect` 末尾单行 `_applySpawnEffects(world, snapshot, made)` —— **每个效果实例恰好派发一次**（`eff.rt.effectDone` 守卫），与旧实现（`castSupport` / `castTrap` / `castSummon` **每次施放一次**）语义同源。
+- **`_applyDamage` 未改动**（零回归）。H001~H006 无 `effect` → `_applySpawnEffects` 零介入。
+
+### 9.3 效果量公式（实现口径，比 §1.2 更精确）
+
+```
+等级系数 growth = 1 + (lv-1) × CFG.skillScaleBy.levelGrowth
+属性缩放 scaled = 施放者[scaleStat] × scalePct × growth
+
+heal    : amt      = healBase + scaled × healPerAdd
+aura    : pct      = auraPct + scaled
+barrier : defAdd   = barrierDef + scaled
+taunt   : radius   = 节点半径 + scaled
+```
+
+🔴 **属性只经 `scalePct` 生效一次**。实现期曾写成 `scaled + healBase + 施放者[scaleStat]×healPerAdd`（把「缩放值」与「生属性」重复相加），已由 `skill_effect_runtime_test.js` 的复算断言揪出并修正。
+
+**施放者属性取值链**（`_statOf`）：`owner[stat]` → `owner.stats[stat]` → `CFG.heroes` 基表（按 `owner.id`）。
+⚠️ 队长 `Player` 实体**没有** `atk/def` 字段（属性在 `computeStats()`），故必须有 `CFG.heroes` 兜底。
+⚠️ **未接入**旧实现的 `supportPowPct`（智力加成）——属简化，待平衡阶段决定是否补。
+
+### 9.4 各效果的落点（复用旧机制，未发明玩法）
+
+| kind | 写入 / 落点 | 消费方（已有） |
+|---|---|---|
+| `heal` | 队长 `G.run.hp`，队友实体 `hp`（双通道，clamp 到上限） | 既有 HP 体系 |
+| `aura` | `G.run.buffs`（`{id,stat,mul,remain}`，atk/spd 乘法） | `runBonus()` / `computeStats()` |
+| `barrier` | `G.run.buffs`（stat=`def`，`mul` 存平坦加值） | `runBonus().add.def` → 减伤 |
+| `taunt` | `monster.tauntedBy` / `monster.tauntT` | `Monster.update` / `monsterTarget` |
+| `trap` | `G.run.traps`（`{x,y,radius,armDelay,armed,fuse,owner,world,dmg}`）；效果实例即回收 | `World.update` 引爆循环 |
+| `summon` | `G.run.drones`（`Drone` 实例，`d.world=world`）；效果实例即回收 | `World.update` → `Drone.update` → `droneTakeDamage` |
+
+### 9.5 测试与门禁
+
+- `hero_nondamage_skill_test.js`（**37 断言**）：绑定/名单完整性、6 技能结构铁律、`effect` 逐 kind 字段合同、非伤害模板条件必填（含 **3 条反向断言**）、两侧 `_NON_DAMAGE_KINDS` 源码级同步、H001~H006 零回归编译。
+- `skill_effect_runtime_test.js`（**42 断言**）：施放级「恰好一次」、heal 双通道、aura 刷新不叠乘、barrier 平坦加值、taunt 半径内外、trap 延迟不结算、summon 优雅降级、`effect` 缺省零介入。
+- 均登记进 `run_tests.sh` 的 SKILL 套件。
+
+### 9.6 遗留（未做，非阻塞）
+
+1. 🟡 `summon` 在宿主无 `Drone` 时返回 false 且**不置效果实例为 dead**（真实游戏恒有 Drone，无影响）。
+2. 🟡 `effect` 数值**不随等级曲线**（§1.2 设计如此）→ 见平衡表 §5 待拍板项。
+3. 🟡 `trap` 走 `G.run.traps` 复用旧更新循环（架构上「新路径复用旧实体容器」，功能正确）。
+4. 🟡 未接 `supportPowPct`（智力加成）。

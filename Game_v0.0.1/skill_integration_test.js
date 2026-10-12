@@ -70,10 +70,11 @@ ev('globalThis.__dmgLog = []; globalThis.damageMonster = function (w, m, dmg, ki
   check("① 真实 CFG.skillSystem 通过校验（ok=true）", !!(r && r.ok));
   /* 2026-10-12 全量迁移批 1：技能数不再写死 —— 数据驱动 = 迁移英雄数 + 稀有技能池。
    * （H001~H006 各 1 个初始技能 + 稀有池 1 个 = 7） */
-  check("① 校验器产出 技能数 = 迁移英雄数 + 稀有池 / 4 模板 / 14 水晶 的索引",
+  check("① 校验器产出 技能数 = 迁移英雄数 + 稀有池 / 模板≥4（含 TP_SUMMON_UNIT 非伤害模板） / 14 水晶 的索引",
     ev('Object.keys(CFG.skillSystem.skillDefs).length') ===
       ev('CFG.skillSystem.migratedHeroIds.length + CFG.skillSystem.rareSkillPool.length') &&
-    ev('Object.keys(CFG.skillSystem.effectTemplates).length') === 4 &&
+    ev('Object.keys(CFG.skillSystem.effectTemplates).length') >= 4 &&
+    ev('!!(CFG.skillSystem.effectTemplates.TP_SUMMON_UNIT && CFG.skillSystem.effectTemplates.TP_SUMMON_UNIT.kind === "summonUnit")') &&
     ev('Object.keys(CFG.skillSystem.crystalDefs).length') === 14);
   /* 每个迁移英雄的绑定技能必须在技能表中真实存在（搬迁遗漏守卫） */
   check("① 每个迁移英雄的 skillId 都在 skillDefs 中",

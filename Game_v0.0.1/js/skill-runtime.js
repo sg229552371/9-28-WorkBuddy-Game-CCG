@@ -17,6 +17,8 @@ const _SR_CAT_DEFAULT_KEY = {
   orbitContact: "orbit",
   instantArea: "instantArea",
   persistentArea: "persistentArea",
+  /* v2 新增（H007 召唤）：非伤害模板 → CFG.skillSystem.defaults.summonUnit */
+  summonUnit: "summonUnit",
 };
 
 const SkillRuntime = {
@@ -937,6 +939,7 @@ const SkillRuntime = {
       effects.push(eff); made.push(eff);
     }
     if (made.length) SkillRuntime._bumpCastCount(world, snapshot.castId, made.length);
+    SkillRuntime._applySpawnEffects(world, snapshot, made);   // v2 施放级附加效果派发（每个效果实例一次）
     return { accepted: true, effectId: made.length ? made[0].effectId : null, count: made.length, reason: null };
   },
 
@@ -953,6 +956,8 @@ const SkillRuntime = {
       x: ox, y: oy, px: ox, py: oy, vx: 0, vy: 0,
       life: 0, age: 0, radius: 0,
       damageBasis: node.damageBasis || null,
+      /* v2：节点可选附加效果随实例透传（缺省 null = 纯伤害，与 v1 完全一致）。 */
+      effect: node.effect || null,
       hitMap: {}, bornStep: (ctx.step != null) ? ctx.step : 0,
       state: "active", endReason: null, simTime: snapshot.simTime || 0,
       rt: {
@@ -1003,3 +1008,220 @@ const SkillRuntime = {
 function skillV2Owns(hero) {
   return typeof SkillRuntime !== "undefined" && SkillRuntime.ownsHero(hero);
 }
+
+/* ============================================================
+ * v2 附加效果派发（H007~H012）· 文件末尾独立区块（AGENTS 铁律 2）
+ * ------------------------------------------------------------
+ * 设计纠正（相对接口文档 v2 §5）：**接线点由 `_applyDamage` 改为 `spawnEffect`（施放级）**。
+ *   原因：六类效果全部是「施放级」语义（全队治疗 / 全队增益 / 全队护罩 / 半径嘲讽 / 布雷 / 召唤）。
+ *   若挂在命中路径（_applyDamage）上，AOE 命中 N 个目标会令全队效果触发 N 次（重复叠加/超额回血）。
+ *   挂施放级 ⇒ 每个效果实例**恰好触发一次**，与旧实现（castSupport / castTrap / castSummon 每次施放一次）同源。
+ *   `_applyDamage` 不改动。全部复用旧系统已有机制（不发明玩法）：
+ *     治疗 → 全队 HP（队长在 G.run.hp，队友在实体 hp，旧 combat.js 同源）
+ *     增益/护罩 → G.run.buffs（{id,stat,mul,remain}；atk/spd 乘法、def 加法）
+ *     嘲讽 → monster.tauntedBy / tauntT（Monster.update / monsterTarget 已消费）
+ *     布雷 → G.run.traps（World.update 引爆循环已消费）
+ *     召唤 → G.run.drones（Drone 类自行 update/回收）
+ * ============================================================ */
+
+/** 召唤物初始环绕相位序列（确定性，不用随机数——便于测试复现）。 */
+SkillRuntime._summonSeq = 0;
+
+/** 施放级效果派发入口：对本次施放生成的效果实例逐个派发（每实例一次）。 */
+SkillRuntime._applySpawnEffects = function (world, snapshot, made) {
+  if (!Array.isArray(made) || !made.length) return 0;
+  let n = 0;
+  for (const eff of made) {
+    if (!eff || !eff.effect) continue;           // 无 effect = 纯伤害（v1 语义，零介入）
+    if (eff.rt.effectDone) continue;             // 防重复（同一实例恰一次）
+    eff.rt.effectDone = true;
+    if (SkillRuntime._applyEffect(world, snapshot, eff)) n++;
+  }
+  return n;
+};
+
+/** 效果等级系数：1 + (lv-1) × CFG.skillScaleBy.levelGrowth（与旧表 skillScaleBy 同源）。 */
+SkillRuntime._effectGrowth = function (snapshot) {
+  const lv = (snapshot && snapshot.level) ? snapshot.level : 1;
+  const g = (typeof CFG !== "undefined" && CFG && CFG.skillScaleBy && CFG.skillScaleBy.levelGrowth != null)
+    ? CFG.skillScaleBy.levelGrowth : 0.06;
+  return 1 + (lv - 1) * g;
+};
+
+/** 取施放者属性值。⚠️ Player 实体**没有** atk/def 字段（属性在 computeStats()）→ 依次回落：
+ *   owner[stat]（队友有） → owner.stats[stat] → CFG.heroes 基表（按 owner.id）。 */
+SkillRuntime._statOf = function (owner, stat) {
+  if (!owner || !stat) return 0;
+  if (typeof owner[stat] === "number" && isFinite(owner[stat])) return owner[stat];
+  if (owner.stats && typeof owner.stats[stat] === "number" && isFinite(owner.stats[stat])) return owner.stats[stat];
+  if (typeof CFG !== "undefined" && CFG && Array.isArray(CFG.heroes)) {
+    for (const hd of CFG.heroes) {
+      if (hd && hd.id === owner.id && typeof hd[stat] === "number" && isFinite(hd[stat])) return hd[stat];
+    }
+  }
+  return 0;
+};
+
+/** 效果量 = 基础值 + 施放者[scaleStat] × scalePct × 等级系数（v2 §1.2，与旧实现同源）。 */
+SkillRuntime._effectAmount = function (world, snapshot, eff) {
+  const e = (eff && eff.effect) || {};
+  const owner = SkillRuntime._heroOwner(world, eff.ownerId);
+  const pct = (typeof e.scalePct === "number" && isFinite(e.scalePct)) ? e.scalePct : 0;
+  const scaled = (e.scaleStat ? SkillRuntime._statOf(owner, e.scaleStat) : 0) * pct * SkillRuntime._effectGrowth(snapshot);
+  return (scaled > 0) ? scaled : 0;
+};
+
+/** 效果半径 = 节点 parameters.radius + 属性缩放（v2 §1.2 taunt 半径加成）。 */
+SkillRuntime._effectRadius = function (world, snapshot, eff) {
+  const params = (eff.rt && eff.rt.params) || {};
+  const base = (params.radius != null) ? params.radius : 0;
+  return base + SkillRuntime._effectAmount(world, snapshot, eff);
+};
+
+/** 效果派发总入口（按 kind 分派；未知 kind → false，零介入）。 */
+SkillRuntime._applyEffect = function (world, snapshot, eff) {
+  const e = (eff && eff.effect) || {};
+  const k = e.kind;
+  if (k === "heal") return SkillRuntime._effectHeal(world, snapshot, eff);
+  if (k === "aura") return SkillRuntime._effectAura(world, snapshot, eff);
+  if (k === "barrier") return SkillRuntime._effectBarrier(world, snapshot, eff);
+  if (k === "taunt") return SkillRuntime._effectTaunt(world, snapshot, eff);
+  if (k === "trap") return SkillRuntime._effectTrap(world, snapshot, eff);
+  if (k === "summon") return SkillRuntime._effectSummon(world, snapshot, eff);
+  return false;
+};
+
+/* —— heal：回复全队生命（旧 AT122 castSupport heal 分支同源）。——
+ *   ⚠️ 队长 HP 在 G.run.hp/hpMax，队友 HP 在实体 hp/hpMax（旧代码同款双通道）。 */
+SkillRuntime._effectHeal = function (world, snapshot, eff) {
+  const e = eff.effect || {};
+  const base = (typeof e.healBase === "number") ? e.healBase : 0;
+  const per = (typeof e.healPerAdd === "number") ? e.healPerAdd : 1;
+  /* 公式（v2 §1.2，与旧 combat.js castSupport 同源）：(基础值 + 属性×scalePct×等级系数 × healPerAdd)。
+   * ⚠️ 不可再叠加 _statOf(owner,scaleStat) —— 属性只应通过 scalePct 生效一次（否则重复计数）。 */
+  const scaled = SkillRuntime._effectAmount(world, snapshot, eff);
+  const amt = Math.max(1, Math.round(base + scaled * per));
+  const heroes = SkillRuntime._heroesOf(world);
+  const R = (typeof G !== "undefined" && G && G.run) ? G.run : null;
+  const player = (typeof G !== "undefined" && G) ? G.player : null;
+  let n = 0;
+  for (const h of heroes) {
+    if (!h) continue;
+    if (R && player && h === player) {
+      if (typeof R.hp === "number") { const mx = (R.hpMax != null) ? R.hpMax : R.hp; if (R.hp < mx) { R.hp = Math.min(mx, R.hp + amt); n++; } }
+      continue;
+    }
+    if (typeof h.hp === "number") { const mx = (h.hpMax != null) ? h.hpMax : h.hp; if (h.hp < mx) { h.hp = Math.min(mx, h.hp + amt); n++; } }
+  }
+  return n > 0;
+};
+
+/* —— aura：全队限时增益（旧 AT123 同源；写 G.run.buffs，atk/spd 走乘法通道 mul=1+pct）。—— */
+SkillRuntime._effectAura = function (world, snapshot, eff) {
+  const e = eff.effect || {};
+  const basePct = (typeof e.auraPct === "number") ? e.auraPct : 0;
+  const pct = basePct + SkillRuntime._effectAmount(world, snapshot, eff);
+  const dur = (typeof e.auraDuration === "number") ? e.auraDuration : 10;
+  const stats = (Array.isArray(e.auraStats) && e.auraStats.length) ? e.auraStats : ["atk"];
+  let ok = false;
+  for (const st of stats) {
+    const rec = SkillRuntime._pushRunBuff("技能鼓舞·" + st, st, 1 + pct, dur);
+    if (rec) ok = true;
+  }
+  return ok;
+};
+
+/* —— barrier：全队防御护罩（旧 AT124 同源；def 走加法通道，mul 存平坦加值）。—— */
+SkillRuntime._effectBarrier = function (world, snapshot, eff) {
+  const e = eff.effect || {};
+  const base = (typeof e.barrierDef === "number") ? e.barrierDef : 0;
+  /* 公式（v2 §1.2，与旧 AT124 同源）：基础值 + 属性×scalePct×等级系数（属性只经 scalePct 生效一次）。 */
+  const defAdd = Math.max(1, Math.round(base + SkillRuntime._effectAmount(world, snapshot, eff)));
+  const dur = (typeof e.barrierDuration === "number") ? e.barrierDuration : 12;
+  return !!SkillRuntime._pushRunBuff("技能灵能护罩", "def", defAdd, dur);
+};
+
+/** 写局内 buff：优先复用 SkillSystem.pushRunBuff（同 id 刷新时长、不叠乘）；
+ *   无宿主时按同结构直接写 G.run.buffs（语义同源，供纯逻辑测试）。 */
+SkillRuntime._pushRunBuff = function (id, stat, mul, duration) {
+  if (typeof SkillSystem !== "undefined" && SkillSystem && typeof SkillSystem.pushRunBuff === "function") {
+    return SkillSystem.pushRunBuff(id, stat, mul, duration);
+  }
+  const R = (typeof G !== "undefined" && G && G.run) ? G.run : null;
+  if (!R) return null;
+  if (!Array.isArray(R.buffs)) R.buffs = [];
+  const rec = { id: id, stat: stat, mul: mul, remain: duration, label: null };
+  let idx = -1;
+  for (let i = 0; i < R.buffs.length; i++) if (R.buffs[i] && R.buffs[i].id === id) { idx = i; break; }
+  if (idx >= 0) R.buffs[idx] = rec; else R.buffs.push(rec);
+  return rec;
+};
+
+/* —— taunt：半径内敌人强制攻击施放者（旧 AT120 同源；
+ *   消费点在 Monster.update（tauntT 递减）与 monsterTarget（选目标）—— 无需新增机制）。—— */
+SkillRuntime._effectTaunt = function (world, snapshot, eff) {
+  const e = eff.effect || {};
+  const dur = (typeof e.tauntDuration === "number") ? e.tauntDuration : 4;
+  const R = SkillRuntime._effectRadius(world, snapshot, eff);
+  const owner = SkillRuntime._heroOwner(world, eff.ownerId);
+  const monsters = Array.isArray(world.monsters) ? world.monsters : [];
+  let n = 0;
+  for (const m of monsters) {
+    if (!m || m.dead) continue;
+    const dx = m.x - eff.x, dy = m.y - eff.y;
+    const rr = R + (m.r || 0);
+    if (dx * dx + dy * dy <= rr * rr) { m.tauntedBy = owner; m.tauntT = dur; n++; }
+  }
+  return n > 0;
+};
+
+/* —— trap：布设延迟引爆的地雷（旧 AT114 同源；容器 G.run.traps，引爆由 World.update 循环结算）。
+ *   布雷**不立即结算伤害** → 标记本效果实例死亡（endReason=forced，不触发消失派生）。 */
+SkillRuntime._effectTrap = function (world, snapshot, eff) {
+  const e = eff.effect || {};
+  const R = (typeof G !== "undefined" && G && G.run) ? G.run : null;
+  if (!R) return false;
+  if (!Array.isArray(R.traps)) R.traps = [];
+  const armDelay = (typeof e.armDelay === "number") ? e.armDelay : 0.5;
+  const count = (typeof e.trapCount === "number" && e.trapCount > 0) ? Math.floor(e.trapCount) : 1;
+  const b = SkillRuntime._resolveBasis(eff, snapshot);
+  const dmg = Math.max(1, Math.round((b.baseRef || 0) * (b.coefficient || 1)));
+  const params = (eff.rt && eff.rt.params) || {};
+  const radius = (params.radius != null) ? params.radius : 110;
+  const owner = SkillRuntime._heroOwner(world, eff.ownerId);
+  for (let i = 0; i < count; i++) {
+    const ang = (count > 1) ? (i / count) * Math.PI * 2 : 0;
+    const off = (count > 1) ? 18 : 0;
+    R.traps.push({
+      x: eff.x + Math.cos(ang) * off, y: eff.y + Math.sin(ang) * off, r: 10,
+      radius: radius, armDelay: armDelay, armed: false, fuse: 0,
+      owner: owner, world: world, dmg: dmg,
+    });
+  }
+  eff.state = "dead"; eff.endReason = "forced";
+  return true;
+};
+
+/* —— summon：召唤召唤物协战（旧 AT113 同源；实体 Drone，容器 G.run.drones）。
+ *   1 个 summonUnit 效果实例 = 1 架召唤物；数量由节点的 params.count 决定（等级曲线 3→6）。
+ *   宿主未加载 Drone（纯逻辑测试）→ 静默降级返回 false。 */
+SkillRuntime._effectSummon = function (world, snapshot, eff) {
+  const e = eff.effect || {};
+  const R = (typeof G !== "undefined" && G && G.run) ? G.run : null;
+  if (!R) return false;
+  if (typeof Drone !== "function") return false;
+  if (!Array.isArray(R.drones)) R.drones = [];
+  const params = (eff.rt && eff.rt.params) || {};
+  const owner = SkillRuntime._heroOwner(world, eff.ownerId);
+  const orbit = (params.orbit != null) ? params.orbit : 90;
+  const hp = (params.hp != null) ? params.hp : 40;
+  const atk = (params.atk != null) ? params.atk : 6;
+  const fireCd = (params.fireCd != null) ? params.fireCd : 0.8;
+  const isRepair = String(e.summonId || "").indexOf("REPAIR") >= 0;
+  const ang = (SkillRuntime._summonSeq++ * 0.7) % (Math.PI * 2);   // 确定性相位，便于复现
+  const d = new Drone(eff.x, eff.y, ang, hp, Math.max(1, Math.round(atk)), fireCd, orbit, owner, isRepair);
+  d.world = world;
+  R.drones.push(d);
+  eff.state = "dead"; eff.endReason = "forced";     // 实体即效果：本实例即刻回收（生命周期归 Drone）
+  return true;
+};

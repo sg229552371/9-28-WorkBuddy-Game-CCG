@@ -249,13 +249,13 @@
 | 项 | 值 | 含义 |
 |---|---|---|
 | `CFG.skillSystem.enabled` | **`true`** | **已正式启用**（22.8 起） |
-| `CFG.skillSystem.migratedHeroIds` | **`["H001".."H006"]`**（6 人） | 全量迁移批 1（决策 `D011`） |
-| `CFG.skillSystem.initialSkillBindings` | **H001~H006 各绑 1 初始技能** | `SK_FIREBALL`/`SK_SCATTER`/`SK_RAILGUN`/`SK_RINGBARRAGE`/`SK_VOLLEY`/`SK_SIEGEBLAST`；H007~H012 未迁移 |
+| `CFG.skillSystem.migratedHeroIds` | **`["H001".."H012"]`**（12 人 · 全量） | 批 1 = `D011`，批 2 = `D012` |
+| `CFG.skillSystem.initialSkillBindings` | **H001~H012 各绑 1 初始技能** | `SK_FIREBALL`/`SK_SCATTER`/`SK_RAILGUN`/`SK_RINGBARRAGE`/`SK_VOLLEY`/`SK_SIEGEBLAST` + `SK_DRONESWARM`/`SK_MINEFIELD`/`SK_TAUNTROAR`/`SK_LIFEPULSE`/`SK_WARSONG`/`SK_PSYSHIELD` |
 | `slotCount / maxSkillsPerHero` | `4 / 2` | 4 槽；初始 + 至多 1 稀有 |
 | `rareSkillPool` | `["SK_SHOCKWAVE"]` | 雕像稀有技能 |
 | 配置版本 | `configVersion: "skill-v1.0.0"` | — |
 
-**结论：系统「已启用」** —— H001~H006 走新路径（`skillV2Owns` 分流），其余 6 人仍走旧路径。`?skill=1`（`skill-playtest.js`）仅用于开发期通电，**不带参数完全空转**。
+**结论：系统「已启用且全量迁移」** —— **12/12 英雄全部走新路径**（`skillV2Owns` 分流），旧路径技能表 `CFG.skills` 保留不动（迁移 = 新增新路径，不删旧表）。`?skill=1`（`skill-playtest.js`）仅用于开发期通电。
 > 🔴 **存档口径变更（决策 `D013`）**：技能构筑**不跨局保存，每局重置**（见 §3.10）。
 
 ### 4.3 共享文件接入点（W6 单行接线，符合 AGENTS.md §5.45）
@@ -290,7 +290,7 @@
 | H 验收 | 门禁 / 浏览器 / 帧率 / 性能 / 平衡 | 🔶 门禁与帧率✅；**真机/平衡❌** |
 
 **一句话进度（2026-10-12 · 全量迁移批 1 收口）**：**系统已正式启用并完成首轮英雄迁移** ——
-`enabled = true` + `migratedHeroIds = ["H001".."H006"]`（**6/12 英雄**走新路径），14 颗水晶 + 100 级曲线 + 迁移映射落地，
+`enabled = true` + `migratedHeroIds = ["H001".."H012"]`（**12/12 英雄**走新路径），14 颗水晶 + 100 级曲线 + 迁移映射落地，
 门禁 **99 套 / 4210 / bad=0**。**下一步**：H007~H012（召唤 / 陷阱 / 嘲讽 / 治疗 / 光环 / 护罩）需**先扩模板**才能迁移（见 `hero_skill_interface_v1.md` §5 与决策 `D012`）。
 
 **启用批次进度**（施工依据 = `skill_enable_batch_plan_v1.md`）：
@@ -326,7 +326,7 @@
 
 1. ✅ **【已完成】装配 / 详情 UI 接屏**（阶段 F 收口，W2 2026-10-12）——技能栏 `A X X X X A` / 水晶详情浮窗 / 升级 4 选 1 水晶候选 / 稀有技能选择弹窗，均已接 DOM（见 §6-#4）。
 2. **【阻塞项】数值平衡**（阶段 E/H）——按真实基线填 `levels`、水晶等级表、品质权重、预算阈值；跑最坏对象数 / 30-60-120 FPS / 真机。
-3. ✅ **【已完成】迁移名单**（2026-10-12，决策 `D011`）——H001~H006 写入 `initialSkillBindings` + `migratedHeroIds`，`enabled = true`。**H007~H012 待扩模板（决策 `D012`）**。
+3. ✅ **【已完成】迁移名单**（2026-10-12）——批 1（`D011`）H001~H006 + 批 2（`D012`）H007~H012 全部写入 `initialSkillBindings` + `migratedHeroIds`（**12/12**），`enabled = true`。批 2 新增 `effect` 字段 + `TP_SUMMON_UNIT` 非伤害模板，详见 `hero_skill_interface_v2.md` §9。
 4. **【迁移项】旧模块 → 水晶映射**——填 `migrationMaps`；旧存档逐项翻译 + 报告，不静默丢资产。
 5. **【补口项】剩余缺口**——`castTime` 接线 / `validate` 覆盖新字段 / ~~`killer` 传递~~（✅ 已修 `D008`）/ 稀有技能内容扩充 / **`SkillSave` 宿主按「每局重置」接线（决策 `D013`）**。
 6. ✅ **【文档项】文档合并（已完成 2026-10-12）**——主设计文档已收录第二十章「能量水晶技能系统」；`README` / `tests/README` / `dev_guide §8` / `AGENTS.md` 数字已同步。
@@ -355,7 +355,7 @@
 ## 9. 快速核对命令
 
 ```bash
-# 当前激活状态（2026-10-12 起：enabled:true / migratedHeroIds = H001~H006）
+# 当前激活状态（2026-10-12 起：enabled:true / migratedHeroIds = H001~H012）
 grep -n "enabled:\|migratedHeroIds\|initialSkillBindings" js/config.js | head
 
 # 接线点是否在位

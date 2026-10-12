@@ -36,7 +36,7 @@
 | A2 | **资源清单接线** | ⚠️ **判定为「半个改动」，暂缓**：清单 15 条**磁盘存在 0**；且实测「清单侧 `AssetHooks` 真实消费点 = 0」→ 单个挂载 = 每局 15 个 404 + 零收益 + 打破 7 条现状断言。**必须连同渲染/音频消费接线一起做**（`Assets.images` / `SFX.play` 优先查 `AssetHooks`），且需素材就绪才有端到端验收条件 | `index.html` + `js/core.js` | ❌ 共享文件（整批） |
 | A3 | **`SkillSave` 宿主闭环** | 模块本身完备（`serialize`/`migrate`/`saveTo`/`loadFrom`/`_persist`），**仅缺宿主调用** ❌；但「是否跨局保存 / 保存时机」**属设计决策未定** | `js/game.js` / `js/main.js` | ❌ 需先拍板 |
 | A4 | **`castTime` 调度消费** | `config.js` 生成 + `skill-config.js` 校验；**调度器未读** ❌；前摇语义（能否被打断）**未定** | `js/skill-scheduler.js` | ⚠️ 需先定语义 |
-| A5 | **全部 12 英雄技能** | 🟢 **批 1 已交付（H001~H006 全走新路径）**；**批 2 设计已冻结**（`hero_skill_interface_v2.md`，决策 `D012`）——实测纠正后**仅需 1 个模板 kind + 1 个节点字段 `effect`**，拆为 2A（H009~H012）/ 2B（H007/H008） | `js/config.js` 的 `skillDefs`（表 → 归 config，非独立文件） | 🟡 剩 6 人**待实现**（设计已就绪，可按文件所有权并行）|
+| A5 | **全部 12 英雄技能** | ✅ **已全部交付（H001~H012 全走新路径）**：批 1（H001~H006，2026-10-12）+ 批 2（H007~H012，2026-10-12 · 决策 `D012`）——批 2 只需 1 个模板 kind（`summonUnit`）+ 1 个节点字段（`effect`），已拆 2A（H009~H012）/ 2B（H007/H008）全部实现 | `js/config.js` 的 `skillDefs`（表 → 归 config，非独立文件） | ✅ 已完成（测试 37+42 断言）|
 | A6 | **旧路红测根因** | 报告登记 `skill_enable_runtime_test` 曾 `kills≥1` 失败；**当前实测全绿**（25 条），根因未诊断 | 诊断报告 | ✅ 只读核验 |
 | A7 | ~~X-GAMe 四张卡~~ | ✅ **实测已全部存在**（非未创建）：`xgame_assets_consumption` / `xgame_save_integration` / `xgame_redtest_clock` / `xgame_boss_crystal` / `xgame_chip_fold` / `xgame_skill_save_wire` —— 书中 task-cards 的「未来交付物」在公司侧那轮已落地 | — | 已完成 |
 
@@ -114,6 +114,25 @@ P3 串行验收：门禁全绿 → commit → push → 重新发布 → 真机�
 - [x] **现状记录型断言去硬编码**：`skill_integration` / `skill_rule_binding` / `skill_enable_runtime` / `skill_playtest` / `crystal_ui` / `crystal_expansion` 六处「= H001 / = 2 技能」改为**数据驱动**（比对 `initialSkillBindings` 键集）→ **以后每加一批英雄都不用再改测试**
 - [x] 版本 bump `20261048 → 20261049`；`verify_clone.sh` 期望表同步（24 文件指纹 + 版本 + 基线 99 套 / 4210）
 - [x] 门禁 **4210 / bad = 0 全绿**（原 4191，+19）
+
+### 5.3 全量迁移批 2（A5 第二批：H007~H012 全部走新路径 · 已完成 · 决策 D012）
+
+**并行编排**（用户指令「多线程并行，直接开工」）：
+- 主会话串行做全部**共享文件**（schema 先冻结再放行下游）：`skill-config.js` → `config.js` → `skill-compiler.js` → `skill-runtime.js`
+- 3 个并行代理做**独立产出**：旧系统效果落点调研（只读）· 数值平衡表 · 结构守卫测试 · 运行时行为测试
+
+- [x] **schema 冻结（`skill-config.js`）**：`_FIELDS.node` += `effect`；新增 `_FIELDS.effect` / `_EFFECT_KINDS` / `_EFFECT_STATS` / `_NON_DAMAGE_KINDS`；`_TEMPLATE_KINDS` += `summonUnit`；`_PARAM_RULES` += 16 个字段名；新增 `_validateEffect`；**`_validateNode` 改 damageBasis 条件必填**（白名单，fail-closed）
+- [x] **表（`config.js`）**：新增 `TP_SUMMON_UNIT`（唯一非伤害模板）+ `defaults.summonUnit`；6 技能
+  `SK_TAUNTROAR`(H009←AT120) / `SK_LIFEPULSE`(H010←AT122) / `SK_WARSONG`(H011←AT123) / `SK_PSYSHIELD`(H012←AT124) / `SK_MINEFIELD`(H008←AT114) / `SK_DRONESWARM`(H007←AT113)
+  + 6 条 localization + `template.summonUnit`；`initialSkillBindings` 增 H007~H012；`migratedHeroIds` → **12/12**
+- [x] **编译（`skill-compiler.js`）**：`_NON_DAMAGE_KINDS` 副本 + bref 校验按模板 kind 放宽 + `_cloneNode` 补 `effect` 透传
+- [x] **执行（`skill-runtime.js`）**：`_SR_CAT_DEFAULT_KEY` += `summonUnit`；`eff.effect` 透传；**文件末尾独立区块**新增 `_applySpawnEffects` / `_applyEffect` / 6 个 `_effectXxx` / `_statOf` / `_effectAmount` / `_effectRadius` / `_pushRunBuff`
+- [x] 🔴 **实现期纠正**：接线点由「`_applyDamage` 命中级」改为「`spawnEffect` 施放级」—— AOE 命中 N 目标会把全队效果触发 N 次；施放级 = 每实例恰一次，与旧实现同源（详见 `hero_skill_interface_v2.md` §9.2）
+- [x] 🔴 **实现期揪出的真实缺陷**：`heal`/`barrier` 把「缩放值」与「生属性」重复相加 → 由 `skill_effect_runtime_test.js` 复算断言揪出并修正（§9.3）
+- [x] **测试（并行代理产出，主会话登记）**：`hero_nondamage_skill_test.js`（**37 断言**）+ `skill_effect_runtime_test.js`（**42 断言**）
+- [x] **现状记录型断言随批更新**：`hero_skill_migration_test.js` ②（未迁移 → 全量，含绑定键集双向一致性）+ ④（非伤害节点豁免/双向断言）；`skill_integration_test.js` ①（模板 4 → ≥4 且含 `TP_SUMMON_UNIT`）
+- [x] **平衡表**：`G_docs/skill_effect_balance_v0.1.md`（数值策划代理提案，未批准）
+- [x] 门禁 **4239 → 4320 / bad = 0 全绿**（+81）
 
 ---
 

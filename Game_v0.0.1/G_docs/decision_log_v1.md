@@ -41,7 +41,7 @@
 | D009 | 2026-10-12 | 资源清单是否单独挂载（A2） | **不单独挂载** —— 判为「半个改动」（消费点 0 + 素材磁盘存在 0），归入「资源层整批」 | `G_docs/full_dev_plan_v1.md` | 新增 | 已完成 |
 | D010 | 2026-10-12 | 英雄技能定义的承载位置 | **表 → 写进 `js/config.js` 的 `skillDefs`**，**不**拆 `js/skills/*.js` 独立文件 | `G_docs/hero_skill_interface_v1.md` | 新增 | 已完成 |
 | D011 | 2026-10-12 | 全量迁移批 1 | **H001~H006** 全部走新路径（迁移基准 = 旧表该英雄 `kind:"skill"` 条目，非发明） | `js/config.js` `migratedHeroIds` | 替换 | 已完成 |
-| **D012** | **2026-10-12** | **H007~H012 非伤害效果的图模型表达口径** | **用户授权「AI 直接给设计」**（选项 C）——无需逐条报批，AI 出一版设计并落库，事后由用户审阅 | ✅ 已产出 `G_docs/hero_skill_interface_v2.md`（**实测纠正**：非 6 种模板，只需 1 个模板 kind + 1 个节点字段 `effect`） | 新增 | **已批准**（授权）+ 设计已落库 |
+| **D012** | **2026-10-12** | **H007~H012 非伤害效果的图模型表达口径** | **用户授权「AI 直接给设计」**（选项 C）——无需逐条报批，AI 出一版设计并落库，事后由用户审阅 | ✅ **已实现**：`hero_skill_interface_v2.md`（设计冻结）+ §9 实现落地记录；代码 = `skill-config.js`（`effect` schema + `_NON_DAMAGE_KINDS` 条件必填）/ `config.js`（6 技能 + `TP_SUMMON_UNIT`）/ `skill-compiler.js`（放宽 bref + `effect` 透传）/ `skill-runtime.js`（`_applySpawnEffects` 施放级派发）；测试 `hero_nondamage_skill_test.js`(37) + `skill_effect_runtime_test.js`(42) | 新增 | **已完成** |
 | **D013** | **2026-10-12** | **技能构筑是否跨局保存** | **每局重置**（选项 B）——技能与水晶**不进局外存档**，每局重新构筑 | `game_design_proposal.md` §20.10 存档 | **替换**（原「首轮不承诺跨版本恢复」的模糊表述 → 明确「不跨局」） | **已批准** |
 
 ---

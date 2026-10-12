@@ -34,6 +34,11 @@ const SupportCompiler = {
     cdMul: { better: "lower", base: 1 },
   },
 
+  /* 🔴 非伤害模板集合（白名单）：与 skill-config.js 的 _NON_DAMAGE_KINDS 同源，此处为编译侧副本。
+   *   **只有**在此集合内的模板 kind 允许节点缺省 damageBasis（其余一律强制必填，fail-closed）。
+   *   ⚠️ 两处必须同步；hero_nondamage_skill_test.js 有「两侧一致」守卫断言。 */
+  _NON_DAMAGE_KINDS: { summonUnit: true },
+
   /* 最近一次归一化后的定义（供 preview 在未显式传入时兜底）。 */
   _lastDefs: null,
 
@@ -792,7 +797,13 @@ const SupportCompiler = {
     for (const id of ids) {
       const node = nodes[id];
       const bref = node.damageBasis && node.damageBasis.baseRef;
-      if (!bref) {
+      /* v2：非伤害模板（_NON_DAMAGE_KINDS）允许缺省 damageBasis —— 唯一放宽的既有硬约束。
+       * 其余模板（含全部既有 4 类）仍强制必填；模板未知 → tpl 为空 → 仍按必填报（fail-closed）。 */
+      const tpl = node.templateId ? defs.templateDef(node.templateId) : null;
+      const nonDamage = !!(tpl && tpl.kind && SupportCompiler._NON_DAMAGE_KINDS[tpl.kind]);
+      if (nonDamage && !bref) {
+        /* 非伤害节点：无伤害基准 → 跳过三类基准校验（召唤物等） */
+      } else if (!bref) {
         diag.push({ code: SupportCompiler._R("INVALID_REFERENCE"), definitionId: null,
           opId: null, field: "damageBasis.baseRef", message: "节点缺少原始伤害基准引用：" + id });
       } else if (SupportCompiler._referencesSettledResult(bref)) {
@@ -906,6 +917,9 @@ const SupportCompiler = {
       },
       hitPolicyId: n.hitPolicyId || null,
     };
+    /* v2（接口冻结 v2 §4）：effect 为**节点自定义字段** → 随节点克隆透传；
+     *   convertNode **不重置** effect（与重置形态参数区分），故无需在 convertNode 处特殊处理。 */
+    if (n.effect) node.effect = Object.assign({}, n.effect);
     const override = lvSpec && lvSpec.nodeParameters && lvSpec.nodeParameters[node.nodeId];
     if (override) Object.assign(node.parameters, override);
     /* 等级行参数只并入主节点（22.4 #13）：levels[].parameters 语义 = 主生成器/施放层参数。

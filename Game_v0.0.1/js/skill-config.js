@@ -101,10 +101,14 @@ const _CAPABILITIES = {
   pierceCounter: 1, homing: 1, multishot: 1, split: 1, explosion: 1,
   areaRadius: 1, hitEvent: 1, expireEvent: 1, motionResource: 1,
   regionTick: 1, projectileSweep: 1,
+  /* v2（H007 召唤）：唯一新增能力，与 orbitContact 并用（召唤物复用环绕运动）。 */
+  summonUnit: 1,
 };
 const _TAGS = {
   "物理": 1, "魔法": 1, "投射物": 1, "范围": 1, "持续区域": 1,
   "环绕": 1, "爆炸": 1, "火焰": 1, "雷电": 1, "技能": 1, "主效果": 1, "派生": 1,
+  /* v2 新增标签（与 CFG.skills / 模板表同源） */
+  "召唤物": 1, "陷阱": 1, "嘲讽": 1, "治疗": 1, "光环": 1, "护罩": 1,
 };
 
 /* 执行器 / 阶段 / 合并算子 / 读取阶段（冻结枚举） */
@@ -128,7 +132,13 @@ const _TEMPLATE_KINDS = {
   orbitContact: { radius: "pos", angularSpeed: "pos", count: "count", hitInterval: "pos" },
   instantArea: { radius: "pos", life: "pos" },
   persistentArea: { radius: "pos", duration: "pos", tick: "pos", dps: "nonneg" },
+  /* v2 新增（H007 召唤师）：召唤物本体属性 + 环绕半径。非伤害模板 → 见 _NON_DAMAGE_KINDS。 */
+  summonUnit: { orbit: "pos", hp: "pos", atk: "pos", fireCd: "pos" },
 };
+
+/* 🔴 非伤害模板集合（白名单，不是黑名单）：**只有**在此集合内的模板 kind 允许节点缺省 damageBasis。
+ * 新增模板默认仍要求伤害（fail-closed）——放行必须先显式登记到这里。 */
+const _NON_DAMAGE_KINDS = { summonUnit: 1 };
 
 /* 参数名 → 约束（跨模板/等级/节点通用） */
 const _PARAM_RULES = {
@@ -140,7 +150,20 @@ const _PARAM_RULES = {
   dps: "nonneg", damage: "nonneg", coefficient: "nonneg", damageRatio: "nonneg",
   more: "nonneg", lessMult: "nonneg", weight: "nonneg", rank: "nonneg",
   probability: "prob", chance: "prob", procChance: "prob", critChance: "prob",
+  /* v2 附加效果数值（effect.*）：与接口文档 §1.1 字段清单逐字对应 */
+  healBase: "nonneg", healPerAdd: "nonneg", scalePct: "nonneg",
+  auraPct: "nonneg", auraDuration: "pos",
+  barrierDef: "nonneg", barrierDuration: "pos",
+  tauntDuration: "pos", armDelay: "nonneg", trapCount: "count",
+  summonCount: "count", summonDuration: "pos",
+  /* v2 召唤物参数（TP_SUMMON_UNIT / 节点 parameters 同源）：补强节点级正数约束 */
+  orbit: "pos", hp: "pos", atk: "pos", fireCd: "pos",
 };
+
+/* v2 效果类型白名单（节点可选字段 effect.kind） */
+const _EFFECT_KINDS = { heal: 1, aura: 1, barrier: 1, taunt: 1, trap: 1, summon: 1 };
+/* 效果缩放/增益属性白名单（effect.scaleStat / effect.auraStats），与旧表 scaleBy.stat 同源 */
+const _EFFECT_STATS = { atk: 1, def: 1, spd: 1, energyMax: 1 };
 
 /* 各类定义的字段白名单（未知字段 = UNKNOWN_FIELD） */
 const _FIELDS = {
@@ -149,7 +172,7 @@ const _FIELDS = {
   crystal: ["id", "nameKey", "qualityId", "eligibility", "operations", "levels", "conflicts", "hidden", "presentation", "tags"],
   quality: ["id", "nameKey", "rank", "color", "weight", "placement"],
   pool: ["id", "entries", "nameKey"],
-  node: ["nodeId", "templateId", "role", "tags", "capabilities", "parameters", "damageBasis", "hitPolicyId"],
+  node: ["nodeId", "templateId", "role", "tags", "capabilities", "parameters", "damageBasis", "hitPolicyId", "effect"],
   op: ["id", "executor", "phase", "selector", "field", "parameter", "merge", "event",
     "sourceSelector", "spawnTemplateId", "damageBasisRef", "inheritFactors", "routePolicyId", "dependsOn", "value",
     /* 22.x 集成新增（编译器 convertNode/addNode 使用）：资源组声明、派生节点参数与命中策略 */
@@ -166,6 +189,14 @@ const _FIELDS = {
   selector: ["read", "capabilitiesAll", "capabilitiesAny", "tagsAll", "tagsAny"],
   damageBasis: ["baseRef", "coefficient", "inheritFactorKeys"],
   presentation: ["nameKey", "detailKey"],
+  /* v2 节点可选字段 effect 的字段白名单（跨 kind 全集；逐 kind 的必需性在 _validateEffect 判定） */
+  effect: ["kind",
+    "healBase", "healPerAdd", "scaleStat", "scalePct",
+    "auraDuration", "auraPct", "auraStats",
+    "barrierDuration", "barrierDef",
+    "tauntDuration",
+    "armDelay", "trapCount",
+    "summonId", "summonCount", "summonDuration"],
 };
 
 /* 策略 schema：可选字段默认值（合同 §6，缺失必需字段另报错，不得默认无限）*/
@@ -322,7 +353,15 @@ function _validateSelector(sel, did, opId, D, caps, tags) {
 function _validateNode(n, did, templates, hits, D, caps, tags, nodeIds, local) {
   if (!_isObj(n)) { D(SKILL_REASON.INVALID_PARAMETER, did, null, "baseGraph.nodes[]", "节点必须为对象"); return; }
   _allowFields(n, _FIELDS.node, did, null, D);
-  _requireFields(n, ["nodeId", "templateId", "role", "tags", "capabilities", "parameters", "damageBasis", "hitPolicyId"], did, null, D);
+  /* damageBasis 条件必填（v2 §3 变更 6，**唯一放宽的既有硬约束**）：
+   *   模板 kind ∈ _NON_DAMAGE_KINDS（非伤害白名单）→ 允许缺省；
+   *   其余模板（含全部既有 4 类）→ 仍强制必填。
+   * ⚠️ 用白名单而非黑名单：模板非法/未知时 tplDef 为空 → nonDamage=false → 仍要求伤害（fail-closed）。 */
+  const tplDef = _nonEmptyStr(n.templateId) ? templates[n.templateId] : null;
+  const nonDamage = !!(tplDef && _NON_DAMAGE_KINDS[tplDef.kind]);
+  const required = ["nodeId", "templateId", "role", "tags", "capabilities", "parameters", "hitPolicyId"];
+  if (!nonDamage) required.push("damageBasis");
+  _requireFields(n, required, did, null, D);
   if (_nonEmptyStr(n.nodeId)) {
     if (nodeIds[n.nodeId]) { D(SKILL_REASON.DUPLICATE_ID, did, n.nodeId, "nodeId", "同一图内 nodeId 重复: " + n.nodeId); }
     else { nodeIds[n.nodeId] = true; }
@@ -332,8 +371,55 @@ function _validateNode(n, did, templates, hits, D, caps, tags, nodeIds, local) {
   _validateTagList(n.tags, did, n.nodeId, "tags", D, tags);
   _validateCapList(n.capabilities, did, n.nodeId, "capabilities", D, caps);
   _validateParams(n.parameters, did, n.nodeId, "parameters", D, null);
-  _validateDamageBasis(n.damageBasis, did, n.nodeId, D);
+  if (n.damageBasis !== undefined) _validateDamageBasis(n.damageBasis, did, n.nodeId, D);
+  if (n.effect !== undefined) _validateEffect(n.effect, did, n.nodeId, D);
   if (!hits[n.hitPolicyId]) { D(SKILL_REASON.INVALID_REFERENCE, did, n.nodeId, "hitPolicyId", "命中策略不存在: " + n.hitPolicyId); }
+}
+
+/** 效果字段（v2 增量 · 节点可选字段 effect）。
+ *   校验：kind ∈ _EFFECT_KINDS；字段白名单；逐 kind 必需字段；scaleStat/auraStats 取值白名单。
+ *   缺省 effect = 纯伤害（与 v1 的 H001~H006 完全一致，向后兼容）。 */
+function _validateEffect(e, did, nodeId, D) {
+  if (!_isObj(e)) { D(SKILL_REASON.REQUIRED_FIELD, did, nodeId, "effect", "effect 必须为对象"); return; }
+  _allowFields(e, _FIELDS.effect, did, nodeId, D);
+  if (!_nonEmptyStr(e.kind) || !_EFFECT_KINDS[e.kind]) {
+    D(SKILL_REASON.INVALID_PARAMETER, did, nodeId, "effect.kind", "未知效果类型: " + e.kind);
+    return;
+  }
+  const kind = e.kind;
+  const req = function (f) {
+    if (e[f] === undefined) D(SKILL_REASON.REQUIRED_FIELD, did, nodeId, "effect." + f, "effect(" + kind + ") 缺少必需字段: " + f);
+  };
+  const cfg = function (f) {
+    if (e[f] === undefined) return;
+    const why = _paramFail(f, e[f], _PARAM_RULES);
+    if (why) D(SKILL_REASON.INVALID_PARAMETER, did, nodeId, "effect." + f, "effect." + f + " " + why);
+  };
+  if (e.scaleStat !== undefined && (!_nonEmptyStr(e.scaleStat) || !_EFFECT_STATS[e.scaleStat])) {
+    D(SKILL_REASON.INVALID_REFERENCE, did, nodeId, "effect.scaleStat", "未知缩放属性: " + e.scaleStat);
+  }
+  cfg("scalePct");
+  if (kind === "heal") {
+    req("healBase"); cfg("healBase"); cfg("healPerAdd");
+  } else if (kind === "aura") {
+    req("auraPct"); req("auraDuration"); cfg("auraPct"); cfg("auraDuration");
+    if (e.auraStats !== undefined) {
+      if (!_isArr(e.auraStats)) { D(SKILL_REASON.INVALID_PARAMETER, did, nodeId, "effect.auraStats", "auraStats 必须为字符串数组"); }
+      else for (let i = 0; i < e.auraStats.length; i++) {
+        if (!_nonEmptyStr(e.auraStats[i])) { D(SKILL_REASON.INVALID_PARAMETER, did, nodeId, "effect.auraStats", "auraStats 元素必须为非空字符串"); }
+        else if (!_EFFECT_STATS[e.auraStats[i]]) { D(SKILL_REASON.INVALID_REFERENCE, did, nodeId, "effect.auraStats", "未知增益属性: " + e.auraStats[i]); }
+      }
+    }
+  } else if (kind === "barrier") {
+    req("barrierDef"); req("barrierDuration"); cfg("barrierDef"); cfg("barrierDuration");
+  } else if (kind === "taunt") {
+    req("tauntDuration"); cfg("tauntDuration");
+  } else if (kind === "trap") {
+    req("armDelay"); cfg("armDelay"); cfg("trapCount");
+  } else if (kind === "summon") {
+    if (!_nonEmptyStr(e.summonId)) D(SKILL_REASON.REQUIRED_FIELD, did, nodeId, "effect.summonId", "effect(summon) 缺少必需字段: summonId");
+    req("summonCount"); cfg("summonCount"); cfg("summonDuration");
+  }
 }
 
 /** 单个 operation。 */

@@ -75,22 +75,31 @@ const ev = (code) => vm.runInContext(code, ctx);
     skillIds.length > 0 && new Set(skillIds).size === skillIds.length);
 }
 
-/* ================== ② 分流铁律：未迁移英雄不得进名单 ================== */
+/* ================== ② 分流铁律：名单 = 英雄全量 / 绑定键集逐位一致 ================== */
 {
   const allHeroes = ev("CFG.heroes.map(function (h) { return h.id; })");
   const migrated = ev("CFG.skillSystem.migratedHeroIds.slice()");
   const pending = allHeroes.filter(h => migrated.indexOf(h) < 0);
-  check("② 存在未迁移英雄（批 1 只到 H006，名单长度 " + migrated.length + " / 全 12）", pending.length > 0);
-  /* 未迁移英雄必须**没有**绑定，否则会两路并发（分流铁律） */
-  const leaked = pending.filter(h => ev("!!CFG.skillSystem.initialSkillBindings['" + h + "']"));
-  check("② 未迁移英雄一律无技能绑定（禁新旧两路并发，检 " + pending.length + " 人）", leaked.length === 0);
-  if (leaked.length) console.log("   串台：" + leaked.join(","));
-  /* 未迁移英雄的旧路径技能仍在（不能被误删） */
-  const oldGone = pending.filter(h => {
+  /* 批 2（2026-10-12 · 决策 D012）：12 英雄已**全量迁移** → pending 必须为空。
+   * ⚠️ 空真陷阱：这里断言的是「pending 为空」，若将来有人回退部分迁移会如实报红；
+   *    下方绑定键集一致性断言在两侧都做（防漏登记 / 防幽灵英雄）。 */
+  check("② 迁移名单 = 英雄全量（" + migrated.length + " / 全 " + allHeroes.length + " 人，无未迁移）",
+    allHeroes.length > 0 && pending.length === 0);
+  if (pending.length) console.log("   未迁移：" + pending.join(","));
+  const bindKeys = ev("Object.keys(CFG.skillSystem.initialSkillBindings)");
+  const onlyMigrated = bindKeys.filter(k => migrated.indexOf(k) < 0);
+  const onlyBound = migrated.filter(h => bindKeys.indexOf(h) < 0);
+  check("② 绑定键集 = 迁移名单（绑 " + bindKeys.length + " / 迁 " + migrated.length + "，双向比对）",
+    bindKeys.length > 0 && onlyMigrated.length === 0 && onlyBound.length === 0);
+  if (onlyMigrated.length) console.log("   有绑定未进名单：" + onlyMigrated.join(","));
+  if (onlyBound.length) console.log("   进名单无绑定：" + onlyBound.join(","));
+  /* 旧路径技能仍在（不能被误删——迁移是「新增新路径」，不是「删旧表」） */
+  const oldGone = allHeroes.filter(h => {
     const w = ev("(CFG.weapons[CFG.heroes.filter(function (x) { return x.id === '" + h + "'; })[0].weapon] || {}).skills");
     return !w || !w.skill || !ev("CFG.skills['" + w.skill + "']");
   });
-  check("② 未迁移英雄的旧路径技能仍在（" + pending.length + " 人检完）", oldGone.length === 0);
+  check("② 全部英雄的旧路径技能仍在（" + allHeroes.length + " 人检完）",
+    allHeroes.length > 0 && oldGone.length === 0);
   if (oldGone.length) console.log("   旧路径缺技能：" + oldGone.join(","));
 }
 
@@ -116,20 +125,27 @@ const ev = (code) => vm.runInContext(code, ctx);
   const migrated = ev("CFG.skillSystem.migratedHeroIds.slice()");
   const ids = migrated.map(h => ev("CFG.skillSystem.initialSkillBindings['" + h + "'].skillId"));
 
-  /* ④1 主节点必须显式 moreDamageMul = 1（乘法归并基准；缺省 0 → 伤害恒 0，本仓踩过） */
+  /* ④1 主节点必须显式 moreDamageMul = 1（乘法归并基准；缺省 0 → 伤害恒 0，本仓踩过）。
+   * 批 2 豁免：**非伤害模板**（SupportCompiler._NON_DAMAGE_KINDS，如 summonUnit）的主节点不参与伤害归并。 */
   const badMul = ids.filter(id => ev(
-    "(function () { var s = CFG.skillSystem.skillDefs['" + id + "']; " +
+    "(function () { var s = CFG.skillSystem.skillDefs['" + id + "']; var nd = SupportCompiler._NON_DAMAGE_KINDS || {}; " +
+    "var tpls = CFG.skillSystem.effectTemplates; " +
     "var p = s.baseGraph.nodes.filter(function (n) { return n.role === 'primary'; }); " +
-    "return p.length === 0 || !p.every(function (n) { return n.parameters && n.parameters.moreDamageMul === 1; }); })()"));
-  check("④ 每个技能的主节点都声明 parameters.moreDamageMul === 1（" + ids.length + " 个技能）", badMul.length === 0);
+    "if (p.length === 0) return true; " +
+    "var dmg = p.filter(function (n) { var t = tpls[n.templateId]; return !(t && nd[t.kind]); }); " +
+    "return !dmg.every(function (n) { return n.parameters && n.parameters.moreDamageMul === 1; }); })()"));
+  check("④ 每个技能的主节点都声明 parameters.moreDamageMul === 1（" + ids.length + " 个技能，非伤害主节点豁免）", badMul.length === 0);
   if (badMul.length) console.log("   缺基准：" + badMul.join(","));
 
-  /* ④2 每个节点 damageBasis 三字段齐（校验器之外再静态扫一遍，防绕过） */
+  /* ④2 每个节点 damageBasis 三字段齐；**非伤害节点必须恰好没有 damageBasis**（双向断言，防绕过） */
   const badDb = ids.filter(id => ev(
-    "(function () { return CFG.skillSystem.skillDefs['" + id + "'].baseGraph.nodes.every(function (n) { " +
+    "(function () { var nd = SupportCompiler._NON_DAMAGE_KINDS || {}; var tpls = CFG.skillSystem.effectTemplates; " +
+    "return CFG.skillSystem.skillDefs['" + id + "'].baseGraph.nodes.every(function (n) { " +
+    "var t = tpls[n.templateId]; " +
+    "if (t && nd[t.kind]) return n.damageBasis === undefined; " +
     "return n.damageBasis && typeof n.damageBasis.baseRef === 'string' && n.damageBasis.baseRef.length > 0 && " +
     "typeof n.damageBasis.coefficient === 'number' && Array.isArray(n.damageBasis.inheritFactorKeys); }); })()") !== true);
-  check("④ 每个节点 damageBasis 三字段齐（" + ids.length + " 个技能）", badDb.length === 0);
+  check("④ 每个节点 damageBasis 三字段齐（" + ids.length + " 个技能；非伤害节点则须无）", badDb.length === 0);
 
   /* ④3 派生节点必须由边可达（否则是死节点 / 或模板兜底会命中主节点 → 幻影） */
   const orphan = ids.filter(id => ev(

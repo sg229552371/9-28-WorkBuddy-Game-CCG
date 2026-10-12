@@ -2772,15 +2772,17 @@ CFG.skillSystem = {
   /* ---- 总开关与迁移范围（分流依据，见接口文档第六节）----
    * enabled=false 时：9 个模块静默待命，所有英雄走旧路径（零影响，保证并存期安全）。
    * migratedHeroIds 列出的英雄改走新路径；其余继续旧路径。
-   * 🔴 2026-10-12（22.8）**正式启用**：用户拍板「优先最高先完成技能系统全部内容」，
-   *    首批试点 = H001（猎手）—— 唯一有 initialSkillBindings 绑定的英雄。
+   * 🔴 2026-10-12（22.8）**正式启用**：用户拍板「优先最高先完成技能系统全部内容」。
    *    回退方式：enabled 改回 false 或清空 migratedHeroIds（两处任改其一即回到旧路径）。 */
   enabled: true,
   configVersion: "skill-v1.0.0",
-  /* 迁移英雄（走新路径）。全量迁移批 1：H001~H006（纯投射物/范围类，模板系统已支持）。
-   * H007~H012（召唤/陷阱/嘲讽/治疗/光环/护罩）待扩模板后才能迁移，见
-   * G_docs/hero_skill_interface_v1.md §0 / §5。 */
-  migratedHeroIds: ["H001", "H002", "H003", "H004", "H005", "H006"],
+  /* 迁移英雄（走新路径）。**2026-10-12 全量迁移完成：H001~H012（12/12）**。
+   *   批 1（H001~H006）：纯投射物 / 范围类，模板系统原生支持 → G_docs/hero_skill_interface_v1.md
+   *   批 2（H007~H012）：决策 D012「AI 直接给设计」→ 新增节点可选字段 `effect`
+   *     （heal/aura/barrier/taunt/trap/summon）+ 唯一非伤害模板 TP_SUMMON_UNIT
+   *     → G_docs/hero_skill_interface_v2.md（含实测纠正：仅 1 个模板 kind + 1 个节点字段，非 6 个模板）。
+   *   旧路径技能表 CFG.skills 保留不动（迁移 = 新增新路径，不删旧表）。 */
+  migratedHeroIds: ["H001", "H002", "H003", "H004", "H005", "H006", "H007", "H008", "H009", "H010", "H011", "H012"],
 
   /* ---- 结构常量 ---- */
   slotCount: 4,                  // 每英雄共享辅助槽数（开局全开；本局不可卸载/替换）
@@ -2800,6 +2802,14 @@ CFG.skillSystem = {
     H004: { weaponId: "W004", skillId: "SK_RINGBARRAGE" },
     H005: { weaponId: "W005", skillId: "SK_VOLLEY" },
     H006: { weaponId: "W006", skillId: "SK_SIEGEBLAST" },
+    /* 全量迁移批 2（2026-10-12 · D012）：H007~H012 武器绑定的初始主动技能。
+     * 逐条迁移基准见 G_docs/hero_skill_interface_v2.md §6。 */
+    H007: { weaponId: "W007", skillId: "SK_DRONESWARM" },
+    H008: { weaponId: "W008", skillId: "SK_MINEFIELD" },
+    H009: { weaponId: "W009", skillId: "SK_TAUNTROAR" },
+    H010: { weaponId: "W010", skillId: "SK_LIFEPULSE" },
+    H011: { weaponId: "W011", skillId: "SK_WARSONG" },
+    H012: { weaponId: "W012", skillId: "SK_PSYSHIELD" },
   },
   /* ---- 稀有技能池（雕像提供；每英雄至多 1 个，v0.5 §1）----
    * 雕像触发时经 SkillReward.rollStatueGrant 试编译过滤后授予。*/
@@ -2833,7 +2843,7 @@ CFG.skillSystem = {
     rareSkillFromStatue: true,   // 稀有技能由雕像提供
     derivedEvents: false,        // 默认派生不再次触发事件水晶（合同 §2 已确认玩法）
     elementConversion: false,    // 元素转换：首轮不做（待定）
-    summonMigration: false,      // 召唤/陷阱沿用旧路径，首轮不迁移（合同 §1）
+    summonMigration: true,       // 批 2B（D012）：召唤/陷阱已迁入新路径（H007 召唤 / H008 陷阱）
   },
 
   /* ---- 预算上限（合同 §15：全部进配置，缺失不得默认为无限）---- */
@@ -2855,6 +2865,8 @@ CFG.skillSystem = {
     // 一批环绕持续时间（调度器 intervalFor 单源读取本值取 max(冷却, 持续)）。
     instantArea: { radius: 110, life: 0.12 },
     persistentArea: { radius: 120, duration: 4.0, tick: 0.25, dps: 0 },
+    /* v2 新增（H007 召唤师）：非伤害模板 TP_SUMMON_UNIT 的缺省值（占位待平衡） */
+    summonUnit: { orbit: 90, hp: 260, atk: 48, fireCd: 0.5 },
     homing: { turnRate: 3.0 },     // 追踪角速度基准（弧度/秒）× homingMode
   },
 
@@ -2954,6 +2966,15 @@ CFG.skillSystem = {
       capabilities: ["persistentArea", "areaRadius"],
       tags: ["持续"],
       params: { radius: 120, duration: 4.0, tick: 0.25, dps: 0 },
+    },
+    /* v2 新增（H007 召唤师）：唯一**非伤害**模板 —— 召唤物本体属性 + 环绕半径。
+     * 校验层 _NON_DAMAGE_KINDS 放行其节点缺省 damageBasis；运行时以「立即产出实体 + 效果实例即回收」处理。 */
+    TP_SUMMON_UNIT: {
+      id: "TP_SUMMON_UNIT", kind: "summonUnit", nameKey: "template.summonUnit",
+      capabilities: ["summonUnit", "orbitContact"],
+      tags: ["召唤物"],
+      /* 占位数值：环绕半径 / 每架生命 / 每架攻击 / 攻击间隔，待策划平衡 */
+      params: { orbit: 90, hp: 260, atk: 48, fireCd: 0.5 },
     },
   },
 
@@ -3176,6 +3197,179 @@ CFG.skillSystem = {
           },
         ],
         edges: [{ from: "n_siege", to: "n_siegeburst", event: "onHit" }],
+      },
+      targetPolicyId: "TGT_NEAREST",
+      castPolicyId: "CAST_COOLDOWN",
+      rewardPoolIds: ["POOL_LEVELUP"],
+    },
+
+    /* ============================================================
+     * 全量迁移批 2：H007~H012（2026-10-12 · 决策 D012「AI 直接给设计」）
+     * ------------------------------------------------------------
+     * 迁移口径（v0.5 §10）：以旧表 CFG.skills 中该英雄 kind:"skill" 条目的当前有效值为基准。
+     *   批 2A（H009~H012）：只用 TP_INSTANT_AREA + **新增节点可选字段 effect**（附加效果），
+     *                       不触碰 damageBasis 必填规则 → 零回归。
+     *   批 2B（H008/H007）：H008 仍用 TP_INSTANT_AREA + effect(trap)（伤害延迟到引爆）；
+     *                       H007 用**新模板 TP_SUMMON_UNIT**（唯一非伤害模板）。
+     * 结构契约：与批 1 同（moreDamageMul:1；damageBasis 三字段；effect 为节点自定义字段）。
+     * ⚠️ effect 数值为**迁移占位**（Lv1 对旧 AT 基准），**不随等级曲线**（见接口文档 §1.2）→ 待策划平衡。
+     *    平衡提案见 G_docs/skill_effect_balance_v0.1.md。
+     * ============================================================ */
+    SK_TAUNTROAR: {
+      id: "SK_TAUNTROAR", nameKey: "skill.tauntroar",
+      /* H009 守护者 ← 旧 AT120 嘲讽战吼：范围伤害（50%攻击）+ 半径内敌人强制攻击施放者 4 秒。
+       * 半径曲线 180→340 与旧 anchors 同源；半径额外加成走 effect.scaleStat(def)/scalePct（运行时消费）。 */
+      levels: skillLevels(SKILL_LEVEL_MAX,
+        { cooldown: [3.50, 1.75], castTime: [0, 0] },
+        { coefficient: [0.50, 2.00], radius: [180, 340], life: [0.12, 0.18] }),
+      baseGraph: {
+        nodes: [
+          {
+            nodeId: "n_tauntroar",
+            templateId: "TP_INSTANT_AREA",
+            role: "primary",
+            tags: ["范围", "嘲讽", "技能"],
+            capabilities: ["instantArea", "areaRadius", "hitEvent", "expireEvent"],
+            parameters: { radius: 180, moreDamageMul: 1 },
+            damageBasis: { baseRef: "hero.atk", coefficient: 0.5, inheritFactorKeys: [] },
+            hitPolicyId: "HP_INSTANT_AREA",
+            effect: { kind: "taunt", tauntDuration: 4, scaleStat: "def", scalePct: 0.02 },
+          },
+        ],
+        edges: [],
+      },
+      targetPolicyId: "TGT_NEAREST",
+      castPolicyId: "CAST_COOLDOWN",
+      rewardPoolIds: ["POOL_LEVELUP"],
+    },
+    SK_LIFEPULSE: {
+      id: "SK_LIFEPULSE", nameKey: "skill.lifepulse",
+      /* H010 医疗兵 ← 旧 AT122 生命脉冲：范围伤害（160%攻击）+ 回复全队生命。 */
+      levels: skillLevels(SKILL_LEVEL_MAX,
+        { cooldown: [6.00, 3.00], castTime: [0, 0] },
+        { coefficient: [1.60, 6.40], radius: [150, 260], life: [0.12, 0.18] }),
+      baseGraph: {
+        nodes: [
+          {
+            nodeId: "n_lifepulse",
+            templateId: "TP_INSTANT_AREA",
+            role: "primary",
+            tags: ["范围", "治疗", "技能"],
+            capabilities: ["instantArea", "areaRadius", "hitEvent", "expireEvent"],
+            parameters: { radius: 150, moreDamageMul: 1 },
+            damageBasis: { baseRef: "hero.atk", coefficient: 1.6, inheritFactorKeys: [] },
+            hitPolicyId: "HP_INSTANT_AREA",
+            effect: { kind: "heal", healBase: 18, healPerAdd: 1.0, scaleStat: "atk", scalePct: 0.04 },
+          },
+        ],
+        edges: [],
+      },
+      targetPolicyId: "TGT_NEAREST",
+      castPolicyId: "CAST_COOLDOWN",
+      rewardPoolIds: ["POOL_LEVELUP"],
+    },
+    SK_WARSONG: {
+      id: "SK_WARSONG", nameKey: "skill.warsong",
+      /* H011 圣歌者 ← 旧 AT123 鼓舞光环：范围伤害（90%攻击）+ 全队攻击/移速增益 10 秒。 */
+      levels: skillLevels(SKILL_LEVEL_MAX,
+        { cooldown: [8.00, 4.00], castTime: [0, 0] },
+        { coefficient: [0.90, 3.60], radius: [160, 250], life: [0.12, 0.18] }),
+      baseGraph: {
+        nodes: [
+          {
+            nodeId: "n_warsong",
+            templateId: "TP_INSTANT_AREA",
+            role: "primary",
+            tags: ["范围", "光环", "技能"],
+            capabilities: ["instantArea", "areaRadius", "hitEvent", "expireEvent"],
+            parameters: { radius: 160, moreDamageMul: 1 },
+            damageBasis: { baseRef: "hero.atk", coefficient: 0.9, inheritFactorKeys: [] },
+            hitPolicyId: "HP_INSTANT_AREA",
+            effect: { kind: "aura", auraPct: 0.08, auraDuration: 10, auraStats: ["atk", "spd"], scaleStat: "def", scalePct: 0.01 },
+          },
+        ],
+        edges: [],
+      },
+      targetPolicyId: "TGT_NEAREST",
+      castPolicyId: "CAST_COOLDOWN",
+      rewardPoolIds: ["POOL_LEVELUP"],
+    },
+    SK_PSYSHIELD: {
+      id: "SK_PSYSHIELD", nameKey: "skill.psyshield",
+      /* H012 灵能者 ← 旧 AT124 灵能护罩：范围伤害（140%攻击）+ 全队防御护罩 12 秒。 */
+      levels: skillLevels(SKILL_LEVEL_MAX,
+        { cooldown: [7.00, 3.50], castTime: [0, 0] },
+        { coefficient: [1.40, 5.60], radius: [140, 240], life: [0.12, 0.18] }),
+      baseGraph: {
+        nodes: [
+          {
+            nodeId: "n_psyshield",
+            templateId: "TP_INSTANT_AREA",
+            role: "primary",
+            tags: ["范围", "护罩", "技能"],
+            capabilities: ["instantArea", "areaRadius", "hitEvent", "expireEvent"],
+            parameters: { radius: 140, moreDamageMul: 1 },
+            damageBasis: { baseRef: "hero.atk", coefficient: 1.4, inheritFactorKeys: [] },
+            hitPolicyId: "HP_INSTANT_AREA",
+            effect: { kind: "barrier", barrierDef: 4, barrierDuration: 12, scaleStat: "energyMax", scalePct: 0.008 },
+          },
+        ],
+        edges: [],
+      },
+      targetPolicyId: "TGT_NEAREST",
+      castPolicyId: "CAST_COOLDOWN",
+      rewardPoolIds: ["POOL_LEVELUP"],
+    },
+    SK_MINEFIELD: {
+      id: "SK_MINEFIELD", nameKey: "skill.minefield",
+      /* H008 陷阱师 ← 旧 AT114 大地雷：布设地雷，敌人入圈 armDelay 秒后引爆（范围伤害 260%攻击）。
+       * 批 2B：effect.kind = "trap" → 运行时不在施放点立即结算伤害，而是延迟引爆（伤害基准照旧传递）。 */
+      levels: skillLevels(SKILL_LEVEL_MAX,
+        { cooldown: [5.00, 2.50], castTime: [0, 0] },
+        { coefficient: [2.60, 10.40], radius: [110, 180], life: [0.12, 0.18] }),
+      baseGraph: {
+        nodes: [
+          {
+            nodeId: "n_minefield",
+            templateId: "TP_INSTANT_AREA",
+            role: "primary",
+            tags: ["范围", "陷阱", "技能"],
+            capabilities: ["instantArea", "areaRadius", "hitEvent", "expireEvent"],
+            parameters: { radius: 110, moreDamageMul: 1 },
+            damageBasis: { baseRef: "hero.atk", coefficient: 2.6, inheritFactorKeys: [] },
+            hitPolicyId: "HP_INSTANT_AREA",
+            effect: { kind: "trap", armDelay: 0.5, trapCount: 3 },
+          },
+        ],
+        edges: [],
+      },
+      targetPolicyId: "TGT_NEAREST",
+      castPolicyId: "CAST_COOLDOWN",
+      rewardPoolIds: ["POOL_LEVELUP"],
+    },
+    SK_DRONESWARM: {
+      id: "SK_DRONESWARM", nameKey: "skill.droneswarm",
+      /* H007 召唤师 ← 旧 AT113 召唤无人机：召唤维修型无人机协战（自动攻击 + 每秒修理）。
+       * 批 2B：唯一**非伤害**技能 —— 模板 TP_SUMMON_UNIT（_NON_DAMAGE_KINDS 放行缺省 damageBasis）。
+       * count 走等级曲线（3→6），runtime 以 params.count 决定召唤数量。 */
+      levels: skillLevels(SKILL_LEVEL_MAX,
+        { cooldown: [5.50, 2.75], castTime: [0, 0] },
+        { orbit: [66, 90], hp: [40, 260], atk: [6, 48], fireCd: [0.80, 0.50] },
+        { count: [3, 6] }),
+      baseGraph: {
+        nodes: [
+          {
+            nodeId: "n_droneswarm",
+            templateId: "TP_SUMMON_UNIT",
+            role: "primary",
+            tags: ["召唤物", "技能"],
+            capabilities: ["summonUnit", "orbitContact"],
+            parameters: { count: 3, orbit: 66, hp: 40, atk: 6, fireCd: 0.80 },
+            hitPolicyId: "HP_MAIN_BOLT",
+            effect: { kind: "summon", summonId: "DRONE_REPAIR", summonCount: 3 },
+          },
+        ],
+        edges: [],
       },
       targetPolicyId: "TGT_NEAREST",
       castPolicyId: "CAST_COOLDOWN",
@@ -3484,10 +3678,18 @@ CFG.skillSystem = {
     "skill.ringbarrage": "环形弹幕",
     "skill.volley": "疾风连爆",
     "skill.siegeblast": "攻城爆破",
+    /* 全量迁移批 2（H007~H012）技能名 */
+    "skill.tauntroar": "嘲讽战吼",
+    "skill.lifepulse": "生命脉冲",
+    "skill.warsong": "鼓舞光环",
+    "skill.psyshield": "灵能护罩",
+    "skill.minefield": "大地雷",
+    "skill.droneswarm": "召唤无人机",
     "template.flightProjectile": "飞行弹模板",
     "template.orbitContact": "环绕接触模板",
     "template.instantArea": "瞬时范围模板",
     "template.persistentArea": "持续区域模板",
+    "template.summonUnit": "召唤物模板",
     "pool.levelup": "升级奖励池",
     /* 命名规范（总纲 §0.5）：UI 名词唯一来源 —— 界面文案一律取这里，不要硬写中文名 */
     "ui.crystal.noun": "能量水晶",
