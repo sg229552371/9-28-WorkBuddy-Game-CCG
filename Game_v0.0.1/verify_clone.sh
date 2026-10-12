@@ -3,7 +3,7 @@
 #  克隆一致性校验（AI-Game / 弹幕背包搜打撤）
 #  用法：在仓库根目录执行   bash verify_clone.sh
 #  作用：核对当前工作区是否 == 指定快照
-#        （2026-10-12 经济修复：秘宝撤离折算 + Boss 结晶击败即发 + 门禁去随机化 · APP_VERSION 20261047 · 98 套 / 4191）
+#        （2026-10-12 经济修复：秘宝撤离折算 + Boss 结晶击败即发 + 门禁去随机化 · APP_VERSION 20261049 · 99 套 / 4210）
 #
 #  原理：比对的是 **git 对象哈希**（git rev-parse HEAD:<file>），
 #        只看仓库内容，不受 core.autocrlf / 编辑器换行设置影响，
@@ -31,33 +31,34 @@ if [ -n "$REPO_ROOT" ]; then
   esac
 fi
 
-EXPECT_VERSION="20261048"
+EXPECT_VERSION="20261049"
 
-# 核心文件 → 期望的 git blob 哈希（该快照的权威指纹；23 个）
+# 核心文件 → 期望的 git blob 哈希（该快照的权威指纹；24 个）
 EXPECT_FILES="
-index.html a86d75447623118c16a1c0e518e8d218a8be9620
-js/config.js 1ebca588ff5346e592a5aec9ac7a2219c635c071
+index.html 4f2124883fac93858b499c8c87cdb1276f19d173
+js/config.js 640c46408d5b4a73ff7a439e37d3075052d6dee9
 js/game.js c39f87462e0470c24964a7c2958095350fceea69
 js/combat.js a1edcd52e0175757af96e469b09ccf5acf2c9c68
 js/items.js 57c3fe551b8c24baf5ca237f4e9f04ec7390564a
 js/ui.js d8ae96866382904b7140e88ef82a11f2606214f8
 js/ui-panels.js c04f72855cdf1daa5de016d71afdc88a21adc9b9
 js/main.js f535f112baaa290e3c34049ee642c9e59f9797ac
-js/core.js 994b306483fd54e3375a4c343745b3ebc96b34df
+js/core.js 30ef80823c4ddf069baa567b51fb6ca93bdf1956
 js/modes.js 274ba9e319b532e451efab24f0c80523e0879122
 css/style.css 49a277f655d8e5f9db426e994aac80e67513b891
-run_tests.sh 98597cf50a7fd726d635756a2d5208db80d405b6
+run_tests.sh 758c574a07188c48a08752158143706ca149cfce
 js/skill-compiler.js 7e92332cc376979f069273532646ff12a99a3e73
 js/skill-playtest.js da357b70fe57a56a06617a35a21e32d68c39efe8
 js/skill-scheduler.js b4d4598650d601293667c58829689f6886f4a346
 js/skill-config.js 0f90f3e750c6bfd3bb4fc3fe30a4f65ac4e2c411
 js/skill-runtime.js 3c98ef41509e1c2d1c7621642aaf2e4482d3d1e3
 js/skill-events.js a2fa6c17807b6ba7242a0197b58b87f4d9f1fe7e
-skill_playtest_test.js ee6be680cd83bcab7c5c458642e04e978797c913
-skill_rule_binding_test.js ee36d2281b59b8f384a7a1082fc81a5ab22d0bf2
-crystal_ui_test.js 68adf392e953f33913a96472c397c05117ef8d75
-crystal_expansion_test.js a8a4e5fdc54689694a9f214616d2aba315b9baff
-skill_enable_runtime_test.js 436cefdd5f3208d5a69a4ba569f3c39233ed5871
+skill_playtest_test.js 1f1b60d290c8dc2466be6bd7b8527ab424549aa5
+skill_rule_binding_test.js 4ba831ca8b4f3990d82eb89ff8de825f02769790
+crystal_ui_test.js 982376add0ca3bcd7ec0b773e03371cfc7b681aa
+crystal_expansion_test.js d511b80d71a4c9c0f0b4b23de64dc8eb770ffee5
+skill_enable_runtime_test.js 023642f33e8ec3467933ce88c31f29c0cf49386c
+hero_skill_migration_test.js 50ac3ef262a85bf58e002e3dc9139b22e7a0313e
 "
 
 echo "============================================================"
@@ -110,9 +111,9 @@ fi
 # ④ 结论
 echo "============================================================"
 if [ "$BAD" = "0" ]; then
-  echo " ✅ 一致：本工作区 == 2026-10-12 经济修复快照（秘宝折算 + Boss 结晶即发 + 门禁去随机化 · APP_VERSION $EXPECT_VERSION）"
+  echo " ✅ 一致：本工作区 == 2026-10-12 全量迁移批 1 快照（H001~H006 走新路径 · APP_VERSION $EXPECT_VERSION）"
   echo "    继续开发前可跑一次全量门禁：bash run_tests.sh"
-  echo "    期望结果：98 套 / PASS 合计 = 4191 / bad = 0 / 全绿"
+  echo "    期望结果：99 套 / PASS 合计 = 4210 / bad = 0 / 全绿"
 else
   echo " ❌ 不一致：本地不是该快照，请先同步远程："
   echo "     git fetch origin && git reset --hard origin/main"

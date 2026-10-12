@@ -387,25 +387,28 @@ const OLD_CRYSTALS = ["CR_PIERCE", "CR_MULTISHOT", "CR_HOMING", "CR_SPLIT",
   const en = ev(`(function () {
     var t = ${T};
     return { on: t.enabled === true, ids: (t.migratedHeroIds || []).slice(),
+      bindCount: Object.keys(t.initialSkillBindings || {}).length,
       derived: t.features && t.features.derivedEvents === true };
   })()`);
   check("⑥ 系统已正式启用（enabled=true）", en.on === true);
-  check("⑥ 首批试点英雄 = H001", en.ids.length === 1 && en.ids[0] === "H001");
+  check("⑥ 迁移名单 = 技能绑定表键集，且含首批试点 H001",
+    en.ids.length > 0 && en.ids.length === en.bindCount && en.ids.indexOf("H001") >= 0);
   check("⑥ derivedEvents 保持 false（合同 §2：派生不重复触发其它事件水晶）",
     en.derived === false);
 
-  /* 6-2 端到端：H001 走新路径，未迁移英雄仍走旧路径 */
+  /* 6-2 端到端：H001 走新路径，未迁移英雄仍走旧路径
+   * （2026-10-12 批 1 后 H002 已迁移，改用仍留在旧路径的 H007 做对照） */
   const route = ev(`(function () {
     var t = ${T};
     var prev = { e: t.enabled, m: t.migratedHeroIds };
     t.enabled = true; t.migratedHeroIds = ["H001"];
     var a = SkillRuntime.ownsHero({ id: "H001" });
-    var b = SkillRuntime.ownsHero({ id: "H002" });
+    var b = SkillRuntime.ownsHero({ id: "H007" });
     t.enabled = prev.e; t.migratedHeroIds = prev.m;
     return { a: a, b: b };
   })()`);
   check("⑥ 端到端：H001 走新路径（ownsHero=true）", route.a === true);
-  check("⑥ 端到端：H002 留在旧路径（ownsHero=false）", route.b === false);
+  check("⑥ 端到端：未迁移英雄留在旧路径（ownsHero=false）", route.b === false);
 }
 
 /* ==================================================================

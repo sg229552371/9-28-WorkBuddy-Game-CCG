@@ -53,6 +53,7 @@ SKILL="skill_config_test skill_compiler_test skill_damage_test skill_events_test
 skill_scheduler_test skill_runtime_test skill_reward_test skill_presenter_test skill_save_test \
 skill_sweep_test skill_integration_test skill_fps_test skill_playtest_test skill_rule_binding_test \
 skill_level_binding_test crystal_ui_test crystal_expansion_test skill_enable_runtime_test \
+hero_skill_migration_test \
 xgame_redtest_clock_test xgame_skill_save_wire_test"
 
 SUITES="core ui feature perf skill"

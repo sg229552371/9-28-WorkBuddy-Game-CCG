@@ -161,8 +161,10 @@ const ev = (code) => vm.runInContext(code, ctx);
 
 /* ---------------- ② 配表启用即接线（事故核心回归点） ---------------- */
 check("② 载入后总开关为启用（配表默认）", ev("CFG.skillSystem.enabled") === true);
-check("② 迁移名单非空（首批试点 H001）",
-  ev("CFG.skillSystem.migratedHeroIds.length") === 1 && ev('CFG.skillSystem.migratedHeroIds[0]') === "H001");
+check("② 迁移名单非空且与技能绑定表一致（含首批试点 H001）",
+  ev("CFG.skillSystem.migratedHeroIds.length") > 0 &&
+  ev("CFG.skillSystem.migratedHeroIds.length") === ev("Object.keys(CFG.skillSystem.initialSkillBindings).length") &&
+  ev('CFG.skillSystem.migratedHeroIds.indexOf("H001")') >= 0);
 check("② ★不带 URL 参数也已接线：active = true", ev("SkillPlaytest.active") === true);
 check("② ★接线来源标记为配表启用（source === \"config\"，非 url 试玩）", ev("SkillPlaytest.source") === "config");
 check("② ★ownsHero 已被包装（_patched === true）—— 懒注入入口就位", ev("SkillPlaytest._patched") === true);

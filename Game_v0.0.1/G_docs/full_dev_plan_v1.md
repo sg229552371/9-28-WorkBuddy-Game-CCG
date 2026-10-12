@@ -36,7 +36,7 @@
 | A2 | **资源清单接线** | ⚠️ **判定为「半个改动」，暂缓**：清单 15 条**磁盘存在 0**；且实测「清单侧 `AssetHooks` 真实消费点 = 0」→ 单个挂载 = 每局 15 个 404 + 零收益 + 打破 7 条现状断言。**必须连同渲染/音频消费接线一起做**（`Assets.images` / `SFX.play` 优先查 `AssetHooks`），且需素材就绪才有端到端验收条件 | `index.html` + `js/core.js` | ❌ 共享文件（整批） |
 | A3 | **`SkillSave` 宿主闭环** | 模块本身完备（`serialize`/`migrate`/`saveTo`/`loadFrom`/`_persist`），**仅缺宿主调用** ❌；但「是否跨局保存 / 保存时机」**属设计决策未定** | `js/game.js` / `js/main.js` | ❌ 需先拍板 |
 | A4 | **`castTime` 调度消费** | `config.js` 生成 + `skill-config.js` 校验；**调度器未读** ❌；前摇语义（能否被打断）**未定** | `js/skill-scheduler.js` | ⚠️ 需先定语义 |
-| A5 | **其余 11 英雄技能**（H002~H012） | 仅 `SK_FIREBALL`/`SK_SHOCKWAVE` 2 套；`migratedHeroIds=["H001"]` | 新建「每英雄独立技能定义文件」 | ✅ **需先冻注册协议 + C1 拍板** |
+| A5 | **其余英雄技能**（原 H002~H012） | 🟡 **批 1 已交付（H001~H006 全走新路径）**；剩 **H007~H012 被模板系统阻塞**——新系统只有 4 种模板（投射物/环绕/瞬时范围/持续区域），**无法表达召唤/陷阱/嘲讽/治疗/光环/护罩**。详见 `hero_skill_interface_v1.md` §0/§5 | `js/config.js` 的 `skillDefs`（表 → 归 config，非独立文件） | ⛔ 剩 6 人需先扩模板（架构变更）|
 | A6 | **旧路红测根因** | 报告登记 `skill_enable_runtime_test` 曾 `kills≥1` 失败；**当前实测全绿**（25 条），根因未诊断 | 诊断报告 | ✅ 只读核验 |
 | A7 | ~~X-GAMe 四张卡~~ | ✅ **实测已全部存在**（非未创建）：`xgame_assets_consumption` / `xgame_save_integration` / `xgame_redtest_clock` / `xgame_boss_crystal` / `xgame_chip_fold` / `xgame_skill_save_wire` —— 书中 task-cards 的「未来交付物」在公司侧那轮已落地 | — | 已完成 |
 
@@ -97,16 +97,37 @@ P3 串行验收：门禁全绿 → commit → push → 重新发布 → 真机�
 
 ---
 
-## 5. 本轮实际完成（P1 轨1 第一批）
+## 5. 本轮实际完成
 
+### 5.1 P1 轨1 第一批（A1 killer）
 - [x] **A1 `killer` 伤害归属接线**：`js/skill-runtime.js` 主路径（`_applyDamage` → `SkillDamage.resolve` 补 `killer`）+ 兜底路径（`_fallbackDamage` 的 `null` → 施放英雄）→ `skill_runtime_test.js` 新增 4 条断言
 - [x] **A2 判定为「半个改动」并回退**：依据 = 清单侧消费点 0 + 素材磁盘存在 0 + 会打破 7 条现状断言；归入「资源层整批」批次，不单独挂载
 - [x] **A7 实测校正**：X-GAMe 六套测试**已存在**，非未开发（书中 task-cards 的「未来交付物」已落地）
-- [x] 版本 bump `20261047 → 20261048`（index.html 37 处 + `core.js` `Assets.buildVersion`）
-- [ ] A3 / A4 / A5：**待用户拍板**（见 §6），拍板前不批量发明玩法与数值
+- [x] 版本 bump `20261047 → 20261048`
+
+### 5.2 全量迁移批 1（A5 第一批：H001~H006 全部走新路径 · 已完成）
+- [x] **接口冻结**：`G_docs/hero_skill_interface_v1.md`（承载位置裁定 + 字段/标签/能力白名单 + 三条结构契约）
+- [x] **承载位置裁定**：技能定义 = **表 → 写进 `js/config.js` 的 `skillDefs`**（不拆独立文件）——理由：① 项目惯例「表进 config、逻辑进独立文件」；② 80+ 测试的 `FILES` 列表都内联加载 config.js，写进去 = **全部测试自动覆盖**；拆文件要改 80+ 处加载清单，高风险零收益。
+- [x] **5 个新技能定义**：`SK_SCATTER`(H002←AT104) / `SK_RAILGUN`(H003←AT106) / `SK_RINGBARRAGE`(H004←AT108) / `SK_VOLLEY`(H005←AT110) / `SK_SIEGEBLAST`(H006←AT112) + 5 条 localization
+- [x] **绑定与名单**：`initialSkillBindings` 增 H002~H006；`migratedHeroIds` 扩至 `["H001".."H006"]`
+- [x] **新守卫测试** `hero_skill_migration_test.js`（17 断言）：漏搬守卫 / 分流串台守卫（未迁移英雄不得有绑定、旧技能不得被删）/ 结构铁律（`moreDamageMul===1`、`damageBasis` 三字段、派生节点由边可达、`nameKey` 可解析）/ 身份回归（H001/H006 命中爆炸）
+- [x] **现状记录型断言去硬编码**：`skill_integration` / `skill_rule_binding` / `skill_enable_runtime` / `skill_playtest` / `crystal_ui` / `crystal_expansion` 六处「= H001 / = 2 技能」改为**数据驱动**（比对 `initialSkillBindings` 键集）→ **以后每加一批英雄都不用再改测试**
+- [x] 版本 bump `20261048 → 20261049`；`verify_clone.sh` 期望表同步（24 文件指纹 + 版本 + 基线 99 套 / 4210）
+- [x] 门禁 **4210 / bad = 0 全绿**（原 4191，+19）
 
 ---
 
-## 6. 待用户拍板（阻塞 C 类 + A5 的形态设计）
+## 6. 下一批的阻塞点与决策项
 
-见对话中的选项卡；未拍板前，A5 只做「结构骨架 + 1 个样例英雄」，不批量发明 11 套玩法。
+### 6.1 🔴 硬阻塞（架构变更，必须拍板）
+**H007~H012 六人无法迁移**：新系统 `_TEMPLATE_KINDS` 只有 4 种，且**每个节点强制要求 `damageBasis`**（伤害必需），而召唤/陷阱/嘲讽/治疗/光环/护罩**大部分是非伤害效果**。要迁移必须：
+1. 扩 6 种模板类型（`summon` / `trap` / `taunt` / `healNova` / `aura` / `barrier`）
+2. 把 `damageBasis` 从「每节点必填」改为「**按 kind 条件必填**」（架构级校验变更）
+3. 五处同步：`skill-config.js`（白名单）→ `config.js`（模板+技能）→ `skill-compiler.js` → `skill-runtime.js`（执行器）→ 测试
+
+> 旧路径的这些效果**已经在 `combat.js` 实现过**，属**迁移**而非发明；但「在技能图模型里怎么表达治疗/光环」是设计决策。
+
+### 6.2 待拍板
+- **③ 技能是否跨局保存**（决定 A3 `SkillSave` 宿主闭环怎么做）：(A) 撤离成功带走构筑 (B) 每局重置 (C) 暂不做
+- **A4 `castTime` 语义**：前摇期间能否被打断 / 是否可移动
+- **B 类数值填表（5 组）**：是否授权 AI 直接提案并落库

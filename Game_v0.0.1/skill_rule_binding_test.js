@@ -353,9 +353,13 @@ const TWO_SKILL_STATE = `
   check("⑧ index.html 顺序：9 模块 → 试玩块 → main.js",
     idx.indexOf("js/skill-save.js?v=") < idx.indexOf("js/skill-playtest.js?v=") &&
     idx.indexOf("js/skill-playtest.js?v=") < idx.indexOf("js/main.js?v="));
-  check("⑧ 配置已正式启用（enabled=true / 首批试点 = H001）",
-    ev(T + ".enabled") === true && ev(T + ".migratedHeroIds.length") === 1 &&
-    ev(T + '.migratedHeroIds[0]') === "H001");
+  /* 2026-10-12 起迁移名单动态扩展（批 1 = H001~H006）；断言改为「与技能绑定表一致」，
+   * 避免每加一批英雄就要改测试（空真陷阱规避：先断言非空）。 */
+  check("⑧ 配置已正式启用（enabled=true / 迁移名单 = 技能绑定表键集，且含 H001）",
+    ev(T + ".enabled") === true &&
+    ev(T + ".migratedHeroIds.length") > 0 &&
+    ev(T + ".migratedHeroIds.length") === ev("Object.keys(" + T + ".initialSkillBindings).length") &&
+    ev(T + '.migratedHeroIds.indexOf("H001")') >= 0);
 }
 
 /* ================== ⑨ 22.4 批次：能量爆发基准 / 派生路由 / 环绕参数 ================== */

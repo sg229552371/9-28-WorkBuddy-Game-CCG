@@ -68,10 +68,16 @@ ev('globalThis.__dmgLog = []; globalThis.damageMonster = function (w, m, dmg, ki
   const codes = (r && r.diagnostics || []).map(d => d.code + "@" + (d.definitionId || "-") + "." + (d.field || "-"));
   if (!r.ok) console.log("诊断：" + JSON.stringify(codes.slice(0, 20)));
   check("① 真实 CFG.skillSystem 通过校验（ok=true）", !!(r && r.ok));
-  check("① 校验器产出 2 技能 / 4 模板 / 14 水晶 的索引（22.8 扩容：9 原有 + 5 覆盖）",
-    ev('Object.keys(CFG.skillSystem.skillDefs).length') === 2 &&
+  /* 2026-10-12 全量迁移批 1：技能数不再写死 —— 数据驱动 = 迁移英雄数 + 稀有技能池。
+   * （H001~H006 各 1 个初始技能 + 稀有池 1 个 = 7） */
+  check("① 校验器产出 技能数 = 迁移英雄数 + 稀有池 / 4 模板 / 14 水晶 的索引",
+    ev('Object.keys(CFG.skillSystem.skillDefs).length') ===
+      ev('CFG.skillSystem.migratedHeroIds.length + CFG.skillSystem.rareSkillPool.length') &&
     ev('Object.keys(CFG.skillSystem.effectTemplates).length') === 4 &&
     ev('Object.keys(CFG.skillSystem.crystalDefs).length') === 14);
+  /* 每个迁移英雄的绑定技能必须在技能表中真实存在（搬迁遗漏守卫） */
+  check("① 每个迁移英雄的 skillId 都在 skillDefs 中",
+    ev('CFG.skillSystem.migratedHeroIds.every(function (h) { var b = CFG.skillSystem.initialSkillBindings[h]; return !!b && !!CFG.skillSystem.skillDefs[b.skillId]; })'));
   check("① 每颗水晶都在升级池里有出处（无孤儿水晶）",
     ev('(function () { var seen = {}; (CFG.skillSystem.rewardPools.POOL_LEVELUP.entries || []).forEach(function (e) { seen[e.crystalId] = 1; }); return Object.keys(CFG.skillSystem.crystalDefs).every(function (k) { return seen[k] === 1; }); })()'));
   check("① 品质档数 = 数组长度（未写死）", ev('CFG.skillSystem.qualityDefs.length') === 4);

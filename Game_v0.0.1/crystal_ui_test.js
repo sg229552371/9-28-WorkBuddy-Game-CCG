@@ -164,8 +164,10 @@ for (const id of ["choice-overlay", "choice-title", "choice-sub", "choice-cards"
  *    这一段守的是「旧路径渲染逐字不动」——不因新系统存在而被改坏。 */
 ev('Game.bindEvents(); UI.selectedLevel = CFG.levels[0]; Game.startRun([CFG.heroes[0]]); Game.skipIntroFreeze();');
 check("② 配表默认已启用（22.8 正式启用批次）", ev("CFG.skillSystem.enabled") === true);
-check("② 默认迁移名单 = 首批试点 H001（正式启用范围明确）",
-  ev("CFG.skillSystem.migratedHeroIds.length") === 1 && ev('CFG.skillSystem.migratedHeroIds[0]') === "H001");
+check("② 默认迁移名单 = 技能绑定表键集（正式启用范围明确，含首批试点 H001）",
+  ev("CFG.skillSystem.migratedHeroIds.length") > 0 &&
+  ev("CFG.skillSystem.migratedHeroIds.length") === ev("Object.keys(CFG.skillSystem.initialSkillBindings).length") &&
+  ev('CFG.skillSystem.migratedHeroIds.indexOf("H001")') >= 0);
 ev('SkillPlaytest.reset(); CFG.skillSystem.enabled = false; CFG.skillSystem.migratedHeroIds = []; UI._crystalCache = {};');
 check("② 显式关闭后：_crystalModeOf 恒返回 null", ev('UI._crystalModeOf({ id: "H001", rt: G.player })') === null);
 ev("UI._psSig = null; UI._psCache = null; UI.renderPartySkillbar();");

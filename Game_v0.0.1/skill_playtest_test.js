@@ -62,15 +62,17 @@ const ev = (code) => vm.runInContext(code, ctx);
  *    ownsHero 会返回 true（旧施放被跳过）但 skillState 从未注入 → 英雄完全不开火。
  *    故「不带参数」不再是空转，而是**走配表启用分支**。 */
 check("② 不带参数：配表默认已是启用态（enabled=true）", ev("CFG.skillSystem.enabled") === true);
-check("② 不带参数：迁移名单 = 首批试点 H001（配表自带）",
-  ev("CFG.skillSystem.migratedHeroIds.length") === 1 && ev('CFG.skillSystem.migratedHeroIds[0]') === "H001");
+check("② 不带参数：迁移名单非空且与技能绑定表一致（配表自带）",
+  ev("CFG.skillSystem.migratedHeroIds.length") > 0 &&
+  ev("CFG.skillSystem.migratedHeroIds.length") === ev("Object.keys(CFG.skillSystem.initialSkillBindings).length") &&
+  ev('CFG.skillSystem.migratedHeroIds.indexOf("H001")') >= 0);
 check("② ★不带参数也已接线：active=true（22.8 事故回归点）", ev("SkillPlaytest.active") === true);
 check("② ★接线来源标记 = \"config\"（配表启用，非 url 试玩）", ev("SkillPlaytest.source") === "config");
 check("② ★不带参数也包装 ownsHero（懒注入入口就位）", ev("SkillPlaytest._patched") === true);
 check("② 配表启用分支不写入 heroIds 之外的东西（名单与配表逐字一致）",
   ev("SkillPlaytest.heroIds.join('+')") === ev("CFG.skillSystem.migratedHeroIds.join('+')"));
-check("② 配表启用分支不改动配置表本身（enabled 仍为字面 true，未被覆写）",
-  ev("CFG.skillSystem.enabled === true && CFG.skillSystem.migratedHeroIds.join('+') === 'H001'"));
+check("② 配表启用分支不改动配置表本身（enabled 仍为字面 true，名单仍与绑定表同长）",
+  ev("CFG.skillSystem.enabled === true && CFG.skillSystem.migratedHeroIds.length === Object.keys(CFG.skillSystem.initialSkillBindings).length"));
 
 /* ================== ③ URL 解析矩阵（纯函数） ================== */
 const P = (s) => ev("SkillPlaytest.parse(" + JSON.stringify(s) + ")");
@@ -96,11 +98,13 @@ check("③ 只认 H### 形状：?skill=H99 被过滤后兜底 H001", idsOf("?ski
 ev('SkillPlaytest.install("?skill=1")');
 check("④ install 后 active=true", ev("SkillPlaytest.active") === true);
 check("④ install 后总开关 = true（内存）", ev("CFG.skillSystem.enabled") === true);
-check("④ install 后迁移名单 = [H001]", ev("CFG.skillSystem.migratedHeroIds.join('+')") === "H001");
+check("④ install 后迁移名单 = 配表绑定表键集（未被改写）",
+  ev("CFG.skillSystem.migratedHeroIds.join('+')") === ev("Object.keys(CFG.skillSystem.initialSkillBindings).join('+')"));
 check("④ install 后已包装 ownsHero", ev("SkillPlaytest._patched") === true);
 check("④ status() 反映当前状态", (function () {
   const s = ev("SkillPlaytest.status()");
-  return s.active === true && s.enabled === true && s.migrated.join("+") === "H001" && s.heroIds.join("+") === "H001";
+  const expect = ev("CFG.skillSystem.migratedHeroIds.join('+')");
+  return s.active === true && s.enabled === true && s.migrated.join("+") === expect && s.heroIds.join("+") === expect;
 })());
 
 /* ================== ⑤ 懒注入：迁移英雄首次判定即通电 ================== */
@@ -199,8 +203,8 @@ check("⑩ index.html 脚本序：skill-save → skill-playtest → main",
   iSave >= 0 && iPlay > iSave && iMain > iPlay);
 
 const cfgSrc = read("js/config.js");
-check("⑩ config.js 默认已正式启用（22.8 启用批次：enabled:true / migratedHeroIds:[\"H001\"]）",
-  /enabled:\s*true/.test(cfgSrc) && /migratedHeroIds:\s*\["H001"\]/.test(cfgSrc));
+check("⑩ config.js 默认已正式启用（enabled:true / migratedHeroIds 为字面英雄数组）",
+  /enabled:\s*true/.test(cfgSrc) && /migratedHeroIds:\s*\["H00/.test(cfgSrc));
 check("⑩ config.js 已登记武器绑定初始技能（initialSkillBindings H001→SK_FIREBALL）",
   /initialSkillBindings:\s*\{/.test(cfgSrc) && /H001:\s*\{\s*weaponId:\s*"W001",\s*skillId:\s*"SK_FIREBALL"/.test(cfgSrc));
 check("⑩ config.js 已登记稀有技能池（rareSkillPool 非空）",

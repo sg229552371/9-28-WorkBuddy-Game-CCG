@@ -2777,7 +2777,10 @@ CFG.skillSystem = {
    *    回退方式：enabled 改回 false 或清空 migratedHeroIds（两处任改其一即回到旧路径）。 */
   enabled: true,
   configVersion: "skill-v1.0.0",
-  migratedHeroIds: ["H001"],     // 首批试点英雄 id（合同 §1 第一交付）
+  /* 迁移英雄（走新路径）。全量迁移批 1：H001~H006（纯投射物/范围类，模板系统已支持）。
+   * H007~H012（召唤/陷阱/嘲讽/治疗/光环/护罩）待扩模板后才能迁移，见
+   * G_docs/hero_skill_interface_v1.md §0 / §5。 */
+  migratedHeroIds: ["H001", "H002", "H003", "H004", "H005", "H006"],
 
   /* ---- 结构常量 ---- */
   slotCount: 4,                  // 每英雄共享辅助槽数（开局全开；本局不可卸载/替换）
@@ -2790,6 +2793,13 @@ CFG.skillSystem = {
    * 未列出的英雄 = 尚未迁移，继续走旧路径（分流依据，见接口文档第六节）。*/
   initialSkillBindings: {
     H001: { weaponId: "W001", skillId: "SK_FIREBALL" },
+    /* 全量迁移批 1（2026-10-12）：H002~H006 武器绑定的初始主动技能。
+     * 逐条迁移基准见 G_docs/hero_skill_interface_v1.md §4。 */
+    H002: { weaponId: "W002", skillId: "SK_SCATTER" },
+    H003: { weaponId: "W003", skillId: "SK_RAILGUN" },
+    H004: { weaponId: "W004", skillId: "SK_RINGBARRAGE" },
+    H005: { weaponId: "W005", skillId: "SK_VOLLEY" },
+    H006: { weaponId: "W006", skillId: "SK_SIEGEBLAST" },
   },
   /* ---- 稀有技能池（雕像提供；每英雄至多 1 个，v0.5 §1）----
    * 雕像触发时经 SkillReward.rollStatueGrant 试编译过滤后授予。*/
@@ -3015,6 +3025,157 @@ CFG.skillSystem = {
           },
         ],
         edges: [],
+      },
+      targetPolicyId: "TGT_NEAREST",
+      castPolicyId: "CAST_COOLDOWN",
+      rewardPoolIds: ["POOL_LEVELUP"],
+    },
+
+    /* ============================================================
+     * 全量迁移批 1：H002~H006 初始主动技能（2026-10-12）
+     * ------------------------------------------------------------
+     * 迁移口径（v0.5 §10）：以旧表 CFG.skills 中该英雄的 **kind:"skill" 条目**
+     *   当前有效值为基准，结构改写成新路径 baseGraph。净效果与旧技能对齐：
+     *     H002 ← AT104 震荡波   H003 ← AT106 贯穿射线   H004 ← AT108 环形弹幕
+     *     H005 ← AT110 疾风连爆  H006 ← AT112 攻城爆破
+     * 结构契约（hero_skill_interface_v1.md §2.3）：
+     *   ① 主节点 parameters 必须显式含 moreDamageMul:1（乘法归并基准）；
+     *   ② 等级行曲线只并入主节点，派生节点参数自带（n_siegeburst.radius=190）；
+     *   ③ 每个节点 damageBasis 三字段齐。
+     * ⚠️ 数值为迁移占位（Lv1 对旧 AT 基准，Lv100 按既有 6 倍口径外推），待策划平衡。
+     * ============================================================ */
+    SK_SCATTER: {
+      id: "SK_SCATTER", nameKey: "skill.scatter",
+      levels: skillLevels(SKILL_LEVEL_MAX,
+        { cooldown: [1.90, 0.95], castTime: [0, 0] },
+        { coefficient: [1.30, 5.60], speed: [520, 760], life: [1.50, 2.00], radius: [9, 13] },
+        { count: [3, 3] }),
+      baseGraph: {
+        nodes: [
+          {
+            nodeId: "n_scatter",
+            templateId: "TP_FLIGHT_PROJECTILE",
+            role: "primary",
+            tags: ["物理", "投射物", "技能"],
+            capabilities: ["flightProjectile", "pierceCounter", "multishot", "hitEvent", "expireEvent"],
+            parameters: { count: 3, extraPierceCount: 0, moreDamageMul: 1 },
+            damageBasis: { baseRef: "hero.atk", coefficient: 1.3, inheritFactorKeys: ["coefficient"] },
+            hitPolicyId: "HP_MAIN_BOLT",
+          },
+        ],
+        edges: [],
+      },
+      targetPolicyId: "TGT_NEAREST",
+      castPolicyId: "CAST_COOLDOWN",
+      rewardPoolIds: ["POOL_LEVELUP"],
+    },
+    SK_RAILGUN: {
+      id: "SK_RAILGUN", nameKey: "skill.railgun",
+      levels: skillLevels(SKILL_LEVEL_MAX,
+        { cooldown: [1.80, 0.90], castTime: [0, 0] },
+        { coefficient: [1.60, 6.90], speed: [760, 980], life: [1.40, 1.90], radius: [7, 10] },
+        { extraPierceCount: [2, 6] }),
+      baseGraph: {
+        nodes: [
+          {
+            nodeId: "n_rail",
+            templateId: "TP_FLIGHT_PROJECTILE",
+            role: "primary",
+            tags: ["物理", "投射物", "技能"],
+            capabilities: ["flightProjectile", "pierceCounter", "hitEvent", "expireEvent"],
+            parameters: { count: 1, extraPierceCount: 2, moreDamageMul: 1 },
+            damageBasis: { baseRef: "hero.atk", coefficient: 1.6, inheritFactorKeys: ["coefficient"] },
+            hitPolicyId: "HP_MAIN_BOLT",
+          },
+        ],
+        edges: [],
+      },
+      targetPolicyId: "TGT_NEAREST",
+      castPolicyId: "CAST_COOLDOWN",
+      rewardPoolIds: ["POOL_LEVELUP"],
+    },
+    SK_RINGBARRAGE: {
+      id: "SK_RINGBARRAGE", nameKey: "skill.ringbarrage",
+      levels: skillLevels(SKILL_LEVEL_MAX,
+        { cooldown: [2.00, 1.00], castTime: [0, 0] },
+        { coefficient: [1.20, 5.20], speed: [560, 800], life: [1.60, 2.10], radius: [9, 12] },
+        { count: [8, 12] }),
+      baseGraph: {
+        nodes: [
+          {
+            nodeId: "n_ring",
+            templateId: "TP_FLIGHT_PROJECTILE",
+            role: "primary",
+            tags: ["物理", "投射物", "技能"],
+            capabilities: ["flightProjectile", "pierceCounter", "multishot", "hitEvent", "expireEvent"],
+            parameters: { count: 8, extraPierceCount: 0, moreDamageMul: 1 },
+            damageBasis: { baseRef: "hero.atk", coefficient: 1.2, inheritFactorKeys: ["coefficient"] },
+            hitPolicyId: "HP_MAIN_BOLT",
+          },
+        ],
+        edges: [],
+      },
+      targetPolicyId: "TGT_NEAREST",
+      castPolicyId: "CAST_COOLDOWN",
+      rewardPoolIds: ["POOL_LEVELUP"],
+    },
+    SK_VOLLEY: {
+      id: "SK_VOLLEY", nameKey: "skill.volley",
+      levels: skillLevels(SKILL_LEVEL_MAX,
+        { cooldown: [1.50, 0.75], castTime: [0, 0] },
+        { coefficient: [1.20, 5.20], speed: [640, 880], life: [1.20, 1.70], radius: [8, 11] },
+        { count: [3, 6] }),
+      baseGraph: {
+        nodes: [
+          {
+            nodeId: "n_volley",
+            templateId: "TP_FLIGHT_PROJECTILE",
+            role: "primary",
+            tags: ["物理", "投射物", "技能"],
+            capabilities: ["flightProjectile", "pierceCounter", "multishot", "hitEvent", "expireEvent"],
+            parameters: { count: 3, extraPierceCount: 0, moreDamageMul: 1 },
+            damageBasis: { baseRef: "hero.atk", coefficient: 1.2, inheritFactorKeys: ["coefficient"] },
+            hitPolicyId: "HP_MAIN_BOLT",
+          },
+        ],
+        edges: [],
+      },
+      targetPolicyId: "TGT_NEAREST",
+      castPolicyId: "CAST_COOLDOWN",
+      rewardPoolIds: ["POOL_LEVELUP"],
+    },
+    SK_SIEGEBLAST: {
+      id: "SK_SIEGEBLAST", nameKey: "skill.siegeblast",
+      levels: skillLevels(SKILL_LEVEL_MAX,
+        { cooldown: [2.30, 1.15], castTime: [0.10, 0.08] },
+        { coefficient: [1.90, 7.80], speed: [430, 620], life: [1.80, 2.40], radius: [12, 17] },
+        { count: [1, 1] }),
+      baseGraph: {
+        nodes: [
+          {
+            nodeId: "n_siege",
+            templateId: "TP_FLIGHT_PROJECTILE",
+            role: "primary",
+            tags: ["物理", "投射物", "技能"],
+            capabilities: ["flightProjectile", "pierceCounter", "hitEvent", "expireEvent"],
+            parameters: { count: 1, extraPierceCount: 0, moreDamageMul: 1 },
+            damageBasis: { baseRef: "hero.atk", coefficient: 1.9, inheritFactorKeys: ["coefficient"] },
+            hitPolicyId: "HP_MAIN_BOLT",
+          },
+          {
+            /* 攻城爆破：命中点巨型范围爆炸，半径 190（旧 AT112 radius:190），
+             * 派生节点参数自带（等级曲线只并入主节点，故此处写死 130→190 的平衡占位）。*/
+            nodeId: "n_siegeburst",
+            templateId: "TP_INSTANT_AREA",
+            role: "derived",
+            tags: ["物理", "范围", "爆炸", "技能"],
+            capabilities: ["instantArea", "areaRadius", "hitEvent", "expireEvent"],
+            parameters: { radius: 190, moreDamageMul: 1 },
+            damageBasis: { baseRef: "hero.atk", coefficient: 1.9, inheritFactorKeys: ["coefficient"] },
+            hitPolicyId: "HP_EXPLOSION",
+          },
+        ],
+        edges: [{ from: "n_siege", to: "n_siegeburst", event: "onHit" }],
       },
       targetPolicyId: "TGT_NEAREST",
       castPolicyId: "CAST_COOLDOWN",
@@ -3317,6 +3478,12 @@ CFG.skillSystem = {
   localization: {
     "skill.fireball": "火球",
     "skill.shockwave": "震荡波",
+    /* 全量迁移批 1（H002~H006）技能名 —— 命名规范：UI 名词唯一来源，界面不得硬写中文 */
+    "skill.scatter": "散射震荡",
+    "skill.railgun": "贯穿射线",
+    "skill.ringbarrage": "环形弹幕",
+    "skill.volley": "疾风连爆",
+    "skill.siegeblast": "攻城爆破",
     "template.flightProjectile": "飞行弹模板",
     "template.orbitContact": "环绕接触模板",
     "template.instantArea": "瞬时范围模板",
