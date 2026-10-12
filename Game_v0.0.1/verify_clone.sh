@@ -114,7 +114,7 @@ echo "============================================================"
 if [ "$BAD" = "0" ]; then
   echo " ✅ 一致：本工作区 == 2026-10-12 全量迁移批 1 快照（H001~H006 走新路径 · APP_VERSION $EXPECT_VERSION）"
   echo "    继续开发前可跑一次全量门禁：bash run_tests.sh"
-  echo "    期望结果：99 套 / PASS 合计 = 4210 / bad = 0 / 全绿"
+  echo "    期望结果：100 套 / PASS 合计 = 4239 / bad = 0 / 全绿"
 else
   echo " ❌ 不一致：本地不是该快照，请先同步远程："
   echo "     git fetch origin && git reset --hard origin/main"
