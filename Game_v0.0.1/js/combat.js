@@ -859,6 +859,8 @@ function onBossDefeated(w) {
   const r = G.run;
   r.bossDefeated = true;
   Meta.setFlag("bossKill");   // 称号成就：击败一次 BOSS
+  // 20.10 修订·击败即发：Boss 结晶在击败瞬间立即入账（一次性门控 r.bossCrystalAwarded，防重复击杀/重复调用重复发放）
+  if (!r.bossCrystalAwarded) { r.bossCrystalAwarded = true; Meta.awardBossCrystal(); }
   if (r.stats) {
     // 注意不能用 `||`：timeToBoss 为 0 时是合法值，会被误判为缺失导致耗时恒为 0
     const t0 = r.stats.timeToBoss === undefined ? r.runTime : r.stats.timeToBoss;

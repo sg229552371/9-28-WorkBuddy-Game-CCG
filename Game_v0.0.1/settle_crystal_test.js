@@ -106,11 +106,12 @@ ok(/道具→◆/.test(uiSrc), "结算折算文案应保留「道具→◆」分
 
 /* ---------- 5. main.js 调用顺序：先 awardRun 后 show ---------- */
 const mainSrc = fs.readFileSync(path.join(dir, "js/main.js"), "utf8");
-const iAward = mainSrc.indexOf("Meta.awardRun(G.run.kills, G.run.bossDefeated, true)");
+// 20.10 修订·击败即发：Boss 结晶在击杀瞬间入账，结算侧 awardRun 第二参恒 false（不再经 settle 计 Boss）
+const iAward = mainSrc.indexOf("Meta.awardRun(G.run.kills, false, true)");
 const iShow = mainSrc.indexOf("UI.showSettlement(crystals)");
 ok(iAward >= 0 && iShow >= 0 && iAward < iShow,
   "main.js 应先发布报告（awardRun）再渲染结算（showSettlement）");
-const iAward2 = mainSrc.indexOf("Meta.awardRun(G.run.kills, G.run.bossDefeated, false)");
+const iAward2 = mainSrc.indexOf("Meta.awardRun(G.run.kills, false, false)");
 const iShow2 = mainSrc.indexOf("UI.showDeath(penalty, crystals)");
 ok(iAward2 >= 0 && iShow2 >= 0 && iAward2 < iShow2,
   "main.js 应先发布报告（awardRun）再渲染死亡（showDeath）");

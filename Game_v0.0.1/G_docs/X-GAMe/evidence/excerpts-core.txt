@@ -1,0 +1,621 @@
+﻿### js/main.js:176
+176:   startRun(chars) {
+177:     // 多角色组队：1~3 名英雄，第一名是队长（玩家操控），其余为 AI 队友
+178:     const list = Array.isArray(chars) ? chars : [chars];
+179:     G.team = list.map(h => applyOutLevel(h));
+180:     G.heroDef = G.team[0];
+181:     G.levelCfg = UI.selectedLevel;
+182:     G.run = createRun(G.heroDef);
+183:     G.player = new Player(G.levelCfg.mapW / 2, G.levelCfg.mapH / 2);   // 出生在地图正中心
+184:     G.mainWorld = new World(G.levelCfg.mapW, G.levelCfg.mapH, true);
+185:     seedTrail(G.mainWorld, CFG.team.follow.seedDir[0], CFG.team.follow.seedDir[1]);   // 预铺尾迹：队友沿 seedDir 方向列队
+186:     snapCompanions(G.mainWorld);
+187:     G.subWorld = null;
+188:     G.inArtisan = false;
+189:     G.activeWorld = G.mainWorld;
+190:     // 图鉴：本局出战英雄全部激活（解锁同名皮肤）
+191:     for (const h of list) Meta.activateHero(h.id);
+192:     recomputeWeapon();   // 开局即解析全队技能（含队友），避免首帧前 c.skills 为空
+193:     this.paused = false; this._levelUpActive = false;   // 重置升级弹窗暂停闸门（19.10.6）
+194:     G.state = "playing";
+195:     UI.showHudOnly();
+196:     if (typeof UI.updateAutoFightBtn === "function") UI.updateAutoFightBtn();   // 每局按钮重置为关（run.autoFight 默认 false；测试 UI 桩缺该方法时跳过）
+197:     const hud = document.getElementById("hud");
+198:     if (hud) hud.classList.remove("city-mode");
+199:     // 开场提示：按设备区分操作话术（手机无 WASD/B 键；触屏走摇杆+右下背包）
+200:     const touchDev = isTouchDevice();
+201:     const enterHint = touchDev
+202:       ? `进入 ${G.levelCfg.name} · 局外 LV${G.heroDef.outLevel} · 左下摇杆移动 · 技能自动释放 · 右下背包`
+203:       : `进入 ${G.levelCfg.name} · 局外 LV${G.heroDef.outLevel} · WASD 移动 · 技能自动释放 · B 背包`;
+204:     UI.toast(`${enterHint}`, "gold");
+205:   },
+206:   /* 跳过当前世界的开场冻结（仅测试/调试用）。
+207:    * 主关卡与裂缝进场都有 3 秒冻结（CFG.levelFreeze / CFG.rift.freezeTime），
+### js/main.js:470
+470:       snapCompanions(G.mainWorld);
+471:       UI.toast("◈ 穿过返回信标，回到原地图（状态已保留）", "gold");
+472:     });
+473:     EventBus.on("extractSuccess", () => {
+474:       if (G.state !== "playing") return;
+475:       G.state = "settled";
+476:       // 局内→局外资源转化（待细化 5 已定）：背包/武器栏内**所有物品**按各自**固定价值 × 统一折算率**
+477:       // 折算为结晶（宝箱 / 装备 / 武器模块 / 消耗品 / 卡牌同一口径；保险契约不再单独折算）。
+478:       // 局内经验与金币归零、不参与折算。
+479:       const conv = calcSettleConvert(G.run);
+480:       if (conv.total > 0) { Meta.data.crystals += conv.total; Meta.commit(); }
+481:       G.run.settleConv = conv;   // 结算界面展示明细
+482:       const crystals = Meta.awardRun(G.run.kills, G.run.bossDefeated, true) + conv.total;
+483:       // 解锁链：撤离成功解锁下一关（死亡不解锁，搜打撤的"搜"是门票）
+484:       const idx = CFG.levels.indexOf(G.levelCfg);
+485:       if (idx >= 0 && idx + 1 < CFG.levels.length && Meta.data.unlockedLevels < idx + 2) {
+486:         Meta.data.unlockedLevels = idx + 2;
+487:         Meta.commit();
+488:         UI.toast(`🔓 解锁 ${CFG.levels[idx + 1].name}`, "gold");
+489:       }
+490:       Meta.setFlag("firstExtract");   // 称号成就：完成一次撤离
+491:       SFX.play("extract");
+492:       UI.toggleArtisan(false); UI.toggleBackpack(false);
+493:       UI.showSettlement(crystals);
+494:     });
+495:     EventBus.on("playerDied", (penalty) => {
+496:       // 21.17 深渊撤离点（🅑 独立区块）：深渊内死亡 → 走统一结算入口（撤离/死亡/超时三态同口径）
+497:       if (G.inEndless && typeof abyssExtractSettle === "function") {
+498:         abyssExtractSettle("death");
+499:         if (typeof UI !== "undefined" && UI.showEndlessSettle) UI.showEndlessSettle({ wave: 0, kills: 0, crystals: 0 });
+500:         return;
+501:       }
+502:       // 21.15 无尽模式：死亡即结算 → 走专用结算面板（波次/击杀/结晶），不进原死亡面板
+503:       if (G.inEndless) { showEndlessSettle(); return; }
+504:       const crystals = Meta.awardRun(G.run.kills, G.run.bossDefeated, false);
+505:       SFX.play("death");
+506:       UI.toggleArtisan(false); UI.toggleBackpack(false);
+507:       UI.showDeath(penalty, crystals);
+508:     });
+509:   },
+510: 
+511:   /* ---------- 输入 ---------- */
+512:   bindInput() {
+513:     // 音频需在用户手势后启动（浏览器自动播放策略）
+514:     const kick = () => { SFX.init(); SFX.resume(); };
+515:     window.addEventListener("pointerdown", kick);
+516:     window.addEventListener("keydown", kick);
+517:     // 移动端虚拟控件（手机端测试）：触屏设备自动显示，参数在 CFG.mobile
+518:     this.bindTouch();
+519:     window.addEventListener("keydown", (e) => {
+520:       const k = e.key.toLowerCase();
+521:       G.keys[k] = true;
+522:       if (k === " ") e.preventDefault();
+523:       if (k === "b" && G.state === "playing") UI.toggleBackpack();
+524:       if (k === "e" && G.inArtisan && G.state === "playing") UI.toggleArtisan();
+525:       if (k === "escape" && G.state === "city") UI.closeNpcPanels();   // 主城：Esc 关闭 NPC 面板
+526:       // 21.19 深渊局内：Esc 切换暂停菜单（复用 Game.paused 闸门；非深渊/未加载零副作用）
+527:       if (k === "escape" && G.state === "playing" && G.inEndless && typeof UI !== "undefined" && UI.toggleAbyssPause) UI.toggleAbyssPause();
+528:       // 撤离点雕像（5.2）：**站进雕像圈内自动读条**（8 秒，受击归零）；E 仅用于查看进度 / 节流提示
+529:       if (k === "e") this.actionE();
+530:     });
+531:     window.addEventListener("keyup", (e) => { G.keys[e.key.toLowerCase()] = false; });
+532:     // 网格物品拖拽起点（事件委托）
+533:     document.addEventListener("pointerdown", (e) => {
+534:       // 21.1 NPC 点选（触屏/鼠标通用）：工匠世界内「已站圈解锁 + 点到 NPC 本体」→ 进入工坊。
+### js/main.js:862
+862:     /* 21.12 性能压测场景（?stress=N）：接管更新+渲染，正式玩法零影响（无参数时 isActive 恒 false） */
+863:     if (typeof StressHarness !== "undefined" && StressHarness.isActive()) {
+864:       const t0 = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+865:       StressHarness.update(dt);
+866:       StressHarness.render();
+867:       StressHarness.sampleFrame(((typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now()) - t0);
+868:       PerfGuard.sample(t);
+869:       return;
+870:     }
+871:     if (G.state === "playing") {
+872:       recomputeWeapon();
+873:       // 升级 4 选 1 弹窗暂停（19.10.6）：paused=true → 跳过世界/玩家/同伴更新，渲染照常（弹窗覆盖）
+874:       if (this.paused) { updateFX(dt); UI.updateHUD(); }
+875:       else {
+876:       // 子地图开场冻结（5.1）：全员静止 + 全员无敌 —— 跳过玩家/同伴更新，也不推进撤离读条；
+877:       // 怪物/子弹/祭坛等由 World.update 内部同样的闸门拦住，伤害结算天然不会发生
+878:       const frozen = G.activeWorld && G.activeWorld.freezeTimer > 0;
+879:       if (frozen) {
+880:         G.player.mvx = 0; G.player.mvy = 0;   // 清零移动意图，避免解冻瞬间滑行
+881:       } else {
+882:         G.player.update(G.activeWorld, dt);
+883:         updateCompanions(G.activeWorld, dt);
+884:       }
+885:       G.activeWorld.update(dt);
+886:       // 22.x 能量水晶技能系统（合同 §9）：迁移英雄的自动施放/效果/结算/事件派生。
+887:       // 总开关 CFG.skillSystem.enabled=false 时模块内部立即 return（零介入，非迁移英雄完全不受影响）。
+888:       if (typeof SkillRuntime !== "undefined" && SkillRuntime) SkillRuntime.updateAll(G.activeWorld, dt);
+889:       // 21.15 无尽模式（深渊）：每帧驱动波次/刷怪/难度（Endless 未就绪时静默跳过，安全降级）
+890:       if (G.inEndless && typeof Endless !== "undefined" && Endless && typeof Endless.update === "function") {
+891:         Endless.update(G.activeWorld, dt);
+892:       }
+893:       // 21.19 深渊组队：队友倒下 → 救援读条 / 自动复活（非深渊零介入；模块未加载时安全跳过）
+894:       if (G.inEndless && !frozen && typeof EndlessTeam !== "undefined" && EndlessTeam) {
+895:         EndlessTeam.update(dt);
+896:       }
+897:       // 撤离读条推进（5.2）：**任一存活英雄在圈内即自动读条**（判定圈统一规则，见 judgeChannel）；
+898:       // 移动本身不再打断，圈内英雄全部离开才按判定规则衰退；受击打断在 heroTakeDamage 中处理。
+899:       // 仅主地图存在撤离点，工匠世界 / 裂缝中不推进。
+900:       if (!frozen && G.activeWorld && G.activeWorld.isMain) updateExtractJudge(dt);
+901:       // 21.17 深渊撤离点（🅑 独立区块）：最终 BOSS 掉点轮询 + 读条 + 超时结算（非深渊世界零介入）
+902:       if (!frozen && typeof updateAbyssExtract === "function") updateAbyssExtract(dt);
+903:       // 21.17 🅒 结算面板调度：超时/撤离结算后补弹面板（读 G.abyssSettleReason，幂等；非深渊零介入）
+904:       if (!frozen && typeof riftHudDispatchSettle === "function") riftHudDispatchSettle();
+905:       updateFX(dt);
+906:       UI.updateHUD();
+907:       }
+908:     } else if (G.state === "city") {
+909:       // 主城：玩家形象行走 + NPC/传送门交互（无战斗系统）
+### js/game.js:129
+129: /* ---------- 局外元进度（localStorage 持久化：结晶 / 各角色局外等级 / 关卡解锁 / 玩家档案 / 图鉴） ---------- */
+130: const SAVE_KEY = "bagrogue_save_v1";
+131: const Meta = {
+132:   data: { crystals: 0, heroes: {}, unlockedLevels: 1, profile: null, codex: null, unlockExtra: {} },
+133:   load() {
+134:     try { const raw = localStorage.getItem(SAVE_KEY); if (raw) Object.assign(this.data, JSON.parse(raw)); } catch (e) { /* 无 localStorage（测试环境）则用默认值 */ }
+135:     // 迁移：旧的"结晶技能升级"并入武器等级（技能等级 = 武器等级，局外结晶升级）——老存档字段保留兼容
+136:     for (const id in this.data.heroes) {
+137:       const rec = this.data.heroes[id];
+138:       if (rec.skillLevel && !rec.weaponLv) rec.weaponLv = rec.skillLevel;
+139:     }
+140:     if (!this.data.unlockExtra) this.data.unlockExtra = {};   // 迁移：非首发英雄主动解锁记录（方向3）
+141:     // 迁移：主城档案 + 图鉴（老存档补默认值；皮肤 = 英雄外貌，图鉴激活解锁）
+142:     if (!this.data.profile) this.data.profile = { name: CFG.profile.defaultName, skinId: CFG.profile.defaultSkin, titleId: CFG.profile.titles[0].id };
+143:     if (!this.data.codex) this.data.codex = { heroes: {}, monsters: {}, flags: {} };
+144:     if (!this.data.codex.flags) this.data.codex.flags = {};
+145:     // 初始皮肤永久解锁
+146:     this.data.codex.heroes[CFG.profile.defaultSkin] = true;
+147:   },
+148:   commit() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.data)); } catch (e) { } },
+149:   /* ---- 玩家档案（主城头像栏 / 形象师 NPC） ---- */
+150:   profileName() { return (this.data.profile && this.data.profile.name) || CFG.profile.defaultName; },
+151:   rename(name) {
+152:     const n = String(name || "").trim();
+153:     if (n.length < CFG.profile.nameMin || n.length > CFG.profile.nameMax) return false;
+### js/game.js:225
+225:     this.data.heroes[id] = { ...rec, weaponLv: lv + 1 };
+226:     this.commit();
+227:     return true;
+228:   },
+229:   // 结算发结晶（19.8 已定）：来源① = 击杀 BOSS（crystalBoss）；来源② = 撤离彻底折算
+230:   // （main.js 结算时另加 conv.total，不经本函数）。**小怪击杀（crystalKill）已退役**——
+231:   // kills 参数保留仅为兼容调用方签名；死亡时来源②不发生，BOSS 结晶按 deathRatio 保留。
+232:   awardRun(kills, bossDefeated, extracted) {
+233:     let v = bossDefeated ? CFG.outLevel.crystalBoss : 0;
+234:     if (!extracted) v = Math.floor(v * CFG.outLevel.deathRatio);
+235:     this.data.crystals += v;
+236:     this.commit();
+237:     publishCrystalReport(kills, bossDefeated, extracted, v);   // 单行挂点：生成并广播本局结晶明细（方向3 产出可见化）
+238:     return v;
+239:   },
+240: };
+241: Meta.load();
+242: 
+243: // 局外等级 → 英雄实际出战属性（副本，不污染 CFG）
+244: // 属性成长走文件末尾 outLevelStats 纯函数（分段增益表 growthTable + 定位差异化，缺表回落旧线性——方向3）
+245: function applyOutLevel(def) {
+246:   const lv = Meta.heroLevel(def.id);
+### js/config.js:2762
+2762: CFG.skillSystem = {
+2763:   /* ---- 总开关与迁移范围（分流依据，见接口文档第六节）----
+2764:    * enabled=false 时：9 个模块静默待命，所有英雄走旧路径（零影响，保证并存期安全）。
+2765:    * migratedHeroIds 列出的英雄改走新路径；其余继续旧路径。
+2766:    * 🔴 2026-10-12（22.8）**正式启用**：用户拍板「优先最高先完成技能系统全部内容」，
+2767:    *    首批试点 = H001（猎手）—— 唯一有 initialSkillBindings 绑定的英雄。
+2768:    *    回退方式：enabled 改回 false 或清空 migratedHeroIds（两处任改其一即回到旧路径）。 */
+2769:   enabled: true,
+2770:   configVersion: "skill-v1.0.0",
+2771:   migratedHeroIds: ["H001"],     // 首批试点英雄 id（合同 §1 第一交付）
+2772: 
+2773:   /* ---- 结构常量 ---- */
+2774:   slotCount: 4,                  // 每英雄共享辅助槽数（开局全开；本局不可卸载/替换）
+2775:   maxSkillsPerHero: 2,           // 初始技能 + 至多 1 个稀有技能
+2776:   skillLevelStart: 1,            // 技能等级从 1 开始（levels[level-1]）
+2777: 
+2778:   /* ---- 初始主动技能绑定（v0.5 §1 落地：武器绑定唯一初始主动技能）----
+2779:    * 正式规则：每英雄的武器决定其唯一初始主动技能；英雄没有普攻。
+2780:    * 键 = 英雄 id；weaponId 仅作溯源（对应 CFG.weapons 的键），skillId = 新路径技能定义 id。
+2781:    * 未列出的英雄 = 尚未迁移，继续走旧路径（分流依据，见接口文档第六节）。*/
+2782:   initialSkillBindings: {
+2783:     H001: { weaponId: "W001", skillId: "SK_FIREBALL" },
+2784:   },
+2785:   /* ---- 稀有技能池（雕像提供；每英雄至多 1 个，v0.5 §1）----
+2786:    * 雕像触发时经 SkillReward.rollStatueGrant 试编译过滤后授予。*/
+2787:   rareSkillPool: ["SK_SHOCKWAVE"],
+2788: 
+2789:   /* ---- 旧系统 → 新水晶 迁移映射（合同 §14：需人工审核，禁止按名称相似自动匹配）----
+2790:    * 2026-10-12 用户拍板「新增水晶覆盖」后落库；逐行依据见
+2791:    * `G_docs/skill_migration_map_v0.1.md` §2（旧模块 12 行）与 §3.5（遗迹秘宝不迁移）。
+2792:    * 未列出的旧 ID（M010 召唤物 / M011 陷阱）→ 首轮不迁移（features.summonMigration=false）。 */
+2793:   migrationMaps: {
+2794:     module: {
+2795:       M001: "CR_MULTISHOT",     // 弹头扩容：弹道数量 +1
+2796:       M005: "CR_PIERCE",        // 穿甲弹头：穿透 +1
+2797:       M004: "CR_EXPANSE",       // 聚焦透镜：范围 +%
+2798:       M008: "CR_EXPANSE",       // 聚能弹头：范围 +%
+2799:       M009: "CR_ARCANE_AMP",    // 增幅器：伤害 +%
+2800:       M012: "CR_ARCANE_AMP",    // 毒性涂层：伤害 +%
+2801:       M002: "CR_COOLDOWN",      // 冷却线圈：冷却 −%（22.8 新增水晶承接）
+2802:       M007: "CR_COOLDOWN",      // 相位线圈：冷却 −%（同上）
+2803:       M003: "CR_SPEED",         // 高速枪管：弹速 +%（22.8 新增水晶承接）
+2804:       M006: "CR_BOUNCE",        // 弹跳装置：弹射次数 +1（22.8 新增水晶承接，与环绕拆分）
+2805:     },
+2806:     /* 🔒 遗迹秘宝（CFG.chips / C_*）**不迁移**：用户拍板两者并存，各管一块
+2807:      * （能量水晶 = 单个角色武器中的技能；遗迹秘宝 = 队伍全体队员），故映射表恒为空。 */
+2808:     chip: {},
+2809:   },
+2810: 
+2811:   /* ---- 模式开关（首轮范围，合同 §1 第一交付不扩展项）---- */
+2812:   features: {
+2813:     twoSkillsPerHero: true,      // 每英雄两个技能（初始 + 稀有）
+2814:     rareSkillFromStatue: true,   // 稀有技能由雕像提供
+2815:     derivedEvents: false,        // 默认派生不再次触发事件水晶（合同 §2 已确认玩法）
+2816:     elementConversion: false,    // 元素转换：首轮不做（待定）
+### js/items.js:1
+1: /* ============================================================
+2:  * items.js — 物品 / 装备 / 背包 / 遗迹秘宝构造与计算（21.16 物理搬移拆分：原 game.js 第 2 部分）
+3:  * 职责：Inventory / UID；装备/模块/遗迹秘宝/宝箱/保险/诅咒的构造与词条计算
+4:  *       （makeGear/makeModule/makeChip/ZERO_GEAR 等）；属性汇总 tagCalc/recomputeWeapon/computeStats；
+5:  *       升级 4 选 1 候选与入槽（buildLevelUpCandidates/gainExp/useCard 等）；
+6:  *       入包与商店（grantItemToRun/ChipForge/shopBuyChip…）；升级刷新 levelUpReroll。
+7:  * ⚠️ 本文件由纯物理搬移生成：除本头部职责注释与 "use strict"; 外，代码逐字沿用原文件。
+8:  * ============================================================ */
+9: "use strict";
+10: /* ============ 背包 / 网格仓储 ============ */
+11: let UID = 1;
+12: class Inventory {
+13:   constructor(cols, rows, id) {
+14:     this.cols = cols; this.rows = rows; this.id = id;
+15:     this.cells = Array.from({ length: cols * rows }, () => null);
+16:     this.items = [];
+17:   }
+18:   inBounds(x, y, w, h) { return x >= 0 && y >= 0 && x + w <= this.cols && y + h <= this.rows; }
+19:   occupied(x, y, w, h, ignore) {
+20:     for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) {
+21:       const c = this.cells[j * this.cols + i];
+22:       if (c && c !== ignore) return c;
+23:     }
+24:     return null;
+25:   }
+26:   canPlace(item, x, y, ignore) {
+27:     const [w, h] = item.shape;
+28:     return this.inBounds(x, y, w, h) && !this.occupied(x, y, w, h, ignore);
+29:   }
+30:   place(item, x, y) {
+31:     if (!this.canPlace(item, x, y)) return false;
+32:     const [w, h] = item.shape;
+33:     for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) this.cells[j * this.cols + i] = item;
+34:     item.inv = this.id; item.x = x; item.y = y;
+35:     this.items.push(item);
+36:     return true;
+37:   }
+38:   remove(item) {
+39:     const [w, h] = item.shape;
+40:     for (let j = item.y; j < item.y + h; j++) for (let i = item.x; i < item.x + w; i++) {
+41:       if (this.cells[j * this.cols + i] === item) this.cells[j * this.cols + i] = null;
+42:     }
+43:     const i = this.items.indexOf(item);
+44:     if (i >= 0) this.items.splice(i, 1);
+45:     item.inv = null;
+46:   }
+47:   // 尝试放入任意空位（整理用）
+48:   findSpot(item) {
+49:     for (let y = 0; y <= this.rows - item.shape[1]; y++)
+50:       for (let x = 0; x <= this.cols - item.shape[0]; x++)
+51:         if (this.canPlace(item, x, y)) return { x, y };
+52:     return null;
+53:   }
+54:   // 同品质宝箱叠加（6.3）
+55:   tryStackChest(item) {
+56:     if (item.kind !== "chest") return false;
+57:     const q = CFG.chestQualities[item.chestQ];
+58:     for (const it of this.items) {
+59:       if (it.kind === "chest" && it.chestQ === item.chestQ && it.count < q.stackMax) {
+60:         it.count++; it.value = q.value * it.count; return true;   // 价值同步累加
+61:       }
+62:     }
+63:     return false;
+64:   }
+65:   totalWeight() {
+66:     let s = 0;
+67:     for (const it of this.items) s += (it.kind === "chest" ? CFG.chestQualities[it.chestQ].weight * it.count : it.weight);
+68:     return s;
+69:   }
+70: }
+71: 
+72: /* ============ 武器 / 技能等级曲线（配置驱动公式，上限 100 级） ============
+### js/skill-save.js:130
+130:     for (const h of this._heroList(saved)) {
+131:       const heroId = h.heroId;
+132:       const outHero = { heroId: heroId, slotCount: h.slotCount, groupVersion: h.groupVersion || 0,
+133:         skills: {}, crystals: [], attrRewards: this._deep(h.attrRewards || []),
+134:         attrGain: this._deep(h.attrGain || {}), rewardTransactions: this._deep(h.rewardTransactions || {}) };
+135:       for (const sid in (h.skills || {})) {
+136:         const s = h.skills[sid] || {};
+137:         outHero.skills[sid] = { id: sid, level: s.level || 1, cd: s.cd || 0, cdLeft: s.cdLeft || 0 };
+138:       }
+139: 
+140:       const seen = {};
+141:       for (const c of (h.crystals || [])) {
+142:         const oldId = c && c.crystalId;
+143:         if (!oldId) continue;
+144:         /* 映射：逐项审核（mapCrystals[oldId]），缺失且新表无该 ID → 未知资产，保留原值 */
+145:         let newId = null, mapped = false;
+146:         if (mapCrystals[oldId] != null) { newId = mapCrystals[oldId]; mapped = true; }
+147:         else if (crystalDefs[oldId]) { newId = oldId; }
+148:         if (!newId) {
+149:           report.unknownIds.push({ heroId: heroId, crystalId: oldId, level: c.level || 1, action: "preserved" });
+150:           outHero.crystals.push({ crystalId: oldId, level: c.level || 1, slot: (c.slot != null ? c.slot : null), unknown: true });
+151:           continue;
+152:         }
+153:         const def = crystalDefs[newId];
+154:         const maxLv = (def && Array.isArray(def.levels) && def.levels.length) || null;
+155:         let level = c.level || 1;
+156:         /* 等级越界：不直接截断成示例等级 → 进 levelOverflow 并保留原值 */
+157:         if (maxLv != null && level > maxLv) {
+158:           report.levelOverflow.push({ heroId: heroId, crystalId: newId, originalLevel: level, maxLevel: maxLv, action: "preserved" });
+159:           outHero.crystals.push({ crystalId: newId, level: level, slot: (c.slot != null ? c.slot : null), overflow: true });
+160:         } else {
+161:           outHero.crystals.push({ crystalId: newId, level: level, slot: (c.slot != null ? c.slot : null) });
+162:         }
+163:         if (mapped) report.migrated.push({ heroId: heroId, from: oldId, to: newId, level: level, kind: "crystal" });
+164:         /* 结构冲突：同 ID 重复 */
+165:         if (seen[newId]) {
+166:           report.conflicts.push({ heroId: heroId, crystalId: newId, type: "DUPLICATE_CRYSTAL", action: "preserved" });
+167:         }
+168:         seen[newId] = true;
+169:       }
+170: 
+171:       /* 形态互斥冲突（配置驱动的动作组）*/
+172:       for (const grp of motionGroups) {
+173:         const present = (grp || []).filter(id => outHero.crystals.some(c => c.crystalId === id));
+174:         if (present.length >= 2) {
+175:           report.conflicts.push({ heroId: heroId, type: R.MOTION_CONFLICT, crystals: present, action: "preserved" });
+176:         }
+177:       }
+178: 
+179:       outState.heroes[heroId] = outHero;
+180:     }
+181: 
+182:     /* ④ 迁移完成标记（幂等：重复迁移不再重复补偿）*/
+183:     outState.__migratedTo = targetConfig;
+184:     if (!report.migrated.length && !report.unknownIds.length && !report.levelOverflow.length && !report.conflicts.length) {
+185:       report.notes.push({ code: null, message: "无需要迁移的水晶资产" });
+186:     }
+187:     return { state: outState, report: report, preservedOriginal: preservedOriginal };
+188:   },
+189: 
+190:   /* ============================================================
+191:    * saveTo(meta, state?) / loadFrom(meta)：只读写 Meta.data.skillSystem 子对象
+192:    * （不改 Meta 其它字段，不改 SAVE_KEY）
+193:    * ============================================================ */
+194:   saveTo(meta, state) {
+195:     if (typeof Meta === "undefined" || !meta || !meta.data) return false;
+196:     const payload = state ? this.serialize(state) : this._lastSerialized;
+197:     if (!payload) return false;
+198:     meta.data.skillSystem = payload;   // 只写这一个子对象
+199:     return true;
+200:   },
+201:   loadFrom(meta) {
+202:     if (typeof Meta === "undefined" || !meta || !meta.data) return null;
+203:     const s = meta.data.skillSystem;
+204:     return s != null ? this._deep(s) : null;
+205:   },
+206: };
+207: 
+208: /* ---- 顶层函数（接口文档第三节）---- */
+209: /** 序列化每英雄技能状态（合同 §7 serializeHeroSkills）。 */
+210: function serializeHeroSkills(state) { return SkillSave.serialize(state); }
+211: /** 迁移存档（合同 §7 migrateHeroSkills）。 */
+212: function migrateHeroSkills(saved, definitions) { return SkillSave.migrate(saved, definitions); }
+### skill_enable_runtime_test.js:1
+1: /* ============================================================================
+2:  * skill_enable_runtime_test.js —— 技能系统「正式启用」真实主循环回归
+3:  *                              （node skill_enable_runtime_test.js）
+4:  * ----------------------------------------------------------------------------
+5:  * 【为什么必须单独有这一套】
+6:  *   2026-10-12 事故：22.8 只把 `CFG.skillSystem.enabled` 翻成 true，**没接通整合层**
+7:  *   （`SkillPlaytest` 是唯一包装 `SkillRuntime.ownsHero` 并懒注入 `hero.skillState` 的地方）。
+8:  *   后果：`ownsHero` 返回 true → `game.js` 跳过旧施放逻辑 → 而新路径没有 builds →
+9:  *   **英雄完全不开火，游戏无法玩**。
+10:  *   当时的门禁（93 套全绿）、`verify_clone.sh`（21 文件全 ✅）**全都发现不了** ——
+11:  *   因为既有测试只做「模块级」断言（编译产物 / 配置结构 / 界面 DOM），
+12:  *   **没有任何一套真的把游戏跑起来、看英雄有没有开火**。
+13:  *   本套补上这一层：按 index.html 顺序加载**全部**脚本 → 真实启动 → 跑主循环 → 数击杀。
+14:  *
+15:  * 覆盖：
+16:  *   ① 全量脚本（含真实 ui.js）按 index.html 顺序可无异常装载
+17:  *   ② **配表启用即接线**：不带任何 URL 参数打开 → SkillPlaytest 已包装 ownsHero
+18:  *      （source === "config" / _patched === true）—— 事故的核心回归点
+19:  *   ③ 真实启动 → 该英雄被判走新路径 + skillState 已注入且已编译 builds
+20:  *   ④ **跑 10 秒主循环：英雄确实开火**（新路径效果实例被生成 + 产生击杀）
+21:  *      —— 「游戏能玩」的硬证据
+22:  *   ⑤ 界面联动：首帧即可取到水晶态（`_crystalModeOf` 必须在查 skillState **之前**
+23:  *      先问 ownsHero，否则第一帧会误判旧路径）
+24:  *   ⑥ 反向护栏：关掉配表开关 → 英雄回落旧路径，且**旧路径仍能开火**（不能两头空）
+25:  *
+26:  * ⚠️ PASS 文案禁用英文 error / FAIL 字样（run_tests.sh 以 grep 计 bad）。
+27:  * ========================================================================== */
+28: "use strict";
+29: 
+30: /* ---------------- DOM 桩（与 crystal_ui_test.js 同款） ---------------- */
+31: class ClassList {
+32:   constructor() { this.set = new Set(); }
+33:   add(...c) { c.forEach(x => this.set.add(x)); }
+34:   remove(...c) { c.forEach(x => this.set.delete(x)); }
+35:   toggle(c, f) { if (f === undefined) { this.set.has(c) ? this.set.delete(c) : this.set.add(c); } else if (f) this.set.add(c); else this.set.delete(c); }
+36:   contains(c) { return this.set.has(c); }
+37: }
+38: const ctxProxy = new Proxy({}, {
+39:   get(t, p) {
+40:     if (p === "getImageData") return () => ({ data: new Uint8ClampedArray(100 * 100 * 4) });
+41:     if (p in t) return t[p];
+42:     return (...a) => undefined;
+43:   },
+44:   set(t, p, v) { t[p] = v; return true; },
+45: });
+46: class FakeEl {
+47:   constructor(tag) {
+48:     this.tag = tag; this.style = {}; this.dataset = {};
+49:     this.classList = new ClassList();
+50:     this.children = []; this._parent = null;
+51:     this._html = ""; this.textContent = ""; this.disabled = false;
+52:     this.width = 300; this.height = 300; this.value = "";
+53:   }
+54:   get className() { return this._cls || ""; }
+55:   set className(v) {
+56:     this._cls = v; this.classList = new ClassList();
+57:     String(v).split(/\s+/).forEach(c => { if (c) this.classList.add(c); });
+58:   }
+59:   get innerHTML() { return this._html; }
+60:   set innerHTML(v) {
+61:     this._html = v;
+62:     this.children.length = 0;
+63:     this._q = null; this._qa = null;
+64:     const re = /<(\w+)([^>]*\bclass\s*=\s*"([^"]*)"[^>]*)>/g;
+65:     let m;
+66:     while ((m = re.exec(v)) !== null) {
+67:       const el = new FakeEl(m[1]);
+68:       el.className = m[3];
+69:       el._parent = this;
+70:       this.children.push(el);
+71:     }
+72:   }
+73:   appendChild(c) { this.children.push(c); c._parent = this; return c; }
+74:   remove() { if (this._parent) { const i = this._parent.children.indexOf(this); if (i >= 0) this._parent.children.splice(i, 1); } }
+75:   get firstChild() { return this.children[0]; }
+76:   addEventListener() { }
+77:   getContext() { return ctxProxy; }
+78:   _findAll(cls, acc) {
+79:     acc = acc || [];
+80:     for (const c of this.children) {
+81:       if (c.classList && c.classList.contains(cls)) acc.push(c);
+82:       if (c._findAll) c._findAll(cls, acc);
+83:     }
+84:     return acc;
+85:   }
+86:   querySelector(sel) {
+87:     this._q = this._q || {};
+88:     if (!this._q[sel]) {
+89:       const list = this._findAll(sel.replace(/^\./, ""));
+90:       this._q[sel] = list[0] || new FakeEl(sel);
+91:     }
+92:     return this._q[sel];
+93:   }
+94:   querySelectorAll(sel) {
+95:     this._qa = this._qa || {};
+96:     if (!this._qa[sel]) {
+97:       const list = this._findAll(sel.replace(/^\./, ""));
+98:       this._qa[sel] = list;
+99:       this._q = this._q || {};
+100:       if (list.length && !this._q[sel]) this._q[sel] = list[0];
+101:     }
+102:     return this._qa[sel];
+103:   }
+104:   closest(sel) {
+105:     const sels = String(sel).split(",").map(s => s.trim()).filter(Boolean);
+106:     let el = this;
+107:     while (el) {
+108:       for (const s of sels) {
+109:         if (s.charAt(0) === ".") { if (el.classList && el.classList.contains(s.slice(1))) return el; }
+110:         else if (s.charAt(0) === "#") { if (el._id === s.slice(1)) return el; }
+111:       }
+112:       el = el._parent;
+113:     }
+114:     return null;
+115:   }
+116:   getBoundingClientRect() { return { left: 0, top: 0, width: 400, height: 400 }; }
+117: }
+118: const elCache = {};
+119: global.document = {
+120:   getElementById(id) { const el = elCache[id] || (elCache[id] = new FakeEl(id)); el._id = id; return el; },
+121:   createElement(tag) { return new FakeEl(tag); },
+122:   addEventListener() { }, querySelectorAll: () => [], elementFromPoint: () => null,
+123: };
+124: Object.defineProperty(global.document, "body", { get() { return this.getElementById("body"); }, configurable: true });
+125: const winHandlers = {};
+126: global.window = {
+127:   addEventListener(type, fn) { (winHandlers[type] = winHandlers[type] || []).push(fn); },
+128:   dispatchEvent(ev) { (winHandlers[ev && ev.type] || []).forEach(fn => fn(ev)); return true; },
+129:   innerWidth: 1920, innerHeight: 1080,
+130: };
+131: /* ★ 关键：**不设 location.search** —— 模拟正式线上「不带任何参数打开」 */
+132: global.location = { search: "", href: "https://example.invalid/", pathname: "/" };
+133: global.requestAnimationFrame = (cb) => { global.__raf = cb; };
+134: global.Image = class { constructor() { this.width = 100; this.height = 100; } set src(v) { if (this.onload) this.onload(); } };
+135: global.localStorage = { getItem: () => null, setItem() { }, removeItem() { } };
+136: 
+137: const fs = require("fs"), vm = require("vm"), path = require("path");
+138: let passCount = 0, failCount = 0;
+139: const check = (name, cond) => {
+140:   console.log((cond ? "PASS " : "FAIL ") + name);
+141:   if (cond) passCount++; else failCount++;
+142: };
+143: const ROOT = __dirname;
+144: const read = (f) => fs.readFileSync(path.join(ROOT, f), "utf8");
+145: 
+146: /* ---------------- ① 全量脚本按 index.html 顺序装载（与浏览器同序） ---------------- */
+147: const html = read("index.html");
+148: const scripts = [...html.matchAll(/<script src="(js\/[^"?]+)/g)].map(m => m[1]);
+149: let loadErr = "";
+150: const ctx = vm.createContext(global);
+151: try { for (const f of scripts) vm.runInContext(read(f), ctx, { filename: f }); }
+152: catch (e) { loadErr = (e && e.message) || "?"; }
+153: check("① " + scripts.length + " 个脚本按 index.html 顺序可无异常装载", !loadErr);
+154: if (loadErr) {
+155:   console.log("载入期异常：" + loadErr);
+156:   console.log("");
+157:   console.log("PASS 合计 = " + passCount + "   失败数 = " + failCount);
+158:   process.exit(1);
+159: }
+160: const ev = (code) => vm.runInContext(code, ctx);
+161: 
+162: /* ---------------- ② 配表启用即接线（事故核心回归点） ---------------- */
+163: check("② 载入后总开关为启用（配表默认）", ev("CFG.skillSystem.enabled") === true);
+164: check("② 迁移名单非空（首批试点 H001）",
+165:   ev("CFG.skillSystem.migratedHeroIds.length") === 1 && ev('CFG.skillSystem.migratedHeroIds[0]') === "H001");
+166: check("② ★不带 URL 参数也已接线：active = true", ev("SkillPlaytest.active") === true);
+167: check("② ★接线来源标记为配表启用（source === \"config\"，非 url 试玩）", ev("SkillPlaytest.source") === "config");
+168: check("② ★ownsHero 已被包装（_patched === true）—— 懒注入入口就位", ev("SkillPlaytest._patched") === true);
+169: check("② 迁移名单取自配表（heroIds 与 CFG 一致）",
+170:   ev("SkillPlaytest.heroIds.join()") === ev("CFG.skillSystem.migratedHeroIds.join()"));
+171: check("② 未迁移英雄不接线（H002 仍走旧路径）",
+172:   ev('SkillRuntime.ownsHero({ id: "H002" })') === false);
+173: 
+174: /* ---------------- ③ 真实启动：英雄走新路径 + skillState 已注入 ---------------- */
+175: ev('G.canvas = document.getElementById("game-canvas"); G.ctx = G.canvas.getContext("2d");'
+176:   + ' G.sprites = { hero:{width:60,height:60}, enemy00:{}, enemy08:{}, enemy16:{}, enemy22:{} };'
+177:   + ' Game.bindInput(); Game.bindEvents(); UI.selectedLevel = CFG.levels[0];'
+178:   + ' Game.startRun([CFG.heroes[0]]); Game.skipIntroFreeze(); G.run.hp = 100000;');
+179: check("③ 开局英雄 id = H001（首批试点本人）", ev("G.player.id") === "H001");
+180: check("③ 该英雄被判走新路径", ev("SkillRuntime.ownsHero(G.player)") === true);
+181: check("③ 首次判定即懒注入 skillState", ev("!!G.player.skillState") === true);
+182: check("③ skillState 已编译出 builds（有技能可施放）",
+183:   ev("!!(G.player.skillState && G.player.skillState.builds)") === true);
+184: check("③ builds 覆盖初始技能 SK_FIREBALL",
+185:   ev("!!(G.player.skillState.builds && G.player.skillState.builds.SK_FIREBALL)") === true);
+186: 
+187: /* ---------------- ④ ★真实主循环：英雄确实开火（「能玩」硬证据） ---------------- */
+188: ev(`
+189:   globalThis.__probe = (function () {
+190:     const w = G.mainWorld;
+191:     let maxFx = 0, framesWithFx = 0;
+192:     let t = 0;
+193:     Game.loop(t);                      // 手工登记主循环（跳过 boot）
+194:     G.keys["d"] = true;
+195:     for (let i = 0; i < 600; i++) {     // ~10 秒 @60fps
+196:       t += 16.7; global.__raf(t);
+197:       const fx = (w.__skillEffects) ? w.__skillEffects.length : 0;
+198:       if (fx > maxFx) maxFx = fx;
+199:       if (fx > 0) framesWithFx++;
+200:     }
+201:     G.keys["d"] = false;
+202:     return { maxFx: maxFx, framesWithFx: framesWithFx, kills: G.run.kills, monsters: w.monsters.length };
+203:   })();
+204: `);
+205: const probe = ev("globalThis.__probe");
+206: check("④ 新路径效果实例被真实生成（同屏峰值 ≥ 1）", probe.maxFx >= 1);
+207: check("④ 效果持续存在（有 ≥10 帧带效果，排除「飘一下就没了」）", probe.framesWithFx >= 10);
+208: check("④ ★英雄真实开火并造成击杀（10 秒内 kills ≥ 1）—— 游戏可玩", probe.kills >= 1);
+209: 
+210: /* ---------------- ⑤ 界面联动：首帧即可取到水晶态 ---------------- */

@@ -14,10 +14,11 @@ python3 -m http.server 8123
 
 ```
 ├── index.html          # 唯一入口（含启动兜底脚本、缓存自愈）
-├── js/                 # 源码（按加载顺序，全部为全局脚本）
+├── js/                 # 源码 32 个（按加载顺序，全部为全局脚本）
 │   ├── config.js       # CFG：所有数值配置（策划可调，逻辑不硬编码）
 │   ├── core.js         # Assets 素材加载/抠图、SpatialHash、工具函数、ASSET_MANIFEST
 │   ├── game.js         # 战斗主干：World/Monster/Bullet/Player/关卡机制
+│   ├── endless.js      # 无尽/深渊核心（末尾区块含原 hud_endless.js 的 HUD 绘制）
 │   ├── ui.js           # 全部 DOM 界面层：屏幕切换、HUD、弹窗、设置、图鉴
 │   └── main.js         # 启动流程 Game.boot、输入绑定、PerfGuard、BootGuard
 ├── css/style.css       # 全部样式（深色主题）
@@ -27,7 +28,8 @@ python3 -m http.server 8123
 ├── G_docs/             # 设计文档（随仓库携带的「随身上下文」）
 │   ├── dev_guide.md    # 开发指南：铁律、已踩的坑、测试基线 ← 新会话先读这份
 │   └── game_design_proposal.md   # 游戏设计提案（规则与数值）
-├── *_test.js           # 测试文件 93 个（门禁全部编排 93 套，见 tests/README.md 分类索引）
+├── tests/              # 测试文件 94 个（门禁全部编排 94 套，见 tests/README.md 分类索引）
+├── tools/              # 真机/诊断脚本 22 个（Playwright 验证、UA/CSS/摇杆排查）
 ├── run_tests.sh        # 全量测试运行器（判绿 = 每项 exit=0 且 bad=0）
 └── push.sh             # 测试全绿才提交并推送 GitHub
 ```
@@ -35,8 +37,8 @@ python3 -m http.server 8123
 ## 测试
 
 ```bash
-bash run_tests.sh          # 全量：93 套，4083 条断言（5 套件并发，约 2.5 分钟）
-node smoke_test.js         # 单个测试
+bash run_tests.sh          # 全量：94 套，4110 条断言（5 套件并发，约 2.5 分钟）
+node tests/smoke_test.js   # 单个测试
 ```
 
 测试文件按功能分类的索引见 [`tests/README.md`](tests/README.md)。

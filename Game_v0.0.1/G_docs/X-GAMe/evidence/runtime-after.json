@@ -1,0 +1,146 @@
+[
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\css\\style.css",
+    "Hash": "3d228dbf32c93609b524096cf3335979b4860e4b2c4ee3203e15456d01b319ed"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\index.html",
+    "Hash": "2fe01737b047d82f8c035c57e8f1f986a5e74dfcf49a483bce845f637e77697d"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\assets_manifest.js",
+    "Hash": "c7a32f3fba7b5e7c8231179d41f960d1b84e3e06666df42ae709aeb19e12d092"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\combat.js",
+    "Hash": "e4082552839d49d79a34b0fb1195bcef175857c61c07ffa75c8f1ab7b97f7145"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\config.js",
+    "Hash": "a633333aa8dc99e91937d0ff46e6f4853ba438647234202d2820b2775315ded0"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\core.js",
+    "Hash": "1b2e5537c53210a62cd830e7b508dfa3695aa47b2ff0bdbc9e3c7733354ac511"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\endless-affix.js",
+    "Hash": "13670c589e80a332a2a8a65f615aca7b9e094a722de02ea54beaf40ca54a3f68"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\endless-arena.js",
+    "Hash": "4c502bc2dfc22c5f507b5f3bed14580d2a7975a0121c6d2b0007b25a026ade1f"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\endless-record.js",
+    "Hash": "7e18e408a7b1d5d7c41efe963bb2fea218a8f477ef0e6b7109583c66f5b0090f"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\endless-team.js",
+    "Hash": "0f6d956485a671e9bf3ef7a6294bc3425916e5d9df4fddd3049dacde0e209748"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\endless.js",
+    "Hash": "4abcf237d6b8b2684c8656f032d3f61911c2a7d17a92c76bf56449e95f439c42"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\game.js",
+    "Hash": "03f053b8a67333a339d1382dbc1f8be49bebc8d16fbfc6d234258214303f92da"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\hud_endless.js",
+    "Hash": "635c967de94b7e5e12b68d305229d22aa3441cd1da5c84e7711ba434368c09a0"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\items.js",
+    "Hash": "93d0e52a4d3a13b90f019cceb3afc3fe421f1279ea0998501db762c1d3f8298e"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\main.js",
+    "Hash": "6bc4b230aa193c0193581c8b63627b30c20af07dfed9d0e1d6f08215dbc3a058"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\modes.js",
+    "Hash": "083acccc2138d96bc327daf2964ceaeb10b9860fa43a22edab1e6aeea9515bda"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\pool.js",
+    "Hash": "c58444f1222b305a669abaab317d8951e6dc9962e21a6f7e6ca2b172dc3628f4"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\quality.js",
+    "Hash": "989697d9d5e8a5fd8584453a540aa2321b20f2f97d394bf2e07a1688d2bba9c2"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\render.js",
+    "Hash": "897b4bacb42186f7b6563b85852fc23fd61da2e9ec96e4306b4f28e10ed34bda"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\rewards.js",
+    "Hash": "ebdd88043769057594743a4e3d823919a360a7c1ebfbede5dfd91ae50e1e1b4c"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\skill-compiler.js",
+    "Hash": "b5b8671482a457831c0a610a46e55b735b5bd2be9187a7abb64462a04ba83aa0"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\skill-config.js",
+    "Hash": "12ce9140e27e68a65e46b57f866a80335991c24f9dbda3db2c3727c1f4e12384"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\skill-damage.js",
+    "Hash": "1626b300cabd96c5007b6f5b79eb4245f75ed5839db7359de72c13f87fb2065a"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\skill-events.js",
+    "Hash": "77348e43b09fb2138a6c6a742f537b5ae1d6bdadcdd3f6722f44930d50e7cef4"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\skill-playtest.js",
+    "Hash": "e593ea47f39c3ad74f054a7cf624b60e20b90d0fec3560f3eee87435515735d3"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\skill-presenter.js",
+    "Hash": "29b896f42b62ca866cd3fd50539e6e13eeb547eeac5fe7f56a99dd50db98c937"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\skill-reward.js",
+    "Hash": "79c029cd380f3ab3b83a9a2053e5287fb806a94a059715e400f992e2a656cb1d"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\skill-runtime.js",
+    "Hash": "046c533a8a28071d5f821accb3ec98c4c24a45c588b29d4d81d2635804adca23"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\skill-save.js",
+    "Hash": "bb453e433a5daf1a944c0e65a1db8ce1caa0c3a6a3188062d0c7d9ea064eb8e8"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\skill-scheduler.js",
+    "Hash": "47da33ec4e991ae315b7ac0a62c5a19d7bd238696b4ad195501dff2c8af0fe7b"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\stress.js",
+    "Hash": "b0539f62dd6d0be512b0bdabb07515831744bc0e635430e4c71925460376935a"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\ui-abyss-pause.js",
+    "Hash": "f96c077e829ac0b4b4b1d2aae30f52356cb72ba3a11b3a3733f771577d5d88f5"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\ui-abyss.js",
+    "Hash": "ec406e7dab0143c3c68bfa5244de7ebc05993583b19d3a0b277359c18f518182"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\ui-panels.js",
+    "Hash": "e364218c0143bc8a27b1ee5b22c9139f526a57a8b81205ed3a676a11a84f3388"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\ui-screens.js",
+    "Hash": "0ac6a473b8d16333d2fe2fa11ccddf5890fb4e2c13ac2b39b16ad57ef13fc1cc"
+  },
+  {
+    "Path": "F:\\AI-Game\\Game_v0.0.1\\js\\ui.js",
+    "Hash": "88974a8dc198b36f013a4a5cec61d080dbc017916ba04a89062daa3adc8a9f14"
+  }
+]

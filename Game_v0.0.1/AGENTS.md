@@ -1,4 +1,10 @@
-# AGENTS.md —— 新会话第一份要读的文件
+﻿# AGENTS.md —— 新会话第一份要读的文件
+
+> **2026-10-12 文档编书入口**：[X-GAMe项目书](G_docs/X-GAMe/README.md)。需要开发参考时先按阅读地图进入分章，再按触发条件回查已批准合同；分章与受控附录为编辑源，合订由显式清单生成。书稿与未批准提案不高于原批准规则，代码只裁定实现事实。
+> **本轮范围**：仅`F:/AI-Game/Game_v0.0.1`内文档、证据与只读核验，不改运行代码、不commit/push/部署、不派发未来任务。下文发布流程用于获授权的代码交付，不能触发本轮发布。
+> **历史基线说明**：下文旧版号/93套4083/skill14或17等保留历史含义；本次已有全量绿测为94套/PASS4111/bad0、skill18，另有一次旧路径红测未诊断。当前CFG启用H001、十个技能文件（含playtest），verify_clone声明23个指纹但是否匹配以本轮审查结果为准。旧W0的9文件描述仍属历史批次。
+> **共享所有权**：config/core/index/css与game/main/combat/items/modes/run_tests全部只归主集成人串行处理；具体互斥卡见书内交接包。
+
 
 > **读这份就够恢复了。** 不要一上来整读 `js/` 下的文件（最大的有 2000 行）。
 > 需要细节时按「第四节 常用定位表」走：`grep -n` 定位 → `Read offset/limit` 局部读。
@@ -20,7 +26,7 @@
 | **试玩链接（正式·主入口）** | `https://bagrogue-shooter-85672.app.workbuddy.host/`（WorkBuddy 托管站 · 国内手机优先）|
 | ⚠️ 已冻结域名 | `bagrogue-shooter.app.workbuddy.host` / `ae6c0d4fb9b5c352d.app.workbuddy.host`（**别再写**）|
 | 试玩链接（备用·自动最新） | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/`（Pages · push 即生效）|
-| 门禁 | `bash run_tests.sh`（全量 **93 套 / 4083 断言**）· `bash run_tests.sh --quick` |
+| 门禁 | `bash run_tests.sh`（当前实测 **94 套 / PASS4111 / bad=0**；旧93套/4083仅为历史基线）· `bash run_tests.sh --quick` |
 | 交付 | 每轮：门禁全绿 → commit → push → **重新发布托管站** → 给的试玩链接 |
 
 > ⚠️ **托管站是独立部署，不会自动跟随 GitHub**。用户以它为主入口 → 每轮改完 **必须重新发布**，否则手机上玩到的是旧版（此坑已踩过一次）。
@@ -156,3 +162,4 @@ bash run_tests.sh --list           # 列出套件
 | 旧截图 | `/workspace/*.png` + `/workspace/archive/` |
 | 旧轮次 dev_guide | `G_docs/archive/` |
 | 重构前快照 | `/workspace/archive/js_pre_refactor_21_16/` |
+

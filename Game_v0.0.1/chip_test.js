@@ -313,7 +313,7 @@ const driver = `
     G.inArtisan = false;
   }
 
-  /* ============ 十四、断言 17：calcSettleConvert 不含遗迹秘宝 ============ */
+  /* ============ 十四、断言 17：calcSettleConvert 含遗迹秘宝折算（20.10 修订·秘宝撤离折算） ============ */
   {
     Game.startRun([CFG.heroes[0]]);
     Game.skipIntroFreeze();
@@ -324,7 +324,11 @@ const driver = `
     const chip = makeChip("C_V_DMG", 3);
     r.chipInv.place(chip, 0, 0);
     const after = calcSettleConvert(r);
-    check("17. chipInv 内遗迹秘宝不产生折算价值（total 不变）", after.total === base.total);
+    // 20.10 裁决：遗迹秘宝随撤离折算（carryOut=true）；
+    // 单枚价值 = CFG.chips.valueByQuality[q] × lv，× valueRate 计入 chip 桶（chip.value 是词条强度，非货币值）。
+    const expect = Math.floor((CFG.chips.valueByQuality[chip.q] || 0) * (chip.lv || 1) * CFG.settleConvert.valueRate);
+    check("17. chipInv 内遗迹秘宝产生折算价值（chip 桶=" + after.chip + "，total 相应增大）",
+      after.chip === expect && expect > 0 && after.total === base.total + after.chip);
   }
 
   /* ============ 十五、断言 18：死亡惩罚不含遗迹秘宝（遗迹秘宝数两场景一致） ============ */

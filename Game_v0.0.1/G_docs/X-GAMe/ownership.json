@@ -1,0 +1,48 @@
+{
+  "status": "dispatched-batch2",
+  "note": "批次2：从 integrator 冻结区**转交**下列共享文件给单一写入者；同一文件全程只有一个写入者。整合人保留其余文件与最终集成权。",
+  "integrator": [
+    "js/core.js",
+    "index.html",
+    "css/style.css",
+    "js/items.js",
+    "run_tests.sh",
+    "js/assets_manifest.js",
+    "js/skill-events.js"
+  ],
+  "agents": {
+    "E-economy-chip": [
+      "js/config.js",
+      "js/modes.js",
+      "xgame_chip_fold_test.js"
+    ],
+    "B-boss-crystal": [
+      "js/combat.js",
+      "js/game.js",
+      "js/main.js",
+      "xgame_boss_crystal_test.js"
+    ],
+    "S-skill-save": [
+      "js/skill-save.js",
+      "xgame_skill_save_wire_test.js"
+    ],
+    "A-save": [
+      "xgame_save_integration_test.js"
+    ],
+    "B-assets": [
+      "xgame_assets_consumption_test.js"
+    ],
+    "C-events": [
+      "xgame_event_limits_test.js"
+    ],
+    "D-economy": [
+      "xgame_economy_flow_test.js"
+    ]
+  },
+  "frozen_batch2": {
+    "E-economy-chip": "js/config.js, js/modes.js",
+    "B-boss-crystal": "js/combat.js, js/game.js, js/main.js",
+    "S-skill-save": "js/skill-save.js",
+    "integrator_serial": "index.html, css/style.css, run_tests.sh, js/items.js, js/core.js"
+  }
+}

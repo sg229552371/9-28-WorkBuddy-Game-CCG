@@ -1,0 +1,47 @@
+# 07 测试、发布、差异路线与审查
+
+## 目的
+把“代码存在”“测试通过”“真机可玩”“可发布”分开记录，提供可复现的质量门禁。本文档任务只覆盖文档审查，不执行提交、推送或部署。
+
+## 门禁口径
+每套件必须 `exit=0` 且 `bad=0`；`bad`检查 `Assertion failed|FAIL|Error`。`console.assert`失败可能不改变退出码，不能只看退出码。PASS文案不能出现英文`error`或`FAIL`子串。当前 `run_tests.sh`实际五组、94套、skill18；历史AGENTS/README中93套/4083和skill14/17均是过时基线。
+
+已保留证据：
+- 首次红测：`evidence/sh-12-failure.log`，原始摘要为 `skill_enable_runtime_test`⑥旧路径“10秒内 kills ≥ 1”失败，exit=1、PASS4110、bad=1。根因尚未诊断。
+- `full-tests.log`、`full-tests-r2.log`、`verified-run.log`三份绿证据：94项、PASS4111、bad=0。`full-tests.log`是全绿，不能称为红测。
+- `full-tests.exit`原文件为异常文本`0n`，`full-tests-r2.exit`和`verified-run.exit`为有效`0\n`。不覆写原证据。
+
+“绿”只表示对应脚本/环境的门禁结果，不证明真机链路、资源加载、存档刷新、全部模式和发布站已验收。真机脚本 `render_opt_check.py`、`stress_check.py`、`endless_e2e_check.py`、`quality_ui_check.py`本轮未执行。
+
+## 可执行质量流程
+```powershell
+# 只读快速门禁
+bash run_tests.sh --quick
+# 按变更选择套件
+bash run_tests.sh --suite=skill
+bash run_tests.sh --suite=ui
+# 副本一致性检查；失败时只记录，不执行reset
+bash verify_clone.sh
+```
+适用测试要从实际变更文件反查，不因名称相似而扩大或缩小范围。适用单测的标准输出、退出码、bad计数、时间和环境写入 `evidence/`；任何失败保留原件并写诊断，不用下一次绿测覆盖。
+
+## 发布限制
+本轮不执行`push.sh`、commit、push、托管站发布。未来发布必须先完成文档/全量门禁/真机验收，经用户批准后串行提交并重新发布独立托管站；GitHub Pages和正式托管站不是同一自动部署链。发布后要重新取版本与运行指纹。
+
+## 差异登记
+| 主题 | 批准/实现事实 | 当前差异 | 下一步 |
+|---|---|---|---|
+| 技能启用 | H001已启用，其他英雄旧路径 | 旧路红测尚未诊断 | 保留断言，先复现定位 |
+| 事件深度 | 全局预算2与策略约束同时成立 | 配置出现3，文案易混淆 | 明确表格/测试期望 |
+| castTime | CFG生成与校验存在 | 未发现调度消费证据 | 调用链核验后提案 |
+| 存档 | SkillSave序列化/迁移存在 | 未发现宿主实际调用 | 只读搜索真实接线 |
+| 资源 | manifest与AssetHooks存在 | index未加载manifest，消费未闭合 | 先做加载链证据 |
+| 相机 | portraitViewH已在main消费 | zoom边界仅配置占位 | 仅提案，不宣称bug |
+| 卡牌 | §19.7已退役，兼容字段仍在 | 旧UI提示/消费残留 | 清理需单独批准 |
+| 经济 | Boss+撤离折算双来源已批准 | §19.8文字有“所有物品/不折算秘宝”冲突；奖励触发时点需核对 | 登记文字与实现时点 |
+
+## 路线
+A：冻结规则和证据；B：补真实UI/存档/资源/模式端到端；C：只修经批准的差异并更新测试；D：在稳定后再评估性能与引擎迁移。联网、商业化、全面重做和新技能批次都只是提案。
+
+## 本轮限制
+本轮未改运行代码、未改CFG、未提交/推送/部署；未把待核验项称作bug，未把“武器升级先扣费”列为免费bug。完整哈希对比、适用quick和verify_clone在文档写入后执行并记录实际结果；若工具退出异常，以原始日志说明。

@@ -1150,7 +1150,7 @@ Object.assign(UI, {
   showDeath(penalty, crystals = 0) {
     const r = G.run;
     document.getElementById("death-stats").innerHTML =
-      `<span>击杀 <b>${r.kills}</b></span><span>等级 <b>LV ${r.lv}</b></span><span>损失价值 <b>${Math.round(penalty.lostValue)}</b> / ${Math.round(penalty.totalValue + penalty.lostValue)}</span><span>◆ 结晶 <b>+${crystals}</b>（死亡保留30%）</span><span>保险契约 <b>${penalty.contractsUsed || 0}</b> 份已生效（保护 ${(penalty.kept || []).filter(i => i.byInsurance).length} 件）</span>` +
+      `<span>击杀 <b>${r.kills}</b></span><span>等级 <b>LV ${r.lv}</b></span><span>损失价值 <b>${Math.round(penalty.lostValue)}</b> / ${Math.round(penalty.totalValue + penalty.lostValue)}</span><span>◆ 结晶 <b>+${crystals}</b>（首领结晶已于击败时即时到账）</span><span>保险契约 <b>${penalty.contractsUsed || 0}</b> 份已生效（保护 ${(penalty.kept || []).filter(i => i.byInsurance).length} 件）</span>` +
       this._crystalReportLine() +
       `<span style="flex-basis:100%">${this._statsLine(r)}</span>`;
     document.getElementById("death-lost").innerHTML = penalty.lost.length

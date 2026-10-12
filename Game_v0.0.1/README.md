@@ -1,3 +1,5 @@
+> 开发参考入口：[X-GAMe](G_docs/X-GAMe/README.md)。批准规则不变；当前副本`F:/AI-Game/Game_v0.0.1`，Git根在父目录。下列旧环境路径为历史记录，当前证据见书内审查报告。
+
 # WorkBuddy 弹幕射击 Roguelike × 背包肉鸽 × 轻度搜打撤
 
 16:9 横版 · 纯静态 HTML5 Canvas（ES5/ES6 全局脚本，无构建步骤、无依赖）· 竖屏优先适配。
@@ -25,9 +27,9 @@ python3 -m http.server 8123
 │   ├── hero/           # hero_00 ~ hero_12（13 张）
 │   └── enemies/        # enemy_00 ~ enemy_22（23 张）
 ├── G_docs/             # 设计文档（随仓库携带的「随身上下文」）
-│   ├── dev_guide.md    # 开发指南：铁律、已踩的坑、测试基线 ← 新会话先读这份
+│   ├── dev_guide.md    # 机制历史参考；新会话先读AGENTS与X-GAMe项目书
 │   └── game_design_proposal.md   # 游戏设计提案（规则与数值）
-├── *_test.js           # 测试文件 93 个（门禁全部编排 93 套，见 tests/README.md 分类索引）
+├── *_test.js           # 测试文件 94 个（本轮门禁编排 94 套，见 tests/README.md 分类索引）
 ├── run_tests.sh        # 全量测试运行器（判绿 = 每项 exit=0 且 bad=0）
 └── push.sh             # 测试全绿才提交并推送 GitHub
 ```
@@ -35,7 +37,7 @@ python3 -m http.server 8123
 ## 测试
 
 ```bash
-bash run_tests.sh          # 全量：93 套，4083 条断言（5 套件并发，约 2.5 分钟）
+bash run_tests.sh          # 全量：94 套，PASS 4111（5 套件并发，约 2.5 分钟）
 node smoke_test.js         # 单个测试
 ```
 
@@ -65,8 +67,8 @@ node smoke_test.js         # 单个测试
 |---|---|
 | **正式试玩链接（主入口）** | `https://bagrogue-shooter-85672.app.workbuddy.host/`（push 后需重新发布 + 指纹复验）|
 | 备用试玩链接（自动最新） | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` |
-| GitHub 仓库（唯一真源） | `https://github.com/sg229552371/9-28-WorkBuddy-Game-CCG`（**公开**；clone 无需登录，push 需令牌）|
-| PC 本地工作区 | `D:/AI-game-All/HTML_TEST_002` |
+| GitHub 仓库（唯一真源） | `https://github.com/sg229552371/9-28-WorkBuddy-Game-CCG`（私有；访问需要相应权限）|
+| 本轮文档副本 | `F:/AI-Game/Game_v0.0.1`（父Git根F:/AI-Game） |
 | 云端沙箱工作区 | `/workspace/9-28-WorkBuddy-Game-CCG` |
 | 本地预览 | `python3 -m http.server 8123` → <http://127.0.0.1:8123/index.html> |
 
@@ -86,3 +88,4 @@ node smoke_test.js         # 单个测试
 仓库内文本文件**一律 LF**（由 `.gitattributes` 强制）。
 部分测试用 `"\n"` 精确匹配多行代码块，CRLF 会导致门禁在 Windows 上误红。
 Windows 本地请保持 `git config core.autocrlf false`。
+

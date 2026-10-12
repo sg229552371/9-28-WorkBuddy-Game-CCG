@@ -19,6 +19,11 @@
 
 set -u
 
+# --- 测试文件统一存放于 tests/ 子目录（根目录只留入口与运行脚本）---
+# 本脚本可被从任意目录调用：先切到脚本所在目录（= 仓库子目录根），保证相对路径一致。
+cd "$(dirname "$0")" || { echo "无法进入脚本所在目录" >&2; exit 2; }
+TESTS_DIR="tests"
+
 # --- 套件分组（组内顺序 = 原 TESTS 顺序；26.x 新增 battle_rules_test / altar_timeline_test）---
 # 2026-10-09 新增 boss_ux_test（Boss 体验四件套：贴图区分 / 吞噬反馈 / 招式名横幅 / 转阶段宝箱）。
 # 26.x 新增 hero_kit_test（12 角重做四件套：属性说明 / 近战引擎 / 特色技能零重复 / scaleBy 属性成长 / 辅助三件套）。
@@ -141,14 +146,15 @@ echo "----------------------------------------"
 # --- 单个测试：跑一次、算 bad/pass、写结果文件 ---
 run_one() {
   t="$1"
-  if [ ! -f "$t.js" ]; then
+  f="$TESTS_DIR/$t.js"
+  if [ ! -f "$f" ]; then
     printf "MISSING\n"        > "$WORK/$t.code"
     printf "0\n"              > "$WORK/$t.pass"
     printf "1\n"              > "$WORK/$t.bad"
     : > "$WORK/$t.out"
     return
   fi
-  out="$("$NODE" "$t.js" 2>&1)"
+  out="$("$NODE" "$f" 2>&1)"
   code=$?
   n=$(printf '%s\n' "$out" | grep -ci "Assertion failed\|FAIL\|Error")
   p=$(printf '%s\n' "$out" | grep -c "^PASS ")

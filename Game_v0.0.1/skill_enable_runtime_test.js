@@ -234,7 +234,13 @@ ev(`
     UI._crystalCache = {};
     Game.startRun([CFG.heroes[0]]); Game.skipIntroFreeze(); G.run.hp = 100000;
     const w = G.mainWorld;
-    let t = 0; Game.loop(t); G.keys["d"] = true;
+    /* ⚠️ 时钟必须单调（2026-10-12 修复）：
+     *   ④ 已把 Game.lastT 推到 ~10020；若此处再把 t 重置为 0，则 js/main.js 的
+     *   (t - lastT)/1000 得到负步长（首帧 dt ≈ -10.02），把玩家的施放计时器甩到窗口末尾，
+     *   使本断言以约 12% 概率假红（与产品逻辑无关，纯喂钟缺陷）。
+     *   改为从 Game.lastT 续帧 —— 与线上 rAF 单调时间戳一致。 */
+    let t = (typeof Game.lastT === "number" && isFinite(Game.lastT)) ? Game.lastT : 0;
+    Game.loop(t); G.keys["d"] = true;
     for (let i = 0; i < 600; i++) { t += 16.7; global.__raf(t); }
     G.keys["d"] = false;
     return { ownsNow: ownsNow, crystal: UI._crystalModeOf({ id: "H001", rt: G.player }), kills: G.run.kills };

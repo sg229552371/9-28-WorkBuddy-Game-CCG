@@ -3,7 +3,7 @@
 #  克隆一致性校验（AI-Game / 弹幕背包搜打撤）
 #  用法：在仓库根目录执行   bash verify_clone.sh
 #  作用：核对当前工作区是否 == 指定快照
-#        （2026-10-12 改名 + 技能等级接线 + W2/W3/W4 接口接线 + 22.8 扩容启用 + 22.9 接线热修 · APP_VERSION 20261046 · 94 套 / 4111）
+#        （2026-10-12 文件瘦身：根目录 123→7 / 测试入 tests/ / 脚本入 tools/ / js 34→32 · APP_VERSION 20261047 · 94 套 / 4110）
 #
 #  原理：比对的是 **git 对象哈希**（git rev-parse HEAD:<file>），
 #        只看仓库内容，不受 core.autocrlf / 编辑器换行设置影响，
@@ -31,7 +31,7 @@ if [ -n "$REPO_ROOT" ]; then
   esac
 fi
 
-EXPECT_VERSION="20261046"
+EXPECT_VERSION="20261047"
 
 # 核心文件 → 期望的 git blob 哈希（该快照的权威指纹；23 个）
 EXPECT_FILES="

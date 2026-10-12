@@ -30,7 +30,8 @@ chip_test chip_behavior_test levelup_test exp_test grant_test freeze_test \
 team_trigger_test content_test level_content_test level_tuning_test meta_growth_test \
 out_level_flow_test settle_crystal_test boot_guard_test cache_version_test perf_asset_test \
 asset_timeout_test \
-battle_rules_test"
+battle_rules_test \
+xgame_chip_fold_test xgame_boss_crystal_test"
 
 UI="ui_flow_test ui_v2_test ui_layout_test ui_global_test unlock_ui_test \
 mobile_test mobile_ctrl_test mobile_polish_test artisan_test artisan_layout_test \
@@ -51,7 +52,8 @@ PERF="perf_test perf_guard_test quality_tier_test render_opt_test spatial_test p
 SKILL="skill_config_test skill_compiler_test skill_damage_test skill_events_test \
 skill_scheduler_test skill_runtime_test skill_reward_test skill_presenter_test skill_save_test \
 skill_sweep_test skill_integration_test skill_fps_test skill_playtest_test skill_rule_binding_test \
-skill_level_binding_test crystal_ui_test crystal_expansion_test skill_enable_runtime_test"
+skill_level_binding_test crystal_ui_test crystal_expansion_test skill_enable_runtime_test \
+xgame_redtest_clock_test xgame_skill_save_wire_test"
 
 SUITES="core ui feature perf skill"
 

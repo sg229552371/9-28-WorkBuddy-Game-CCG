@@ -196,12 +196,27 @@ const SkillSave = {
     const payload = state ? this.serialize(state) : this._lastSerialized;
     if (!payload) return false;
     meta.data.skillSystem = payload;   // 只写这一个子对象
-    return true;
+    return this._persist(meta);        // 单行挂点：写入后触发宿主持久化（实现见下方独立区块）
   },
   loadFrom(meta) {
     if (typeof Meta === "undefined" || !meta || !meta.data) return null;
     const s = meta.data.skillSystem;
     return s != null ? this._deep(s) : null;
+  },
+
+  /* ============================================================
+   * 宿主持久化触发（W4b 接线 · 文件末尾独立区块）
+   * 语义：saveTo 把装配写入 meta.data.skillSystem 后调用本方法落盘。
+   *   - meta 提供 commit（= 宿主 Meta）→ 立即调用，把 SAVE_KEY 存档写盘；
+   *   - 无 commit 的桩环境（无头/无宿主）→ 仅内存写入，容错不抛；
+   *   - commit 抛异常 → 吞掉并返回 false（明确布尔），内存写入已发生不回滚。
+   * 边界：不改 SAVE_KEY、不改 Meta 其它字段、不发明新的 save/asset 接口。
+   * ============================================================ */
+  _persist(meta) {
+    if (meta && typeof meta.commit === "function") {
+      try { meta.commit(); } catch (e) { return false; }
+    }
+    return true;
   },
 };
 

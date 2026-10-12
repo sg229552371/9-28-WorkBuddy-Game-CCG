@@ -1,0 +1,19 @@
+{
+  "checkedAt": "2026-10-12T17:14:30.096808+08:00",
+  "results": [
+    {
+      "original": "C:\\Users\\jinyishun\\AppData\\Local\\Temp\\lobehub\\shell\\2026-10-12\\31268\\sh-12\\stdout.log",
+      "copy": "sh-12-failure.log",
+      "sourceHash": "0d94f271b8cb7c6fd5c2a8e6f76c557fc5c22bf018f15cc2ea4b7807fb559f4d",
+      "copyHash": "0d94f271b8cb7c6fd5c2a8e6f76c557fc5c22bf018f15cc2ea4b7807fb559f4d",
+      "matches": true
+    },
+    {
+      "original": "C:\\Users\\jinyishun\\AppData\\Local\\Temp\\lobehub\\shell\\2026-10-12\\31268\\sh-12\\stderr.log",
+      "copy": "sh-12-stderr.log",
+      "sourceHash": "3b3bb0e26a8ed84cc061107dcbd8fe050bd0c551afc94478665a674375c5a8ae",
+      "copyHash": "3b3bb0e26a8ed84cc061107dcbd8fe050bd0c551afc94478665a674375c5a8ae",
+      "matches": true
+    }
+  ]
+}

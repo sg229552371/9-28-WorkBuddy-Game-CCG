@@ -20,7 +20,7 @@
 | **试玩链接（正式·主入口）** | `https://bagrogue-shooter-85672.app.workbuddy.host/`（WorkBuddy 托管站 · 国内手机优先）|
 | ⚠️ 已冻结域名 | `bagrogue-shooter.app.workbuddy.host` / `ae6c0d4fb9b5c352d.app.workbuddy.host`（**别再写**）|
 | 试玩链接（备用·自动最新） | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/`（Pages · push 即生效）|
-| 门禁 | `bash run_tests.sh`（全量 **93 套 / 4083 断言**）· `bash run_tests.sh --quick` |
+| 门禁 | `bash run_tests.sh`（全量 **94 套 / 4110 断言**）· `bash run_tests.sh --quick` |
 | 交付 | 每轮：门禁全绿 → commit → push → **重新发布托管站** → 给的试玩链接 |
 
 > ⚠️ **托管站是独立部署，不会自动跟随 GitHub**。用户以它为主入口 → 每轮改完 **必须重新发布**，否则手机上玩到的是旧版（此坑已踩过一次）。
@@ -32,21 +32,25 @@
 3. **多代理并行时文件所有权切分**：每代理独占文件集，禁跨文件改
 4. **门禁口径**：每项 `exit=0 且 bad=0`；**PASS 文案绝不能含英文 "error"**（用中文「错误」）
 5. **CSS 改动必须三处同步**：主规则 / `@media (orientation: portrait)` / `body.portrait`
-6. **改任何 js 脚本后要 bump 版本号**：`index.html` 里 10 处 `?v=YYYYMMDD` + `<meta name="app-version">`
+6. **改任何 js 脚本后要 bump 版本号**：`index.html` 里 **32 处** `?v=YYYYMMDD`（31 个 js + 1 个 css）+ `<meta name="app-version">` + `js/core.js` 的 `Assets.buildVersion`
 
 ---
 
-## 二、文件地图（`js/` 34 个文件）
+## 二、文件地图（`js/` 32 个文件）
 
-加载顺序 = 下表从上到下（**index.html 里的脚本序，改动前务必对齐**，`index.html` 共挂 33 个 `<script src="js/...">`）。
-`js/skill-*.js`（17~26）为 **22.x 能量水晶技能系统**，必须在 `js/main.js`（27）**之前**加载。
+加载顺序 = 下表从上到下（**index.html 里的脚本序，改动前务必对齐**，`index.html` 共挂 31 个 `<script src="js/...">`）。
+`js/skill-*.js`（16~25）为 **22.x 能量水晶技能系统**，必须在 `js/main.js`（26）**之前**加载。
+
+> 🗂 **2026-10-12 文件瘦身**：根目录 94 个 `*_test.js` → `tests/`、22 个 `*.py` → `tools/`（**运行命令不变**，`bash run_tests.sh` 已内置 `cd` 到脚本目录）；
+> `js/hud_endless.js` 并入 `js/endless.js` 末尾区块、`js/ui-abyss-pause.js` 并入 `js/ui-abyss.js` 末尾区块（**代码逐字保留**）。
+> 结果：根目录 123 → 7 个文件，`js/` 34 → 32。版本串 `20261046 → 20261047`。
 
 > 🔑 **开发规范 + 并行开发手册 = `G_docs/dev_standard_and_playbook.md`**（技术约定 / 铁律 / 门禁 / 交付流程 / **多线程并行六步法**）。
 > 动手改代码或拆并行任务**先读它**。
 > 🔑 **技能系统总纲 = `G_docs/skill_system_master_v1.md`**（文档权威层级 / 核心规则 / 代码落点 / 进度 / 缺口）。
 > 做技能系统相关开发**先读它**；不确定的规则/字段一律回查真源，**别凭记忆联想**。
 > 📌 **玩法规则唯一蓝图 = `G_docs/game_design_proposal.md`**；**当前唯一技能方向 = 其第二十章「能量水晶技能系统」**（旧章节均已标注取代）。
-> 下表为**主链路** 27 个；另有 7 个未列表：`endless-affix.js` / `endless-arena.js` / `endless-record.js` / `endless-team.js` / `ui-abyss.js` / `ui-abyss-pause.js` / `assets_manifest.js`。
+> 下表为**主链路** 26 个；另有 6 个未列表：`endless-affix.js` / `endless-arena.js` / `endless-record.js` / `endless-team.js` / `ui-abyss.js` / `assets_manifest.js`。
 > ⚠️ 表中「行数」为**近似值**，会随版本变化；以 `wc -l` 实测为准。
 
 | # | 文件 | 行数 | 职责 | 关键符号 |
@@ -60,24 +64,25 @@
 | 7 | `modes.js` | 993 | 关卡机制 / 毒圈 / 撤离 / 赛季 / 深渊门 | `updateExtractJudge`、`enterEndless` |
 | 8 | `render.js` | 771 | 渲染全部 | `render`、`renderCity`、`renderHazard` |
 | 9 | `stress.js` | 356 | 性能压测场景（`?stress=` 直达）| `StressHarness` |
-| 10 | `endless.js` | 289 | **无尽模式核心**（波次/刷怪/难度曲线）| `Endless` |
-| 11 | `hud_endless.js` | 125 | 无尽 HUD（左上角三项）| `renderEndlessHud` |
-| 12 | `ui.js` | 1008 | UI 基础（屏幕切换/HUD/选人/首页）| `UI`（`const UI = {...}`）|
-| 13 | `ui-screens.js` | 1164 | UI 屏幕层（主城/工匠/图鉴/背包/结算）| `Object.assign(UI, {...})` |
-| 14 | `ui-panels.js` | 464 | UI 面板（TIPS/立绘/赛季/无尽面板）| 挂 `UI.*` |
-| 15 | `quality.js` | 306 | 画质三档 + 自动降档 + 性能护栏 | `PerfGuard`、`_defaultQuality` |
-| 16 | `rewards.js` | 311 | 无尽奖励 / 结算包装（monkey-patch）| `EndlessReward` |
-| 17 | `skill-config.js` | 870 | 技能配置校验器（21 原因码 / 冻结 / 策略解析）| `SkillConfig` |
-| 18 | `skill-compiler.js` | 959 | 辅助编译器（6 阶段 / 4 执行器 / 合并全序 / 图校验 / 技能安装预览）| `SupportCompiler` |
-| 19 | `skill-damage.js` | 381 | 伤害公式 + 五类命中额度 + 区域积分 | `SkillDamage` |
-| 20 | `skill-events.js` | 323 | 事件队列（FIFO / 深度·预算护栏 / 去重）| `SkillEvents` |
-| 21 | `skill-scheduler.js` | 234 | 每技能独立冷却 / 索敌（`maxRange`）/ 无目标施放（`requiresTarget`）/ 施放快照 | `SkillScheduler` |
-| 22 | `skill-runtime.js` | 828 | 运行时九段单步 / 扫掠碰撞 / 派生 / 回收 | `SkillRuntime` |
-| 23 | `skill-reward.js` | 412 | 奖励事务（合并池 / 升级 / 满槽 / 兜底）| `SkillReward` |
-| 24 | `skill-presenter.js` | 294 | 面板矩阵 / 详情文案 / 原因码中文化 | `SkillPresenter` |
-| 25 | `skill-save.js` | 212 | 存档序列化 / 迁移报告 / 幂等补偿 | `SkillSave` |
-| 26 | `skill-playtest.js` | 454 | **技能系统试玩通电**（`?skill=` 才生效：开关+懒注入初始技能+雕像授予稀有技能+可视化叠加）| `SkillPlaytest` |
-| 27 | `main.js` | 1292 | **宿主 Game** / 主循环 / 输入 / 启动 | `Game`、`loop`、`boot` |
+| 10 | `endless.js` | 1103 | **无尽模式核心**（波次/刷怪/难度曲线）；**末尾区块已并入** | `Endless`、`renderEndlessHud` |
+| 11 | `ui.js` | 1008 | UI 基础（屏幕切换/HUD/选人/首页）| `UI`（`const UI = {...}`）|
+| 12 | `ui-screens.js` | 1164 | UI 屏幕层（主城/工匠/图鉴/背包/结算）| `Object.assign(UI, {...})` |
+| 13 | `ui-panels.js` | 464 | UI 面板（TIPS/立绘/赛季/无尽面板）| 挂 `UI.*` |
+| 14 | `quality.js` | 306 | 画质三档 + 自动降档 + 性能护栏 | `PerfGuard`、`_defaultQuality` |
+| 15 | `rewards.js` | 311 | 无尽奖励 / 结算包装（monkey-patch）| `EndlessReward` |
+| 16 | `skill-config.js` | 870 | 技能配置校验器（21 原因码 / 冻结 / 策略解析）| `SkillConfig` |
+| 17 | `skill-compiler.js` | 959 | 辅助编译器（6 阶段 / 4 执行器 / 合并全序 / 图校验 / 技能安装预览）| `SupportCompiler` |
+| 18 | `skill-damage.js` | 381 | 伤害公式 + 五类命中额度 + 区域积分 | `SkillDamage` |
+| 19 | `skill-events.js` | 323 | 事件队列（FIFO / 深度·预算护栏 / 去重）| `SkillEvents` |
+| 20 | `skill-scheduler.js` | 234 | 每技能独立冷却 / 索敌（`maxRange`）/ 无目标施放（`requiresTarget`）/ 施放快照 | `SkillScheduler` |
+| 21 | `skill-runtime.js` | 828 | 运行时九段单步 / 扫掠碰撞 / 派生 / 回收 | `SkillRuntime` |
+| 22 | `skill-reward.js` | 412 | 奖励事务（合并池 / 升级 / 满槽 / 兜底）| `SkillReward` |
+| 23 | `skill-presenter.js` | 294 | 面板矩阵 / 详情文案 / 原因码中文化 | `SkillPresenter` |
+| 24 | `skill-save.js` | 212 | 存档序列化 / 迁移报告 / 幂等补偿 | `SkillSave` |
+| 25 | `skill-playtest.js` | 454 | **技能系统试玩通电**（`?skill=` 才生效：开关+懒注入初始技能+雕像授予稀有技能+可视化叠加）| `SkillPlaytest` |
+| 26 | `main.js` | 1292 | **宿主 Game** / 主循环 / 输入 / 启动 | `Game`、`loop`、`boot` |
+
+> 第 10 行「末尾区块已并入」= 原 `js/hud_endless.js`（21.15 🅒 无尽 HUD，全局函数 `renderEndlessHud`）；另 `js/ui-abyss.js` 末尾并入原 `js/ui-abyss-pause.js`（21.19 W5 暂停菜单）。
 
 > ⚠️ `ui.js` 的 `const UI` 只能定义一次；`ui-screens.js`/`ui-panels.js` 用 `Object.assign(UI, ...)` 挂载 → **必须后加载**。
 
@@ -95,7 +100,7 @@
 | 毒圈 / 撤离 / 补给 | `modes.js` | `hazard`、`extract`、`supply` |
 | 渲染 / 性能 / 剔除 | `render.js` | `render`、`cullMargin` |
 | 无尽模式玩法 | `endless.js` | `Endless.` |
-| 无尽 HUD 显示 | `hud_endless.js` | `renderEndlessHud` |
+| 无尽 HUD 显示 | `endless.js`（末尾 HUD 区块，原 `hud_endless.js`）| `renderEndlessHud` |
 | 界面布局 / 面板 | `ui.js`、`ui-screens.js` | `UI.renderXxx` |
 | 画质 / 自动降档 | `quality.js` | `qualityLevel`、`_autoDowngrade` |
 | 结算 / 奖励 / 结晶 | `rewards.js`、`modes.js` | `EndlessReward`、`publishCrystalReport` |
@@ -113,8 +118,8 @@
 # 日常开发（快）
 bash run_tests.sh --quick          # 3.4s，core + 冒烟
 # 交付前（必须全绿）
-bash run_tests.sh                  # 全量，93 套 / 4083 断言（含 skill 套件 17 个）
-bash run_tests.sh --suite=skill    # SKILL 套件单跑（14 个）
+bash run_tests.sh                  # 全量，94 套 / 4110 断言（含 skill 套件 18 个）
+bash run_tests.sh --suite=skill    # SKILL 套件单跑（18 个）
 bash run_tests.sh --suite=ui       # 单套件
 bash run_tests.sh --list           # 列出套件
 ```
@@ -122,12 +127,12 @@ bash run_tests.sh --list           # 列出套件
 **判绿标准**：每项 `exit=0` 且 `bad=0`，汇总行 `PASS 合计 = N   bad = 0 / 全绿`。
 `bad` = `grep -ci "Assertion failed\|FAIL\|Error"`。
 
-**真机验收脚本**（Playwright，需先起 `python3 -m http.server 8123`）：
-`render_opt_check.py`（渲染帧耗）· `stress_check.py`（压测三档）· `endless_e2e_check.py`（无尽全链）· `quality_ui_check.py`（画质设置页）
+**真机验收脚本**（Playwright，需先起 `python3 -m http.server 8123`，脚本在 `tools/`）：
+`tools/render_opt_check.py`（渲染帧耗）· `tools/stress_check.py`（压测三档）· `tools/endless_e2e_check.py`（无尽全链）· `tools/quality_ui_check.py`（画质设置页）
 
 ---
 
-## 五、血泪坑（详情看 `G_docs/dev_guide.md` 第 10.3 节，共 31 条）
+## 五、血泪坑（详情看 `G_docs/dev_guide.md` 第 10.3 节，共 40 条）
 
 最常踩的 6 条：
 - **坑 4**：PASS 文案含英文 "error" 会让门禁误判失败

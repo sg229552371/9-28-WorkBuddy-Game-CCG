@@ -1,16 +1,20 @@
 # 测试索引
 
-全部测试平铺在仓库根目录（未移入子目录，避免破坏测试内的相对路径引用）。
+**全部测试平铺在本目录 `tests/`**（2026-10-12 从仓库根移入；运行命令不变）。
 运行方式：
 
 ```bash
-bash run_tests.sh        # 全量 93 套（推荐）
-node <name>_test.js      # 单项
+bash run_tests.sh          # 全量 94 套（推荐）
+node tests/<name>_test.js  # 单项（需在仓库子目录根执行）
 ```
 
-> 根目录现有 **93 个 `_test.js`**，门禁**全部编排（93 套）**，口径统一、无差集
-> （CORE 24 + UI 18 + FEATURE 27 + PERF 7 + SKILL 17）。
-> 🔑 **技能系统 16 套**（`skill_*`）的总纲索引见 `G_docs/skill_system_master_v1.md`。
+> 目录内现有 **94 个 `_test.js`**，门禁**全部编排（94 套）**，口径统一、无差集。
+> 🔑 **技能系统 18 套**（`skill_*` 等）的总纲索引见 `G_docs/skill_system_master_v1.md`。
+>
+> 🗂 **2026-10-12 瘦身**：测试从仓库根移入本目录。为不破坏测试内的相对路径，
+> 所有 `path.join(__dirname, "js", ...)` 已改写为 `path.join(__dirname, "..", "js", ...)`；
+> `run_tests.sh` 已内置 `cd "$(dirname "$0")"` 并改跑 `tests/<name>_test.js`，
+> 从任意目录调用都正常。**新增测试请放进本目录，并在 `run_tests.sh` 里写裸文件名。**
 >
 > 历史注记（2026-10-09 已纠正）：21.20「层级退役」曾把 `endless_affix_test` /
 > `endless_arena_test` / `endless_record_test` / `endless_team_test` 连同真正已下线的
@@ -102,8 +106,8 @@ node <name>_test.js      # 单项
 
 ## 新增测试的流程
 
-1. 在根目录建 `<name>_test.js`（参考现有文件的 `vm` 沙箱写法）。
-2. 输出格式：每行 `PASS xxx` / `FAIL xxx`，末尾打印 `PASS 合计 = N   失败数 = M`，
+1. 在**本目录（`tests/`）**建 `<name>_test.js`（参考现有文件的 `vm` 沙箱写法）。
+2. 输出格式：每行 `PASS xxx` / `失败 xxx`，末尾打印 `PASS 合计 = N   失败数 = M`，
    且 `M > 0` 时 `throw` 让进程非零退出。
-3. **手动把文件名加入 `run_tests.sh` 的 `TESTS` 变量**（不带 `.js` 后缀）。
+3. **手动把裸文件名（不带 `.js`）加入 `run_tests.sh` 对应套件变量**（`CORE` / `UI` / `FEATURE` / `PERF` / `SKILL`）。
 4. 跑 `bash run_tests.sh` 确认全绿。

@@ -479,7 +479,11 @@ const Game = {
       const conv = calcSettleConvert(G.run);
       if (conv.total > 0) { Meta.data.crystals += conv.total; Meta.commit(); }
       G.run.settleConv = conv;   // 结算界面展示明细
-      const crystals = Meta.awardRun(G.run.kills, G.run.bossDefeated, true) + conv.total;
+      // 20.10 修订·「击败即发」：Boss 结晶已在击杀瞬间入账（combat.js onBossDefeated）→ awardRun 不再计 Boss（第二参恒 false）。
+      // 结算面板仍须反映本局 Boss 结晶：补回展示总额 + 重发报告（含「击杀首领」明细），保持「总数」与「明细」一致。
+      const bossGain = G.run.bossCrystalAwarded ? CFG.outLevel.crystalBoss : 0;
+      const crystals = Meta.awardRun(G.run.kills, false, true) + conv.total + bossGain;
+      if (bossGain > 0 && typeof publishCrystalReport === "function") publishCrystalReport(G.run.kills, true, true, bossGain);
       // 解锁链：撤离成功解锁下一关（死亡不解锁，搜打撤的"搜"是门票）
       const idx = CFG.levels.indexOf(G.levelCfg);
       if (idx >= 0 && idx + 1 < CFG.levels.length && Meta.data.unlockedLevels < idx + 2) {
@@ -501,7 +505,11 @@ const Game = {
       }
       // 21.15 无尽模式：死亡即结算 → 走专用结算面板（波次/击杀/结晶），不进原死亡面板
       if (G.inEndless) { showEndlessSettle(); return; }
-      const crystals = Meta.awardRun(G.run.kills, G.run.bossDefeated, false);
+      // 20.10 修订·「击败即发」：Boss 结晶已在击杀瞬间入账（combat.js onBossDefeated）→ 死亡结算不再经 awardRun 计 Boss，
+      // 且**不回扣**（字面「即发」口径）。结算面板仍须反映已到账的 Boss 结晶：补回展示总额 + 重发报告。
+      const bossGain = G.run.bossCrystalAwarded ? CFG.outLevel.crystalBoss : 0;
+      const crystals = Meta.awardRun(G.run.kills, false, false) + bossGain;
+      if (bossGain > 0 && typeof publishCrystalReport === "function") publishCrystalReport(G.run.kills, true, false, bossGain);
       SFX.play("death");
       UI.toggleArtisan(false); UI.toggleBackpack(false);
       UI.showDeath(penalty, crystals);
@@ -856,7 +864,9 @@ const Game = {
     requestAnimationFrame((tt) => this.loop(tt));
     PerfGuard.sample(t);              // 20.5 帧护栏：采样帧间隔（纯记录，异常时按冷却提示）
     _autoDowngradeTick(t);            // ② 自动降档：连续高帧耗时 → 逐档下调画质（见文件末尾独立区块）
-    const dt = Math.min(0.05, (t - this.lastT) / 1000 || 0.016);
+    // 步长双钳制（下界 0 / 上界 0.05）：线上 rAF 时间戳单调，但注入或回拨会得到负步长，
+    // 负 dt 会把施放计时器（game.js skillTimer / 冷却等）一次性甩飞 → 这里防御性钳到 0。
+    const dt = Math.min(0.05, Math.max(0, (t - this.lastT) / 1000) || 0.016);
     this.lastT = t;
     G.time += dt;
     /* 21.12 性能压测场景（?stress=N）：接管更新+渲染，正式玩法零影响（无参数时 isActive 恒 false） */

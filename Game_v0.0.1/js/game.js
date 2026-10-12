@@ -237,6 +237,16 @@ const Meta = {
     publishCrystalReport(kills, bossDefeated, extracted, v);   // 单行挂点：生成并广播本局结晶明细（方向3 产出可见化）
     return v;
   },
+  // 20.10 修订·「击败即发」：Boss 结晶改为**击败 Boss 的瞬间**立即入账（此前统一在撤离/死亡结算由 awardRun 发放）。
+  // 只负责入账 + 持久化；结算报告仍由 awardRun 在结算收口——main.js 结算时补回本局已即时入账的 Boss 结晶并重发
+  // 报告，保证结算面板「总数」与「明细」口径一致。
+  // ⚠️ 本方法**非幂等**：重复调用会重复发放；幂等由调用方一次性标记保证（combat.js onBossDefeated 用 r.bossCrystalAwarded 门控）。
+  awardBossCrystal() {
+    const v = CFG.outLevel.crystalBoss;
+    this.data.crystals += v;
+    this.commit();
+    return v;
+  },
 };
 Meta.load();
 

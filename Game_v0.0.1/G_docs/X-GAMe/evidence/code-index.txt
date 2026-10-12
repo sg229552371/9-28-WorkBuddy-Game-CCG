@@ -1,0 +1,922 @@
+
+FILE js\assets_manifest.js
+42: const AssetManifest = {
+
+FILE js\combat.js
+13: function supportPowPct(opts) {
+23: const SkillSystem = {
+29:   withScaleBy(sk, stats) {
+42:   castBullet(w, caster, sk, ang, opts = {}) {
+62:   castSummon(w, caster, sk, atk) {
+86:   castTrap(w, caster, sk, atk) {
+109:   castMelee(w, caster, sk, ang, opts = {}) {
+138:   castSupport(w, caster, sk, opts = {}, kind = "support") {
+191:   pushRunBuff(id, stat, mul, duration) {
+202:   castTaunt(w, caster, sk, opts = {}) {
+215:   cast(w, caster, sk, target, opts = {}) {
+231: function buffLabelOf(stat, mul) {
+244: const PatternSystem = {
+247:   shape(p, aimAng, spinAng) {
+302:   emit(w, m, p, aimAng, spinAng) {
+340: function autoFightMove(p, w, dt) {
+536: const MON_ATK_DEFAULT = {
+542: function monsterAttackSkill(d, lv) {
+566: const _tmpArr = [];
+568: function nearestMonster(w, x, y, exclude) {
+584: function abyssDamageHeroOf(ent) {
+596: function damageMonster(w, m, dmg, killer) {
+623: function isEliteDef(id) {
+630: function applyElite(m) {
+652: function monsterScaleMul(key) {
+658: function applyMonsterScale(m, targetName) {
+667: function monsterCap() {
+681: function parseWeightPool(str) {
+690: function explode(w, x, y, radius, dmg, side, owner) {
+711: function onMonsterKilled(w, m, killer) {
+761: function spawnPickup(w, x, y, type, value) {
+771: function createArtisanPool() {
+782: function artisanFieldCount(w) {
+788: function updateArtisanPool(w, dt) {
+844: function spawnBoss(w) {
+858: function onBossDefeated(w) {
+879: const FX = { parts: [], floats: [], partsPool: null, floatsPool: null };
+881: function fxAttachPools() {
+892: function spawnBurst(x, y, color, n = 10, radius = 20) {
+907: function spawnFloat(x, y, txt, color) {
+916: function updateFX(dt) {
+964: function laserCfg(key, dft) {
+972: function pointSegDist(px, py, x0, y0, x1, y1) {
+983: function segCircleHit(x0, y0, x1, y1, cx, cy, r) {
+989: function laserHitsTarget(laser, target) {
+997: class LaserBeam {
+1001:   constructor(w, owner, x, y, ang, opts) {
+1021:   tick(dt) {
+1034:   endPoint() {
+1038:   damageTick(w, dt) {
+1055:   devourBullets(w) {
+1073:   update(w, dt) {
+1084: function spawnLaser(w, owner, x, y, ang, opts) {
+1094: function updateLasers(w, dt) {
+1109: function bossLaserTick(w, m, dt) {
+1140: function renderLasers(ctx, w) {
+1217: const CHIP_BURN_DURATION = 3;       // burn 持续秒数（19.12.1「持续 3 秒」）
+1218: const CHIP_SPLIT_DMG_MUL = 0.5;     // split 小弹伤害倍率（⚠️ 规格未定，拍板 0.5：小弹弱于本体）
+1219: const CHIP_SPLIT_SPD_MUL = 0.8;     // split 小弹速度倍率（⚠️ 规格未定，拍板 0.8）
+1220: const CHIP_SPLIT_LIFE = 1.2;        // split 小弹存活秒数（⚠️ 规格未定，拍板 1.2s，短命便于收束）
+1221: const CHIP_CHAIN_DMG_MUL = 1;       // chain 传导伤害倍率（= 命中弹伤害 × 此倍率）
+1228: function applyBulletHitBehavior(w, bullet, m) {
+1236: function applyBurnToMonster(m, dps) {
+1247: function monsterBurnTick(m, w, dt) {
+1264: function applyChainFromHit(w, bullet, src, n) {
+1286: const CHIP_CHAIN_FX = [];
+1287: function spawnChainFx(x0, y0, x1, y1) {
+1290: function updateChainFx(dt) {
+1296: function renderChainFx(ctx) {
+1311: function spawnSplitBullets(w, m, killer) {
+1329: function renderBurnAura(ctx, m) {
+1373: function dropEndlessExp(w, m) {
+
+FILE js\config.js
+7: const CFG = {};
+18: const SKILL_LEVEL_MAX = 100;      // 技能/水晶等级上限 = 武器等级上限（1~100）
+21: function skillCurve(n, base, target, dec) {
+36: function skillSteps(n, base, target) {
+52: function skillLevels(n, cast, floats, ints) {
+593:   enabled: false,           // 全局缺省关（main 之外默认不开启）；关卡以 hazardEnabled 打开
+618:   enabled: false,           // 全局缺省关；关卡以 supplyEnabled 打开
+849:     enabled: true,
+910: /* ---------- 设置（首页入口；独立 localStorage 键持久化） ---------- */
+1150:     enabled: true,
+1591:   "弹道数量": { base: 1,   min: 1,   max: 8,  round: "floor", applyTo: "bullets",  mode: "flat" },
+1592:   "冷却":     { base: 1,   min: 0.2, max: 2,  round: "none",  applyTo: "cdMul",    mode: "mult" },
+1593:   "弹速":     { base: 1,   min: 0.4, max: 3,  round: "none",  applyTo: "spdMul",   mode: "mult" },
+1594:   "范围":     { base: 1,   min: 0.5, max: 3,  round: "none",  applyTo: "aoeMul",   mode: "mult" },
+1595:   "穿透":     { base: 0,   min: 0,   max: 5,  round: "floor", applyTo: "pierce",   mode: "flat" },
+1596:   "弹射次数": { base: 0,   min: 0,   max: 4,  round: "floor", applyTo: "bounce",   mode: "flat" },
+1597:   "伤害":     { base: 1,   min: 0.5, max: 4,  round: "none",  applyTo: "dmgMul",   mode: "mult" },
+1599:   "召唤物":   { base: 1,   min: 0.5, max: 3,  round: "none",  applyTo: "summonMul", mode: "mult" },
+1600:   "陷阱":     { base: 1,   min: 0.5, max: 3,  round: "none",  applyTo: "trapMul",   mode: "mult" },
+1684:   mode: "cooldown",        // "cooldown" = 冷却制（旧值 "energy" 已废弃）
+1784:     { id: "C_V_DMG",   name: "增幅秘宝", tag: "伤害", mode: "mult", vals: [0.12, 0.20, 0.30, 0.45] },
+1785:     { id: "C_V_CD",    name: "循环秘宝", tag: "冷却", mode: "mult", vals: [-0.06, -0.10, -0.15, -0.22] },
+1786:     { id: "C_V_RANGE", name: "扩散秘宝", tag: "范围", mode: "mult", vals: [0.10, 0.16, 0.24, 0.36] },
+1787:     { id: "C_V_SPD",   name: "加速秘宝", tag: "弹速", mode: "mult", vals: [0.10, 0.16, 0.24, 0.36] },
+1788:     { id: "C_V_BULLET",name: "分流秘宝", tag: "弹道数量", mode: "flat", vals: [1, 1, 1, 2] },
+1809:   chest: { enabled: true, weight: 26, itemQW: [55, 28, 14, 3] },   // 宝箱开出遗迹秘宝的权重与品质分布
+1810:   shop:  { enabled: true, cost: 180, qualityWeights: [50, 30, 16, 4], desc: "遗迹工坊购买 1 枚随机遗迹秘宝" },
+1985:   { id: "M001", name: "弹头扩容", shape: [1,1], weight: 5, affix: { tag: "弹道数量", mode: "flat", vals: [1,1,1,1] } },
+1986:   { id: "M002", name: "冷却线圈", shape: [2,1], weight: 6, affix: { tag: "冷却", mode: "mult", vals: [-0.08,-0.12,-0.16,-0.22] } },
+1987:   { id: "M003", name: "高速枪管", shape: [1,2], weight: 5, affix: { tag: "弹速", mode: "mult", vals: [0.12,0.20,0.30,0.45] } },
+1988:   { id: "M004", name: "聚焦透镜", shape: [1,1], weight: 4, affix: { tag: "范围", mode: "mult", vals: [0.10,0.15,0.22,0.32] } },
+1989:   { id: "M005", name: "穿甲弹头", shape: [2,1], weight: 6, affix: { tag: "穿透", mode: "flat", vals: [1,1,1,1] } },
+1990:   { id: "M006", name: "弹跳装置", shape: [2,2], weight: 9, affix: { tag: "弹射次数", mode: "flat", vals: [1,1,1,1] } },
+1991:   { id: "M007", name: "相位线圈", shape: [1,1], weight: 3, affix: { tag: "冷却", mode: "mult", vals: [-0.10,-0.14,-0.20,-0.26] } },
+1992:   { id: "M008", name: "聚能弹头", shape: [2,1], weight: 6, affix: { tag: "范围", mode: "mult", vals: [0.14,0.20,0.28,0.40] } },
+1993:   { id: "M009", name: "增幅器", shape: [1,1], weight: 4, affix: { tag: "伤害", mode: "mult", vals: [0.10,0.15,0.22,0.30] } },
+1994:   { id: "M010", name: "引力增幅器", shape: [1,1], weight: 4, affix: { tag: "召唤物", mode: "mult", vals: [0.08,0.12,0.18,0.25] } },
+1995:   { id: "M011", name: "感应引信", shape: [2,1], weight: 5, affix: { tag: "陷阱", mode: "mult", vals: [0.10,0.15,0.22,0.30] } },
+1996:   { id: "M012", name: "毒性涂层", shape: [1,2], weight: 5, affix: { tag: "伤害", mode: "mult", vals: [0.12,0.18,0.26,0.36] } },
+2009:     { name: "强化·技能伤害", tag: "伤害", mode: "mult", value: 0.06 },
+2010:     { name: "强化·技能冷却", tag: "冷却", mode: "mult", value: -0.05 },
+2011:     { name: "强化·技能范围", tag: "范围", mode: "mult", value: 0.06 },
+2206:   enabled: true,
+2548:     enabled: true,
+2765:    * migratedHeroIds 列出的英雄改走新路径；其余继续旧路径。
+2767:    *    首批试点 = H001（猎手）—— 唯一有 initialSkillBindings 绑定的英雄。
+2768:    *    回退方式：enabled 改回 false 或清空 migratedHeroIds（两处任改其一即回到旧路径）。 */
+2769:   enabled: true,
+2771:   migratedHeroIds: ["H001"],     // 首批试点英雄 id（合同 §1 第一交付）
+2782:   initialSkillBindings: {
+2857:     HP_PERSISTENT_REGION: { id: "HP_PERSISTENT_REGION", scope: "owner+skill+regionGroup+target", keyTemplate: "ownerId+skillId+regionGroup", limitPerTarget: 1, mode: "maxDps" },
+2868:     SP_REGION_MAX_DPS: { id: "SP_REGION_MAX_DPS", mode: "maxDps", sharedClock: true },
+2901:     TGT_NEAREST: { id: "TGT_NEAREST", mode: "nearest", maxRange: 520, tieBreak: "stableId" },
+3064:       levels: skillLevels(SKILL_LEVEL_MAX, null, null, { mode: [1, 2] }),
+
+FILE js\core.js
+12: const U = {
+13:   setRng(fn) { _uRng = (typeof fn === "function") ? fn : null; },
+14:   resetRng() { _uRng = null; },
+16:   rand(min, max) { return min + this._random() * (max - min); },
+17:   randInt(min, max) { return Math.floor(this.rand(min, max + 1)); },
+18:   pick(arr) { return arr[Math.floor(this._random() * arr.length)]; },
+19:   clamp(v, a, b) { return Math.max(a, Math.min(b, v)); },
+20:   dist(ax, ay, bx, by) { const dx = ax - bx, dy = ay - by; return Math.hypot(dx, dy); },
+22:   weightedPick(weights) {
+28:   fmt(n) { return Math.round(n); },
+32: const EventBus = {
+34:   on(ev, fn) { (this._map[ev] = this._map[ev] || []).push(fn); },
+35:   off(ev, fn) { const l = this._map[ev]; if (l) { const i = l.indexOf(fn); if (i >= 0) l.splice(i, 1); } },
+36:   emit(ev, data) { const l = this._map[ev]; if (l) for (const fn of l.slice()) fn(data); },
+40: class SpatialHash {
+41:   constructor(cell = 96) { this.cell = cell; this.buckets = new Map(); this.tick = 0; this._qSeq = 0; }
+43:   clear() { this.buckets.clear(); this.tick++; }   // tick 自增（不清零）：让上一帧的 _qhTick 标记自然失效
+44:   insert(obj, x, y, r) {
+56:   query(x, y, r, out) {
+77: const Assets = {
+101:   fillSprites(manifest) {
+174:   // tbg: {mode:'black'|'white'|'blue', tol:number}
+218:   fit(key, targetH) {
+277: const ASSET_MANIFEST = {
+278:   hero:    { src: "assets/hero/hero_00.png", tbg: { mode: "blue" } },
+279:   hero01:  { src: "assets/hero/hero_01.png", tbg: { mode: "black" } },
+280:   hero02:  { src: "assets/hero/hero_02.png", tbg: { mode: "black" } },
+281:   hero03:  { src: "assets/hero/hero_03.png", tbg: { mode: "black" } },
+282:   hero04:  { src: "assets/hero/hero_04.png", tbg: { mode: "black" } },
+283:   hero05:  { src: "assets/hero/hero_05.png", tbg: { mode: "black" } },
+284:   hero06:  { src: "assets/hero/hero_06.png", tbg: { mode: "black" } },
+285:   hero07:  { src: "assets/hero/hero_07.png", tbg: { mode: "black" } },
+286:   hero08:  { src: "assets/hero/hero_08.png", tbg: { mode: "black" } },
+287:   hero09:  { src: "assets/hero/hero_09.png", tbg: { mode: "black" } },
+288:   hero10:  { src: "assets/hero/hero_10.png", tbg: { mode: "black" } },
+289:   hero11:  { src: "assets/hero/hero_11.png", tbg: { mode: "black" } },
+290:   hero12:  { src: "assets/hero/hero_12.png", tbg: { mode: "black" } },
+291:   enemy00: { src: "assets/enemies/enemy_00.png", tbg: { mode: "black" } },
+292:   enemy01: { src: "assets/enemies/enemy_01.png", tbg: { mode: "black" } },
+293:   enemy02: { src: "assets/enemies/enemy_02.png", tbg: { mode: "black" } },
+294:   enemy03: { src: "assets/enemies/enemy_03.png", tbg: { mode: "black" } },
+295:   enemy04: { src: "assets/enemies/enemy_04.png", tbg: { mode: "black" } },
+296:   enemy05: { src: "assets/enemies/enemy_05.png", tbg: { mode: "black" } },
+297:   enemy06: { src: "assets/enemies/enemy_06.png", tbg: { mode: "black" } },
+298:   enemy07: { src: "assets/enemies/enemy_07.png", tbg: { mode: "black" } },
+299:   enemy08: { src: "assets/enemies/enemy_08.png", tbg: { mode: "black" } },
+300:   enemy09: { src: "assets/enemies/enemy_09.png", tbg: { mode: "black" } },
+301:   enemy10: { src: "assets/enemies/enemy_10.png", tbg: { mode: "black" } },
+302:   enemy11: { src: "assets/enemies/enemy_11.png", tbg: { mode: "black" } },
+303:   enemy12: { src: "assets/enemies/enemy_12.png", tbg: { mode: "black" } },
+304:   enemy13: { src: "assets/enemies/enemy_13.png", tbg: { mode: "black" } },
+305:   enemy14: { src: "assets/enemies/enemy_14.png", tbg: { mode: "black" } },
+306:   enemy15: { src: "assets/enemies/enemy_15.png", tbg: { mode: "black" } },
+307:   enemy16: { src: "assets/enemies/enemy_16.png", tbg: { mode: "black" } },
+308:   enemy17: { src: "assets/enemies/enemy_17.png", tbg: { mode: "black" } },
+309:   enemy18: { src: "assets/enemies/enemy_18.png", tbg: { mode: "black" } },
+310:   enemy19: { src: "assets/enemies/enemy_19.png", tbg: { mode: "black" } },
+311:   enemy20: { src: "assets/enemies/enemy_20.png", tbg: { mode: "black" } },
+312:   enemy21: { src: "assets/enemies/enemy_21.png", tbg: { mode: "black" } },
+313:   enemy22: { src: "assets/enemies/enemy_22.png", tbg: { mode: "white" } },
+322: function spriteFor(defId) {
+335: const SFX = {
+337:   init() {
+349:   resume() { if (this.ctx && this.ctx.state === "suspended") this.ctx.resume(); },
+375:   play(name) {
+424: const BGM = {
+436:   start() {
+458:   stop() {
+491:   watch() {   // 注册状态轮询 + 页面隐藏暂停（幂等；SFX.init 成功路径内调用）
+533: const AssetHooks = {
+542:   init() {
+578:   ready() { return Promise.all(this._jobs); },
+581:   sprite(key) {
+586:   audio(key) {
+591:   stats() { return { total: this._total, loaded: this._loaded, failed: this._failed }; },
+
+FILE js\endless-affix.js
+169:   wrapOnce(Endless, "hpMul", function (orig) {
+178:   wrapOnce(Endless, "dmgMul", function (orig) {
+187:   wrapOnce(Endless, "waveCap", function (orig) {
+196:   wrapOnce(Endless, "waveReward", function (orig) {
+205:   wrapOnce(Endless, "begin", function (orig) {
+212:   wrapOnce(Endless, "reset", function (orig) {
+
+FILE js\endless-arena.js
+
+FILE js\endless-record.js
+
+FILE js\endless-team.js
+
+FILE js\endless.js
+47:   isActive() {
+58:   waveCap(wave) {
+75:   fieldCap() {
+79:   hpMul(wave) {
+84:   dmgMul(wave) {
+90:   waveReward(wave) {
+96:   dropsChest(wave) {
+101:   monsterLv(wave) {
+111:   spawnIntervalFor(wave) {
+120:   timeLeft() {
+125:   isTimedOut() {
+129:   progress() {
+135:   bossThreshold(n) {
+140:   bossIndex() {
+144:   isFinalBossSpawned() {
+148:   isFinalBossDefeated() {
+201:   begin(world) {
+225:   reset() {
+239:   recordKill(monster) {
+247:   settle() {
+262:   viewHalf(world) {
+271:   camCenter(world) {
+309:   isOutsideView(x, y, halfW, halfH, pgx, pgy) {
+432:   update(world, dt) {
+494:   makeWorld(W, H) {
+514:   makePlayer(x, y) {
+519:   selfCheck() {
+
+FILE js\game.js
+12: const G = {
+31: function buildHeroModuleSlots() {
+42: function buildModulePoolState() {
+51: function createRun(heroDef) {
+124: function computeWeaponDefaults() {
+129: /* ---------- 局外元进度（localStorage 持久化：结晶 / 各角色局外等级 / 关卡解锁 / 玩家档案 / 图鉴） ---------- */
+130: const SAVE_KEY = "bagrogue_save_v1";
+131: const Meta = {
+133:   load() {
+134:     try { const raw = localStorage.getItem(SAVE_KEY); if (raw) Object.assign(this.data, JSON.parse(raw)); } catch (e) { /* 无 localStorage（测试环境）则用默认值 */ }
+148:   commit() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.data)); } catch (e) { } },
+150:   profileName() { return (this.data.profile && this.data.profile.name) || CFG.profile.defaultName; },
+151:   rename(name) {
+158:   skinId() { return (this.data.profile && this.data.profile.skinId) || CFG.profile.defaultSkin; },
+160:   skinUnlocked(id) { return id === CFG.profile.defaultSkin || !!(this.data.codex.heroes[id]); },
+161:   setSkin(id) {
+167:   titleId() { return (this.data.profile && this.data.profile.titleId) || CFG.profile.titles[0].id; },
+168:   titleUnlocked(t) { return !t.flag || !!this.data.codex.flags[t.flag]; },
+169:   setTitle(id) {
+176:   titleName() { const t = CFG.profile.titles.find(x => x.id === this.titleId()); return t ? t.name : ""; },
+178:   activateHero(id) {
+181:   recordMonster(defId) {
+184:   setFlag(flag) {
+187:   heroLevel(id) { return (this.data.heroes[id] && this.data.heroes[id].level) || 1; },
+189:   levelUpCost(id) { return outLevelCost(id); },
+190:   levelUp(id) {
+202:   isHeroUnlocked(id) { return isHeroUnlocked(id, this.data); },
+204:   unlockHero(id) {
+215:   unlockedHeroes() { return CFG.heroes.filter(h => this.isHeroUnlocked(h.id)).map(h => h.id); },
+217:   weaponLv(id) { return (this.data.heroes[id] && this.data.heroes[id].weaponLv) || 1; },
+218:   weaponUpCost(id) {
+221:   weaponUp(id) {
+232:   awardRun(kills, bossDefeated, extracted) {
+245: function applyOutLevel(def) {
+252: class Player {
+253:   constructor(x, y) {
+260:   update(w, dt) {
+305:   fireSkill(w, target, st) {
+316:   takeDamage(w, dmg, ignoreDef) {
+327:   heal(pct) {
+338: const _heroScratch = [];      // aliveHeroes 的复用数组
+339: const _targetScratch = [];    // enemyTargets 的复用数组（与上者互不干扰）
+340: function aliveHeroes() {
+347: function nearestHero(x, y) {
+366: function heroInCircle(x, y, radius) {
+374: function judgeChannel(j, x, y, radius, dt, channel, pKey, hKey, decay) {
+387: function heroTakeDamage(w, h, dmg, ignoreDef) {
+411: const TRAIL_STEP = CFG.team.follow.trailStep;    // 尾迹采样间距（px）：队长每移动 5px 记一个点
+412: const TEAM_DEPTH = CFG.team.follow.depth;        // 队友纵向间距（px）
+414: function teamLateral(i) {
+418: function trailPush(w) {
+430: function seedTrail(w, ux, uy) {
+440: function trailTarget(trail, depth, lateral) {
+456: function snapCompanions(world) {
+466: function updateCompanions(w, dt) {
+510: class Drone {
+511:   constructor(x, y, orbitA, hp, atk, fireCd, orbit, owner = null, repair = false) {
+523:   update(w, dt) {
+557: function repairDroneTick() {
+577: function droneTakeDamage(w, d, dmg) {
+586: function enemyTargets(w) {
+601: function nearestTarget(w, x, y) {
+609: function targetTakeDamage(w, t, dmg) {
+617: function applyLifesteal(owner, dmg) {
+628: class Bullet {
+629:   constructor(x, y, ang, spd, dmg, side, pierce = 0, bounce = 0, aoe = 0, isSkill = false, owner = null, behavior = null) {
+640:   update(w, dt) {
+711: class Monster {
+712:   constructor(defId, x, y, lv) {
+744:   bossPhase() {
+754:   bossPhaseTick() {
+767:   bossPatternTick(w, dt) {
+783:   bossFire(w, p) {
+797:   update(w, dt) {
+918: class World {
+919:   constructor(w, h, isMain, kind) {
+941:   setupMain() {
+972:   setupArtisan() {
+978:   setupCity() {
+991:   setupRift() {
+1017:   riftSpawnSpot(c) {
+1033:   spawnRiftBatch() {
+1050:   spawnMonster(defId, x, y) {
+1070:   spawnInterval(c) {
+1077:   spawnWave(c) {
+1111:   eliteBaseCount() {
+1116:   elitePoolStr() {
+1122:   eliteTargetCount() {
+1127:   countElites() {
+1132:   updateEliteSpawn(dt) {
+1140:   spawnElite(silent) {
+1154:   findFreeSpot(minDistFromPlayer = 0, minDistFromWalls = 90, clearance = 70) {
+1166:   update(dt) {
+1345:   triggerAltar(a) {
+1353:   execEffect(ef, a) {
+1429: function resolveObstacles(e, w, bias) {
+1456: function blockedByObstacle(w, x, y) {
+1464: function losClear(w, x0, y0, x1, y1) {
+1485: function createCityAvatar() {
+1490: function updateCityWorld(dt) {
+1541: function drawActor(ctx, x, y, size, color, icon) {
+1555: function heroDefNameOf(heroId) {
+1575: function pickupLife(type) {
+1582: function pickupAlive(pk) { return !!pk && pk.life !== 0; }
+1584: function pickupCap() {
+1590: function grantPickup(pk) {
+1603: function monsterSizeTierMul(defId, d) {
+1617: function tauntAlive(h) {
+1623: function monsterTarget(w, m) {
+1631: function placeAltar(w, id) {
+1642: function spawnAltarFromSpec(w, spec) {
+1660: function updateAltarTimeline(w, dt) {
+1700: function bossPhaseChest(m) {
+
+FILE js\hud_endless.js
+44: function endlessHudColors() {
+53: function endlessHudCfg() {
+71: function formatEndlessTime(sec) {
+79: function endlessTimeWarn(sec) {
+86: function endlessBlinkOn(tSec) {
+95: function endlessProgressRatio(progress, bossIndex) {
+116: function endlessHudMetrics() {
+134: function endlessHudData(world) {
+172: function renderEndlessHud(ctx) {
+311: function riftHudReportReason() {
+317: function riftHudDispatchSettle() {
+
+FILE js\items.js
+12: class Inventory {
+13:   constructor(cols, rows, id) {
+18:   inBounds(x, y, w, h) { return x >= 0 && y >= 0 && x + w <= this.cols && y + h <= this.rows; }
+19:   occupied(x, y, w, h, ignore) {
+26:   canPlace(item, x, y, ignore) {
+30:   place(item, x, y) {
+38:   remove(item) {
+48:   findSpot(item) {
+55:   tryStackChest(item) {
+65:   totalWeight() {
+75: function weaponLevelEntry(lv) {
+95: function anchorLerp(table, lv) {
+114: function skillEntry(skill, lv) {
+138: function buffEffectLabel(skillId, lv) {
+152: function makeGear(defId, itemQ) {
+160: function makeModule(defId, itemQ) {
+163:   const affix = { tag: d.affix.tag, mode: d.affix.mode, value: d.affix.vals[itemQ] };
+168: function moduleEffValue(it) {
+172: function moduleStage(it) {
+181: function chipDefOf(defId, pool) {
+189: function chipWeight(chip) {
+195: function chipEffValue(chip) {
+203: function makeChip(defId, q) {
+222:     weight: 0, value: v, affix: { tag: d ? d.tag : "", mode: d ? d.mode : "mult", value: v } };
+225: function makeChestItem(chestQ, count = 1) {
+233: function makeInsurance(count = 1) {
+237: function insuranceCount(run) {
+240: function consumeInsurance(run, n) {
+254: function makeCurse() {
+258: function useCurseItem(it) {
+272: function affixText(it) {
+285: function tagCalc(tag, forSkill) {
+355: function moduleSynergy() {
+386: function chipBehaviorSummary() {
+405: function resolveSkill(sk, lv, syn) {
+445: function recomputeWeapon() {
+463: const ZERO_GEAR = { hp: 0, atk: 0, def: 0, spd: 0, energyMax: 0, regen: 0, summonMax: 0, trapMax: 0 };
+464: function weaponGearBonus() {
+482: function runBonus() {
+521: function companionStats(c) {
+545: function computeStats() {
+576: function heroUnitLimit(heroDef, kind) {
+582: function unitLimitOf(caster, kind) {
+588: function unitCap(caster, kind, skillCount) {
+594: function totalRunWeight() {
+601: function weightFactor() {
+620: function expNextFor(lv) {
+631: function heroModulePool(heroId) {
+636: function offerModuleIds(heroId) {
+645: function heroHasEmptySlot(heroId) {
+656: function heroPickableModuleIds(heroId) {
+666: function teamHeroIds() {
+681: function teamModuleOfferPool(singleHeroId) {
+701: function buildLevelUpCandidates(heroId, poolOverride) {
+798: function affixPreview(d) {
+804: function statPackCandidates() {
+822: function skillHeroEntityOf(hid) {
+833: function heroOnCrystalPath(hid) {
+839: function heroSkillState(hid) {
+844: function crystalNameOf(cid, def) {
+854: function crystalQualityOf(def) {
+872: function crystalDescOf(def) {
+881: function crystalMatrixOf(st, cid, mode) {
+910: function heroCrystalPickableIds(st) {
+928: function crystalCard(heroId, crystalId, st, owner, mode) {
+946: function crystalCandidates(heroId, n) {
+985: function applyCrystalPick(heroId, crystalId) {
+1026: function applyHeroModulePick(heroId, defId) {
+1044: function applyStatPack(pack) {
+1055: function applyLevelUpPick(heroId, cand) {
+1068: function presentLevelUpChoice(heroId) {
+1101: function gainExp(v) {
+1120: function setPaused(v) {
+1123: function isPaused() {
+1126: function beginLevelUpChoices(heroId, n) {
+1136: function finishLevelUpChoice(heroId) {
+1149: function rollCardQuality() {
+1153: function drawCardCandidates() {
+1167: function useCard(idx) {
+1181: function refreshCards() {
+1204: const QUAL_KEY_INDEX = { normal: 0, advanced: 1, epic: 2, divine: 3 };   // 品质名 → itemQualities 下标
+1211: function grantItemToRun(r, item, opts) {
+1225: function grantChipToRun(r, chip) {
+1243: function rollChestChip(rng) {
+1257: function seenChip(chip) {
+1263:   } catch (e) { /* 无 localStorage 环境忽略 */ }
+1265: function chipSeen(defId) {
+1269: function shopBuyChip(defId) {
+1288: function rollChipQualityByWeights(weights) {
+1294: const ChipForge = {
+1298:   merge(r, opts) {
+1315:   reroll(r, opts) {
+1332:   craft(r, opts) {
+1345: function shopBuyModule() {
+1356: function shopBuyItem() {
+1373: function levelUpReroll() {
+1421: function applyEndlessPlayerBuff(st) {
+
+FILE js\main.js
+25: function joyVector(dxi, dyi, maxR, deadZone) {
+34: const Game = {
+103:   fitCanvas() {
+131:   enterCharSelect() {
+137:   enterAbyssCharSelect() {
+162:   enterCity() {
+176:   startRun(chars) {
+209:   skipIntroFreeze() {
+219:   skipLevelUpChoice() {
+229:   chipForge(action, opts) {
+246:   backToMenu() {
+252:   toMainMenu() {
+258:   openLevelSelect() {
+264:   returnToCity() {
+269:   bindEvents() {
+512:   bindInput() {
+580:   actionE() {
+614:   bindTouch() {
+772:   /* ---------- 设置（独立 localStorage 持久化；CFG.settings 定义默认值与范围） ---------- */
+773:   loadSettings() {
+782:       const raw = localStorage.getItem(CFG.settings.saveKey);
+784:     } catch (e) { /* 测试环境无 localStorage */ }
+788:   applySettings() {
+810:     try { localStorage.setItem(CFG.settings.saveKey, JSON.stringify(s)); } catch (e) { }
+814:   bindTooltip() {
+854:   loop(t) {
+928:  * 落盘与刷新均为防御式（localStorage / DOM 缺失时静默跳过），无 DOM 桩环境不抛错。 */
+963: function _bootInjectStyle() {
+996: const BootGuard = {
+1022:   ensure() {
+1098:   record(message, filename, lineno, stack) {
+1118:   arm() {
+1136:   done() {
+1146:   isMainReady() {
+1193:   showPanel(dom, overrideMsg) {
+1214:   hidePanel(dom) {
+1224:   diagText() {
+1250:   copy() {
+1263:   retry() {
+1287: function isTouchDevice() {
+
+FILE js\modes.js
+16: function updateExtractJudge(dt) {
+28: function clearExtractChannel() {
+35: function onPlayerDeath() {
+42: function calcDeathPenalty(run) {
+77: function calcSettleConvert(run) {
+111: function levelMechCfg(kind, lv) {
+121: function initLevelMechanics(w) {
+152: function updateLevelMechanics(w, dt) {
+161: function updateHazard(w, dt) {
+191: function hazardDamage(w, h, cfg) {
+202: function hazardOutside(w, x, y) {
+211: function updateSupply(w, dt) {
+227: function applySupplyEffect(w, sp) {
+269: function outLevelCost(heroId) {
+280: function outLevelStageMul(lv) {
+288: function outLevelGrowthOf(def) {
+296: function outLevelStats(def, lv) {
+311: function isHeroUnlocked(id, data) {
+346: function extractWeightMul(r, st) {
+355: function extractWeightDt(r, st, dt) {
+364: function extractChannelSeconds(runLike) {
+374: function extractWavePool(w) {
+388: function spawnExtractWave(w, st, n) {
+414: function extractShieldTick(r, st, dt) {
+434: function extractSiegersNear(r, st, dist) {
+446: function extractWaveTick(r, st, dt) {
+469: function extractWaveSiegeTick(m, w, dt) {
+504: function buildCrystalReport(result) {
+529: function publishCrystalReport(kills, bossDefeated, extracted, boss) {
+547: function screenToWorld(clientX, clientY) {
+583: function npcTap(clientX, clientY) {
+677: function cityNpcTap(clientX, clientY) {
+734: function swapRemoveWhere(arr, pred) {
+747: const _explodeSeen = new Set();
+777: function abyssCfg() {
+784: function endlessReady() {
+790: function setupAbyssPortal(w) {
+809: function updateAbyssPortal(dt) {
+831: function abyssPortalTap(clientX, clientY) {
+850: function enterAbyssFromPortal() {
+866: function enterEndless(chars) {
+969: function exitEndlessToCity() {
+984: function restartEndless() {
+993: function showEndlessSettle() {
+1040: function markEndlessSeen() {
+1056: function hasSeenEndlessIntro() {
+1086: function isAbyssWorld(w) {
+1093: function abyssExtractCfg() {
+1107: function spawnAbyssExtractBeacon(world) {
+1134: function noteFinalBossDeath(monster) {
+1146: function updateAbyssExtract(dt) {
+1178: function abyssExtractInterrupt() {
+1194: function abyssExtractSettle(reason) {
+1240: function abyssBlockedAltarIds() {
+1248: function abyssAltarPool(kind) {
+1263: function rollAbyssAltars(world, count) {
+
+FILE js\pool.js
+
+FILE js\quality.js
+25: function perfFrameStats(frames, stuckMs) {
+41: const PerfGuard = {
+58:   sample(now, ui) {
+89:   snapshot() {
+96:   reset() { this.frames.length = 0; this.lastT = null; this.consecStuck = 0; this.maxStuckMs = 0; },
+98: function _perfNow() {
+107: const LoadingOverlay = {
+112:   show(getProgress) {
+140:   hide(immediate) {
+169: function _clampQuality(n) {
+179: function _defaultQuality() {
+196: function _qualityFromDevice(dm, touch, vw, vh) {
+207: /* ④ 老存档迁移：localStorage 里只有旧布尔 lowQuality（无 quality 字段）→ quality = lowQuality ? 0 : 2。
+210: function _migrateQuality() {
+232: function _autoDowngradeTick(now) {
+267: function _autoDowngradeReset() { _autoDowngrade.run = 0; _autoDowngrade.lastAt = -Infinity; }
+281: function renderQualitySeg() {
+
+FILE js\render.js
+10: function renderCity() {
+93: function render() {
+583: function renderAbyssExtract(ctx, w) {
+614: function renderHazard(ctx, w) {
+634: function renderSupply(ctx, w) {
+702: function isLowQuality() {
+718: function lowQualityCacheReset() { _lqCachedTime = -1; _lqCachedSrc = null; }
+725: function applyLowQualityDPR() {
+738: function lqParticleCount(n) {
+746: function lqShouldDrawParticle(i) {
+754: function renderNpcTapHint(ctx, w) {
+784: function renderCityNpcTapHint(ctx, w) {
+808: function renderAbyssPortal(ctx, w) {
+851: function renderAbyssTapHint(ctx, p, c) {
+
+FILE js\rewards.js
+46: function endlessRewardCfg() {
+224: function installEndlessRewardHook() {
+259: function endlessRewardOnSettle() {
+271: function installEndlessSettleHook() {
+286: function installEndlessRewardResetHook() {
+
+FILE js\skill-compiler.js
+15: const SupportCompiler = {
+47:   compile(input) {
+102:   preview(state, change) {
+208:   buildOne(state, skillId, definitions) {
+228:   explain(build, definitions) {
+372:   skillLevelOf(state) {
+
+FILE js\skill-config.js
+23: const SKILL_REASON = {
+62: function _isObj(v) { return v !== null && typeof v === "object" && !Array.isArray(v); }
+63: function _isArr(v) { return Array.isArray(v); }
+64: function _isStr(v) { return typeof v === "string"; }
+65: function _isFiniteNum(v) { return typeof v === "number" && isFinite(v); }
+66: function _isNonNegInt(v) { return _isFiniteNum(v) && Math.floor(v) === v && v >= 0; }
+67: function _isPosInt(v) { return _isNonNegInt(v) && v > 0; }
+68: function _isProb(v) { return _isFiniteNum(v) && v >= 0 && v <= 1; }
+69: function _nonEmptyStr(v) { return _isStr(v) && v.length > 0; }
+70: function _has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+73: function _deepFreeze(o) {
+82: const _PLACEHOLDER = /TODO|FIXME|XXX|待填|待定|占位|\?\?\?|__NAME__/i;
+84: const _CODE_TOKENS = ["eval(", "Function(", "require(", "=>", "javascript:", "process.env", "import ", "new Function"];
+85: function _looksLikeCode(s) {
+99: const _CAPABILITIES = {
+105: const _TAGS = {
+114: const _EXECUTORS = { modifyParameter: 1, convertNode: 1, addNode: 1, removeNode: 1, modifyStat: 1 };
+116: const _PHASE_ORDER = { base: 0, shape: 1, distribute: 2, derive: 3, nodeModify: 4, cast: 5 };
+117: const _MERGES = { add: 1, multiply: 1, min: 1, max: 1, exclusive: 1 };
+118: const _READS = { base: 1, final: 1 };
+123: const _STATS = { cdMul: 1 };
+126: const _TEMPLATE_KINDS = {
+134: const _PARAM_RULES = {
+146: const _FIELDS = {
+172: const _POLICY_DEFAULTS = {
+178:   target: { mode: "nearest", tieBreak: "stableId" },
+181: const _POLICY_TABLE = {
+191: function _requireFields(def, required, did, opId, D) {
+201: function _allowFields(def, allowed, did, opId, D) {
+211: function _paramFail(name, value, rules) {
+223: function _validateParams(params, did, opId, field, D, extraRules) {
+234: function _validateTagList(list, did, opId, field, D, tags) {
+244: function _validateCapList(list, did, opId, field, D, caps) {
+254: function _validateDamageBasis(db, did, opId, D) {
+268: function _validateExpression(node, did, opId, field, D, caps, tags, depth) {
+299: function _validateEligibility(e, did, D, caps, tags) {
+311: function _validateSelector(sel, did, opId, D, caps, tags) {
+322: function _validateNode(n, did, templates, hits, D, caps, tags, nodeIds, local) {
+340: function _validateOperation(op, did, templates, events, D, caps, tags, opIds) {
+399: function _checkOpCycles(ops, did, D) {
+422: function _checkExclusiveConflicts(ops, did, D) {
+434: function _validateLevelsShape(levels, did, D, section) {
+456: function _validateSkillLevels(levels, did, D) {
+466: function _validateCrystalLevels(levels, did, D) {
+478: function _collectMap(map, section, D) {
+496: function _collectList(arr, section, D) {
+512: function _nameKey(key, field, did, D, local, section) {
+520: function _scanForbidden(o, D, path, seen, depth) {
+543: function _validatePolicies(raw, D, knownTemplateSkillIds) {
+620: const SkillConfig = {
+625:   tables() {
+630:   version() {
+636:   get(kind, id) {
+658:   policy(kind, id) {
+671:   freezeDefinitions(defs) {
+676:   validate(raw) {
+891:       migratedHeroIds: _isArr(raw.migratedHeroIds) ? raw.migratedHeroIds.slice() : [],
+
+FILE js\skill-damage.js
+19: const SkillDamage = (function () {
+24: function _sdR(name) {
+32: function _sdTables() {
+38: function _sdNum(v, def) {
+47: function _sdTargetId(target) {
+56: function _sdPolicyType(hitPolicyId) {
+64: function _sdOrbitInterval() {
+72: function _sdRegionTick(region) {
+81: function _sdComputeDamage(basis) {
+114: function _sdHitKey(req, target) {
+133: function _sdEnsureState(state) {
+145: function _sdTrackCast(st, castId, dk) {
+152: function _sdOncePerCast(st, key, type, simTime) {
+178: function _sdOrbitPolicy(st, key, simTime) {
+195: function _sdRegionPolicy(st, key, simTime) {
+220:   resolve(world, req) {
+265:   applyHitPolicy(state, key, simTime) {
+282:   integrateRegion(region, fromTime, toTime) {
+304:   buildBasis(baseRef, coeff, inherit) {
+318:   damageRequest(opts) {
+342:   newHitState() {
+347:   beginCast(state, castId) {
+356:   endCast(state, castId) {
+376:   policyType(hitPolicyId) {
+
+FILE js\skill-events.js
+20: const SkillEvents = (function () {
+24: function _seR(name) {
+45: function _seTables() {
+49: function _seNum(v, def) {
+55: function _seBudget(name, fallback) {
+61: function _seMaxDepth() { return _seBudget("maxEventDepth", 2); }              // 保守默认 2 层
+62: function _seMaxPerStep() { return _seBudget("maxEventPerStep", 256); }        // 保守默认 256
+63: function _seMaxDerivedPerEvent() { return _seBudget("maxDerivedPerEvent", 16); } // 保守默认 16
+64: function _sePerCastBudget(pol) {
+70: function _seDerivedEventsEnabled() {
+78: function _seEveryHitPolicy(pol) {
+83: function _seKind(ev) {
+91: function _sePolicy(ev) {
+104: function _seState(world) {
+112: function _seFreshState() {
+126: function _seRecord(s, reason, ev) {
+139:   enqueue(world, ev) {
+215:   emit(world, ev) {
+221:   drain(world) {
+236:   resetStep(world) {
+244:   beginCast(world, castId) {
+252:   derivableEndReasons() { return _SE_DERIVABLE.slice(); },
+254:   nonDerivableEndReasons() { return _SE_NON_DERIVABLE.slice(); },
+256:   EndReasons() { return Object.assign({}, _SE_END); },
+260: function _seDerive(s, ev, out) {
+
+FILE js\skill-playtest.js
+7:  *     · CFG.skillSystem.migratedHeroIds = [] → 无英雄走新路径
+18:  * 【正式启用（22.8 起）】配表 `CFG.skillSystem.enabled = true` + `migratedHeroIds = ["H001"]`
+29:  *      CFG.skillSystem.initialSkillBindings）+ 4 颗共享水晶，交给 SupportCompiler 编出 builds。
+50: const SkillPlaytest = {
+65:    *   技能：**只有 1 个** —— 由 CFG.skillSystem.initialSkillBindings[heroId] 决定
+88:    *  优先读 CFG.skillSystem.initialSkillBindings[heroId].skillId；
+90:   initialSkillFor(heroId) {
+93:     const b = t.initialSkillBindings && t.initialSkillBindings[heroId];
+111:   skillLevelFor(heroId, skillId) {
+129:   parse(search) {
+165:    *    ② 配表已启用（`enabled === true` 且 `migratedHeroIds` 非空）→ 正式启用
+176:   install(search) {
+191:       CFG.skillSystem.migratedHeroIds = this.heroIds.slice();
+193:       this.heroIds = CFG.skillSystem.migratedHeroIds.slice();         // 配表已经是启用态，原样沿用
+205:       Array.isArray(t.migratedHeroIds) && t.migratedHeroIds.length > 0);
+247:   grantRareSkillOnAltar(world, altar) {
+321:   rareSkillOptions() {
+418:   ensureState(hero) {
+466:   draw(ctx, w) {
+571:   status() {
+579:       enabled: !!(t && t.enabled),
+580:       migrated: (t && Array.isArray(t.migratedHeroIds)) ? t.migratedHeroIds.slice() : [],
+587:   reset() {
+
+FILE js\skill-presenter.js
+13: const SkillPresenter = {
+17:   setCompiler(fn) { this._compileFn = (typeof fn === "function") ? fn : null; return this; },
+18:   configure(opts) { if (opts && "compilerFn" in opts) this.setCompiler(opts.compilerFn); return this; },
+73:   compile(state, heroId) {
+84:   panel(state, heroId) {
+164:   explain(build) {
+173:   detail(crystalId, heroId, build) {
+279:   assembleText(template, vars) {
+
+FILE js\skill-reward.js
+17: const SkillReward = {
+23:   configure(opts) {
+29:   setPreview(fn) { this._previewFn = (typeof fn === "function") ? fn : null; return this; },
+244:   build(state, source, rng) {
+307:   commit(state, rewardId, optionId) {
+350:   rollStatueGrant(state, policy, rng) {
+416: function buildSkillRewards(state, source, rng) { return SkillReward.build(state, source, rng); }
+418: function commitSkillReward(state, rewardId, optionId) { return SkillReward.commit(state, rewardId, optionId); }
+
+FILE js\skill-runtime.js
+15: const _SR_CAT_DEFAULT_KEY = {
+22: const SkillRuntime = {
+348:   ownsHero(hero) {
+352:     return Array.isArray(t.migratedHeroIds) && t.migratedHeroIds.indexOf(hero.id) >= 0;
+358:   updateAll(world, dt) {
+372:   updateHeroSkills(world, hero, dt) {
+902:   spawnEffect(world, snapshot, nodeId, ctx) {
+1002: function skillV2Owns(hero) {
+
+FILE js\skill-save.js
+16: const SkillSave = {
+47:   serialize(state) {
+83:   migrate(saved, definitions) {
+194:   saveTo(meta, state) {
+201:   loadFrom(meta) {
+210: function serializeHeroSkills(state) { return SkillSave.serialize(state); }
+212: function migrateHeroSkills(saved, definitions) { return SkillSave.migrate(saved, definitions); }
+
+FILE js\skill-scheduler.js
+17: const SkillScheduler = {
+52:   cooldownFor(def, level, stats, policy) {
+79:   rangeOf(tp) {
+86:   allowNoTargetOf(cp) {
+95:   intervalFor(def, level, stats, policy) {
+154:   tick(world, hero, dt) {
+200:   createCastSnapshot(hero, build, stats, castId) {
+
+FILE js\stress.js
+20:   mode: "lod",
+24:   parseQuery() {
+40:   isActive() { return this.active === true; },
+52:   reset() {
+57:   sampleFrame(dur) {
+63:   avgDur() { return this.stats.frames > 0 ? (this.stats.sumDur / this.stats.frames) : 0; },
+65:   reportDraw(calls, culled) {
+
+FILE js\ui-abyss-pause.js
+
+FILE js\ui-abyss.js
+25: function abyssRecFmtTime(sec) {
+35: function abyssRecOutcome(r) {
+43: function abyssRecFmtDate(t) {
+
+FILE js\ui-panels.js
+17: function statName(k) {
+22: function chipDef(defId) {
+27: function chipPoolOf(defId) {
+35: function chipEffectLine(def, qIdx) {
+42: function chipTipHTML(it) {
+64: function itemTipHTML(it) {
+119: const HERO_PORTRAIT_CARD_H = 150;
+120: const HERO_PORTRAIT_DETAIL_H = 360;
+124: function heroPortraitKey(h) {
+133: function heroPortraitImage(h) {
+145: function drawHeroPortrait(cv, key, locked, targetH) {
+
+FILE js\ui-screens.js
+13:   updateHomeUser() {
+22:   updateCityHUD() {
+40:   openNpcPanel(npc) {
+52:   closeNpcPanels() {
+62:   renderTrainer() {
+136:   renderSmith() {
+163:   renderProfile() {
+192:   showCodex() {
+200:   drawCodexFace(cv, img, locked) {
+214:   renderCodex() {
+279:   showChipCodex() {
+283:   renderChipCodex() {
+318:   bindChipCodexEntry() {
+324:   bindModuleTipDismiss() {
+351:   renderSettings() {
+398:   renderPerfDiag() {
+412:   copyPerfDiag() {
+446:   showTooltip(item, cx, cy) {
+453:   moveTooltip(cx, cy) {
+463:   hideTooltip() {
+469:   managementLocked() {
+473:   toggleBackpack(force) {
+483:   renderBackpack() {
+578:   renderItemInfo() {
+604:   setArtisanTab(t) {
+615:   toggleArtisan(force) {
+631:   renderArtisan() {
+773:   chipForgeService(action) {
+791:   renderCards() {
+833:   openChest() {
+891:   artisanService(key) {
+946:   shopService(key) {
+960:   startDrag(e, info) {
+975:   onPointerMove(e) {
+997:   onPointerUp(e) {
+1119:   showSettlement(crystals = 0) {
+1150:   showDeath(penalty, crystals = 0) {
+
+FILE js\ui.js
+15: const GOD_SCALE_ICONS = {
+23: const UI = {
+36:   showScreen(name) {
+49:   syncCharStartBtn() {
+57:   showHudOnly() {
+70:   applyOrientation() {
+94:   showChoice(cfg) {
+114:   closeChoice() {
+177:   onLevelUpChoice(candidates, onPick, meta) {
+185:   onLevelUpChoiceClose() {
+407:   toast(msg, cls = "") {
+422:   buildLevelList() {
+451:   heroName(heroId) {
+479:   heroRole(heroId) {
+492:   buildCharList() {
+602:   renderCharDetail(hero) {
+680:   metaUpgradeLevel(id) {
+687:   metaUpgradeWeapon(id) {
+714:   updateAutoFightBtn() {
+730:   updateSkillCd() {
+795:     if (mode) this._crystalCache[id] = { gv: st.groupVersion, mode: mode };
+799:    * 真源 = `CFG.skillSystem.initialSkillBindings[heroId].skillId`（武器绑定的初始主动技能）；
+804:     const b = t && t.initialSkillBindings && t.initialSkillBindings[heroId];
+832:   moduleQualityColor(lv) {
+1065:   showCrystalSlotTip(s, slotEl, entry) {
+1136:   showModuleSlotTip(s, slotEl) {
+1158:   showModuleSlotEmptyTip(slotEl) {
+1195:   hideModuleTip() {
+1259:   renderPartySkillbar() {
+1266:   updatePartySkillbar() {
+1279:   clearBattleHud() {
+1290:   updateHUD() {
+1462:   toggleStatHelp() {
+1478:   updateAbyssHud() {
+1486:   clearAbyssHud() {

@@ -70,14 +70,15 @@ function calcDeathPenalty(run) {
   return { lost, kept, lostValue, totalValue, contractsUsed: used, contractsLeft: had - used };
 }
 
-/* ---------- 局内→局外资源转化（待细化 5 已定：撤离成功时只折算背包物品） ---------- */
-/* 撤离结算折算（统一口径）：背包 / 武器栏内**每件物品**都有固定「价值」，
- * 一律 × CFG.settleConvert.valueRate 折算为结晶 —— 宝箱 / 装备 / 武器模块 / 消耗品同一套，不再分类别。
+/* ---------- 局内→局外资源转化（待细化 5 已定：撤离成功时折算背包物品） ---------- */
+/* 撤离结算折算（统一口径）：背包 / 武器栏 / 遗迹秘宝背包（chipInv）内**每件物品**都有固定「价值」，
+ * 一律 × CFG.settleConvert.valueRate 折算为结晶 —— 宝箱 / 装备 / 武器模块 / 消耗品 / 遗迹秘宝同一套，不再分类别。
+ * 遗迹秘宝单枚价值 = CFG.chips.valueByQuality[q] × lv（carryOut=true 后随撤离折算，价值表待策划填）。
  * 局内经验与金币一律归零、不参与折算（死亡时同样不折算）。 */
 function calcSettleConvert(run) {
   const sc = CFG.settleConvert;
   const rate = sc.valueRate;
-  const b = { chest: 0, gear: 0, item: 0, card: 0, total: 0 };
+  const b = { chest: 0, gear: 0, item: 0, card: 0, chip: 0, total: 0 };
   const take = (it) => {
     const v = Math.floor((it.value || 0) * rate);
     if (it.kind === "chest") b.chest += v;                                          // 未开封宝箱（不带出本体，价值折算）
@@ -87,7 +88,17 @@ function calcSettleConvert(run) {
   for (const it of run.backpack.items) take(it);
   for (const it of run.weaponInv.items) take(it);
   b.card = Math.floor((run.cardAssets || 0) * sc.cardValue * rate);                 // 属性卡牌资产（固定价值 4/张）
-  b.total = b.chest + b.gear + b.item + b.card;
+  /* 遗迹秘宝（chipInv）：单枚价值 = 品质基值 × 等级 lv（占位口径，见 CFG.chips.valueByQuality）；
+   * 用 q/lv 计算，不复用 it.value（遗迹秘宝的 value 字段是词条强度，不是货币价值）。 */
+  const vbq = (CFG.chips && CFG.chips.valueByQuality) || [];
+  if (run.chipInv && run.chipInv.items) {
+    for (const it of run.chipInv.items) {
+      if (!it || it.kind !== "chip") continue;
+      const base = vbq[it.q] != null ? vbq[it.q] : (vbq[0] || 0);
+      b.chip += Math.floor(base * (it.lv || 1) * rate);
+    }
+  }
+  b.total = b.chest + b.gear + b.item + b.card + b.chip;
   return b;
 }
 
