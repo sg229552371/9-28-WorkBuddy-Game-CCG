@@ -877,6 +877,7 @@ const SkillRuntime = {
         castId: eff.castId, ownerId: eff.ownerId, skillId: eff.skillId,
         groupId: eff.rt.groupId, excludeTargetId: (eff.role === "derived") ? eff.rt.targetId : null,
         hitInterval: eff.rt.params.hitInterval, dps: eff.rt.dps, simTime: simTime,
+        killer: SkillRuntime._heroOwner(world, eff.ownerId),   // A1 接线：技能伤害归属英雄（深渊逐角色统计/吸血/裂变读 owner）
       });
       return !!(r && r.applied);
     }
@@ -890,7 +891,7 @@ const SkillRuntime = {
       if (typeof db.value === "number") dmg = db.value;
       else if (typeof db.base === "number") dmg = db.base;
     }
-    if (typeof damageMonster === "function") { damageMonster(world, target, dmg, null); return true; }
+    if (typeof damageMonster === "function") { damageMonster(world, target, dmg, SkillRuntime._heroOwner(world, eff.ownerId)); return true; }
     if (typeof target.hp === "number") { target.hp -= dmg; return true; }
     return false;
   },

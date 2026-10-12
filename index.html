@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="app-version" content="20261047">
+<title>弹幕射击 Roguelike × 背包肉鸽 — HTML 原型</title>
+<!--
+  ===== 仓库根入口（跳转页）=====
+  背景：仓库在 79ff3da 重组为「双目录结构」（old_Game 冻结归档 + Game_v0.0.1 活跃）。
+  活跃游戏位于 Game_v0.0.1/，而托管站与 GitHub Pages 都以「仓库根」为站点根，
+  根目录缺 index.html 会让两个渠道都拿到 404。本页只做一次免交互跳转，
+  不承载任何游戏逻辑，也不复制游戏资源（相对路径在目标目录内自洽）。
+  改动游戏本身请改 Game_v0.0.1/，不要在本页加逻辑。
+-->
+<script>
+(function () {
+  try {
+    location.replace("Game_v0.0.1/index.html" + (location.search || "") + (location.hash || ""));
+  } catch (e) {
+    /* 极端环境：退化为手动链接（下方 <a> 仍在） */
+  }
+})();
+</script>
+<style>
+  html, body { margin: 0; height: 100%; background: #0d0f14; color: #cfd6e4;
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+  .wrap { height: 100%; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 14px; text-align: center; padding: 24px; }
+  .title { font-size: 18px; letter-spacing: .06em; color: #e8edf7; }
+  .hint { font-size: 13px; opacity: .62; }
+  a { color: #7fb2ff; text-decoration: none; border-bottom: 1px solid rgba(127,178,255,.45); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">弹幕射击 Roguelike × 背包肉鸽</div>
+    <div class="hint">正在进入游戏…</div>
+    <div class="hint">若未自动跳转：<a href="Game_v0.0.1/index.html">点此进入</a></div>
+  </div>
+</body>
+</html>
