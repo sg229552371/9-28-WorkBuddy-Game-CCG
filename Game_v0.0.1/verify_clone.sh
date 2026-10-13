@@ -3,9 +3,9 @@
 #  克隆一致性校验（AI-Game / 弹幕背包搜打撤）
 #  用法：在仓库根目录执行   bash verify_clone.sh
 #  作用：核对当前工作区是否 == 指定快照
-#        （2026-10-13 批3 落库：阶段F 技能面板接屏 + 阶段E/H 平衡保守子集（D023）+ C1 角色元数据（D020）
-#         + C3 保险雕像 ALTAR_007（D021）+ C4 经济锚表（D022）+ C7 技能栏排布回写（D019）
-#         ；在 C2/C6（D017/D018）+ B 类落库 + A4 前摇 + B4 宝箱主来源之上 · APP_VERSION 20261053 · 106 套 / 4554）
+#        （快照内容：见 G_docs/decision_log_v1.md 最新决策 + G_docs/full_dev_plan_v1.md 批次进度；
+#         权威版本号 = 下方 EXPECT_VERSION；权威条目数 = EXPECT_FILES 块行数。
+#         套数 / PASS 合计 以 `bash run_tests.sh` 实跑为准 —— 此处不再写死，避免逐批漂移。）
 #
 #  原理：比对的是 **git 对象哈希**（git rev-parse HEAD:<file>），
 #        只看仓库内容，不受 core.autocrlf / 编辑器换行设置影响，
@@ -119,9 +119,9 @@ fi
 # ④ 结论
 echo "============================================================"
 if [ "$BAD" = "0" ]; then
-  echo " ✅ 一致：本工作区 == 2026-10-13 批3 落库快照（阶段F 技能面板 + E/H 平衡保守子集 + C1/C3/C4/C7 · APP_VERSION $EXPECT_VERSION）"
+  echo " ✅ 一致：本工作区 == 期望快照（APP_VERSION $EXPECT_VERSION · 决策见 G_docs/decision_log_v1.md）"
   echo "    继续开发前可跑一次全量门禁：bash run_tests.sh"
-  echo "    期望结果：106 套 / PASS 合计 = 4554 / bad = 0 / 全绿"
+  echo "    期望结果：bash run_tests.sh 全绿（exit=0 且 bad=0；套数与 PASS 合计以实跑为准）"
 else
   echo " ❌ 不一致：本地不是该快照，请先同步远程："
   echo "     git fetch origin && git reset --hard origin/main"
