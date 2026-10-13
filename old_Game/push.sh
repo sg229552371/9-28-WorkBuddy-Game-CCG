@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # ============================================================
-#  手机端一键推送（跑测试 -> 全绿才提交 -> 推送 -> 回读确认）
+#  手机端一键推送（跑测试 -> 全绿才提交 -> 刷新校验表 -> 推送 -> 回读确认）
 #
 #  用法：
 #      bash push.sh "这次改了什么"
 #
 #  特点：
 #      * 测试不全绿就直接中止，**什么都不提交**（防止把坏代码推上去）
+#      * 提交前**自动刷新 verify_clone.sh 的期望表**（版本号 + 逐文件哈希）
+#        → 从此不会再出现「改了代码忘了同步期望表 → 新克隆误报 ❌」
 #      * 没有改动时安静退出，不会产生空提交
 #      * 推送被拒时打印出修复命令，不用猜
 # ============================================================
@@ -14,7 +16,7 @@ set -u
 MSG="${1:-chore: 手机端改动}"
 REPO="sg229552371/9-28-WorkBuddy-Game-CCG"
 
-echo "==== 1/4  跑测试（必须 bad=0） ===="
+echo "==== 1/5  跑测试（必须 bad=0） ===="
 if ! bash run_tests.sh; then
   echo ""
   echo "!! 测试未全部通过，已中止 —— 没有提交任何东西。"
@@ -23,7 +25,7 @@ if ! bash run_tests.sh; then
 fi
 
 echo ""
-echo "==== 2/4  暂存改动 ===="
+echo "==== 2/5  暂存改动 ===="
 git add -A
 if git diff --cached --quiet; then
   echo "!! 没有任何改动，无需提交。"
@@ -32,7 +34,19 @@ fi
 git status --short
 
 echo ""
-echo "==== 3/4  提交 ===="
+echo "==== 3/5  自动刷新 verify_clone.sh 期望表 ===="
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+if [ -n "$ROOT" ] && [ -f "$ROOT/refresh_verify_table.sh" ]; then
+  if ! bash "$ROOT/refresh_verify_table.sh"; then
+    echo "!! 刷新期望表失败，已中止 —— 没有提交任何东西。"
+    exit 1
+  fi
+else
+  echo "!! 未找到 $ROOT/refresh_verify_table.sh，跳过（期望表可能过期）。"
+fi
+
+echo ""
+echo "==== 4/5  提交 ===="
 if ! git commit -q -m "$MSG"; then
   echo "!! 提交失败（上面有原因）。"
   exit 1
@@ -40,7 +54,7 @@ fi
 git log --oneline -1
 
 echo ""
-echo "==== 4/4  推送到 GitHub ===="
+echo "==== 5/5  推送到 GitHub ===="
 if ! git push origin main; then
   echo ""
   echo "!! 推送被拒 —— 远程有你在电脑端推的新提交。执行这三条即可："
