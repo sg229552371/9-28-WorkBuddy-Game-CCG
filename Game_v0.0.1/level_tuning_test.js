@@ -60,15 +60,17 @@ if (CFG) {
       if (rows[i].countMul < rows[i - 1].countMul || rows[i].hpMul < rows[i - 1].hpMul) mono = false;
     }
     for (const r of rows) {
-      // D037：21~99 关沿 §5.3 外推（countMul 至 15.6 / hpMul 至 12.76），上限同步放宽（仅作离谱兜底）
+      // D037：21~99 关沿 §5.3 外推（countMul 至 15.6 / hpMul 至 11.18），上限同步放宽（仅作离谱兜底）
       if (!(r.countMul > 0 && r.countMul <= 20 && r.hpMul > 0 && r.hpMul <= 16)) inRange = false;
     }
     check("三 怪物数量倍率单调不减（1.00→" + rows[19].countMul + "）", mono);
     check("三 怪物数量倍率全部在 (0,20] 区间", inRange);
     check("三 怪物血量倍率单调不减（1.00→" + rows[19].hpMul + "）",
       rows.every((r, i) => i === 0 || r.hpMul >= rows[i - 1].hpMul));
-    check("三 血量倍率与 monsterLevel 成长口径一致（1+(lv-1)×0.12）",
-      rows.every((r, i) => near(r.hpMul, 1 + i * 0.12, 1e-9)));
+    // D038：1~20 关沿 1+(lv-1)×0.12（含首关 1.00），21~99 关从 L20 基准 3.28 续接 0.10/关。
+    check("三 血量倍率分段成长口径一致（1~20 关 1+(lv-1)×0.12；21~99 关 3.28+(lv-20)×0.10）",
+      rows.slice(0, 20).every((r, i) => near(r.hpMul, 1 + i * 0.12, 1e-9))
+      && rows.slice(20).every((r, i) => near(r.hpMul, 3.28 + (i + 1) * 0.10, 1e-9)));
     check("三 L7 为休整关（机制关闭、倍率曲线连续无断崖）",
       !CFG.levels[6].hazardEnabled && !CFG.levels[6].supplyEnabled && rows[6].hazard === null
       && rows[6].countMul >= rows[5].countMul && rows[7].countMul >= rows[6].countMul);

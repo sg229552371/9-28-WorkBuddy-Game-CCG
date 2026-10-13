@@ -1770,9 +1770,12 @@ CFG.season = {
   expBase: 1000,                                                // LV1→LV2 所需经验基数
   expStep: 200,                                                 // 每级递增量（LV n→n+1 需 expBase + (n-1)*expStep）
   weekly: { killGoal: 200, extractGoal: 3, levelUpGoal: 10 },   // 周任务三条目标
+  /* 赛季周期（D038 新增）：4 周，与「周任务 4 轮重置」对齐。原型档，待策划调优。 */
+  durationDays: 28,
   /* 赛季经验来源（权威键名；消费点 = SeasonState.onKill/onLevelUp/onExtract，双端驱动经验+周任务）。
-   * 撤离沿用既有占位值 500；其余为原型档，待策划调优。 */
-  expGain: { kill: 10, killElite: 40, levelUp: 200, extract: 500 },
+   * D038 降调：击杀 10→6、撤离 500→300（精英 40 / 局内升级 200 不变）。
+   * 满级总经验 = 16200；按新值「混合一局（约 250 杀 + 撤离）」≈1800/局 → 约 9 局满级，匹配 4 周赛季。 */
+  expGain: { kill: 6, killElite: 40, levelUp: 200, extract: 300 },
   /* 赛季奖励（D035 落库；赛季大厅可「领取」，等级门 + 去重由 SeasonState.claimReward 把关）。
    * type 量纲：crystal = 进化结晶枚数 / chip = 遗迹秘宝枚数 / insurance = 保险契约份数。 */
   rewards: [
@@ -3943,8 +3946,12 @@ CFG.skillSystem = {
  * ----------------------------------------------------------------------------
  * 背景：主线由 20 关（1~20 手调）扩到 99 关；21~99 共 79 关**数据驱动生成**，
  *   口径真源 = G_docs/main_levels_21_99_design_v1.md §2/§3 + season_design_v1.md §5.3。
- * 外推规则（与 11~20 关同口径的延续）：
- *   · hpMul 严格沿 1+(lv-1)×0.12；countMul 沿第 9/10 关斜率 +0.15/关（lv ≥ 21 起）。
+ * 外推规则（与 11~20 关同口径的延续；**D038 原型档调优后**）：
+ *   · hpMul 从 L20 基准 3.28 续接 +0.10/关（1~20 手调段仍为 1+(lv-1)×0.12）；L99 = 11.18。
+ *   · countMul 沿第 9/10 关斜率 +0.15/关（lv ≥ 21 起，L99 = 15.6）。
+ *   · monsterCap 三档阶梯 300（21~50）/ 360（51~80）/ 420（81~99），避免后期「血厚撑」而非铺量压迫。
+ *   · eliteBase 封顶 30→55（后段精英密度续涨，L99 = 54）。
+ *   · boss 普通关 BS0001~BS0009 循环；章节终关各章专属 BS0001~BS0007；99 关 = BS0010。
  *   · hazard / supply 默认 null（机制关总数维持既有 5 关，不随关卡线性叠加）。
  *   · chest 延续后期档 CT4（高阶占比不回落）。
  * 关卡字段（mapW/mapH/eliteBase/elitePool/circles/progressGoal/timeLimit/artisanAtKills/
@@ -3992,7 +3999,8 @@ CFG.sectors = [
 
     /* ---- 倍率曲线（与 rows 同源） ---- */
     var countMul = Math.round((3.75 + t * 0.15) * 100) / 100;
-    var hpMul = Math.round((1 + (lv - 1) * 0.12) * 100) / 100;
+    /* D038：hpMul 从 L20 基准 3.28 续接 0.10/关（L21=3.38 → L99=11.18，原 12.76），抑制后期膨胀。 */
+    var hpMul = Math.round((3.28 + (lv - 20) * 0.10) * 100) / 100;
 
     /* ---- elitePool：高威胁 ED0003 占比随关卡抬升（与 11~20 关同口径） ---- */
     var ed1 = Math.max(0, 10 - Math.floor(t / 2));
@@ -4003,9 +4011,12 @@ CFG.sectors = [
     poolParts.push("ED0002:" + ed2);
     poolParts.push("ED0003:" + ed3);
 
-    /* ---- boss：10 模板按序循环（((lv-1)%10)+1）——每 10 关一个轮回，lv%10===0 恒为 BS0010；
-     *      第 99 关（终局）强制 BS0010（终焉·邪神本体）。 ---- */
-    var boss = (lv === TOTAL) ? "BS0010" : ("BS" + pad(((lv - 1) % 10) + 1, 4));
+    /* ---- boss（D038）：普通关 BS0001~BS0009 循环（(lv-21)%9+1）；
+     *      章节终关（30/40/…/90）改为各章专属 BS0001~BS0007（按章节序号），破「8 终关同 Boss」的重复感；
+     *      全局终关第 99 关 = BS0010（终焉·邪神本体）。 ---- */
+    var isSectorFinal = (lv % 10 === 0) || (lv === TOTAL);
+    var boss = (lv === TOTAL) ? "BS0010"
+      : (isSectorFinal ? ("BS" + pad(sidx + 1, 4)) : ("BS" + pad(((lv - 21) % 9) + 1, 4)));
 
     /* ---- 时间轴：每 ~55s 投 1 座（t 严格递增；宝箱不在开局 10s 内） ---- */
     var timeLimit = Math.min(1200, 720 + t * 12);
@@ -4022,10 +4033,10 @@ CFG.sectors = [
       theme: hsl2hex(sec.hue + within * 4, 0.34, 0.075 + within * 0.003),
       mapW: mapSize, mapH: mapSize,
       monsterLevel: 10,
-      eliteBase: Math.min(30, 15 + Math.floor(t / 2)),
+      eliteBase: Math.min(55, 15 + Math.floor(t / 2)),          // D038：封顶 30→55（L99=54，后段精英续涨）
       elitePool: poolParts.join("/"),
       boss: boss,
-      monsterCap: 300,
+      monsterCap: (lv <= 50) ? 300 : (lv <= 80 ? 360 : 420),    // D038：同屏上限三档阶梯 300/360/420
       circles: [
         { tpl: "SC03", count: 12 + Math.floor(t / 2) },
         { tpl: "SC02", count: 8 + Math.floor(t / 3) },

@@ -4,11 +4,11 @@
  *   一、LEVEL_021~099 连续存在无缺号、字段齐全、name 中文格式「第 N 关 · 章名 k」
  *   二、theme 79 关两两不同且不与 1~20 关撞色；地图正方形、区间 [1920,3000]、缓增无断崖
  *   三、难度曲线单调不减：mapW/progressGoal/timeLimit/artisanAtKills/eliteBase；
- *       monsterCap 恒 300；monsterLevel 封顶 10
+ *       monsterCap 三档阶梯（300/360/420）；monsterLevel 封顶 10
  *   四、circles：模板 id 全部存在、count 为正；SC04 不挂新关；圆总数单调不减
- *   五、BOSS：全部为存在的 BS 模板；全表覆盖 10 只；章节终关（30/40/…/90）与 99 关 = BS0010
+ *   五、BOSS：全部为存在的 BS 模板；全表覆盖 10 只；章节终关各章专属（30=BS0001…90=BS0007）、99 关 = BS0010
  *   六、elitePool 可解析、引用 ED 存在、权重合计 100；高威胁 ED0003 占比随关卡非降
- *   七、levelCurve.rows 99 行 lv 连续、countMul/hpMul 单调；hpMul 对齐成长口径；
+ *   七、levelCurve.rows 99 行 lv 连续、countMul/hpMul 单调；hpMul 分段成长口径（21~99 用 3.28+(lv-20)×0.10）；
  *       21~99 行不启用毒圈/补给、宝箱档 CT4
  *   八、CFG.sectors 8 章覆盖 21~99 无缝无重叠；CFG.mainLevelCount === 99；
  *       CFG._validateLevelCurve() 自检 ok:true
@@ -93,10 +93,15 @@ if (CFG) {
   check("三 artisanAtKills 单调不减（封顶 240）",
     NEW.every((l, i) => i === 0 ? l.artisanAtKills >= OLD[19].artisanAtKills : l.artisanAtKills >= NEW[i - 1].artisanAtKills)
     && NEW[78].artisanAtKills === 240);
-  check("三 eliteBase 单调不减（封顶 30，" + OLD[19].eliteBase + "→" + NEW[78].eliteBase + "）",
+  check("三 eliteBase 单调不减（封顶 55，" + OLD[19].eliteBase + "→" + NEW[78].eliteBase + "）",
     NEW.every((l, i) => i === 0 ? l.eliteBase >= OLD[19].eliteBase : l.eliteBase >= NEW[i - 1].eliteBase)
-    && NEW[78].eliteBase === 30);
-  check("三 monsterCap 恒 300（性能红线，后期不回落）", NEW.every(l => l.monsterCap === 300));
+    && NEW[78].eliteBase === 54);
+  check("三 monsterCap 三档阶梯 300（21~50）/360（51~80）/420（81~99）且单调不减",
+    NEW.every((l, i) => {
+      const lv = i + 21;
+      const want = (lv <= 50) ? 300 : (lv <= 80 ? 360 : 420);
+      return l.monsterCap === want && (i === 0 || l.monsterCap >= NEW[i - 1].monsterCap);
+    }) && NEW[78].monsterCap === 420);
   check("三 monsterLevel 封顶 10（压力由曲线倍率承载）", NEW.every(l => l.monsterLevel === 10));
 
   /* ---- 四、circles ---- */
@@ -108,9 +113,10 @@ if (CFG) {
 
   /* ---- 五、BOSS ---- */
   check("五 新 79 关 boss 均为存在的 BS 模板", NEW.every(l => !!(CFG.monsters[l.boss] && CFG.monsters[l.boss].type === "boss") && l.boss.indexOf("BS") === 0));
-  check("五 全表 boss 覆盖恰 10 只（10 模板按序循环）", new Set(L.map(l => l.boss)).size === 10);
-  check("五 第 30/40/…/90 关与第 99 关 BOSS = BS0010（章节终局·邪神本体）",
-    [29, 39, 49, 59, 69, 79, 89, 98].every(i => L[i].boss === "BS0010"));
+  check("五 全表 boss 覆盖恰 10 只（普通关循环 9 只 + 终关 BS0010）", new Set(L.map(l => l.boss)).size === 10);
+  check("五 章节终关各章专属（30=BS0001…90=BS0007，互不相同）",
+    [29, 39, 49, 59, 69, 79, 89].every((idx, k) => L[idx].boss === "BS000" + (k + 1)));
+  check("五 第 99 关 BOSS = BS0010（终局·邪神本体）", L[98].boss === "BS0010");
 
   /* ---- 六、elitePool ---- */
   check("六 新 79 关 elitePool 可解析、引用的 ED 编号全部存在、权重合计 100", NEW.every(l => { const p = parsePool(l.elitePool); return !!p && p.total === 100; }));
@@ -122,8 +128,8 @@ if (CFG) {
   check("七 levelCurve.rows 99 行且 lv=1..99 连续", !!curve && Array.isArray(curve.rows) && curve.rows.length === 99 && curve.rows.every((r, i) => r.lv === i + 1));
   check("七 countMul/hpMul 全表单调不减（" + curve.rows[19].countMul + "→" + curve.rows[98].countMul + " / " + curve.rows[19].hpMul + "→" + curve.rows[98].hpMul + "）",
     curve.rows.every((r, i) => i === 0 || (r.countMul >= curve.rows[i - 1].countMul && r.hpMul >= curve.rows[i - 1].hpMul)));
-  check("七 新 79 行 hpMul 与 monsterLevel 成长口径一致（1+(lv-1)×0.12）",
-    curve.rows.slice(20).every((r, i) => near(r.hpMul, 1 + (i + 21 - 1) * 0.12)));
+  check("七 新 79 行 hpMul 从 L20 基准续接 0.10/关（3.28+(lv-20)×0.10）",
+    curve.rows.slice(20).every((r, i) => near(r.hpMul, 3.28 + (i + 1) * 0.10)));
   check("七 新 79 行 countMul 沿 9/10 关斜率 +0.15/关外推",
     curve.rows.slice(20).every((r, i) => near(r.countMul, Math.round((3.75 + (i + 1) * 0.15) * 100) / 100, 1e-6)));
   check("七 新 79 行不启用毒圈/补给（hazard/supply=null 且关卡未开 hazardEnabled/supplyEnabled）",

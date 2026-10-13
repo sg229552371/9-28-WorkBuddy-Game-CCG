@@ -33,19 +33,19 @@ if [ -n "$REPO_ROOT" ]; then
   esac
 fi
 
-EXPECT_VERSION="20261056"
+EXPECT_VERSION="20261057"
 
 # 核心文件 → 期望的 git blob 哈希（该快照的权威指纹；30 个）
 EXPECT_FILES="
-index.html 5af3b76bab6f21049dc8aaa719d96cb06fdc1077
-js/config.js 5f02830d6512103bd362756a219f54f45f21aabc
+index.html d8ee6b6e26ec0e9379d1475a6bdf75314a0edbd0
+js/config.js 6e08189323cc00fade294b6b42ae2030919d011a
 js/game.js 96f2a78e4941bad225e408e9daf6e8925c6199cf
 js/combat.js d50c0a5d41d2504c92193d198f12c9995cf316dd
 js/items.js e61503dcc3b43f82183fe1668890421e6cf45d74
 js/ui.js db7a66ec2d450dbc506d106b8e07ddd0bcd44326
 js/ui-panels.js e5e08de4d1ea8d4c41fe8da6321eb83fc0af3cca
 js/main.js d2df4103da108f2ae6848b00354d7edfbf935957
-js/core.js 85140fff6d9d1cb5e5522298d3747f03ecbcefbe
+js/core.js b50a4804003c51171e2c59b5c7ad2bb237ea35f9
 js/modes.js 3d02b1757514379b3a3d37c272334fac56b59f8c
 css/style.css 8ddcab2ce429821836f0d88984515efa9641359b
 run_tests.sh 0e937cbe782171441da7610a3f5d982283666bfe
