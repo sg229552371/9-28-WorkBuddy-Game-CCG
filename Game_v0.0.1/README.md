@@ -59,6 +59,7 @@ node smoke_test.js         # 单个测试
 
 **主入口（手机优先）：** <https://bagrogue-shooter-85672.app.workbuddy.host/>
 —— WorkBuddy 托管站，国内访问更稳；⚠️ **独立部署，每轮 push 后必须重新发布**。
+—— ⚠️ **重新发布必须从仓库根 `F:/AI-Game` 发布**（主入口 app 绑定的是仓库根；根 `index.html` 是跳转壳 → `Game_v0.0.1/index.html`）。在 `Game_v0.0.1/` 目录发布会**新建一个 app/新链接**，不会更新主入口。
 
 **备用入口（自动最新）：** <https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/>
 —— 推送到 `main` 后 1~2 分钟自动生效，无需任何发布动作。

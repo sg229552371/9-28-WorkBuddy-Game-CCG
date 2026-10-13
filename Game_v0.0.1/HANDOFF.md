@@ -26,6 +26,7 @@ HTML 原型用于验证玩法与布局，引擎迁移是后续议题。
 | 试玩（备用·自动最新） | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/` |
 
 > ⚠️ 托管站是**独立部署，不跟随 GitHub**。改完必须**重新发布**，否则手机上玩的还是旧版。
+> ⚠️ **重新发布须从仓库根 `F:/AI-Game`**（主入口 app 绑定仓库根；从 `Game_v0.0.1/` 发布只会新建一个 app/新链接）。
 > ⚠️ `bagrogue-shooter.app.workbuddy.host` 与 `ae6c0d4fb9b5c352d.app.workbuddy.host` **已冻结，别再写**。
 
 ---

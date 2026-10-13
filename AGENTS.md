@@ -26,4 +26,5 @@ bash push.sh "改动说明"       # 一键：跑门禁 → 全绿才提交 → �
 ## 在线入口
 
 - 托管站主入口：https://bagrogue-shooter-85672.app.workbuddy.host/ （独立部署，需「重新发布」才更新）
+  ⚠️ **重新发布必须从仓库根 `F:/AI-Game` 发布**（主入口 app 绑定的是仓库根；根 `index.html` 是跳转壳 → `Game_v0.0.1/index.html`）。从 `Game_v0.0.1/` 目录直接发布会**新建一个 app/新链接**，而不是更新主入口。
 - GitHub Pages：https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/ （自动跟随 main，约 1~2 分钟）

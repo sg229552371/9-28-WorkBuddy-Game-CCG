@@ -26,10 +26,11 @@
 | **试玩链接（正式·主入口）** | `https://bagrogue-shooter-85672.app.workbuddy.host/`（WorkBuddy 托管站 · 国内手机优先）|
 | ⚠️ 已冻结域名 | `bagrogue-shooter.app.workbuddy.host` / `ae6c0d4fb9b5c352d.app.workbuddy.host`（**别再写**）|
 | 试玩链接（备用·自动最新） | `https://sg229552371.github.io/9-28-WorkBuddy-Game-CCG/`（Pages · push 即生效）|
-| 门禁 | `bash run_tests.sh`（当前实测 **94 套 / PASS4111 / bad=0**；旧93套/4083仅为历史基线）· `bash run_tests.sh --quick` |
-| 交付 | 每轮：门禁全绿 → commit → push → **重新发布托管站** → 给的试玩链接 |
+| 门禁 | `bash run_tests.sh`（当前实测 **106 套 / PASS4494 / bad=0**；94套/4111、93套/4083 为历史基线）· `bash run_tests.sh --quick` |
+| 交付 | 每轮：门禁全绿 → commit → push → **重新发布托管站（从仓库根 `F:/AI-Game`）** → 给的试玩链接 |
 
 > ⚠️ **托管站是独立部署，不会自动跟随 GitHub**。用户以它为主入口 → 每轮改完 **必须重新发布**，否则手机上玩到的是旧版（此坑已踩过一次）。
+> ⚠️ **重新发布必须从仓库根 `F:/AI-Game` 发布**（主入口 app 绑定的是仓库根；根 `index.html` 是跳转壳 → `Game_v0.0.1/index.html`）。从 `Game_v0.0.1/` 目录直接发布会**新建一个 app/新链接**（实测得到 `bagrogue-shooter-08025…`），而不是更新主入口。
 
 ### 铁律（违反必出事）
 
