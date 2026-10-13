@@ -61,6 +61,7 @@ const UI = {
     }
     const hud = document.getElementById("hud");
     if (hud) hud.classList.remove("hidden");
+    this._bindSkillPanelBtn();   // 阶段 F：进战斗即接上技能面板入口（幂等）
   },
 
   /* ---------- 竖屏优先：方向状态（20.x） ----------
@@ -1300,6 +1301,7 @@ const UI = {
     this.updateSkillCd();
     // 全队技能栏（19.12）：底部居中，结构只建一次 + 变化检测更新（不每帧重建 DOM）
     this.renderPartySkillbar();
+    this._bindSkillPanelBtn();   // 阶段 F：技能面板入口按钮绑定（幂等，成本可忽略）
     // 进度条（26.x 统一战斗 UI：深渊与主线共用同一条，只换文案与数据源）
     const lv = G.levelCfg;
     const pf = document.getElementById("progress-fill");
@@ -1479,5 +1481,342 @@ Object.assign(UI, {
     if (typeof document === "undefined" || !document.getElementById) return;
     const hud = document.getElementById("hud");
     if (hud && hud.classList) hud.classList.remove("abyss-mode");
+  },
+});
+
+/* ============================================================================
+ * 阶段 F 独立区块：技能面板（主动可打开的总览页）
+ * ----------------------------------------------------------------------------
+ * 【缺口】屏 1~屏 4 已就绪（升级 4 选 1 / 战斗技能栏 / 悬浮详情 / 稀有技能弹窗），
+ *   但玩家**无法主动查看**当前装配全貌。本区块补一个 overlay：
+ *     两技能区 + 4 共享水晶槽区 + 辅助矩阵区 + 点槽详情 + 汇总标签/诊断。
+ *
+ * 【数据真源 = SkillPresenter（合同 §13）】
+ *   · panel(state, heroId)              → { skills[], slots[], matrix[], notices[] }
+ *   · detail(crystalId, heroId, build)  → { text, reasonCodes[], sections{...} }
+ *   界面**不自行判断「这颗水晶能不能作用于这个技能」** —— 生效 / 不适用 / 冲突
+ *   一律取 `panel.matrix[].crystals[].status`（由编译器解释结果产出）。
+ *
+ * 【降级】未通电英雄（`_crystalModeOf` 返回 null）→ 单行友好文案，绝不报错、不白屏；
+ *   SkillPresenter 缺失或抛错 → 同样走该降级分支。
+ *
+ * 【样式】新前缀 `crystal-panel*`（不复用 .mod-slot / 战斗栏的 .crystal-slot）；
+ *   品质双通道（颜色 + 星标/品质名），满足「不能只靠颜色辨识」。
+ *
+ * 【零影响】不改屏 1~4 任何既有行为与 DOM 结构（crystal_ui_test 守边界）；
+ *   所有 DOM 读写空值保护（元素缺失只跳过，不抛异常）。
+ * ========================================================================== */
+Object.assign(UI, {
+  /* ---------- 运行态 ---------- */
+  skillPanelOpen: false,
+  _skillPanelHeroId: "",
+  _skillPanelMembersCache: null,
+  _skillPanelBtnBound: false,
+  _skillPanelOverlayBound: false,
+  _skillPanelDetailKey: "",
+
+  /* 面板成员列表（队长 + 队友）：复用 _partyMembers；为空时回落 G.heroDef / G.player。空值保护。 */
+  _skillPanelMembers() {
+    let list = [];
+    try { list = this._partyMembers() || []; } catch (e) { list = []; }
+    if (!list.length && typeof G !== "undefined" && G) {
+      const hd = G.heroDef || (G.team && G.team[0]) || null;
+      const pid = (G.player && G.player.id) || (hd && hd.id) || null;
+      if (pid) list = [{ id: pid, name: (hd && hd.name) || pid, heroDef: hd || {}, rt: G.player || hd || { id: pid } }];
+    }
+    return list;
+  },
+
+  /* 入口按钮绑定（幂等）：点击 toggle 面板。showHudOnly / updateHUD 每帧调用，成本可忽略。 */
+  _bindSkillPanelBtn() {
+    if (typeof document === "undefined" || !document.getElementById) return;
+    if (this._skillPanelBtnBound) return;
+    const btn = document.getElementById("btn-skill-panel");
+    if (!btn) return;
+    this._skillPanelBtnBound = true;
+    btn.onclick = () => {
+      if (this.skillPanelOpen) this.closeSkillPanel();
+      else this.showSkillPanel();
+    };
+  },
+
+  /* 遮罩 / 关闭按钮绑定（幂等）：点遮罩本身或关闭按钮 → 关闭（不误伤面板内点击）。 */
+  _bindSkillPanelOverlay() {
+    if (this._skillPanelOverlayBound) return;
+    const ov = document.getElementById("skill-panel-overlay");
+    if (!ov) return;
+    this._skillPanelOverlayBound = true;
+    ov.onclick = (e) => { if (e && e.target === ov) this.closeSkillPanel(); };
+    const close = document.getElementById("btn-skill-panel-close");
+    if (close) close.onclick = () => this.closeSkillPanel();
+  },
+
+  /* 打开技能面板（可选指定英雄；缺省沿用上次 / 队伍首位）。返回 true = 已打开。
+   * 数据全部来自 SkillPresenter；presenter 缺失 / 未通电 → 仍打开，但内容走降级文案。 */
+  showSkillPanel(heroId) {
+    if (typeof document === "undefined" || !document.getElementById) return false;
+    const members = this._skillPanelMembers();
+    const ids = members.map(m => m.id);
+    let hid = heroId || this._skillPanelHeroId || "";
+    if (!hid || ids.indexOf(hid) < 0) hid = ids[0] || "";
+    this._skillPanelHeroId = hid;
+    this._skillPanelMembersCache = members;
+    this._bindSkillPanelBtn();
+    this._renderSkillPanel();
+    const ov = document.getElementById("skill-panel-overlay");
+    if (!ov) return false;
+    this._bindSkillPanelOverlay();
+    ov.classList.remove("hidden");
+    this.skillPanelOpen = true;
+    return true;
+  },
+
+  /* 关闭（幂等）：overlay 重新 hidden。清详情落痕，避免下次打开残留上一颗水晶的详情。 */
+  closeSkillPanel() {
+    const ov = (typeof document !== "undefined" && document.getElementById)
+      ? document.getElementById("skill-panel-overlay") : null;
+    if (ov) ov.classList.add("hidden");
+    this.skillPanelOpen = false;
+    this._skillPanelDetailKey = "";
+    return true;
+  },
+
+  /* 面板渲染入口：英雄 tab → 技能区 → 槽区 → 矩阵区 → 汇总标签 → 详情占位。
+   * 未通电（panel 取不到）→ 全区块降级文案 + 4 个空槽占位（不报错）。 */
+  _renderSkillPanel() {
+    if (typeof document === "undefined" || !document.getElementById) return;
+    const members = (this._skillPanelMembersCache && this._skillPanelMembersCache.length)
+      ? this._skillPanelMembersCache : this._skillPanelMembers();
+    let heroId = this._skillPanelHeroId || (members[0] && members[0].id) || "";
+    let member = null;
+    for (const m of members) if (m && m.id === heroId) { member = m; break; }
+    if (!member && members.length) { member = members[0]; heroId = member.id; this._skillPanelHeroId = heroId; }
+    this._renderSkillPanelTabs(members, heroId);
+
+    let cm = null;
+    try { cm = member ? this._crystalModeOf(member) : null; } catch (e) { cm = null; }
+    const panel = (cm && cm.panel) ? cm.panel : null;
+
+    const skBox = document.getElementById("crystal-panel-skills");
+    const slotBox = document.getElementById("crystal-panel-slots");
+    const mxBox = document.getElementById("crystal-panel-matrix");
+    const dtBox = document.getElementById("crystal-panel-detail");
+    const ntBox = document.getElementById("crystal-panel-notices");
+
+    /* 未通电降级：友好文案，不报错、不白屏（面板仍可正常开关）。 */
+    if (!panel) {
+      const msg = member
+        ? ((member.name || member.id) + " 未启用能量水晶（该英雄仍走旧路径：武器模块）")
+        : "暂无可查看的英雄";
+      if (skBox) skBox.innerHTML = `<div class="crystal-panel-degrade">${msg}</div>`;
+      if (slotBox) slotBox.innerHTML = this._skillPanelSlotCells(null);
+      if (mxBox) mxBox.innerHTML = `<div class="crystal-panel-degrade">${msg}</div>`;
+      if (dtBox) dtBox.innerHTML = `<div class="crystal-panel-degrade">${msg}</div>`;
+      if (ntBox) ntBox.innerHTML = "";
+      this._skillPanelDetailKey = "";
+      return;
+    }
+
+    const skills = Array.isArray(cm.skills) ? cm.skills : [];
+    if (skBox) skBox.innerHTML = skills.map(s => this._skillPanelSkillRow(s)).join("");
+    if (slotBox) {
+      slotBox.innerHTML = this._skillPanelSlotCells(panel);
+      const cells = (slotBox.querySelectorAll) ? slotBox.querySelectorAll(".crystal-panel-slot") : [];
+      const arr = Array.isArray(panel.slots) ? panel.slots : [];
+      for (let i = 0; i < cells.length; i++) {
+        const slotData = arr[i] || null;
+        cells[i].onclick = () => this._skillPanelShowDetail(slotData, heroId, cm);
+      }
+    }
+    if (mxBox) mxBox.innerHTML = this._skillPanelMatrix(panel, skills);
+    if (ntBox) ntBox.innerHTML = this._skillPanelNotices(panel);
+    if (dtBox) {
+      dtBox.innerHTML = `<div class="crystal-panel-hint">点击上方水晶槽查看详情` +
+        `（作用节点 / 代价 / 事件限制 / 冲突 / 不适用原因）</div>`;
+    }
+    this._skillPanelDetailKey = "";
+  },
+
+  /* 英雄切换 tab：每人一个 button；点选 → 切 heroId 并重渲染（多英雄局才有意义，单人局仅高亮当前）。 */
+  _renderSkillPanelTabs(members, heroId) {
+    const box = document.getElementById("crystal-panel-tabs");
+    if (!box) return;
+    const list = Array.isArray(members) ? members : [];
+    if (!list.length) { box.innerHTML = ""; return; }
+    box.innerHTML = list.map(m =>
+      `<button class="crystal-panel-tab${m.id === heroId ? " active" : ""}" type="button">${m.name || m.id}</button>`
+    ).join("");
+    const tabs = (box.querySelectorAll) ? box.querySelectorAll(".crystal-panel-tab") : [];
+    for (let i = 0; i < tabs.length; i++) {
+      const m = list[i];
+      if (!m) continue;
+      tabs[i].onclick = () => { this._skillPanelHeroId = m.id; this._renderSkillPanel(); };
+    }
+  },
+
+  /* 技能行（名字 / 等级 / 冷却）。数据 = panel.skills[]（经 _crystalSkillOrder 排序后）。 */
+  _skillPanelSkillRow(s) {
+    const name = (s && (s.name || s.skillId)) || "技能";
+    const sid = (s && s.skillId) || "";
+    const lv = (s && s.level) || 1;
+    const cd = (s && typeof s.cd === "number") ? s.cd : 0;
+    const cdTxt = cd > 0 ? (Math.round(cd * 10) / 10 + "s") : "无冷却";
+    return `<div class="crystal-skill-row" data-skill="${sid}">` +
+      `<span class="crystal-skill-name">${name}</span>` +
+      `<span class="crystal-skill-meta">Lv${lv} · 冷却 ${cdTxt}</span></div>`;
+  },
+
+  /* 4 共享水晶槽渲染：空槽占位；有槽显示名 + 品质色 + 品质名/星标（双通道）+ Lv n/max。
+   * panel 为 null（未通电）→ 全部输出空槽占位。 */
+  _skillPanelSlotCells(panel) {
+    const per = (CFG.moduleSlot && CFG.moduleSlot.perHero) || 4;
+    const slots = (panel && Array.isArray(panel.slots)) ? panel.slots : [];
+    const n = Math.max(per, slots.length);
+    let html = "";
+    for (let i = 0; i < n; i++) {
+      const s = slots[i] || null;
+      const cid = (s && s.crystalId) || null;
+      if (!cid) {
+        html += `<div class="crystal-panel-slot crystal-slot-empty" data-slot="${i}">` +
+          `<span class="crystal-panel-slot-no">${i + 1}</span></div>`;
+        continue;
+      }
+      const qObj = (s.quality && typeof s.quality === "object") ? s.quality : null;
+      const qid = (qObj && qObj.id) || (typeof s.quality === "string" ? s.quality : "");
+      const color = (qObj && qObj.color) || this._skillPanelQualityColor(qid) || "#b8c4d4";
+      const qName = (qObj && qObj.name) || "";
+      const rank = this._skillPanelQualityRank(qid);
+      const stars = rank > 0 ? new Array(rank + 1).join("★") : "";
+      const maxLv = this._skillPanelMaxLevel(cid);
+      const lv = s.level || 1;
+      html += `<div class="crystal-panel-slot crystal-slot-filled" data-slot="${i}" data-crystal="${cid}"` +
+        ` style="border-color:${color}">` +
+        `<span class="crystal-panel-slot-name" style="color:${color}">${s.name || cid}</span>` +
+        `<span class="crystal-panel-slot-lv">Lv${lv}/${maxLv}</span>` +
+        `<span class="crystal-panel-slot-q" style="color:${color}">${stars}${qName ? " " + qName : ""}</span>` +
+        `</div>`;
+    }
+    return html;
+  },
+
+  /* 辅助矩阵：每技能一行 × 每水晶一列，状态取 panel.matrix[].crystals[].status（不自行判定）。 */
+  _skillPanelMatrix(panel, skills) {
+    const rows = (panel && Array.isArray(panel.matrix)) ? panel.matrix : [];
+    const slots = (panel && Array.isArray(panel.slots)) ? panel.slots : [];
+    const nameOfSkill = {}, nameOfCrystal = {};
+    for (const s of (skills || [])) if (s && s.skillId) nameOfSkill[s.skillId] = s.name || s.skillId;
+    const cols = [];
+    for (const s of slots) if (s && s.crystalId) { cols.push(s.crystalId); nameOfCrystal[s.crystalId] = s.name || s.crystalId; }
+    if (!rows.length) return `<div class="crystal-panel-hint">暂无辅助矩阵数据</div>`;
+    const head = `<div class="crystal-matrix-head">` +
+      `<span class="crystal-matrix-skill">技能 / 水晶</span>` +
+      cols.map(cid => `<span class="crystal-matrix-colh">${nameOfCrystal[cid]}</span>`).join("") +
+      `</div>`;
+    const body = rows.map(r => {
+      const sid = (r && r.skillId) || "";
+      const cells = (r && Array.isArray(r.crystals)) ? r.crystals : [];
+      const cellHtml = cols.map(cid => {
+        let st = "inactive";
+        for (const c of cells) if (c && c.crystalId === cid) { st = c.status || "inactive"; break; }
+        const cls = st === "applied" ? "ok" : (st === "conflict" ? "bad" : "off");
+        const txt = st === "applied" ? "生效" : (st === "conflict" ? "冲突" : "不适用");
+        return `<span class="crystal-matrix-cell crystal-mx-${cls}">${txt}</span>`;
+      }).join("");
+      return `<div class="crystal-matrix-row" data-skill="${sid}">` +
+        `<span class="crystal-matrix-skill">${nameOfSkill[sid] || sid}</span>${cellHtml}</div>`;
+    }).join("");
+    return head + body;
+  },
+
+  /* 汇总标签 / 诊断：全部来自 panel.notices[]（不硬编码中文判定）。
+   * summaryTag 且 hidden:true → 只控制外显（不渲染），代价等详情不受影响。 */
+  _skillPanelNotices(panel) {
+    const list = (panel && Array.isArray(panel.notices)) ? panel.notices : [];
+    const vis = [];
+    for (const n of list) {
+      if (!n) continue;
+      if (n.kind === "summaryTag" && n.hidden) continue;   // 隐藏只控制外显，不控制结算
+      vis.push(n);
+    }
+    if (!vis.length) return "";
+    return vis.map(n => {
+      const kind = n.kind === "diagnostic" ? "crystal-notice-diag"
+        : (n.kind === "hiddenNotice" ? "crystal-notice-hidden" : "crystal-notice-tag");
+      return `<span class="crystal-notice ${kind}">${n.text || ""}</span>`;
+    }).join("");
+  },
+
+  /* 点槽 → 详情：正文取 `SkillPresenter.detail().text`（跳过与标题重复的首行），
+   * 脚注 chip 取 `detail().sections`（代价 / 限制 / 事件限制 / 冲突）。
+   * 空槽 → 引导文案；presenter 缺失 / 抛错 → 单行占位（不报错）。 */
+  _skillPanelShowDetail(slotData, heroId, cm) {
+    const box = document.getElementById("crystal-panel-detail");
+    if (!box) return;
+    const cid = (slotData && slotData.crystalId) || null;
+    if (!cid) {
+      box.innerHTML = `<div class="crystal-panel-hint">空水晶槽 · 升级可选择能量水晶填入</div>`;
+      this._skillPanelDetailKey = "";
+      return;
+    }
+    const qObj = (slotData.quality && typeof slotData.quality === "object") ? slotData.quality : null;
+    const qid = (qObj && qObj.id) || (typeof slotData.quality === "string" ? slotData.quality : "");
+    const color = (qObj && qObj.color) || this._skillPanelQualityColor(qid) || "#b8c4d4";
+    const qName = (qObj && qObj.name) || "";
+    const maxLv = this._skillPanelMaxLevel(cid);
+    let d = null;
+    try {
+      if (cm && typeof SkillPresenter !== "undefined" && SkillPresenter && typeof SkillPresenter.detail === "function") {
+        d = SkillPresenter.detail(cid, heroId, cm.build);
+      }
+    } catch (e) { d = null; }
+    let lines = d ? String(d.text || "").split("\n").filter(Boolean) : [];
+    if (lines.length > 1) lines = lines.slice(1);        // 首行 = 标题（与 head 重复）
+    if (!lines.length) lines = ["（暂无能量水晶详情数据）"];
+    const rows = lines.map(t => `<div class="crystal-detail-row">${t}</div>`).join("");
+    const sec = (d && d.sections) || {};
+    const chips = [];
+    for (const key of ["cost", "limits", "eventLimits", "conflicts"]) {
+      const items = Array.isArray(sec[key]) ? sec[key] : [];
+      for (const it of items) chips.push(`<span class="crystal-detail-chip" data-sec="${key}">${it}</span>`);
+    }
+    const chipHtml = chips.length ? `<div class="crystal-detail-chips">${chips.join("")}</div>` : "";
+    box.innerHTML = `<div class="crystal-detail-head"><b style="color:${color}">${slotData.name || cid}</b>` +
+      `<span style="color:${color}">${qName ? qName + " · " : ""}Lv${slotData.level || 1}/${maxLv}</span></div>` +
+      `<div class="crystal-detail-rows">${rows}</div>` + chipHtml;
+    box.dataset.crystal = cid;
+    box.dataset.heroId = heroId || "";
+    box.dataset.slot = String(slotData.slot != null ? slotData.slot : "");
+    this._skillPanelDetailKey = cid;
+  },
+
+  /* 品质色（读 CFG.skillSystem.qualityDefs；缺失返回空串 → 调用方回落默认色）。 */
+  _skillPanelQualityColor(qid) {
+    if (!qid) return "";
+    try {
+      const t = (typeof CFG !== "undefined" && CFG && CFG.skillSystem) || null;
+      const list = t && t.qualityDefs;
+      if (Array.isArray(list)) for (const q of list) if (q && q.id === qid && q.color) return q.color;
+    } catch (e) { }
+    return "";
+  },
+  /* 品质星数（rank）：品质双通道的「形状」通道，缺失返回 0（不显示星标）。 */
+  _skillPanelQualityRank(qid) {
+    if (!qid) return 0;
+    try {
+      const t = (typeof CFG !== "undefined" && CFG && CFG.skillSystem) || null;
+      const list = t && t.qualityDefs;
+      if (Array.isArray(list)) for (const q of list) if (q && q.id === qid) return q.rank || 0;
+    } catch (e) { }
+    return 0;
+  },
+  /* 水晶等级上限（levels.length）；缺失回落 1。 */
+  _skillPanelMaxLevel(cid) {
+    if (!cid) return 1;
+    try {
+      const t = (typeof CFG !== "undefined" && CFG && CFG.skillSystem) || null;
+      const cd = t && t.crystalDefs && t.crystalDefs[cid];
+      if (cd && Array.isArray(cd.levels) && cd.levels.length) return cd.levels.length;
+    } catch (e) { }
+    return 1;
   },
 });

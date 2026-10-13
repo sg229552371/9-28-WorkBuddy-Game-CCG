@@ -1166,6 +1166,18 @@ for (const sid in CFG.moduleSets) {
   （`#hud.abyss-mode 隐藏自动战斗按钮 … 原独立 #abyss-hud 经验条已删除（与 #hud-tr 重复）`）
   → 必须先 `css.replace(/\/\*[\s\S]*?\*\//g, "")` **剥注释**再断言。**规则 4 已第三次复发，写 CSS 正则前先剥注释。**
 
+### 5.55 ✅ 技能栏排布口径 = `[英雄名][A][X×4][A]`（C7 定稿，2026-10-13）
+
+能量水晶路径（`CFG.skillSystem.enabled = true`）下，全队技能栏**每人一条**的整行块序固定为：
+**`[英雄名][技能 A][水晶 X×4][技能 A]`**，其中 **A/X 簇严格 = `A X X X X A`**（A = 技能，X = 水晶，恒 2 技能 × 4 槽 = 6 格）；
+**英雄名块独占最左**，使「技能—水晶—技能」簇整体相邻；**仅 1 个技能时不补第二个 A**（不画空壳）。
+未通电（旧路径）仍为 `[A][名][X×4]`，逐字保留。
+
+- **渲染真值** = `js/ui.js` 的 `_buildPartyRow()` 新路径分支 `appendChild` 顺序（`info → icon → slotsBox →(icon2)`）；CSS / HTML **不定义块序**（`.ps-row` 为纯 flex）。
+- **数据约束（不变）**：技能数上限 = 2（`CFG.skillSystem.maxSkillsPerHero`）、水晶槽 = 4（`CFG.skillSystem.slotCount` / `CFG.moduleSlot.perHero`）。
+- **权威条目** = `game_design_proposal.md` **§20.1.1「技能栏排布」**；决策 = `decision_log_v1.md` **D019**；核对报告 = `hud_layout_review_v1.md`。
+- 🔴 **别再改回**「技能栏 = 武器栏 4×3」（第 1 代术语，已作废；4×3 仅指已弃用的 `CFG.weaponGrid`，现行遗物背包读 `CFG.chips.grid` 6×5）。
+
 ## 6. 并行开发切分（已验证可用）
 
 多路 Agent 并行时**按文件所有权切分**，一方不得碰另一方的文件：
@@ -1198,12 +1210,12 @@ cd F:/AI-Game && python -m http.server 8877 --bind 127.0.0.1    # 用 run_in_bac
 
 ## 8. 当前基线
 
-**全量 = 93 套 / `PASS 合计 = 4083` / `bad = 0`**（2026-10-12，APP_VERSION `20261045`）。仓库现有 **93 个 `_test.js`**，
-门禁**全部编排（93 套）**，**口径统一、无差集**（CORE 24 + UI 18 + FEATURE 27 + PERF 7 + SKILL 17）。
+**全量套数 / `PASS 合计` 以 `bash run_tests.sh` 实跑为准**（旧基线「93 套 / `PASS 合计 = 4083` / `bad = 0`（2026-10-12，APP_VERSION `20261045`）」**已随 D014~D023 各批落库过期，保留供回溯**；历史旧值还有「94 套 / PASS4111」，同样仅存档）。
+门禁**全部编排、口径统一、无差集**（明细以 `bash run_tests.sh --list` 与仓库根测试文件为准）。
 > 🔑 **技能系统入口 = `G_docs/skill_system_master_v1.md`**（总纲索引：文档权威层级 / 核心规则 / 代码落点 / 进度 / 缺口）。
 > 做技能系统相关开发**先读它**，不确定的规则/字段一律回查真源，别凭记忆联想。
 > 22.x 新增「能量水晶技能系统」12 套（`skill_config/compiler/damage/events/scheduler/runtime/reward/presenter/save/sweep/integration/fps_test`，
-> 共 403 断言），报告见 `G_docs/skill_system_w6_report.md`。系统**当前装好但未启用**（默认关），对现有玩法零影响。
+> 共 403 断言），报告见 `G_docs/skill_system_w6_report.md`。系统**已启用**（`CFG.skillSystem.enabled = true` + `migratedHeroIds` = H001~H012 共 12/12，见 D011/D012）——🔴 旧表述「装好但未启用（默认关）、对现有玩法零影响」**已过期**，保留供回溯。
 > ⚠️ 曾有一处误导（2026-10-09 已纠正）：`endless_affix/arena/record/team_test` 被说成「21.20 退役的死测试，别加回」。
 > 事实是它们覆盖的 4 个模块**至今仍被 `index.html` 加载并在运行**（`EndlessRecord` = 战绩榜在用，调用 10 处），
 > 21.20 只是连真正下线的 `endless_tier_test` 一起误摘。**已全部加回门禁，别再删。**

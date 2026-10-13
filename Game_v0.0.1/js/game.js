@@ -1405,6 +1405,24 @@ class World {
         } else UI.toast("背包已满，宝箱作废", "bad");
         break;
       }
+      case "giveInsurance": {
+        /* C3 落库（economy_insurance_design_v1.md §4.1，2026-10-13）：局内保险来源 —— 保险雕像
+         * （ALTAR_007）读条触发即得保险契约。复用既有 makeInsurance() 造 count 份，走既有
+         * grantItemToRun 入包（默认 full:"pending" → 满包转 r.pendingItems 待分配区，与开箱同机制）。
+         * 整段 try/catch 静默回落：任何异常（含无祭坛上下文 a）都不阻断战斗。
+         * 🔧 待接线：ALTAR_007 weight:0 → 默认不自动进池，本分支默认零行为。 */
+        try {
+          const n = (ef.count != null) ? ef.count : 1;
+          let overflow = 0;
+          for (let i = 0; i < n; i++) {
+            if (!grantItemToRun(r, makeInsurance())) overflow++;
+          }
+          const nm = (a && a.cfg && a.cfg.name) || (CFG.altars.ALTAR_007 && CFG.altars.ALTAR_007.name) || "保险雕像";
+          if (overflow > 0) UI.toast(`⛨ ${nm}：获得 ${n} 份保险契约（${overflow} 份转入待分配区）`, "gold");
+          else UI.toast(`⛨ ${nm}：获得 ${n} 份保险契约`, "gold");
+        } catch (e) { /* 静默回落：不阻断战斗 */ }
+        break;
+      }
       case "adjustMonsters": {
         // 邪神雕像（4.5）：按配置表的"目标"决定作用点，触发时在区间内随机取值 →
         // mul = 1 + v/100；同一 target 再次触发为"覆盖 + 重新计时"（不是无限叠乘）。

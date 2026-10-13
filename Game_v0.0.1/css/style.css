@@ -1630,3 +1630,101 @@ body.portrait #endless-settle-title { font-size: 19px; }
 body.portrait #abyss-tier-list { grid-template-columns: 1fr; }
 
 
+
+/* ===== 技能面板（阶段 F · 主动可打开的总览） =====
+ * 深色主题；新前缀 `crystal-panel*`（**不复用** .mod-slot / .crystal-slot，避免误伤旧测试）。
+ * 品质双通道：颜色（读 CFG.skillSystem.qualityDefs[].color）+ 星标 / 品质名 —— 不只靠颜色辨识。
+ * 品质四档参考色（配置缺失时的兜底）：普通 #b8c4d0 / 稀有 #4aa3ff / 史诗 #a05cff / 传说 #ffb545。 */
+.crystal-panel {
+  width:min(880px, 96vw);
+  max-height:calc(100dvh - 16px);
+  overflow:auto;
+  padding-bottom:max(10px, env(safe-area-inset-bottom));
+  text-align:left;
+}
+.crystal-panel-head { display:flex; align-items:center; gap:12px; margin-bottom:12px;
+  padding-bottom:10px; border-bottom:1px solid #2e3d55; }
+.crystal-panel-title { flex:1; margin:0; font-size:18px; color:#ffd76a; }
+.crystal-panel-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+.crystal-panel-tab {
+  background:#1b2536; color:#9fb4cc; border:1px solid #33486b; border-radius:8px;
+  padding:5px 12px; font-size:12px; cursor:pointer;
+}
+.crystal-panel-tab.active { background:#264066; color:#fff; border-color:#5aa2ff; }
+.crystal-panel-body { display:flex; flex-direction:column; gap:14px; }
+.crystal-panel-col { display:flex; flex-direction:column; gap:6px; }
+.crystal-panel-h3 { margin:0; font-size:12px; color:#8fa0b8; font-weight:normal; letter-spacing:1px; }
+
+/* 两技能区 */
+.crystal-panel-skills { display:flex; flex-direction:column; gap:6px; }
+.crystal-skill-row {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:#131b29; border-left:3px solid #5aa2ff; border-radius:6px; padding:7px 12px;
+}
+.crystal-skill-name { font-size:14px; color:#dbe6f5; font-weight:bold; }
+.crystal-skill-meta { font-size:11px; color:#8ba0bd; }
+
+/* 4 共享水晶槽区 */
+.crystal-panel-slots { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; }
+.crystal-panel-slot {
+  min-height:56px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:2px; padding:5px 4px; border-radius:8px; background:#101a2b; border:2px solid #3f5a86;
+  cursor:pointer; overflow:hidden;
+}
+.crystal-panel-slot.crystal-slot-empty { border-style:dashed; border-color:#33486b; background:#0d1420; }
+.crystal-panel-slot-no { font-size:15px; color:#46536a; font-weight:bold; }
+.crystal-panel-slot-name { font-size:11px; line-height:1.15; text-align:center; word-break:break-all; }
+.crystal-panel-slot-lv { font-size:10px; color:#9fb6d6; }
+.crystal-panel-slot-q { font-size:10px; line-height:1.1; text-align:center; }
+
+/* 辅助矩阵区（技能 × 水晶） */
+.crystal-panel-matrix { display:flex; flex-direction:column; gap:5px; }
+.crystal-matrix-head, .crystal-matrix-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.crystal-matrix-head { padding-bottom:4px; border-bottom:1px solid #25344c; }
+.crystal-matrix-head .crystal-matrix-colh { font-size:10px; color:#7d8aa0; }
+.crystal-matrix-skill { flex:0 0 68px; font-size:12px; color:#cfe0ff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.crystal-matrix-cell {
+  flex:1 1 0; min-width:52px; text-align:center; font-size:11px; border-radius:6px;
+  padding:4px 2px; border:1px solid #2e3d55; background:#131b29;
+}
+.crystal-mx-ok { color:#7de08a; border-color:#3fae6a; background:rgba(63,174,106,.14); }
+.crystal-mx-bad { color:#ff9a7f; border-color:#ae3f3f; background:rgba(174,63,63,.16); }
+.crystal-mx-off { color:#5c6b82; }
+
+/* 详情区（点槽后填充：正文来自 detail().text，脚注 chip 来自 detail().sections） */
+.crystal-panel-detail {
+  background:#0f1826; border:1px solid #2e3d55; border-radius:8px;
+  padding:10px 12px; max-height:240px; overflow:auto; min-height:56px;
+}
+.crystal-detail-head { display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+  border-bottom:1px solid #25344c; padding-bottom:6px; margin-bottom:6px; }
+.crystal-detail-head b { font-size:14px; }
+.crystal-detail-head span { font-size:11px; }
+.crystal-detail-rows { display:flex; flex-direction:column; gap:3px; }
+.crystal-detail-row { font-size:11px; line-height:1.55; color:#dbe6f5; }
+.crystal-detail-chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; padding-top:6px; border-top:1px solid #25344c; }
+.crystal-detail-chip { font-size:10px; color:#9fb4cc; background:#1b2536; border:1px solid #33486b;
+  border-radius:5px; padding:1px 6px; }
+.crystal-panel-hint { font-size:11px; color:#7d8aa0; }
+.crystal-panel-degrade { font-size:12px; color:#c79bff; }
+
+/* 汇总标签 / 诊断（来自 panel.notices[]） */
+.crystal-panel-notices { display:flex; flex-wrap:wrap; gap:6px; }
+.crystal-notice { font-size:11px; border-radius:6px; padding:2px 8px; border:1px solid #33486b; color:#9fb4cc; background:#131b29; }
+.crystal-notice-tag { color:#ffd76a; border-color:#7a5c22; background:rgba(122,92,34,.18); }
+.crystal-notice-diag { color:#ff9a7f; border-color:#ae3f3f; background:rgba(174,63,63,.16); }
+.crystal-notice-hidden { color:#5c6b82; }
+
+/* 竖屏（390×844 优先）：单列堆叠，槽位 2 列，面板不溢出 */
+@media (orientation: portrait) {
+  .crystal-panel { width:94vw; max-height:calc(100dvh - 16px); }
+  .crystal-panel-slots { grid-template-columns:repeat(2, 1fr); }
+  .crystal-matrix-skill { flex-basis:56px; }
+  .crystal-matrix-cell { min-width:44px; }
+  .crystal-panel-detail { max-height:180px; }
+}
+body.portrait .crystal-panel { width:94vw; }
+body.portrait .crystal-panel-slots { grid-template-columns:repeat(2, 1fr); }
+
+/* 技能面板入口按钮（右上 #hud-tr 内，位于等级·货币行之下，右对齐） */
+#btn-skill-panel { margin-top:6px; }

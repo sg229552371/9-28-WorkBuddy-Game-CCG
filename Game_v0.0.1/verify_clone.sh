@@ -32,22 +32,22 @@ if [ -n "$REPO_ROOT" ]; then
   esac
 fi
 
-EXPECT_VERSION="20261052"
+EXPECT_VERSION="20261053"
 
 # 核心文件 → 期望的 git blob 哈希（该快照的权威指纹；30 个）
 EXPECT_FILES="
-index.html 9d8bddb0c95058689616f3ce4b7eacac4356d363
-js/config.js 2e43687f765b4fc35e3cc095d863c0d251d4e9d4
-js/game.js b2a8c6d8f57ab4245824e700c0cac89eca037da5
+index.html 0ec033be065f9573f8c40662b4f593474997ab7d
+js/config.js 4043cc631e426252e5e4732c140747687b303232
+js/game.js 99200dd493eddedb17151b1bec1acfdc793ca2b0
 js/combat.js c092387b598e3a84084842ea03ee7e5401163aa8
 js/items.js 0ce8327b59b692a018c4a4302a52cf0ec7030ce1
-js/ui.js 01f27728ddf314f09e7edeca23780cb0f922dd6c
+js/ui.js 4bb46c62de9b178be6ed00748351b29907ec1564
 js/ui-panels.js c04f72855cdf1daa5de016d71afdc88a21adc9b9
 js/main.js b2facf85812f5b20262b045a180ea12dac8caeb9
-js/core.js f9ac39e8599ba1c3a9c959fee5ecbe8f2f293341
+js/core.js eb05752a9252975195d92880b672f7c86e1604ac
 js/modes.js 1aa22bcb8e3a6e7786535db49b573b7b6f948a6e
-css/style.css 14c0f417e0576cfbd9abb768b843c0535a445b57
-run_tests.sh d6a99faf21a622357bee53fb9aa1a419d6c2843c
+css/style.css b5d7805727ab557c767556dd4cd4dc29bdb25498
+run_tests.sh 60f31ff1a37e175a4590aca81f828da4eaf02c14
 js/skill-compiler.js 61f92b5cc89886f9c567f8b735fce3fac6564784
 js/skill-playtest.js da357b70fe57a56a06617a35a21e32d68c39efe8
 js/skill-scheduler.js ee30f6d3810410080afb01aa4574e22b712c86a5

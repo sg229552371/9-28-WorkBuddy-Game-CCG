@@ -1197,56 +1197,73 @@ CFG.boss = {
  * ⚠️ role 分组被 hero_roster_test 一2c/2d/2e 锁定，**不要改**（输出 H001/H002/H003/H006、
  *   防御 H004/H005/H008/H009、辅助 H007/H010/H011/H012）。 */
 CFG.heroes = [
+  /* C1 落库（hero_roster_design_v1.md §4-A）：每角追加 3 个**纯元数据**键（零行为、不改现有键）：
+   *   playtag    —— 一句话玩法钩子（选人 UI / 设计可读性）
+   *   difficulty —— 操作难度档（1=低 2=中 3=高）
+   *   statBias   —— 数值倾向 { high:[], low:[] }，键名取自 CFG.statNames，仅供 UI 高亮/平衡参考，不参与结算
+   * 🔧 占位值，待策划定稿。 */
   { id: "H001", name: "猎手", desc: "远程速射 / 能量爆发 · 均衡输出", role: "output", range: "ranged", sprite: "hero",
     str: 6, agi: 8, int: 4,
     hp: 94, def: 2, atk: 16, energyMax: 100, energyRegen: 10,
-    spd: 306, radius: 18, weapon: "W001", summonMax: 2, trapMax: 1 },
+    spd: 306, radius: 18, weapon: "W001", summonMax: 2, trapMax: 1,
+    playtag: "均衡速射", difficulty: 1, statBias: { high: ["agi"], low: [] } },
   { id: "H002", name: "散弹手", desc: "远程三向散射 / 震荡波 · 贴脸压制输出", role: "output", range: "ranged", sprite: "hero",
     str: 8, agi: 6, int: 3,
     hp: 116, def: 3, atk: 23, energyMax: 100, energyRegen: 10,
-    spd: 290, radius: 19, weapon: "W002", summonMax: 2, trapMax: 1 },
+    spd: 290, radius: 19, weapon: "W002", summonMax: 2, trapMax: 1,
+    playtag: "贴脸散弹", difficulty: 3, statBias: { high: ["atk", "hp"], low: ["spd", "agi"] } },
   { id: "H003", name: "穿甲者", desc: "远程穿透 / 贯穿射线 · 脆皮高攻输出", role: "output", range: "ranged", sprite: "hero",
     str: 5, agi: 9, int: 3,
     hp: 84, def: 1, atk: 21, energyMax: 100, energyRegen: 10,
-    spd: 300, radius: 18, weapon: "W003", summonMax: 2, trapMax: 1 },
+    spd: 300, radius: 18, weapon: "W003", summonMax: 2, trapMax: 1,
+    playtag: "穿透玻璃炮", difficulty: 2, statBias: { high: ["agi", "atk"], low: ["hp", "def"] } },
   { id: "H004", name: "弹射手", desc: "远程跳弹 / 环形弹幕 · 牵制型防御", role: "defense", range: "ranged", sprite: "hero",
     str: 8, agi: 5, int: 4,
     hp: 132, def: 6, atk: 9, energyMax: 110, energyRegen: 11,
-    spd: 296, radius: 19, weapon: "W004", summonMax: 2, trapMax: 1 },
+    spd: 296, radius: 19, weapon: "W004", summonMax: 2, trapMax: 1,
+    playtag: "弹幕牵制", difficulty: 2, statBias: { high: ["hp", "def"], low: ["atk"] } },
   { id: "H005", name: "快枪手", desc: "近战突刺 / 疾跑翻滚 · 高机动防御", role: "defense", range: "melee", sprite: "hero",
     str: 8, agi: 9, int: 2,
     hp: 120, def: 5, atk: 10, energyMax: 105, energyRegen: 12,
-    spd: 320, radius: 18, weapon: "W005", summonMax: 2, trapMax: 1 },
+    spd: 320, radius: 18, weapon: "W005", summonMax: 2, trapMax: 1,
+    playtag: "机动前排", difficulty: 3, statBias: { high: ["spd", "agi"], low: ["hp", "def"] } },
   { id: "H006", name: "重炮手", desc: "近战重锤 / 巨型爆破 · 重甲火力输出", role: "output", range: "melee", sprite: "hero",
     str: 10, agi: 4, int: 3,
     hp: 138, def: 4, atk: 30, energyMax: 120, energyRegen: 8,
-    spd: 258, radius: 21, weapon: "W006", summonMax: 1, trapMax: 1 },
+    spd: 258, radius: 21, weapon: "W006", summonMax: 1, trapMax: 1,
+    playtag: "慢速重炮", difficulty: 2, statBias: { high: ["atk", "hp", "def"], low: ["spd", "agi"] } },
   // 原型验证角（批次 E）：召唤/陷阱技能原型载体，后续按设计再作解锁门槛
   { id: "H007", name: "召唤师", desc: "远程无人机 / 机炮 · 召唤物原型角", role: "aux", range: "ranged", sprite: "hero",
     str: 5, agi: 5, int: 8,
     hp: 106, def: 3, atk: 13, energyMax: 120, energyRegen: 12,
-    spd: 300, radius: 18, weapon: "W007", summonMax: 6, trapMax: 1 },
+    spd: 300, radius: 18, weapon: "W007", summonMax: 6, trapMax: 1,
+    playtag: "召唤托管", difficulty: 1, statBias: { high: ["int", "summonMax"], low: ["hp", "def"] } },
   { id: "H008", name: "陷阱师", desc: "近战布雷 / 大地雷 · 陷阱原型角", role: "defense", range: "melee", sprite: "hero",
     str: 9, agi: 6, int: 3,
     hp: 128, def: 6, atk: 11, energyMax: 110, energyRegen: 10,
-    spd: 288, radius: 19, weapon: "W008", summonMax: 2, trapMax: 3 },
+    spd: 288, radius: 19, weapon: "W008", summonMax: 2, trapMax: 3,
+    playtag: "预判布雷", difficulty: 3, statBias: { high: ["trapMax", "def"], low: ["atk"] } },
   // 铺量角（批次 F）：12 角补齐；26.x 起每位各挂 1 个**不重复**的特色技能（见 CFG.weapons）
   { id: "H009", name: "守护者", desc: "远程护盾 / 嘲讽战吼 · 阵地防御核心", role: "defense", range: "ranged", sprite: "hero",
     str: 11, agi: 3, int: 4,
     hp: 155, def: 8, atk: 8, energyMax: 115, energyRegen: 9,
-    spd: 274, radius: 21, weapon: "W009", summonMax: 2, trapMax: 1 },
+    spd: 274, radius: 21, weapon: "W009", summonMax: 2, trapMax: 1,
+    playtag: "站桩肉盾", difficulty: 1, statBias: { high: ["hp", "def", "str"], low: ["atk", "spd"] } },
   { id: "H010", name: "医疗兵", desc: "远程治疗弹 / 生命脉冲 · 续航恢复型", role: "aux", range: "ranged", sprite: "hero",
     str: 5, agi: 6, int: 8,
     hp: 110, def: 4, atk: 12, energyMax: 125, energyRegen: 13,
-    spd: 300, radius: 18, weapon: "W010", summonMax: 2, trapMax: 1 },
+    spd: 300, radius: 18, weapon: "W010", summonMax: 2, trapMax: 1,
+    playtag: "团队续航", difficulty: 2, statBias: { high: ["energyRegen", "int"], low: [] } },
   { id: "H011", name: "圣歌者", desc: "近战圣咏 / 鼓舞光环 · 群体增益型", role: "aux", range: "melee", sprite: "hero",
     str: 6, agi: 5, int: 8,
     hp: 120, def: 5, atk: 11, energyMax: 120, energyRegen: 13,
-    spd: 294, radius: 19, weapon: "W011", summonMax: 2, trapMax: 1 },
+    spd: 294, radius: 19, weapon: "W011", summonMax: 2, trapMax: 1,
+    playtag: "全队增益", difficulty: 2, statBias: { high: ["int", "def"], low: [] } },
   { id: "H012", name: "灵能者", desc: "近战灵能 / 灵能护罩 · 护盾自愈型", role: "aux", range: "melee", sprite: "hero",
     str: 5, agi: 6, int: 9,
     hp: 116, def: 4, atk: 14, energyMax: 130, energyRegen: 12,
-    spd: 298, radius: 19, weapon: "W012", summonMax: 2, trapMax: 1 },
+    spd: 298, radius: 19, weapon: "W012", summonMax: 2, trapMax: 1,
+    playtag: "全队护罩", difficulty: 2, statBias: { high: ["int", "energyMax", "atk"], low: [] } },
 ];
 
 /* ========== 21.6 选人界面角色顺序：输出 / 防御 / 治疗 ×4 轮循环（用户要求）==========
@@ -1268,41 +1285,41 @@ CFG.weapons = {
     // 暴露的技能标签：武器模块词缀只有匹配到标签才生效（16.5）
     // 术语（16.5）：技能石 = **主动技能**（绑定在本表武器上）、辅助石 = **武器模块**（CFG.moduleDefs，代码 module）
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT101", skill: "AT102" } },
+    skills: { basic: "AT101", skill: "AT102" }, archetype: "远程·直射" },
   W002: { id: "W002", name: "散射炮", desc: "三向散射，单发低伤近距压制（远程：3 条弹道）",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT103", skill: "AT104" } },
+    skills: { basic: "AT103", skill: "AT104" }, archetype: "远程·扇形" },
   W003: { id: "W003", name: "磁轨步枪", desc: "自带 2 层穿透的高速直线弹",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT105", skill: "AT106" } },
+    skills: { basic: "AT105", skill: "AT106" }, archetype: "远程·穿透" },
   W004: { id: "W004", name: "跳弹枪", desc: "子弹在墙与敌人间弹射 2 次",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT107", skill: "AT108" } },
+    skills: { basic: "AT107", skill: "AT108" }, archetype: "远程·弹射" },
   W005: { id: "W005", name: "双生短枪", desc: "近战双刀突刺：极快出手，需贴身短打",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT121", skill: "AT110" } },
+    skills: { basic: "AT121", skill: "AT110" }, archetype: "近战·突刺" },
   W006: { id: "W006", name: "攻城重炮", desc: "近战攻城锤：慢速重砸，技能为巨型范围爆破",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT121", skill: "AT112" } },
+    skills: { basic: "AT121", skill: "AT112" }, archetype: "近战·重锤" },
   W007: { id: "W007", name: "无人机母舰", desc: "技能召唤无人机协战（可被击毁）",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数", "召唤物"],
-    skills: { basic: "AT115", skill: "AT113" } },
+    skills: { basic: "AT115", skill: "AT113" }, archetype: "远程·召唤" },
   W008: { id: "W008", name: "布雷器", desc: "近战布雷：贴身挥击 + 布设地雷陷阱（敌人入圈延迟引爆）",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数", "陷阱"],
-    skills: { basic: "AT121", skill: "AT114" } },
+    skills: { basic: "AT121", skill: "AT114" }, archetype: "近战·陷阱" },
   // 铺量武器（批次 F）：专属绑定，技能引用 CFG.skills 既有条目（不新增技能）
   W009: { id: "W009", name: "堡垒炮", desc: "重型护盾炮，技能为嘲讽战吼（拉怪聚拢）",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT107", skill: "AT120" } },   // 26.x：防御定位载体挂嘲讽样板技能 AT120
+    skills: { basic: "AT107", skill: "AT120" }, archetype: "远程·守护" },   // 26.x：防御定位载体挂嘲讽样板技能 AT120
   W010: { id: "W010", name: "生命枪", desc: "远程治疗枪，技能为生命脉冲（伤害 + 全队回复）",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT101", skill: "AT122" } },
+    skills: { basic: "AT101", skill: "AT122" }, archetype: "远程·治疗" },
   W011: { id: "W011", name: "圣咏器", desc: "近战圣咏杖：贴身挥击，技能鼓舞光环全队增益",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT121", skill: "AT123" } },
+    skills: { basic: "AT121", skill: "AT123" }, archetype: "近战·增益" },
   W012: { id: "W012", name: "灵能杖", desc: "近战灵能杖：贴身重击，技能为自己与全队套护罩",
     tags: ["弹道数量", "冷却", "弹速", "范围", "穿透", "弹射次数"],
-    skills: { basic: "AT121", skill: "AT124" } },
+    skills: { basic: "AT121", skill: "AT124" }, archetype: "近战·护罩" },
 };
 
 /* ---------- 技能表（8.5 表 4：**单表 + cat 分类**，不物理拆表） ----------
@@ -1658,6 +1675,12 @@ CFG.altars = {
     effects: [{ type: "teleport", submap: "artisan" }] },   // 非随机刷出，由击杀进度触发
   RIFT: { name: "空间裂缝", color: "#5ad0ff", icon: "◈", radius: 117, channel: 2.0, weight: 0,
     effects: [{ type: "rift" }] },                          // B3 落库：首版 weight 0（不刷；当前亦无任何池引用）；后续恢复 3
+  /* C3 落库（economy_insurance_design_v1.md §4.1）：局内保险来源 —— 保险雕像（读条触发即得保险契约）。
+   * 复用既有祭坛框架（CFG.altars + World.triggerAltar + World.execEffect 的 giveInsurance 分支）。
+   * ⚠️ weight:0 → **不自动进池**（game.js / modes.js 池构建仅取 weight>0 者），零行为变更；
+   *    投放走 CFG.insuranceSource.altar / 后续解锁里程碑（ALTAR_007 权重）。🔧 待策划定稿。 */
+  ALTAR_007: { name: "保险雕像", color: "#5aa2ff", icon: "⛨", radius: 117, channel: 1.5, weight: 0,
+    effects: [{ type: "giveInsurance", count: 1 }] },
 };
 
 /* ---------- 主关卡开场冻结（出征进入主地图时的「停留 3 秒」） ----------
@@ -1706,6 +1729,9 @@ CFG.heroRoles = {
   },
   // 断言用：三定位必须齐全（全部导向同一路径 = 设计失衡，测试会报错）
   requireAll: ["output", "defense", "aux"],
+  /* C1 落库（hero_roster_design_v1.md §4-C）：操作难度从低到高的英雄 id 序（供教程 / 选人排序；
+   * 与 CFG.heroDisplayOrder 独立）。🔧 占位值，待策划定稿；零行为，不参与结算。 */
+  difficultyOrder: ["H001", "H004", "H010", "H006", "H012", "H005", "H003", "H011", "H007", "H008", "H002", "H009"],
 };
 
 /* ---------- 技能释放资源 = 冷却制（19.3） ----------
@@ -1713,7 +1739,9 @@ CFG.heroRoles = {
  * 影响面（待实现时同步处理）：
  *   - 英雄属性 energyMax / energyRegen 退役（条目保留但不再参与技能门槛，避免连锁改表）
  *   - 队友独立能量池（5.19）随之作废
- *   - 属性卡牌相关能量条目一并删除（卡牌系统已整体退役，见本文件卡牌墓碑注释） */
+ *   - 属性卡牌相关能量条目一并删除（卡牌系统已整体退役，见本文件卡牌墓碑注释）
+ * 🔧 C1 落库（hero_roster_design_v1.md §4-E-α）：英雄的 energyMax / energyRegen **仅供 energyMax 类
+ *   scaling（如 SK_PSYSHIELD 的 scaleStat:"energyMax"）与 UI 展示使用，不再作技能门槛**（门槛已由冷却制取代）。 */
 CFG.skillResource = {
   mode: "cooldown",        // "cooldown" = 冷却制（旧值 "energy" 已废弃）
   startReady: true,        // 进图时技能是否立即就绪（true = 首次开战即可放技能，不空转）
@@ -1923,7 +1951,26 @@ CFG.extract = { channel: 8.0, radius: 100, note: "死亡时撤离点雕像消散
  * 开箱概率掉出；占 1 格、有重量、可叠加；死亡时每份契约保护 1 件价值最高的物品；
  * 撤离成功时剩余契约折算为进化结晶；契约本身不参与死亡损失。 */
 /* 保险契约：背包消耗品，固定价值 60（撤离时走统一折算率 → 30 结晶，不再有独立 crystalRefund） */
-CFG.insurance = { name: "保险契约", chance: 0.15, weight: 5, value: 60, maxStack: 9 };
+/* C3 落库（economy_insurance_design_v1.md §4.1）：protectItems = 每份契约保护件数（P1 按件口径）。
+ * 对应 js/modes.js calcDeathPenalty：契约从死亡损失清单里按价值从高到低逐件捞回。🔧 待策划定稿。 */
+CFG.insurance = { name: "保险契约", chance: 0.15, weight: 5, value: 60, maxStack: 9, protectItems: 1 };
+
+/* ---------- 保险来源开关表（C3 落库，economy_insurance_design_v1.md §4.1） ----------
+ * 收口「局内保险从哪来」的开关与权重，避免散落魔法数。
+ *   altar    —— 保险雕像 ALTAR_007（读条触发即得 count 份）
+ *   artisan  —— 工匠世界购买（CFG.artisanServices.buyInsurance，已实现）
+ *   chestDrop—— 开箱几率掉出（CFG.insurance.chance，已实现）
+ *   eliteDrop—— 精英/Boss 掉落凭证（暂不启用，chance 0）
+ *   assured  —— 成就式保底（暂不启用，count 0）
+ * ⚠️ 只落数据：默认值下与现状行为一致（altar 雕像 weight:0 不自动进池；eliteDrop/assured 关闭）。
+ *    消费点接线待后续批次（如 calcDeathPenalty 保底分支 / 祭坛投放），本批次不改行为。🔧 待策划定稿。 */
+CFG.insuranceSource = {
+  altar: { enabled: true, id: "ALTAR_007", count: 1 },
+  artisan: { enabled: true },
+  chestDrop: { enabled: true },
+  eliteDrop: { enabled: false, chance: 0 },
+  assured: { enabled: false, count: 0 },
+};
 
 /* ---------- 武器等级 / 技能等级（技能等级 = 武器等级，同一条线；局外永久资产） ----------
  * 上限 **100 级**；曲线**公式驱动**（不再手写等级表，改参数即调全曲线）。
@@ -2174,6 +2221,22 @@ CFG.outLevel = {
   crystalKill: 1,                      // 🔴 已退役（19.8）：小怪击杀不给结晶，保留值仅为兼容现有逻辑
   crystalBoss: 60,                     // ✅ 来源①：击杀 BOSS 直接得结晶（20.10 30→60，配平后与折算源同量级）
   deathRatio: 0.3,                     // 死亡仅保留 30% 本局结晶（沿用原规则，逻辑阶段统一结算）
+  /* C4 落库（economy_insurance_design_v1.md §4.2）：结晶速率锚表 —— 把下方「配平口径」注释里的
+   * 假设值变成可测数据，供 out_level_flow_test 配平自检引用（勿再写死 15）。
+   *   salvageValueAssumed —— 典型单局剩余物资价值假设（撤离折算基数）
+   *   deathLossValue      —— 死亡场景折算价值（0 = 死亡不折算）
+   *   targetRuns          —— 满级预期局数目标区（设计目标 15~25 局）
+   *   mixedBossRate       —— 击杀 Boss 的对局占比（用于混合场景速率推算）
+   * 🔧 占位值，待策划定稿；纯数据，不改结算行为。 */
+  crystalRate: { salvageValueAssumed: 30, deathLossValue: 0, targetRuns: { min: 15, max: 25 }, mixedBossRate: 0.7 },
+  /* C4 落库（economy_insurance_design_v1.md §4.2）：局间永久解锁里程碑（对应 §3.4.2 N1/N2）。
+   * ⚠️ 只落数据、绝不接线（接线会新增 Meta.data 键 → 破 skill_save_session_test「键集不变」断言）。
+   * 🔧 待接线（Q5 待用户确认）；未接线前不影响任何解锁行为。用于后续把「局外等级 → 局内对冲/权重」闭环。 */
+  unlockMilestones: [
+    { lv: 3, unlock: "insuranceSlot", amount: 1 },
+    { lv: 6, unlock: "insuranceSlot", amount: 1 },
+    { lv: 9, unlock: "altarWeight", id: "ALTAR_007", delta: 6 },
+  ],
 };
 /* ---------- 配平口径（20.10 重新配平，产出与花费同源） ----------
  * 结晶**来源**（唯一入口 Meta.awardRun + 撤离折算，无散落魔法数字）：
@@ -2285,6 +2348,10 @@ CFG.audio = {
  *     crystal 条件（花结晶主动解锁，走 Meta.unlockHero）；两条都不配 = 暂不可解锁。 */
 CFG.unlockOrder = ["H001", "H002", "H003", "H004", "H005", "H006", "H007", "H008", "H009", "H010", "H011", "H012"];
 CFG.starterCount = 6;                  // 首发 6 角默认解锁
+/* C1 落库（hero_roster_design_v1.md §4-B）：首版 6 角名单（三定位各 2，每定位远/近各 1），与 unlockOrder 物理序解耦。
+ * 缺省/为空 → 回落旧行为（unlockOrder 前 starterCount 个），保证向后兼容。🔧 占位值，待策划定稿。
+ * 🔧 待接线（Q1 待用户确认）；未接线前不影响解锁行为。 */
+CFG.starterHeroIds = ["H001", "H006", "H004", "H005", "H010", "H012"];
 /* ⚗️ 测试阶段开关（用户要求：目前是测试阶段，开启所有角色方便人工测试）。
  * true = isHeroUnlocked() 首行短路、12 角全部可选中（解锁 UI 也随之全部点亮）。
  * 🔴 正式上线前必须改回 false —— 届时 unlock_ui_test 的锁定态断言会自动恢复意义。 */
@@ -2905,15 +2972,18 @@ CFG.skillSystem = {
     summonMigration: true,       // 批 2B（D012）：召唤/陷阱已迁入新路径（H007 召唤 / H008 陷阱）
   },
 
-  /* ---- 预算上限（合同 §15：全部进配置，缺失不得默认为无限）---- */
+  /* ---- 预算上限（合同 §15：全部进配置，缺失不得默认为无限）----
+   * E/H 首轮平衡（真源 G_docs/balance_proposal_eh_v0.1.md §2.6）：贴合性能红线
+   * （100 弹/秒 · 80 特效 · 80 角色同屏，见 perf_test.js）收紧活动实体/派生/区域上限。 */
   budgets: {
-    maxEffectsPerHero: 240,      // 每英雄活动实体上限
-    maxEffectsPerCast: 64,       // 单次施放实体上限（含并存批次）
-    maxDerivedPerEvent: 16,      // 单事件派生上限
-    maxEventDepth: 2,            // 事件链最大深度（首轮 ≤2 层）
-    maxEventPerStep: 256,        // 单模拟步事件队列消费上限
-    maxRegionsPerHero: 48,       // 每英雄同时存在的持续区域上限
-    overloadPolicy: "reject",    // reject | truncate（truncate 只按稳定创建顺序截断新派生）
+    maxEffectsPerHero: 120,      // 每英雄活动实体上限（240→120，贴 80 特效红线）
+    maxEffectsPerCast: 48,       // 单次施放实体上限（含并存批次）（64→48）
+    maxDerivedPerEvent: 12,      // 单事件派生上限（16→12，对齐 EP_DERIVED_EACH_HIT.maxCount）
+    maxEventDepth: 3,            // 事件链最大深度（2→3：与 budgetPolicies.BP_DEFAULT.maxEventDepth 统一，修复链式派生被静默截断）
+    maxEventPerStep: 256,        // 单模拟步事件队列消费上限（维持）
+    maxRegionsPerHero: 32,       // 每英雄同时存在的持续区域上限（48→32，与同屏 80 特效红线取齐）
+    maxPlayerBulletsPerSec: 60,  // 玩家技能侧每秒弹丸上限（= 性能红线 100 − Boss 40；见 CFG.boss.bulletBudget 注释）
+    overloadPolicy: "reject",    // reject | truncate（truncate 只按稳定创建顺序截断新派生）（维持）
   },
 
   /* ---- 默认值（合同 §6：可选字段默认值统一在此，不散落执行器）---- */
@@ -2991,8 +3061,10 @@ CFG.skillSystem = {
     TGT_NEAREST: { id: "TGT_NEAREST", mode: "nearest", maxRange: 520, tieBreak: "stableId" },
   },
   castPolicies: {                // 施放策略（无目标保持就绪，不消耗冷却；环绕类无目标可施放）
-    CAST_COOLDOWN: { id: "CAST_COOLDOWN", requiresTarget: true, trigger: "cooldown" },
-    CAST_ORBIT: { id: "CAST_ORBIT", requiresTarget: false, trigger: "cooldown" },
+    /* E/H 首轮平衡（balance_proposal_eh_v0.1.md §4②）：补冷却乘区下限 cdMulFloor（缺省 0 → 冷却可被 cdMul 乘到 0）。
+     * 由 SkillScheduler.cooldownFor 读取（floor），防「冷却缩减叠加」把技能冷却压到 0。 */
+    CAST_COOLDOWN: { id: "CAST_COOLDOWN", requiresTarget: true, trigger: "cooldown", cdMulFloor: 0.35 },
+    CAST_ORBIT: { id: "CAST_ORBIT", requiresTarget: false, trigger: "cooldown", cdMulFloor: 0.35 },
   },
 
   /* ---- 定义表（W1 产出内容，W6 由集成者合并写入）---- */
@@ -3012,7 +3084,9 @@ CFG.skillSystem = {
       id: "TP_ORBIT_CONTACT", kind: "orbitContact", nameKey: "template.orbitContact",
       capabilities: ["orbitContact"],
       tags: ["环绕", "接触"],
-      params: { radius: 70, angularSpeed: 2.2, count: 3, hitInterval: 0.35 },
+      /* E/H 首轮平衡：显式补 contactRadius=16（原仅全局 defaults.orbit 有，模板级缺该键 → 模板粒度不可调）。
+       * 消费点 SkillRuntime._makeEffect: eff.radius = params.contactRadius ?? 0。 */
+      params: { radius: 70, angularSpeed: 2.2, count: 3, hitInterval: 0.35, contactRadius: 16 },
     },
     TP_INSTANT_AREA: {
       id: "TP_INSTANT_AREA", kind: "instantArea", nameKey: "template.instantArea",
@@ -3510,7 +3584,7 @@ CFG.skillSystem = {
         id: "split.spawn", executor: "addNode", phase: "derive",
         selector: { read: "final", capabilitiesAll: ["split"] },
         event: "onHit", spawnTemplateId: "TP_FLIGHT_PROJECTILE",
-        hitPolicyId: "HP_SPLIT_CHILD", coefficient: 0.50,
+        hitPolicyId: "HP_SPLIT_CHILD", coefficient: 0.45,
         parameters: { count: 2 },
         inheritFactors: ["coefficient"], routePolicyId: "EP_DERIVED_ONCE",
       }],
