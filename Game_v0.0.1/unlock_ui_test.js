@@ -175,7 +175,8 @@ vm.runInContext(`
   const heroLvLocked = baseLocked.find(h => { const r = CFG.unlockRules && CFG.unlockRules[h.id]; return r && r.heroLv; });
   const crystalLocked = baseLocked.find(h => { const r = CFG.unlockRules && CFG.unlockRules[h.id]; return r && typeof r.crystal === "number"; });
   const h1 = CFG.heroes.find(h => h.id === "H001") || baseUnlocked[0];
-  check("基线：已解锁英雄数 = starterCount", baseUnlocked.length === CFG.starterCount);
+  /* C1 落库：首发改由 CFG.starterHeroIds 表达（starterCount 仅为缺省回落口径）→ 基线读 starterHeroIds。 */
+  check("基线：已解锁英雄数 = starterHeroIds.length", baseUnlocked.length === CFG.starterHeroIds.length);
   check("基线：存在 heroLv 型未解锁英雄", !!heroLvLocked);
   check("基线：存在 crystal 型未解锁英雄", !!crystalLocked);
 

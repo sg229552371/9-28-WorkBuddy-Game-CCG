@@ -180,6 +180,13 @@ const Game = {
     G.heroDef = G.team[0];
     G.levelCfg = UI.selectedLevel;
     G.run = createRun(G.heroDef);
+    /* C3/C4 接线（economy_insurance_design_v1.md §4）：开局自带保险（纯数据驱动）。
+     * 份数 = starterInsuranceSlots(Meta.data)（assured 开关份数 + 里程碑 insuranceSlot 累计）；
+     * 默认（assured 关 + 全员局外 LV1 未达 LV3/LV6）恒 0 → 逐位不变。复用既有 makeInsurance() + grantItemToRun。 */
+    const insN = (typeof starterInsuranceSlots === "function") ? starterInsuranceSlots(Meta.data) : 0;
+    for (let i = 0; i < insN; i++) {
+      if (typeof grantItemToRun === "function" && typeof makeInsurance === "function") grantItemToRun(G.run, makeInsurance());
+    }
     G.player = new Player(G.levelCfg.mapW / 2, G.levelCfg.mapH / 2);   // 出生在地图正中心
     G.mainWorld = new World(G.levelCfg.mapW, G.levelCfg.mapH, true);
     seedTrail(G.mainWorld, CFG.team.follow.seedDir[0], CFG.team.follow.seedDir[1]);   // 预铺尾迹：队友沿 seedDir 方向列队

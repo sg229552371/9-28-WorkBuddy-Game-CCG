@@ -280,6 +280,8 @@
 
 ### 4.1 C3 落库
 
+> ✅ **已落库并接线（2026-10-13 本轮落库，见 D026）**：C3-4 `CFG.insuranceSource` **消费点已接线**（`insuranceSlot` 开局按里程碑发放 / `altarWeight` 权重查询；**默认值下行为不变**）；局外解锁里程碑来源 = `CFG.outLevel.unlockMilestones`（**用既有 `Meta.data.heroes` 派生，不加新存档键**）。
+
 | # | 字段 | 现位置 / 插入点 | 默认值（🔧 占位） | 注释要点 | 状态 |
 | ---- | ---- | ---- | ---- | ---- | ---- |
 | C3-1 | `CFG.altars.ALTAR_007`（**新增**） | `js/config.js:1637` 的 `CFG.altars` 块内（附表尾） | `{ name:"保险雕像", color:"#5aa2ff", icon:"⛨", radius:117, channel:1.5, weight:0, effects:[{ type:"giveInsurance", count:1 }] }` | 与 ALTAR_001~005 同族；`weight:0` 先不自动进池（走 Q1 定向投放） | 🔧 |
@@ -289,6 +291,8 @@
 | C3-5 | `CFG.artisanServices.buyInsurance`（**保留**） | `js/config.js:2254` | `{ cost:150, desc:"购买 1 份保险契约" }`（不变） | 候选 A 保留；若实施 §3.4.2 N1 可再补 `metaBonus` | 已实现 |
 
 ### 4.2 C4 落库
+
+> ✅ **已落库并接线（2026-10-13 本轮落库，见 D026 · 对应下述 Q4 / Q5）**：C4-2 `CFG.outLevel.unlockMilestones` **已接线**（`Meta.data.heroes` 派生，不加新存档键）；C4-3 `CFG.endless.crystalCapPerRun` **已落库**（默认 `0` = 不封顶）。当前默认值下**行为不变**。
 
 | # | 字段 | 现位置 / 插入点 | 默认值（🔧 占位） | 注释要点 | 状态 |
 | ---- | ---- | ---- | ---- | ---- | ---- |
@@ -313,8 +317,8 @@
 | **Q1** | **C3 采用哪个（哪些）来源** | 以 **B（保险雕像 `ALTAR_007`）为主 + A（工匠世界购买）保留**；不叠 C；D 暂缓 | `CFG.altars` / `js/game.js` `execEffect` / 祭坛池 |
 | **Q2** | 保险**保护范围**口径（P1 按件 / P2 按品质 / P3 全保） | **P1 按件（现状，零改动）** | `js/modes.js:58~67` |
 | **Q3** | 保险契约**单局上限**（`maxStack:9` 是否保留）与是否允许「多份叠加保护多件」 | 保留 9；沿用「按件消耗」 | `CFG.insurance.maxStack` |
-| **Q4** | **深渊/无尽结晶是否封顶**、是否计入局外等级经济（§3.3 量级异常） | 建议**封顶**（`crystalCapPerRun`），或与主线分离计价 | `CFG.endless` / `js/rewards.js` |
-| **Q5** | **局间永久解锁清单**是否采纳 N1~N5（尤以 N1/N2 与 C3 耦合） | 采纳 **N1 + N2**；N3 慎用；N4/N5 与 Q4 一并定 | `CFG.outLevel.unlockMilestones` / `Meta` |
+| **Q4** | **深渊/无尽结晶是否封顶**、是否计入局外等级经济（§3.3 量级异常） | 建议**封顶**（`crystalCapPerRun`），或与主线分离计价<br>✅ **部分落库（D026）**：`CFG.endless.crystalCapPerRun` **已落库**（默认 `0` = 不封顶）；**封顶策略取值仍待用户拍板** | `CFG.endless` / `js/rewards.js` |
+| **Q5** | **局间永久解锁清单**是否采纳 N1~N5（尤以 N1/N2 与 C3 耦合） | 采纳 **N1 + N2**；N3 慎用；N4/N5 与 Q4 一并定<br>✅ **已落库并接线（D026）**：N1 `insuranceSlot` / N2 `altarWeight` 已由 `CFG.outLevel.unlockMilestones` **接线**（默认 0 份，行为不变）；N3/N4/N5 仍待审 | `CFG.outLevel.unlockMilestones` / `Meta` |
 | **Q6** | **速率目标**：接受 15~25 局，还是把混合场景压回目标（调 `crystalBoss` 或抬折算侧） | 保持 `crystalBoss=60`，用 Q5-N3 **可选**微调 | `CFG.outLevel` |
 | **Q7** | 是否**保留**开箱随机掉保险（`CFG.insurance.chance=0.15`） | 保留（作为第三条随机来源，权重不增） | `CFG.insurance.chance` |
 | **Q8** | 是否给保险加**局外常驻额度**（N1）作为局外成长 | 采纳（与 C3/C4 双向耦合） | `Meta.data` / `CFG.unlockRules` |

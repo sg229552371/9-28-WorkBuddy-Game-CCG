@@ -221,7 +221,10 @@ check("行为：开始按钮文案含人数（1/3）", startBtn && String(startB
 // ⑤ 未解锁英雄不可被选中（点击后 selectedChars 不含它）
 let toastMsg = "";
 vm.runInContext("UI.__origToast = UI.toast; UI.toast = function(m){ UI.__lastToast = m; };", ctx);
-const lockedCard = charBox.children.find(c => c.classList.contains("locked"));
+/* ⚠️ 卡片按 CFG.heroDisplayOrder 渲染 → 「物理序首个未解锁英雄」≠「展示序首个锁定卡」。
+ *    首发名单改由 CFG.starterHeroIds 表达后（H002/H003 掉出首发），两者不再相等；
+ *    故按 id 精确定位该英雄对应的卡（保持断言强度不变，不再依赖两种顺序恰好一致）。 */
+const lockedCard = charBox.children.find(c => c.classList.contains("locked") && c.innerHTML.indexOf(firstLockedId) >= 0);
 const firstLockedName = vm.runInContext(
   "(function(){var h=CFG.heroes.find(function(x){return x.id===" + JSON.stringify(firstLockedId) + ";});return h?h.name:'';})()", ctx);
 check("行为：存在未解锁头像卡（"+ firstLockedId +"）", !!lockedCard && lockedCard.innerHTML.indexOf(firstLockedId) >= 0);

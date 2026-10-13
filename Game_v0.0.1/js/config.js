@@ -1224,12 +1224,16 @@ CFG.heroes = [
     playtag: "弹幕牵制", difficulty: 2, statBias: { high: ["hp", "def"], low: ["atk"] } },
   { id: "H005", name: "快枪手", desc: "近战突刺 / 疾跑翻滚 · 高机动防御", role: "defense", range: "melee", sprite: "hero",
     str: 8, agi: 9, int: 2,
-    hp: 120, def: 5, atk: 10, energyMax: 105, energyRegen: 12,
-    spd: 320, radius: 18, weapon: "W005", summonMax: 2, trapMax: 1,
+    /* D1 落库（hero_roster_design_v1.md §4-D1）：把 H005 从「全库最快」拉回防御组中庸 —— spd 320→306、def 5→6、hp 120→126。
+     * 目的：防御定位不再靠「高机动刺客」数值承伤，而回到「高血高防」的组内画像。🔧 占位值，待策划定稿。 */
+    hp: 126, def: 6, atk: 10, energyMax: 105, energyRegen: 12,
+    spd: 306, radius: 18, weapon: "W005", summonMax: 2, trapMax: 1,
     playtag: "机动前排", difficulty: 3, statBias: { high: ["spd", "agi"], low: ["hp", "def"] } },
   { id: "H006", name: "重炮手", desc: "近战重锤 / 巨型爆破 · 重甲火力输出", role: "output", range: "melee", sprite: "hero",
     str: 10, agi: 4, int: 3,
-    hp: 138, def: 4, atk: 30, energyMax: 120, energyRegen: 8,
+    /* D2 落库（hero_roster_design_v1.md §4-D2）：hp 138→128、def 4→3（atk 30 不动）。
+     * 目的：不再「又肉又痛」，恢复「重炮=脆」的代价（输出组最高血/防回落到组内次高）。🔧 占位值，待策划定稿。 */
+    hp: 128, def: 3, atk: 30, energyMax: 120, energyRegen: 8,
     spd: 258, radius: 21, weapon: "W006", summonMax: 1, trapMax: 1,
     playtag: "慢速重炮", difficulty: 2, statBias: { high: ["atk", "hp", "def"], low: ["spd", "agi"] } },
   // 原型验证角（批次 E）：召唤/陷阱技能原型载体，后续按设计再作解锁门槛
@@ -1261,7 +1265,9 @@ CFG.heroes = [
     playtag: "全队增益", difficulty: 2, statBias: { high: ["int", "def"], low: [] } },
   { id: "H012", name: "灵能者", desc: "近战灵能 / 灵能护罩 · 护盾自愈型", role: "aux", range: "melee", sprite: "hero",
     str: 5, agi: 6, int: 9,
-    hp: 116, def: 4, atk: 14, energyMax: 130, energyRegen: 12,
+    /* D3 落库（hero_roster_design_v1.md §4-D3）：atk 14→12（与 H010 医疗兵齐平）。
+     * 目的：辅助定位不再给到接近半输出的攻击，回归纯辅助（护盾）画像。🔧 占位值，待策划定稿。 */
+    hp: 116, def: 4, atk: 12, energyMax: 130, energyRegen: 12,
     spd: 298, radius: 19, weapon: "W012", summonMax: 2, trapMax: 1,
     playtag: "全队护罩", difficulty: 2, statBias: { high: ["int", "energyMax", "atk"], low: [] } },
 ];
@@ -2342,21 +2348,27 @@ CFG.audio = {
 /* ========== 方向 3：局外成长——英雄解锁（追加区块，勿并入上方各表） ==========
  * 规划共 **12 个角色，首发解锁前 6 个**；CFG.heroes 现为 12 个（H001~H012，批次 F 已补齐铺量角），
  * H009~H012 已追加进 unlockOrder 并各自配置 unlockRules。
- * 解锁规则（isHeroUnlocked，见 game.js 末尾区块）：
- *   - unlockOrder 前 starterCount 个 = 首发默认解锁；
+ * 解锁规则（isHeroUnlocked，见 js/modes.js）：
+ *   - 首发默认解锁：**优先读 CFG.starterHeroIds**（非空数组则用它，与 unlockOrder 物理序解耦）；
+ *     该字段缺省/为空时回落旧行为（unlockOrder 前 starterCount 个）；
  *   - 其余按 CFG.unlockRules[id]：heroLv 条件（指定英雄局外等级达标即解锁）或
  *     crystal 条件（花结晶主动解锁，走 Meta.unlockHero）；两条都不配 = 暂不可解锁。 */
 CFG.unlockOrder = ["H001", "H002", "H003", "H004", "H005", "H006", "H007", "H008", "H009", "H010", "H011", "H012"];
-CFG.starterCount = 6;                  // 首发 6 角默认解锁
+CFG.starterCount = 6;                  // 首发 6 角默认解锁（starterHeroIds 缺省时的回落口径；不再是唯一首发来源）
 /* C1 落库（hero_roster_design_v1.md §4-B）：首版 6 角名单（三定位各 2，每定位远/近各 1），与 unlockOrder 物理序解耦。
  * 缺省/为空 → 回落旧行为（unlockOrder 前 starterCount 个），保证向后兼容。🔧 占位值，待策划定稿。
- * 🔧 待接线（Q1 待用户确认）；未接线前不影响解锁行为。 */
+ * 消费点 = js/modes.js 的 isHeroUnlocked（已接线）。 */
 CFG.starterHeroIds = ["H001", "H006", "H004", "H005", "H010", "H012"];
 /* ⚗️ 测试阶段开关（用户要求：目前是测试阶段，开启所有角色方便人工测试）。
  * true = isHeroUnlocked() 首行短路、12 角全部可选中（解锁 UI 也随之全部点亮）。
  * 🔴 正式上线前必须改回 false —— 届时 unlock_ui_test 的锁定态断言会自动恢复意义。 */
 CFG.testUnlockAllHeroes = true;
 CFG.unlockRules = {
+  /* C1 落库（hero_roster_design_v1.md §4-B）：首发名单改由 CFG.starterHeroIds 表达
+   * （H001/H006/H004/H005/H010/H012），原首发里的 H002 散弹手 / H003 穿甲者 会掉出首发。
+   * 为「12 角全可解锁」补 H002/H003 解锁规则（风格对齐既有 heroLv 型）。🔧 占位值，待策划定稿。 */
+  H002: { heroLv: { heroId: "H001", lv: 3 }, desc: "猎手（H001）局外达到 LV3 后解锁散弹手" },
+  H003: { heroLv: { heroId: "H006", lv: 4 }, desc: "重炮手（H006）局外达到 LV4 后解锁穿甲者" },
   // H007/H008 为原型验证角（批次 E），按注释「后续按设计再作解锁门槛」落地：
   H007: { heroLv: { heroId: "H006", lv: 3 }, desc: "重炮手（H006）局外达到 LV3 后解锁召唤师" },
   H008: { crystal: 300, desc: "主城花费 300 结晶解锁陷阱师" },
@@ -2674,6 +2686,10 @@ CFG.endless = {
   atkMul: 1.25,             // 敌人攻击倍率（常量，不随波次涨；用户口径 atk×1.25）
   dmgMulPerWave: 0.06,      // [退役] 旧伤害倍率每波增量；保留兼容（改由 atkMul 常量消费）
   reward: { base: 8, exp: 1.15 },   // 每波结晶 = round(base * wave ^ exp)
+  /* C4-3 落库（economy_insurance_design_v1.md §4.2）：单局深渊结晶上限；0 = 不封顶。
+   * 消费点 = rewards.js 的 Endless.settle 出口（包装层对返回 crystals 收口）。
+   * 背景：深渊累计可超主线 10~50 倍，需可配置封顶。🔧 待策划定稿（建议 Q4 定 2000 或按档）。 */
+  crystalCapPerRun: 0,
   chestEvery: 5,            // 每 N 波额外掉一枚宝箱（wave % chestEvery === 0）
   /* ---------- 26.x 深渊「祭坛周期式时间轴」----------
    * 取代原「开局一次性随机 5 座」（旧口径已废）。到点（相对进图冻结结束）随机投 1 座，
@@ -3119,13 +3135,15 @@ CFG.skillSystem = {
       id: "SK_FIREBALL", nameKey: "skill.fireball",
       /* 每级完整参数（22.4 起：以旧 AT102「能量爆发」当前有效值为迁移基准，v0.5 §10）。
        * 基准：冷却 1.8s · 伤害 150%攻击 · 命中后圆形范围爆炸 半径 130。
-       * L1~L100 由 skillLevels 曲线生成（22.8 W3 扩表）：冷却 1.80→0.90、系数 1.50→6.50。
+       * L1~L100 由 skillLevels 曲线生成（22.8 W3 扩表）。
+       * E/H 首轮平衡（balance_proposal_eh_v0.1.md §2.1/§2.2/§4）：LV1 锁死迁移基准不动；
+       *   LV100 冷却 = LV1 × 0.60 = 1.80 → 1.08；LV100 系数 = LV1 × 6.94 = 1.50 → 10.41。🔧 待策划定稿。
        * ⚠️ 结构契约：施放层参数（cooldown/castTime）留在本层，
        *    节点层参数必须放进 `parameters` 子对象 —— 编译器 _cloneNode 会把它并入节点参数，
        *    否则节点参数缺失（乘法归并基准 0 → 伤害恒 0，本轮踩过的坑）。 */
       levels: skillLevels(SKILL_LEVEL_MAX,
-        { cooldown: [1.80, 0.90], castTime: [0, 0] },
-        { coefficient: [1.50, 6.50], speed: [480, 715], life: [1.60, 2.20], radius: [8, 12] },
+        { cooldown: [1.80, 1.08], castTime: [0, 0] },
+        { coefficient: [1.50, 10.41], speed: [480, 715], life: [1.60, 2.20], radius: [8, 12] },
         /* B1 锚点（4 行）：单体法球，弹道数**永久锁 1**（增发走词条/水晶，见 b1_b2 提案需确认 #1）。 */
         { count: { 1: 1, 25: 1, 60: 1, 100: 1 } }),
       baseGraph: {
@@ -3164,8 +3182,8 @@ CFG.skillSystem = {
     SK_SHOCKWAVE: {
       id: "SK_SHOCKWAVE", nameKey: "skill.shockwave",
       levels: skillLevels(SKILL_LEVEL_MAX,
-        { cooldown: [2.40, 1.20], castTime: [0.15, 0.12] },
-        { coefficient: [1.10, 4.80], radius: [110, 165], life: [0.12, 0.18] }),
+        { cooldown: [2.40, 1.44], castTime: [0.15, 0.12] },
+        { coefficient: [1.10, 7.63], radius: [110, 165], life: [0.12, 0.18] }),
       baseGraph: {
         nodes: [
           {
@@ -3202,8 +3220,8 @@ CFG.skillSystem = {
     SK_SCATTER: {
       id: "SK_SCATTER", nameKey: "skill.scatter",
       levels: skillLevels(SKILL_LEVEL_MAX,
-        { cooldown: [1.90, 0.95], castTime: [0, 0] },
-        { coefficient: [1.30, 5.60], speed: [520, 760], life: [1.50, 2.00], radius: [9, 13] },
+        { cooldown: [1.90, 1.14], castTime: [0, 0] },
+        { coefficient: [1.30, 9.02], speed: [520, 760], life: [1.50, 2.00], radius: [9, 13] },
         /* B1 锚点：三向散射 3→6（LV1=3 对齐旧 AT103；LV100=6 约 2×，≤ affixTags 弹道数量 max 8）。 */
         { count: { 1: 3, 25: 4, 60: 5, 100: 6 } }),
       baseGraph: {
@@ -3228,8 +3246,8 @@ CFG.skillSystem = {
     SK_RAILGUN: {
       id: "SK_RAILGUN", nameKey: "skill.railgun",
       levels: skillLevels(SKILL_LEVEL_MAX,
-        { cooldown: [1.80, 0.90], castTime: [0, 0] },
-        { coefficient: [1.60, 6.90], speed: [760, 980], life: [1.40, 1.90], radius: [7, 10] },
+        { cooldown: [1.80, 1.08], castTime: [0, 0] },
+        { coefficient: [1.60, 11.10], speed: [760, 980], life: [1.40, 1.90], radius: [7, 10] },
         /* B1 锚点：穿透 2→5（LV1=2 对齐旧 AT105；LV100=5 = affixTags 穿透 max 5，收口 6→5）。 */
         { extraPierceCount: { 1: 2, 25: 3, 60: 4, 100: 5 } }),
       baseGraph: {
@@ -3254,8 +3272,8 @@ CFG.skillSystem = {
     SK_RINGBARRAGE: {
       id: "SK_RINGBARRAGE", nameKey: "skill.ringbarrage",
       levels: skillLevels(SKILL_LEVEL_MAX,
-        { cooldown: [2.00, 1.00], castTime: [0, 0] },
-        { coefficient: [1.20, 5.20], speed: [560, 800], life: [1.60, 2.10], radius: [9, 12] },
+        { cooldown: [2.00, 1.20], castTime: [0, 0] },
+        { coefficient: [1.20, 8.33], speed: [560, 800], life: [1.60, 2.10], radius: [9, 12] },
         /* B1 锚点：环形弹幕 8→12（基础 8 已 = 词条上限 → 技能基础单独越过，词条上限另算，需确认 #3）。 */
         { count: { 1: 8, 25: 9, 60: 11, 100: 12 } }),
       baseGraph: {
@@ -3280,8 +3298,8 @@ CFG.skillSystem = {
     SK_VOLLEY: {
       id: "SK_VOLLEY", nameKey: "skill.volley",
       levels: skillLevels(SKILL_LEVEL_MAX,
-        { cooldown: [1.50, 0.75], castTime: [0, 0] },
-        { coefficient: [1.20, 5.20], speed: [640, 880], life: [1.20, 1.70], radius: [8, 11] },
+        { cooldown: [1.50, 0.90], castTime: [0, 0] },
+        { coefficient: [1.20, 8.33], speed: [640, 880], life: [1.20, 1.70], radius: [8, 11] },
         /* B1 锚点：疾风连爆 3→6（与 SK_SCATTER 共用同一曲线，便于横向对齐）。 */
         { count: { 1: 3, 25: 4, 60: 5, 100: 6 } }),
       baseGraph: {
@@ -3306,8 +3324,8 @@ CFG.skillSystem = {
     SK_SIEGEBLAST: {
       id: "SK_SIEGEBLAST", nameKey: "skill.siegeblast",
       levels: skillLevels(SKILL_LEVEL_MAX,
-        { cooldown: [2.30, 1.15], castTime: [0.10, 0.08] },
-        { coefficient: [1.90, 7.80], speed: [430, 620], life: [1.80, 2.40], radius: [12, 17] },
+        { cooldown: [2.30, 1.38], castTime: [0.10, 0.08] },
+        { coefficient: [1.90, 13.19], speed: [430, 620], life: [1.80, 2.40], radius: [12, 17] },
         /* B1 锚点：单体重炮，弹道数**永久锁 1**（威力体现在伤害与爆炸半径）。 */
         { count: { 1: 1, 25: 1, 60: 1, 100: 1 } }),
       baseGraph: {
@@ -3359,8 +3377,8 @@ CFG.skillSystem = {
       /* H009 守护者 ← 旧 AT120 嘲讽战吼：范围伤害（50%攻击）+ 半径内敌人强制攻击施放者 4 秒。
        * 半径曲线 180→340 与旧 anchors 同源；半径额外加成走 effect.scaleStat(def)/scalePct（运行时消费）。 */
       levels: skillLevels(SKILL_LEVEL_MAX,
-        { cooldown: [3.50, 1.75], castTime: [0, 0] },
-        { coefficient: [0.50, 2.00], radius: [180, 340], life: [0.12, 0.18] }),
+        { cooldown: [3.50, 2.10], castTime: [0, 0] },
+        { coefficient: [0.50, 3.47], radius: [180, 340], life: [0.12, 0.18] }),
       baseGraph: {
         nodes: [
           {
@@ -3385,8 +3403,8 @@ CFG.skillSystem = {
       id: "SK_LIFEPULSE", nameKey: "skill.lifepulse",
       /* H010 医疗兵 ← 旧 AT122 生命脉冲：范围伤害（160%攻击）+ 回复全队生命。 */
       levels: skillLevels(SKILL_LEVEL_MAX,
-        { cooldown: [6.00, 3.00], castTime: [0, 0] },
-        { coefficient: [1.60, 6.40], radius: [150, 260], life: [0.12, 0.18] }),
+        { cooldown: [6.00, 3.60], castTime: [0, 0] },
+        { coefficient: [1.60, 11.10], radius: [150, 260], life: [0.12, 0.18] }),
       baseGraph: {
         nodes: [
           {
@@ -3411,8 +3429,8 @@ CFG.skillSystem = {
       id: "SK_WARSONG", nameKey: "skill.warsong",
       /* H011 圣歌者 ← 旧 AT123 鼓舞光环：范围伤害（90%攻击）+ 全队攻击/移速增益 10 秒。 */
       levels: skillLevels(SKILL_LEVEL_MAX,
-        { cooldown: [8.00, 4.00], castTime: [0, 0] },
-        { coefficient: [0.90, 3.60], radius: [160, 250], life: [0.12, 0.18] }),
+        { cooldown: [8.00, 4.80], castTime: [0, 0] },
+        { coefficient: [0.90, 6.25], radius: [160, 250], life: [0.12, 0.18] }),
       baseGraph: {
         nodes: [
           {
@@ -3437,8 +3455,8 @@ CFG.skillSystem = {
       id: "SK_PSYSHIELD", nameKey: "skill.psyshield",
       /* H012 灵能者 ← 旧 AT124 灵能护罩：范围伤害（140%攻击）+ 全队防御护罩 12 秒。 */
       levels: skillLevels(SKILL_LEVEL_MAX,
-        { cooldown: [7.00, 3.50], castTime: [0, 0] },
-        { coefficient: [1.40, 5.60], radius: [140, 240], life: [0.12, 0.18] }),
+        { cooldown: [7.00, 4.20], castTime: [0, 0] },
+        { coefficient: [1.40, 9.72], radius: [140, 240], life: [0.12, 0.18] }),
       baseGraph: {
         nodes: [
           {
@@ -3464,8 +3482,8 @@ CFG.skillSystem = {
       /* H008 陷阱师 ← 旧 AT114 大地雷：布设地雷，敌人入圈 armDelay 秒后引爆（范围伤害 260%攻击）。
        * 批 2B：effect.kind = "trap" → 运行时不在施放点立即结算伤害，而是延迟引爆（伤害基准照旧传递）。 */
       levels: skillLevels(SKILL_LEVEL_MAX,
-        { cooldown: [5.00, 2.50], castTime: [0, 0] },
-        { coefficient: [2.60, 10.40], radius: [110, 180], life: [0.12, 0.18] },
+        { cooldown: [5.00, 3.00], castTime: [0, 0] },
+        { coefficient: [2.60, 18.04], radius: [110, 180], life: [0.12, 0.18] },
         /* B1 锚点：陷阱数 1→3（与旧 AT114 锚点逐值一致；LV100=3 = H008 trapMax 3）。
          * 运行时 _effectTrap 优先读本表 params.trapCount（等级驱动），effect.trapCount 仅作缺省兜底。 */
         { trapCount: { 1: 1, 25: 2, 60: 2, 100: 3 } }),
@@ -3496,7 +3514,7 @@ CFG.skillSystem = {
        * 批 2B：唯一**非伤害**技能 —— 模板 TP_SUMMON_UNIT（_NON_DAMAGE_KINDS 放行缺省 damageBasis）。
        * count 走等级曲线（3→6），runtime 以 params.count 决定召唤数量。 */
       levels: skillLevels(SKILL_LEVEL_MAX,
-        { cooldown: [5.50, 2.75], castTime: [0, 0] },
+        { cooldown: [5.50, 3.30], castTime: [0, 0] },
         { orbit: [66, 90], hp: [40, 260], atk: [6, 48], fireCd: [0.80, 0.50] },
         /* B1 锚点：召唤数 3→6（与旧 AT113 锚点逐值一致；LV100=6 = H007 summonMax 6，由 min() 钳制）。 */
         { count: { 1: 3, 25: 4, 60: 5, 100: 6 } }),
@@ -3667,7 +3685,9 @@ CFG.skillSystem = {
         selector: { read: "final", tagsAny: ["魔法"] },
         field: "moreDamageMul", parameter: "more", merge: "multiply",
       }],
-      levels: skillLevels(SKILL_LEVEL_MAX, null, { more: [1.12, 1.50] }),
+      /* E/H 首轮平衡（balance_proposal_eh_v0.1.md §2.3(a)）：LV1 保持 1.12，LV100 由 1.50 收到 1.55
+       * （满级「通用增幅」仍有一次可感知收益 +55% 魔法伤）。🔧 占位值，待策划定稿。 */
+      levels: skillLevels(SKILL_LEVEL_MAX, null, { more: [1.12, 1.55] }),
       conflicts: [], hidden: false,
       presentation: { nameKey: "crystal.arcaneAmp", detailKey: "crystal.arcaneAmp.detail" },
     },

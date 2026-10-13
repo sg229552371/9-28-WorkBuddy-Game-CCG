@@ -347,6 +347,21 @@ const SFX = {
     } catch (e) { this.ctx = null; }
   },
   resume() { if (this.ctx && this.ctx.state === "suspended") this.ctx.resume(); },
+  /* A2 资源消费（真实音频优先，供 play 调用）：传入的 key 命中 AssetHooks 缓存音频时
+   * 复位并播放，返回 true 表示已接管（调用方直接返回、不再走合成）；未命中 / AssetHooks
+   * 缺失 / 未挂载清单（cache 空）→ 返回 false，调用方回退既有 WebAudio 合成路径。
+   * set currentTime / play() 同步抛错或返回 rejected Promise（浏览器自动播放策略）都被
+   * 吞掉（try/catch + Promise.catch），绝不外抛 —— 播放失败不代表游戏异常。 */
+  _playHooked(key) {
+    const el = Assets.hookedAudio(key);
+    if (!el) return false;
+    try {
+      el.currentTime = 0;
+      const p = el.play();
+      if (p && typeof p.catch === "function") p.catch(function () { /* 自动播放被拒：静默忽略 */ });
+      return true;
+    } catch (e) { return false; }
+  },
   _env(gainVal, dur) {
     const g = this.ctx.createGain();
     g.gain.setValueAtTime(gainVal, this.ctx.currentTime);
@@ -372,8 +387,13 @@ const SFX = {
     src.connect(f); f.connect(this._env(gainVal, dur));
     src.start();
   },
-  play(name) {
-    if (!CFG.audio.enabled || !this.ctx) return;
+  play(name, key) {
+    if (!CFG.audio.enabled) return;
+    /* A2 资源消费（真实音频优先）：key 命中 AssetHooks 缓存音频时播真实音效；
+     * 未命中 / AssetHooks 缺失 / 播放异常 → 静默回退下方既有 WebAudio 合成路径。
+     * 不传 key 时（全部既有调用点）该分支完全跳过，行为与接线前逐位一致。 */
+    if (key && this._playHooked(key)) return;
+    if (!this.ctx) return;
     const now = Date.now();
     const th = { shoot: 70, hit: 55, coin: 100, pickup: 100 }[name] || 0;
     if (th && this.last[name] && now - this.last[name] < th) return;   // 高频音效节流
@@ -513,7 +533,7 @@ const BGM = {
 /* ---------- 版本上报（缓存自愈诊断；供排查新旧混合缓存） ----------
  * 与 index.html 顶部 APP_VERSION / <meta name="app-version"> 保持一致（发版时三处同步改）。
  * 纯静态字段赋值，不依赖 document/window —— 测试沙箱可无 DOM 独立加载本文件。 */
-Assets.buildVersion = "20261053";
+Assets.buildVersion = "20261054";
 try { console.log("[build] " + Assets.buildVersion); } catch (e) { /* 无 console 环境静默跳过 */ }
 
 /* ============================================================
@@ -623,4 +643,47 @@ SpatialHash.prototype.retune = function (count) {
   this.cell = next;
   this.buckets.clear();   // 旧键基于旧 cell，一律丢弃；tick 不递增也无妨（query 前必 clear）
   return true;
+};
+
+/* ============================================================
+ * A2 资源消费入口（AssetHooks → 渲染/音频接线基建）
+ * ============================================================
+ * 背景：AssetHooks（见本文件末尾区块）已具备「有资源就替换、无资源无缝回退」的
+ *   查表能力，但渲染/音频侧此前**零调用**（实测消费点 = 0）—— 即使挂载清单也无收益。
+ *   本区块补齐**消费入口基建**（不改动 AssetHooks 既有函数语义），让业务侧可一行接入：
+ *     - Assets.hookedSprite(key)     查表取真实精灵图，未命中 → null；
+ *     - Assets.hookedAudio(key)      查表取真实音频，未命中 → null；
+ *     - Assets.hookedHeroSprite(id)  按英雄 id 拼 "hero_" + id 键的纯查询辅助；
+ *     - SFX.play(name, key)          key 命中真实音频则优先播真实音，否则走合成。
+ * 铁律（零回归）：AssetHooks 缺失 / 清单未挂载（cache 空）时，本区块所有入口的行为
+ *   = 接线前 —— 返回 null / 走既有 WebAudio 合成音，**零可见变化**。所有查表一律
+ *   null-safe（typeof 守卫 + try/catch），绝不在渲染/播放热路径抛异常。
+ * 注：本轮**不**挂载清单、**不**改 index.html、**不**接进 render.js（素材就绪后由
+ *   主集成人执行端到端接线，见交付报告「落地步骤」）。 */
+
+/* 查表取真实精灵图：命中返回 Image（或 canvas），未命中 / 失败 / 无 AssetHooks → null。
+ * 内部即 AssetHooks.sprite()（O(1) 属性查表、无 IO），可安全用于每帧渲染热路径。 */
+Assets.hookedSprite = function (key) {
+  try {
+    if (typeof AssetHooks === "undefined" || !AssetHooks || typeof AssetHooks.sprite !== "function") return null;
+    const v = AssetHooks.sprite(key);
+    return v || null;
+  } catch (e) { return null; }   // 查表异常一律按「无资源」回退程序化占位
+};
+
+/* 查表取真实音频：命中返回 Audio，否则 null（调用方回退既有 WebAudio 合成音效）。 */
+Assets.hookedAudio = function (key) {
+  try {
+    if (typeof AssetHooks === "undefined" || !AssetHooks || typeof AssetHooks.audio !== "function") return null;
+    const v = AssetHooks.audio(key);
+    return v || null;
+  } catch (e) { return null; }
+};
+
+/* 英雄立绘查询（纯查询、无副作用）：按 CFG.heroes[].id 拼清单键 "hero_" + id 试查
+ * （清单命名规则见 js/assets_manifest.js：hero_H001 …）。id 非字符串 / 未命中 → null。
+ * 供渲染侧将来「一行接入」使用（本轮不接进 render.js，故对现状零影响）。 */
+Assets.hookedHeroSprite = function (id) {
+  if (typeof id !== "string" || !id) return null;
+  return this.hookedSprite("hero_" + id);
 };

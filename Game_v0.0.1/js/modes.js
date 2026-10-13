@@ -317,13 +317,21 @@ function outLevelStats(def, lv) {
   return { hp: Math.round(def.hp + hp), atk: Math.round(def.atk + atk), def: Math.round(def.def + defv) };
 }
 
-// 英雄是否已解锁（纯查询，无副作用）：① unlockOrder 前 starterCount 个 = 首发默认解锁；
+// 英雄是否已解锁（纯查询，无副作用）：
+// ① 首发默认解锁 —— **优先读 CFG.starterHeroIds**（C1 落库 · hero_roster_design_v1.md §4-B）：
+//    非空数组 → 命中即首发解锁；缺省/为空 → 回落旧行为（unlockOrder 前 starterCount 个），保证向后兼容。
 // ② 存档 unlockExtra[id] = 已花结晶主动解锁；③ heroLv 条件（指定英雄局外等级达标）达成即解锁。
 function isHeroUnlocked(id, data) {
   if (CFG.testUnlockAllHeroes) return true;   // ⚗️ 测试阶段全解锁（CFG.testUnlockAllHeroes，上线前关）
-  const order = CFG.unlockOrder || [];
-  const idx = order.indexOf(id);
-  if (idx >= 0 && idx < (CFG.starterCount || order.length)) return true;
+  // ① 首发名单：starterHeroIds 非空数组时以它为准（与 unlockOrder 物理序解耦），否则回落旧行为
+  const starters = CFG.starterHeroIds;
+  if (Array.isArray(starters) && starters.length > 0) {
+    if (starters.indexOf(id) >= 0) return true;
+  } else {
+    const order = CFG.unlockOrder || [];
+    const idx = order.indexOf(id);
+    if (idx >= 0 && idx < (CFG.starterCount || order.length)) return true;
+  }
   if (data && data.unlockExtra && data.unlockExtra[id]) return true;
   const rule = CFG.unlockRules && CFG.unlockRules[id];
   if (rule && rule.heroLv) {
@@ -331,6 +339,58 @@ function isHeroUnlocked(id, data) {
       && Meta.heroLevel.call(Meta, rule.heroLv.heroId) >= rule.heroLv.lv) return true;
   }
   return false;
+}
+
+/* ========== C3/C4 消费点接线（economy_insurance_design_v1.md §4）——纯查询区块 ==========
+ * 铁律：只读 CFG / data，无副作用；数值一律进 CFG，不在逻辑里写死。 */
+
+// 保险来源开关（纯查询）：读 CFG.insuranceSource[kind].enabled；条目/字段缺省 = true（向后兼容）。
+function insuranceSourceEnabled(kind) {
+  const src = CFG.insuranceSource || {};
+  const e = src[kind];
+  if (!e || e.enabled === undefined) return true;   // 缺省启用
+  return !!e.enabled;
+}
+
+// 账号进度代理 = 「全部英雄局外等级的最大值」（从既有 Meta.data.heroes 派生 → 不新增存档键）。
+function accountLevel(data) {
+  const hs = (data && data.heroes) || {};
+  let max = 1;
+  for (const id in hs) {
+    const lv = (hs[id] && hs[id].level) || 0;
+    if (lv > max) max = lv;
+  }
+  return max;
+}
+
+// 已达成的「局外等级里程碑」（纯函数）：里程碑 lv 语义 = 账号进度代理 accountLevel(data)。
+// 返回 CFG.outLevel.unlockMilestones 中 lv 已达标者（保持原序）。不新增 Meta.data 键 → 不破键集断言。
+function unlockedMilestones(data) {
+  const list = (CFG.outLevel && CFG.outLevel.unlockMilestones) || [];
+  const lv = accountLevel(data);
+  const out = [];
+  for (const m of list) if (m && lv >= (m.lv || 0)) out.push(m);
+  return out;
+}
+
+// 某祭坛在给定账号进度下的实际权重 = 基础 weight + 里程碑 altarWeight 加成（供投放判定调用）。
+function altarWeightOf(id, data) {
+  const base = (CFG.altars && CFG.altars[id] && CFG.altars[id].weight) || 0;
+  let delta = 0;
+  const ms = unlockedMilestones(data);
+  for (const m of ms) if (m.unlock === "altarWeight" && m.id === id) delta += (m.delta || 0);
+  return base + delta;
+}
+
+// 开局自带保险份数（纯查询）= assured 开关份数 + 里程碑 insuranceSlot 累计。
+// 默认（assured.enabled=false 且全员局外 LV1 未达 LV3/LV6）恒 0 → 零行为变更。
+function starterInsuranceSlots(data) {
+  let n = 0;
+  const src = CFG.insuranceSource || {};
+  if (insuranceSourceEnabled("assured")) n += ((src.assured && src.assured.count) || 0);
+  const ms = unlockedMilestones(data);
+  for (const m of ms) if (m.unlock === "insuranceSlot") n += (m.amount || 0);
+  return n;
 }
 
 /* ================= 方向 4：撤离压力设计（追加区块，§5.45 铁律：文件末尾独立区块 + 现有函数只插单行调用） =================
@@ -1264,6 +1324,10 @@ function abyssAltarPool(kind) {
     var a = altars[k];
     if (!a || !(a.weight > 0)) continue;                 // 只取有权重的（与 game.js:921 同口径）
     if (blocked.indexOf(k) >= 0) continue;               // 深渊：排除屏蔽白名单（RIFT）
+    /* C3 接线：保险雕像（CFG.insuranceSource.altar.id）受 altar.enabled 开关控制。
+     * 默认 enabled=true；ALTAR_007 weight:0 → 天然不进池（零行为变更），此判定为将来权重>0 时留口。 */
+    var insId = (CFG.insuranceSource && CFG.insuranceSource.altar && CFG.insuranceSource.altar.id) || "ALTAR_007";
+    if (k === insId && !insuranceSourceEnabled("altar")) continue;
     pool[k] = a.weight;
   }
   return pool;

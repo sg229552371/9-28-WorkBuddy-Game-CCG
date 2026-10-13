@@ -61,6 +61,15 @@ function endlessRewardCfg() {
   };
 }
 
+/* 单局深渊结晶上限（C4-3 落库 · economy_insurance_design_v1.md §4.2）：
+ * 读 CFG.endless.crystalCapPerRun；缺省/非法 = 0（= 不封顶，零行为）。
+ * 消费点 = 下方 Endless.settle 包装层（对返回的 crystals 收口）。 */
+function endlessCrystalCap() {
+  var e = (typeof CFG !== "undefined" && CFG && CFG.endless) || {};
+  var c = Number(e.crystalCapPerRun);
+  return (isFinite(c) && c > 0) ? c : 0;
+}
+
 /* 无尽奖励运行时状态（模块级，不污染 G/Endless）：
  *   lastSeenCleared —— 已处理过的「最近清空波次」标记（防同一波重复掉宝箱）
  *   chestPickups    —— 本区块自管的「地面宝箱」列表（type/loot 落点/剩余时间）
@@ -244,7 +253,12 @@ function installEndlessRewardHook() {
       try {
         var raw = Number(s.crystals) || 0;
         s.rawCrystals = raw;                                   // 原始波次累计（审计用）
-        s.crystals = EndlessReward.keptOnDeath(raw);           // 收敛为到手数
+        var hand = EndlessReward.keptOnDeath(raw);             // 收敛为到手数（先按死亡保留）
+        // C4-3 落库：单局深渊结晶封顶（cap = 0 时不封顶 → 逐位不变）
+        var cap = endlessCrystalCap();
+        if (cap > 0) hand = Math.min(hand, cap);
+        s.crystals = hand;
+        if (cap > 0) s.crystalCap = cap;                        // 仅封顶生效时暴露上限（供展示/测试）
       } catch (e) { /* 收敛失败则退回原值（不阻断结算） */ }
       return s;
     };
@@ -307,5 +321,6 @@ installEndlessSettleHook();
 if (typeof globalThis !== "undefined") {
   globalThis.EndlessReward = EndlessReward;
   globalThis.endlessRewardCfg = endlessRewardCfg;
+  globalThis.endlessCrystalCap = endlessCrystalCap;
   globalThis.endlessRewardOnSettle = endlessRewardOnSettle;
 }

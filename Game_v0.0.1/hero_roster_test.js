@@ -52,8 +52,12 @@ check("一2 id 序列 = H001~H012 且无重复", ids.join() === "H001,H002,H003,
   check("一2d 防御类内 id 升序（H004,H005,H008,H009）", idsByRole.defense.join() === "H004,H005,H008,H009");
   check("一2e 辅助类内 id 升序（H007,H010,H011,H012）", idsByRole.aux.join() === "H007,H010,H011,H012");
   check("一2f 物理首角仍 H001（默认队长契约）", CFG.heroes[0].id === "H001");
-  check("一2g unlockOrder 首发逻辑不受影响（前 6 = H001~H006）",
-    CFG.unlockOrder.slice(0, CFG.starterCount).join() === "H001,H002,H003,H004,H005,H006");
+  /* C1 落库（hero_roster_design_v1.md §4-B）：首发名单改由 CFG.starterHeroIds 表达
+   * （与 unlockOrder 物理序解耦）。断言从「unlockOrder 前 6」改为「starterHeroIds 首发集合」。 */
+  check("一2g 首发名单 = CFG.starterHeroIds（三定位各 2：H001/H006/H004/H005/H010/H012）",
+    Array.isArray(CFG.starterHeroIds) && CFG.starterHeroIds.length === 6 &&
+    new Set(CFG.starterHeroIds).size === 6 &&
+    CFG.starterHeroIds.join() === "H001,H006,H004,H005,H010,H012");
 }
 CFG.heroes.forEach(h => {
   const missing = HERO_FIELDS.filter(f => h[f] === undefined || h[f] === null || h[f] === "");
@@ -86,9 +90,12 @@ check("三1 unlockOrder 恰 12 项", Array.isArray(CFG.unlockOrder) && CFG.unloc
 check("三2 unlockOrder 无重复", new Set(CFG.unlockOrder).size === CFG.unlockOrder.length);
 /* 21.6：unlockOrder（解锁链序）独立于展示序（输出/防御/治疗循环），物理序恢复后仍同序 */
 check("三3 unlockOrder 与 heroes id 序列一致（同序）", CFG.unlockOrder.join() === ids.join());
-check("三4 starterCount = 6（首发 6 角不变）", CFG.starterCount === 6);
+/* C1 落库：首发改由 CFG.starterHeroIds 表达；starterCount 保留为「缺省回落口径」，不再是唯一首发来源。 */
+check("三4 starterCount = 6（starterHeroIds 缺省时的回落口径仍为 6）", CFG.starterCount === 6);
 
 /* ============ 四、unlockRules：H007~H012 全有条目，且条件类型被 isHeroUnlocked 支持（实测） ============ */
+/* C1 落库：H010/H012 已改为首发（CFG.starterHeroIds）→ 其 crystal 规则成为冗余条目；
+ * 「规则类型」仍逐条核对，但「结晶解锁行为」只对**非首发** crystal 英雄（H008）实测。 */
 const heroLvPassed = new Set(["H007", "H009", "H011"]);   // 配置为 heroLv 条件的英雄
 const crystalPassed = new Set(["H008", "H010", "H012"]);  // 配置为 crystal 条件的英雄
 
@@ -103,6 +110,10 @@ const crystalPassed = new Set(["H008", "H010", "H012"]);  // 配置为 crystal �
     (heroLvPassed.has(id) && isHeroLv) || (crystalPassed.has(id) && isCrystal));
   check("四3 " + id + " rule 带中文 desc", typeof rule.desc === "string" && rule.desc.length > 0);
 });
+/* C1 落库：H002/H003 掉出首发 → 补解锁规则，保证 12 角全可解锁（首发名单改由 starterHeroIds 表达）。 */
+check("四1b H002/H003 已补解锁规则（首发名单改由 starterHeroIds 后仍可解锁）",
+  !!CFG.unlockRules.H002 && !!CFG.unlockRules.H003 && (!!CFG.unlockRules.H002.heroLv || typeof CFG.unlockRules.H002.crystal === "number") &&
+  (!!CFG.unlockRules.H003.heroLv || typeof CFG.unlockRules.H003.crystal === "number"));
 
 /* ---- 实测：heroLv 条件（达成 / 未达成） ---- */
 ["H007", "H009", "H011"].forEach(id => {
@@ -116,8 +127,9 @@ const crystalPassed = new Set(["H008", "H010", "H012"]);  // 配置为 crystal �
   check("四6 " + id + " 条件回退后重新未解锁（查询式无残留）", !Meta.isHeroUnlocked(id));
 });
 
-/* ---- 实测：crystal 条件（结晶不足 / 足够主动解锁） ---- */
-["H008", "H010", "H012"].forEach(id => {
+/* ---- 实测：crystal 条件（结晶不足 / 足够主动解锁）—— 仅对**非首发** crystal 英雄实测。
+ * C1 落库：H010/H012 已改首发（crystal 规则冗余），实测口径收敛到 H008（仍为非首发 crystal 英雄）。 ---- */
+["H008"].forEach(id => {
   const need = CFG.unlockRules[id].crystal;
   delete Meta.data.unlockExtra[id];
   Meta.data.crystals = need - 1;
@@ -188,14 +200,17 @@ const BASE = {
   H002: { hp: 116, def: 3, atk: 23, energyMax: 100, spd: 290, weapon: "W002" },
   H003: { hp: 84, def: 1, atk: 21, energyMax: 100, spd: 300, weapon: "W003" },
   H004: { hp: 132, def: 6, atk: 9, energyMax: 110, spd: 296, weapon: "W004" },
-  H005: { hp: 120, def: 5, atk: 10, energyMax: 105, spd: 320, weapon: "W005" },
-  H006: { hp: 138, def: 4, atk: 30, energyMax: 120, spd: 258, weapon: "W006" },
+  // D1 落库（hero_roster_design_v1.md §4-D1）：H005 spd 320→306 / def 5→6 / hp 120→126
+  H005: { hp: 126, def: 6, atk: 10, energyMax: 105, spd: 306, weapon: "W005" },
+  // D2 落库（hero_roster_design_v1.md §4-D2）：H006 hp 138→128 / def 4→3（atk 30 不动）
+  H006: { hp: 128, def: 3, atk: 30, energyMax: 120, spd: 258, weapon: "W006" },
   H007: { hp: 106, def: 3, atk: 13, energyMax: 120, spd: 300, weapon: "W007" },
   H008: { hp: 128, def: 6, atk: 11, energyMax: 110, spd: 288, weapon: "W008" },
   H009: { hp: 155, def: 8, atk: 8, energyMax: 115, spd: 274, weapon: "W009" },
   H010: { hp: 110, def: 4, atk: 12, energyMax: 125, spd: 300, weapon: "W010" },
   H011: { hp: 120, def: 5, atk: 11, energyMax: 120, spd: 294, weapon: "W011" },
-  H012: { hp: 116, def: 4, atk: 14, energyMax: 130, spd: 298, weapon: "W012" },
+  // D3 落库（hero_roster_design_v1.md §4-D3）：H012 atk 14→12
+  H012: { hp: 116, def: 4, atk: 12, energyMax: 130, spd: 298, weapon: "W012" },
 };
 Object.keys(BASE).forEach(id => {
   const h = CFG.heroes.find(x => x.id === id), b = BASE[id];

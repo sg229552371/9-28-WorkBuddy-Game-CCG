@@ -94,9 +94,13 @@ Meta.data.heroes.H001 = { level: 1 };
 
 /* ============ 三、英雄解锁（首发 6 角 + 局外条件） ============ */
 check("三1 CFG.unlockOrder 与 starterCount 结构就位", Array.isArray(CFG.unlockOrder) && CFG.unlockOrder.length === 12 && CFG.starterCount === 6);
-check("三2 首发 6 角（H001~H006）默认解锁", [1,2,3,4,5,6].every(i => Meta.isHeroUnlocked("H00" + i)));
-check("三3 第 7/8 个（H007/H008）默认未解锁", !Meta.isHeroUnlocked("H007") && !Meta.isHeroUnlocked("H008"));
-check("三4 unlockedHeroes() 长度 = 6 且只含前 6 个", (() => { const u = Meta.unlockedHeroes(); return u.length === 6 && u.join() === "H001,H002,H003,H004,H005,H006"; })());
+/* C1 落库：首发名单改由 CFG.starterHeroIds 表达（H001/H004/H005/H006/H010/H012，与 unlockOrder 物理序解耦）。 */
+check("三2 首发 6 角（CFG.starterHeroIds）默认解锁",
+  CFG.starterHeroIds.join() === "H001,H006,H004,H005,H010,H012" && CFG.starterHeroIds.every(id => Meta.isHeroUnlocked(id)));
+check("三3 非首发（H002/H003/H007/H008）默认未解锁",
+  !Meta.isHeroUnlocked("H002") && !Meta.isHeroUnlocked("H003") && !Meta.isHeroUnlocked("H007") && !Meta.isHeroUnlocked("H008"));
+check("三4 unlockedHeroes() 长度 = 6 且 = starterHeroIds（按 heroes 物理序）",
+  (() => { const u = Meta.unlockedHeroes(); return u.length === 6 && u.join() === "H001,H004,H005,H006,H010,H012"; })());
 check("三5 边界：unlockOrder 之外 id / 无规则 → 未解锁", !Meta.isHeroUnlocked("H999"));
 // heroLv 条件：H007 需 H006 局外 LV3
 Meta.data.heroes.H006 = { level: 2 };
@@ -115,11 +119,11 @@ check("三10 结晶足够 unlockHero 成功：扣款 300 + 落档", Meta.unlockH
 check("三11 unlockHero 幂等（已解锁再调返回 true 不重复扣款）", (() => { Meta.data.crystals = 50; const r = Meta.unlockHero("H008"); return r === true && Meta.data.crystals === 50; })());
 check("三12 解锁记录持久化字段 unlockExtra 在 Meta.data 上", Meta.data.unlockExtra && Meta.data.unlockExtra.H008 === true);
 check("三13 全解锁条件满足 + unlockedHeroes() 最终 = 12 角全开", (() => {
-  Meta.data.heroes.H006 = { level: 3 };       // H007 条件
+  Meta.data.heroes.H001 = { level: 3 };       // H002 条件（H001 局外 LV3）
+  Meta.data.heroes.H006 = { level: 4 };        // H003 条件（H006 LV4）+ H007 条件（H006 ≥ LV3）
   Meta.data.heroes.H004 = { level: 5 };        // H009 条件
   Meta.data.heroes.H010 = { level: 6 };        // H011 条件
-  Meta.data.unlockExtra.H010 = true;           // H010 结晶解锁
-  Meta.data.unlockExtra.H012 = true;           // H012 结晶解锁
+  Meta.data.unlockExtra.H008 = true;           // H008 结晶解锁
   return Meta.unlockedHeroes().length === 12;
 })());
 

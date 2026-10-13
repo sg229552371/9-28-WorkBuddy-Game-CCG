@@ -236,6 +236,25 @@ vm.runInContext(`
   try { R.dropChest({ w: 100, h: 100, pickups: [] }, 5); } catch (e) { okDrop = false; }
   check("55 dropChest 对缺 G.player 的边界世界安全（不抛异常）", okDrop === true);
 
+  /* ============ ⑦ C4-3：单局深渊结晶封顶（CFG.endless.crystalCapPerRun；0 = 不封顶） ============ */
+  check("56 crystalCapPerRun 缺省 = 0（不封顶）", CFG.endless.crystalCapPerRun === 0);
+  check("57 cap=0 时不封顶（settle().crystals = kept(raw)，与封顶前逐位一致）", (function () {
+    var bak = CFG.endless.crystalCapPerRun; CFG.endless.crystalCapPerRun = 0;
+    Endless.reset(); Endless.begin(w); Endless.state.crystals = 5000;
+    var r = Endless.settle();
+    var okVal = (r.crystals === R.keptOnDeath(5000));
+    CFG.endless.crystalCapPerRun = bak;
+    return okVal;
+  })());
+  check("58 cap=1000 时 settle 结果 ≤ 1000 且恰为上限（封顶生效）", (function () {
+    var bak = CFG.endless.crystalCapPerRun; CFG.endless.crystalCapPerRun = 1000;
+    Endless.reset(); Endless.begin(w); Endless.state.crystals = 5000;
+    var r = Endless.settle();
+    var okVal = (r.crystals <= 1000 && r.crystals === 1000 && r.crystalCap === 1000);
+    CFG.endless.crystalCapPerRun = bak;
+    return okVal;
+  })());
+
   window.__erFail = function () { return fails; };
   window.__erChecks = function () { return checks; };
 `, sandbox, { filename: "endless_reward_driver.js" });

@@ -1146,7 +1146,11 @@ body.landscape #hud-tl { flex-direction: column; }
   html body .ps-icon,
   html body .ps-icon svg { width: 40px; height: 40px; }   /* 图标 44 → 40 */
   html body .ps-glyph { font-size: 15px; }
-  html body .ps-info { min-width: 46px; }
+  /* 竖屏单行封顶：.ps-skill 默认 max-width:76px 会把「名字块」撑到 76px，
+   * 能量水晶双技能行（A X X X X A）最坏 ≈383px > 96vw(374px) → 用 max-width 封顶，
+   * 使整行 ≈371px 稳落在 96vw 内（.ps-skill 自带 ellipsis，截断不破行）。 */
+  html body .ps-info { min-width: 46px; max-width: 64px; }
+  html body .ps-skill { max-width: 64px; }
   html body .ps-name { font-size: 12px; }
   html body .ps-role { font-size: 9px; }
   html body .ps-slot { width: 42px; height: 40px; }        /* 槽 46×42 → 42×40，命中区仍 ≥32px */

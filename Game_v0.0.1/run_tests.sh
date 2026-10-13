@@ -29,15 +29,15 @@ CORE="smoke_test runtime_test econ_test backpack_test skill_module_test skill_ta
 chip_test chip_behavior_test levelup_test exp_test grant_test freeze_test \
 team_trigger_test content_test level_content_test level_tuning_test meta_growth_test \
 out_level_flow_test settle_crystal_test boot_guard_test cache_version_test perf_asset_test \
-asset_timeout_test \
+asset_timeout_test asset_hooks_consume_test \
 battle_rules_test \
 xgame_chip_fold_test xgame_boss_crystal_test xgame_assets_consumption_test xgame_save_integration_test \
-xgame_insurance_source_test"
+xgame_insurance_source_test xgame_milestone_test"
 
 UI="ui_flow_test ui_v2_test ui_layout_test ui_global_test unlock_ui_test \
 mobile_test mobile_ctrl_test mobile_polish_test artisan_test artisan_layout_test \
 hero_roster_test hero_kit_test hero_portrait_test sprite_view_test camera_view_test audio_sprite_test autofight_test \
-endless_hud_test"
+endless_hud_test layout_overflow_test"
 
 FEATURE="rift_test extract_test boss_test boss_ux_test chest_drop_source_test bugfix_test shop_test laser_test season_test \
 levels_11_20_test special_monster_test assets_hook_test stress_test \

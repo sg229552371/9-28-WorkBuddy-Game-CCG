@@ -1675,8 +1675,15 @@ function spawnAltarFromSpec(w, spec) {
   if (!id && Array.isArray(spec.pool) && spec.pool.length) {
     const blocked = (typeof isAbyssWorld === "function" && isAbyssWorld(w)
       && typeof abyssBlockedAltarIds === "function") ? abyssBlockedAltarIds() : [];
+    /* C3 接线：保险雕像（CFG.insuranceSource.altar.id）受 altar.enabled 开关控制。
+     * 默认 enabled=true（本判定恒 false）；ALTAR_007 weight:0 且不在任何池 → 零行为变更，
+     * 此处为将来把保险雕像投进池/时间轴时留口。 */
+    const insId = (CFG.insuranceSource && CFG.insuranceSource.altar && CFG.insuranceSource.altar.id) || "ALTAR_007";
+    const insuranceAltarOff = (typeof insuranceSourceEnabled === "function") && !insuranceSourceEnabled("altar");
     const allowed = spec.pool.filter(function (x) {
-      return CFG.altars[x] && blocked.indexOf(x) < 0;
+      if (!CFG.altars[x] || blocked.indexOf(x) >= 0) return false;
+      if (insuranceAltarOff && x === insId) return false;
+      return true;
     });
     if (!allowed.length) return null;
     /* B3 落库（2026-10-12）：池选择由「等概率 U.pick」改为**按 CFG.altars[].weight 加权**——
