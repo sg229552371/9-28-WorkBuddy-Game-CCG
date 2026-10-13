@@ -3,8 +3,8 @@
 #  克隆一致性校验（AI-Game / 弹幕背包搜打撤）
 #  用法：在仓库根目录执行   bash verify_clone.sh
 #  作用：核对当前工作区是否 == 指定快照
-#        （2026-10-13 B 类落库 + A4 前摇 + B4 宝箱主来源：B1 整数锚点/B2 Buff 锚点/B3 祭坛加权/B5 货物占格
-#         + A4 castTime「不可打断+可移动」+ B4「精英几率低级箱/BOSS 几率中高级箱/落地/读条拾取」· APP_VERSION 20261051 · 106 套 / 4506）
+#        （2026-10-13 C2/C6 落库：D017 等级成长改数据驱动倍率 + D018 属性卡牌系统彻底退役物理清理
+#         ；在 B 类落库 + A4 前摇 + B4 宝箱主来源之上 · APP_VERSION 20261052 · 106 套 / 4494）
 #
 #  原理：比对的是 **git 对象哈希**（git rev-parse HEAD:<file>），
 #        只看仓库内容，不受 core.autocrlf / 编辑器换行设置影响，
@@ -118,9 +118,9 @@ fi
 # ④ 结论
 echo "============================================================"
 if [ "$BAD" = "0" ]; then
-  echo " ✅ 一致：本工作区 == 2026-10-13 B 类落库快照（B1/B2/B3/B5 + A4 前摇 + B4 宝箱主来源 · APP_VERSION $EXPECT_VERSION）"
+  echo " ✅ 一致：本工作区 == 2026-10-13 C2/C6 落库快照（D017 等级成长倍率 + D018 卡牌系统物理清理 · APP_VERSION $EXPECT_VERSION）"
   echo "    继续开发前可跑一次全量门禁：bash run_tests.sh"
-  echo "    期望结果：106 套 / PASS 合计 = 4506 / bad = 0 / 全绿"
+  echo "    期望结果：106 套 / PASS 合计 = 4494 / bad = 0 / 全绿"
 else
   echo " ❌ 不一致：本地不是该快照，请先同步远程："
   echo "     git fetch origin && git reset --hard origin/main"
