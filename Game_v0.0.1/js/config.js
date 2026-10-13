@@ -17,17 +17,18 @@ const CFG = {};
  * ============================================================ */
 const SKILL_LEVEL_MAX = 100;      // 技能/水晶等级上限 = 武器等级上限（1~100）
 
-/** 幂曲线：返回 n 个「base → target」的浮点值（保留 dec 位小数）。out[0] === base。 */
+/** 连续值曲线（D1/D032：**线性插值**）——返回 n 个「base → target」的浮点值（保留 dec 位小数）。out[0] === base。
+ * 2026-10-13 由「幂曲线」改为线性：对齐 game_design_proposal §8.5 三级填法①的线性规约口径
+ * （原幂曲线属「实现偏离规约」）；**端点与 base（LV1）不变**，仅中段（约 LV10~LV60）取值不同。 */
 function skillCurve(n, base, target, dec) {
   const cnt = n || SKILL_LEVEL_MAX;
   const d = (dec == null) ? 2 : dec;
   const mul = Math.pow(10, d);
-  const step = (cnt > 1 && base > 0 && target > 0 && base !== target)
-    ? Math.pow(target / base, 1 / (cnt - 1)) : 1;
+  const step = (cnt > 1 && base !== target) ? (target - base) / (cnt - 1) : 0;
   const out = [];
   for (let i = 0; i < cnt; i++) {
     if (i === 0) { out.push(base); continue; }
-    out.push(Math.round(base * Math.pow(step, i) * mul) / mul);
+    out.push(Math.round((base + step * i) * mul) / mul);
   }
   return out;
 }
@@ -736,7 +737,6 @@ CFG.pickup = {
  * 界面会漏出英文键 → 现按「英雄属性全集 + 常见别名」补齐。 */
 CFG.statNames = {
   atk: "攻击", hp: "生命", hpMax: "生命上限", def: "防御", spd: "速度",
-  energyMax: "能量上限", energyRegen: "能量回复",
   summonMax: "召唤物上限", trapMax: "陷阱上限",
   radius: "碰撞半径", cdMul: "冷却系数", lifesteal: "吸血",
   str: "力量", agi: "敏捷", int: "智力",
@@ -752,8 +752,6 @@ CFG.statDesc = {
   hpMax:        { name: "生命上限", unit: "点", desc: "同「生命」，装备与增益提升的是上限值。" },
   def:          { name: "防御", unit: "点", desc: "减免受到的伤害；同时是「属性强化技能」的加成来源（防御越高，守护者的嘲讽半径越大）。" },
   spd:          { name: "速度", unit: "px/秒", desc: "移动速度，决定走位与躲弹幕的容错空间。" },
-  energyMax:    { name: "能量上限", unit: "点", desc: "主动技能的能量池容量。容量越大，越能连续释放多个技能。" },
-  energyRegen:  { name: "能量回复", unit: "点/秒", desc: "每秒自动回复的能量，决定技能循环的续航节奏。" },
   summonMax:    { name: "召唤物上限", unit: "个", desc: "该角色可同时在场的召唤物数量上限；技能想召更多也会被它压住。" },
   trapMax:      { name: "陷阱上限", unit: "个", desc: "该角色可同时存在的地面陷阱数量上限。" },
   radius:       { name: "碰撞半径", unit: "px", desc: "受击判定半径。越大越容易被弹幕命中。" },
@@ -761,20 +759,21 @@ CFG.statDesc = {
   lifesteal:    { name: "吸血", unit: "%", desc: "造成伤害时按比例回复自身生命（队友输出回队友自己）。" },
   str:          { name: "力量", unit: "点", desc: "英雄的原始膂力：每点 +6 生命上限、+0.5 攻击——技能伤害随攻击水涨船高，近战重甲角（重炮手/守护者）的力量最高。" },
   agi:          { name: "敏捷", unit: "点", desc: "身手与反应：每点 +1.2 移速、技能冷却 -0.4%（冷却缩减上限 50%）——高敏捷角出手与走位都更快。" },
-  int:          { name: "智力", unit: "点", desc: "技能的钻研深度：每点 +2 能量上限、技能效果强度 +1%——治疗量 / 光环幅度 / 护罩值都随智力提升，辅助角的智力最高。" },
+  int:          { name: "智力", unit: "点", desc: "技能的钻研深度：每点技能效果强度 +1%——治疗量 / 光环幅度 / 护罩值都随智力提升，辅助角的智力最高。" },
 };
 
 /* ---------- 三大基础属性 → 派生加成（26.x，数据驱动转换表）----------
  * 英雄表新增 str（力量）/ agi（敏捷）/ int（智力）三个**基础属性**，按本表折算进既有属性管线：
  *   力量 → 生命上限 + hp/点、攻击 + atk/点（技能伤害 = 攻击 × 倍率，随力量水涨船高）；
  *   敏捷 → 移速 + spd/点、技能冷却 ×(1 - cdPct×敏捷)（下限 cdFloor，防 0 冷却）；
- *   智力 → 能量上限 + energyMax/点、**技能效果强度 +powPct/点**（castSupport 的治疗/光环/护罩量 ×(1+…)，属性加成积木 scaleBy 也认 int）。
+ *   智力 → **技能效果强度 +powPct/点**（castSupport 的治疗/光环/护罩量 ×(1+…)，属性加成积木 scaleBy 也认 int）。
+ *   （E-β/D029：原「智力 → 能量上限 +2/点」随英雄能量字段整体退役。）
  * 结算点：computeStats() / companionStats()（js/items.js）——与装备、增益同源，全队生效。
  * 折算只发生在运行时，**不写回 CFG.heroes**（定位属性带的测试基线不受影响）。 */
 CFG.baseStats = {
   str: { hp: 6, atk: 0.5 },
   agi: { spd: 1.2, cdPct: 0.004, cdFloor: 0.5 },
-  int: { energyMax: 2, powPct: 0.01 },
+  int: { powPct: 0.01 },
 };
 
 /* ---------- 技能系统（现阶段：普攻 + 主动技能自动施法；终极技局外解锁后续开发） ----------
@@ -1142,7 +1141,7 @@ CFG.monsters = {
  *   召唤物上限   —— 限制 type:"summon" 技能（无人机等）**同时存在的数量**；
  *   陷阱数量上限 —— 限制 type:"trap" 技能（大地雷等）**同时存在的数量**。
  * 实际上限 = min(技能锚点数量, 英雄该属性)——技能等级只决定「想召几架」，英雄属性决定「最多几架」。
- * 该属性走**完整属性管线**（英雄基础值 + 武器栏装备 + 局内增益），与能量上限同源（见 16.5），
+ * 该属性走**完整属性管线**（英雄基础值 + 武器栏装备 + 局内增益），与其它英雄初始属性同源（见 16.5），
  * 因此后续加「+召唤物上限」的词条/卡牌/增益零代码生效（表里加字段即可）。 */
 CFG.unitLimit = {
   summonMax: 2,     // 召唤物上限缺省值（英雄行未填时取此值）
@@ -1204,72 +1203,74 @@ CFG.heroes = [
    * 🔧 占位值，待策划定稿。 */
   { id: "H001", name: "猎手", desc: "远程速射 / 能量爆发 · 均衡输出", role: "output", range: "ranged", sprite: "hero",
     str: 6, agi: 8, int: 4,
-    hp: 94, def: 2, atk: 16, energyMax: 100, energyRegen: 10,
+    hp: 94, def: 2, atk: 16,
     spd: 306, radius: 18, weapon: "W001", summonMax: 2, trapMax: 1,
     playtag: "均衡速射", difficulty: 1, statBias: { high: ["agi"], low: [] } },
   { id: "H002", name: "散弹手", desc: "远程三向散射 / 震荡波 · 贴脸压制输出", role: "output", range: "ranged", sprite: "hero",
     str: 8, agi: 6, int: 3,
-    hp: 116, def: 3, atk: 23, energyMax: 100, energyRegen: 10,
+    hp: 116, def: 3, atk: 23,
     spd: 290, radius: 19, weapon: "W002", summonMax: 2, trapMax: 1,
     playtag: "贴脸散弹", difficulty: 3, statBias: { high: ["atk", "hp"], low: ["spd", "agi"] } },
   { id: "H003", name: "穿甲者", desc: "远程穿透 / 贯穿射线 · 脆皮高攻输出", role: "output", range: "ranged", sprite: "hero",
     str: 5, agi: 9, int: 3,
-    hp: 84, def: 1, atk: 21, energyMax: 100, energyRegen: 10,
+    hp: 84, def: 1, atk: 21,
     spd: 300, radius: 18, weapon: "W003", summonMax: 2, trapMax: 1,
     playtag: "穿透玻璃炮", difficulty: 2, statBias: { high: ["agi", "atk"], low: ["hp", "def"] } },
   { id: "H004", name: "弹射手", desc: "远程跳弹 / 环形弹幕 · 牵制型防御", role: "defense", range: "ranged", sprite: "hero",
     str: 8, agi: 5, int: 4,
-    hp: 132, def: 6, atk: 9, energyMax: 110, energyRegen: 11,
+    hp: 132, def: 6, atk: 9,
     spd: 296, radius: 19, weapon: "W004", summonMax: 2, trapMax: 1,
     playtag: "弹幕牵制", difficulty: 2, statBias: { high: ["hp", "def"], low: ["atk"] } },
   { id: "H005", name: "快枪手", desc: "近战突刺 / 疾跑翻滚 · 高机动防御", role: "defense", range: "melee", sprite: "hero",
     str: 8, agi: 9, int: 2,
     /* D1 落库（hero_roster_design_v1.md §4-D1）：把 H005 从「全库最快」拉回防御组中庸 —— spd 320→306、def 5→6、hp 120→126。
      * 目的：防御定位不再靠「高机动刺客」数值承伤，而回到「高血高防」的组内画像。🔧 占位值，待策划定稿。 */
-    hp: 126, def: 6, atk: 10, energyMax: 105, energyRegen: 12,
+    hp: 126, def: 6, atk: 10,
     spd: 306, radius: 18, weapon: "W005", summonMax: 2, trapMax: 1,
     playtag: "机动前排", difficulty: 3, statBias: { high: ["spd", "agi"], low: ["hp", "def"] } },
   { id: "H006", name: "重炮手", desc: "近战重锤 / 巨型爆破 · 重甲火力输出", role: "output", range: "melee", sprite: "hero",
     str: 10, agi: 4, int: 3,
     /* D2 落库（hero_roster_design_v1.md §4-D2）：hp 138→128、def 4→3（atk 30 不动）。
      * 目的：不再「又肉又痛」，恢复「重炮=脆」的代价（输出组最高血/防回落到组内次高）。🔧 占位值，待策划定稿。 */
-    hp: 128, def: 3, atk: 30, energyMax: 120, energyRegen: 8,
+    hp: 128, def: 3, atk: 30,
     spd: 258, radius: 21, weapon: "W006", summonMax: 1, trapMax: 1,
     playtag: "慢速重炮", difficulty: 2, statBias: { high: ["atk", "hp", "def"], low: ["spd", "agi"] } },
   // 原型验证角（批次 E）：召唤/陷阱技能原型载体，后续按设计再作解锁门槛
+  // D030（2026-10-13）：C1-Q5 定位归属已裁决 = **维持 aux**（改 output 会破 4/4/4 分组与
+  //   hero_roster_test 七4；且 H007 技能语义为「召唤 + 维修型无人机」，属续航/辅助性质）。
   { id: "H007", name: "召唤师", desc: "远程无人机 / 机炮 · 召唤物原型角", role: "aux", range: "ranged", sprite: "hero",
     str: 5, agi: 5, int: 8,
-    hp: 106, def: 3, atk: 13, energyMax: 120, energyRegen: 12,
+    hp: 106, def: 3, atk: 13,
     spd: 300, radius: 18, weapon: "W007", summonMax: 6, trapMax: 1,
     playtag: "召唤托管", difficulty: 1, statBias: { high: ["int", "summonMax"], low: ["hp", "def"] } },
   { id: "H008", name: "陷阱师", desc: "近战布雷 / 大地雷 · 陷阱原型角", role: "defense", range: "melee", sprite: "hero",
     str: 9, agi: 6, int: 3,
-    hp: 128, def: 6, atk: 11, energyMax: 110, energyRegen: 10,
+    hp: 128, def: 6, atk: 11,
     spd: 288, radius: 19, weapon: "W008", summonMax: 2, trapMax: 3,
     playtag: "预判布雷", difficulty: 3, statBias: { high: ["trapMax", "def"], low: ["atk"] } },
   // 铺量角（批次 F）：12 角补齐；26.x 起每位各挂 1 个**不重复**的特色技能（见 CFG.weapons）
   { id: "H009", name: "守护者", desc: "远程护盾 / 嘲讽战吼 · 阵地防御核心", role: "defense", range: "ranged", sprite: "hero",
     str: 11, agi: 3, int: 4,
-    hp: 155, def: 8, atk: 8, energyMax: 115, energyRegen: 9,
+    hp: 155, def: 8, atk: 8,
     spd: 274, radius: 21, weapon: "W009", summonMax: 2, trapMax: 1,
     playtag: "站桩肉盾", difficulty: 1, statBias: { high: ["hp", "def", "str"], low: ["atk", "spd"] } },
   { id: "H010", name: "医疗兵", desc: "远程治疗弹 / 生命脉冲 · 续航恢复型", role: "aux", range: "ranged", sprite: "hero",
     str: 5, agi: 6, int: 8,
-    hp: 110, def: 4, atk: 12, energyMax: 125, energyRegen: 13,
+    hp: 110, def: 4, atk: 12,
     spd: 300, radius: 18, weapon: "W010", summonMax: 2, trapMax: 1,
-    playtag: "团队续航", difficulty: 2, statBias: { high: ["energyRegen", "int"], low: [] } },
+    playtag: "团队续航", difficulty: 2, statBias: { high: ["int", "def"], low: [] } },
   { id: "H011", name: "圣歌者", desc: "近战圣咏 / 鼓舞光环 · 群体增益型", role: "aux", range: "melee", sprite: "hero",
     str: 6, agi: 5, int: 8,
-    hp: 120, def: 5, atk: 11, energyMax: 120, energyRegen: 13,
+    hp: 120, def: 5, atk: 11,
     spd: 294, radius: 19, weapon: "W011", summonMax: 2, trapMax: 1,
     playtag: "全队增益", difficulty: 2, statBias: { high: ["int", "def"], low: [] } },
   { id: "H012", name: "灵能者", desc: "近战灵能 / 灵能护罩 · 护盾自愈型", role: "aux", range: "melee", sprite: "hero",
     str: 5, agi: 6, int: 9,
     /* D3 落库（hero_roster_design_v1.md §4-D3）：atk 14→12（与 H010 医疗兵齐平）。
      * 目的：辅助定位不再给到接近半输出的攻击，回归纯辅助（护盾）画像。🔧 占位值，待策划定稿。 */
-    hp: 116, def: 4, atk: 12, energyMax: 130, energyRegen: 12,
+    hp: 116, def: 4, atk: 12,
     spd: 298, radius: 19, weapon: "W012", summonMax: 2, trapMax: 1,
-    playtag: "全队护罩", difficulty: 2, statBias: { high: ["int", "energyMax", "atk"], low: [] } },
+    playtag: "全队护罩", difficulty: 2, statBias: { high: ["int", "def", "atk"], low: [] } },
 ];
 
 /* ========== 21.6 选人界面角色顺序：输出 / 防御 / 治疗 ×4 轮循环（用户要求）==========
@@ -1467,12 +1468,13 @@ CFG.skills = {
     anchors: { radius: { 1: 160, 50: 200, 100: 250 } } },
 
   /** AT124 灵能护罩（灵能者 H012）：范围伤害 + **全队防御护罩**。
-   *  scaleBy 吃「能量上限」：灵能储备越厚护罩越硬（该角色 energyMax 全场最高 = 130）。 */
+   *  scaleBy 吃「防御」（E-β/D029：原吃「能量上限」×0.008；能量字段退役后改吃「防御」×0.26，
+   *  在 H012 基础值上等价：旧 130×0.008 = 1.04 = 新 4×0.26；随装备的成长口径由能量改为防御）。 */
   AT124: { name: "灵能护罩", cat: "active", kind: "skill", type: "barrier",
     cd: 7.0, energy: 100, tags: ["伤害", "范围", "冷却"],
     dmgMul: 1.4, barrierDuration: 12, barrierDef: 4,
-    scaleBy: { stat: "energyMax", pct: 0.008 },
-    desc: "灵能护罩：对身周敌人造成伤害，并为全队附加防御提升（+4 + 能量上限×0.8%×等级系数）的护罩，持续 12 秒",
+    scaleBy: { stat: "def", pct: 0.26 },
+    desc: "灵能护罩：对身周敌人造成伤害，并为全队附加防御提升（+4 + 防御×26%×等级系数）的护罩，持续 12 秒",
     anchors: { radius: { 1: 140, 50: 190, 100: 240 } } },
 
   /* ===== 表 4e 视图：敌人技能（8.2：怪物攻击行为也是技能条目） =====
@@ -1742,15 +1744,36 @@ CFG.heroRoles = {
 
 /* ---------- 技能释放资源 = 冷却制（19.3） ----------
  * 移除能量池：技能只受冷却约束（CFG.skills[].cd），不再检查 energyMax / energyRegen。
- * 影响面（待实现时同步处理）：
- *   - 英雄属性 energyMax / energyRegen 退役（条目保留但不再参与技能门槛，避免连锁改表）
- *   - 队友独立能量池（5.19）随之作废
- *   - 属性卡牌相关能量条目一并删除（卡牌系统已整体退役，见本文件卡牌墓碑注释）
- * 🔧 C1 落库（hero_roster_design_v1.md §4-E-α）：英雄的 energyMax / energyRegen **仅供 energyMax 类
- *   scaling（如 SK_PSYSHIELD 的 scaleStat:"energyMax"）与 UI 展示使用，不再作技能门槛**（门槛已由冷却制取代）。 */
+ * ✅ E-β 已落库（decision_log D029，2026-10-13）：英雄属性 energyMax / energyRegen **物理删除**——
+ *   已从 CFG.heroes / CFG.baseStats.int / CFG.statNames / CFG.statDesc / CFG.gearDefs 移除；
+ *   派生管线（items.js 的 computeStats/companionStats/runBonus、game.js 的队友能量池与 G.run.energyMax）同步清空。
+ *   原 energyMax 类 scaling（AT124 灵能护罩）改吃「防御」×0.26（基础值等价）。
+ *   ⚠️ 技能表 CFG.skills[].energy 数值字段为**历史遗留**（不参与门槛），后续单独清理。 */
 CFG.skillResource = {
   mode: "cooldown",        // "cooldown" = 冷却制（旧值 "energy" 已废弃）
   startReady: true,        // 进图时技能是否立即就绪（true = 首次开战即可放技能，不空转）
+};
+
+/* ---------- 赛季玩法配置（D033，2026-10-13） ----------
+ * 赛季 = 主线通关后开放的永续内容。**数值唯一来源 = 本表**（js/modes.js 的 SEASON_CFG 由此读取，
+ * 禁止再在逻辑文件里硬编码）；设计稿见 G_docs/season_design_v1.md。
+ * 现有实现为「轻量占位」：赛季等级 / 经验曲线 / 周任务；对抗玩法循环后续按设计稿扩展。
+ * 🔧 rewards / expSource 为建议值，未经用户审，暂未接线消费。 */
+CFG.season = {
+  maxLv: 10,                                                    // 赛季等级封顶（升满后经验清零、不再累计）
+  expBase: 1000,                                                // LV1→LV2 所需经验基数
+  expStep: 200,                                                 // 每级递增量（LV n→n+1 需 expBase + (n-1)*expStep）
+  weekly: { killGoal: 200, extractGoal: 3, levelUpGoal: 10 },   // 周任务三条目标
+  /* 经验来源（与 SeasonState.addExp 的调用点一一对应；键名为权威口径） */
+  expSource: { kill: 1, extract: 500, levelUp: 50 },
+  /* 赛季奖励（D033 设计稿建议条目；🔧 数值待用户审，未接线消费） */
+  rewards: [
+    { lv: 2,  key: "crystal",  amount: 100, desc: "进化结晶 ×100" },
+    { lv: 5,  key: "crystal",  amount: 300, desc: "进化结晶 ×300" },
+    { lv: 10, key: "cosmetic", amount: 1,   desc: "赛季限定外观 ×1" },
+  ],
+  /* 入口条件：主线全部通关后开放赛季传送门（本项目当前 20 关；99 关目标达成后改 99） */
+  unlock: { afterLevels: 20, note: "主线全部通关后开放赛季入口（seasonPortal）" },
 };
 
 /* ---------- 局内升级：经验来源 + 选择机制（19.4） ----------
@@ -2106,10 +2129,10 @@ CFG.gearDefs = [
   { id: "G002", name: "作战背心", shape: [2,2], weight: 9,  stats: { hp: 30 } },
   { id: "G003", name: "动力靴",   shape: [1,2], weight: 4,  stats: { spd: 25 } },
   { id: "G004", name: "装甲板",   shape: [2,1], weight: 6,  stats: { def: 3 } },
-  { id: "G005", name: "核心电池", shape: [1,1], weight: 2,  stats: { regen: 4, energyMax: 20 } },
+  { id: "G005", name: "核心电池", shape: [1,1], weight: 2,  stats: { hp: 20, def: 1 } },
   { id: "G006", name: "强化握把", shape: [1,1], weight: 2,  stats: { atk: 2, def: 1 } },
   { id: "G007", name: "动力核心", shape: [2,2], weight: 10, stats: { hp: 40, regen: 6 } },
-  { id: "G008", name: "超载电容", shape: [1,2], weight: 5,  stats: { energyMax: 30, regen: 5 } },
+  { id: "G008", name: "超载电容", shape: [1,2], weight: 5,  stats: { hp: 30, def: 2 } },
 ];
 
 /* ---------- 武器模块定义（16.5：词缀匹配武器标签才生效） ----------
@@ -3468,7 +3491,7 @@ CFG.skillSystem = {
             parameters: { radius: 140, moreDamageMul: 1 },
             damageBasis: { baseRef: "hero.atk", coefficient: 1.4, inheritFactorKeys: [] },
             hitPolicyId: "HP_INSTANT_AREA",
-            effect: { kind: "barrier", barrierDef: 4, barrierDuration: 12, scaleStat: "energyMax", scalePct: 0.008 },
+            effect: { kind: "barrier", barrierDef: 4, barrierDuration: 12, scaleStat: "def", scalePct: 0.26 },
           },
         ],
         edges: [],

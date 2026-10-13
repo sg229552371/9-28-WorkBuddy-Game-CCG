@@ -30,7 +30,7 @@ const driver = `
 let ok = true;
 const check = (name, cond) => { console.log((cond ? "PASS" : "FAIL") + " " + name); if (!cond) ok = false; };
 
-const HERO_FIELDS = ["id", "name", "desc", "sprite", "hp", "def", "atk", "energyMax", "energyRegen", "spd", "radius", "weapon", "summonMax", "trapMax"];
+const HERO_FIELDS = ["id", "name", "desc", "sprite", "hp", "def", "atk", "spd", "radius", "weapon", "summonMax", "trapMax"];
 
 /* ============ 一、12 英雄全部存在、字段齐全无 undefined（逐字段断言） ============ */
 const ids = CFG.heroes.map(h => h.id);
@@ -63,7 +63,7 @@ CFG.heroes.forEach(h => {
   const missing = HERO_FIELDS.filter(f => h[f] === undefined || h[f] === null || h[f] === "");
   check("一3 " + h.id + " 字段齐全（缺：" + (missing.join(",") || "无") + "）", missing.length === 0);
   check("一4 " + h.id + " 数值字段为正数（hp/atk/def/spd/radius）",
-    h.hp > 0 && h.atk > 0 && h.def > 0 && h.spd > 0 && h.radius > 0 && h.energyMax > 0 && h.energyRegen > 0);
+    h.hp > 0 && h.atk > 0 && h.def > 0 && h.spd > 0 && h.radius > 0);
   check("一5 " + h.id + " sprite 引用 ASSET_MANIFEST 有效键", !!ASSET_MANIFEST[h.sprite]);
   check("一6 " + h.id + " desc 为非空中文描述", typeof h.desc === "string" && h.desc.length >= 6);
 });
@@ -196,26 +196,27 @@ check("六3 byHero 取值均为合法定位",
 /* ⚠️ 这些数值是本次「12 角全部重做」确定下来的平衡基线，再改会连带影响战斗手感。
  *    改动必须**同时**更新本快照，并说明为什么（不要直接删断言）。 */
 const BASE = {
-  H001: { hp: 94, def: 2, atk: 16, energyMax: 100, spd: 306, weapon: "W001" },
-  H002: { hp: 116, def: 3, atk: 23, energyMax: 100, spd: 290, weapon: "W002" },
-  H003: { hp: 84, def: 1, atk: 21, energyMax: 100, spd: 300, weapon: "W003" },
-  H004: { hp: 132, def: 6, atk: 9, energyMax: 110, spd: 296, weapon: "W004" },
+  H001: { hp: 94, def: 2, atk: 16, spd: 306, weapon: "W001" },
+  H002: { hp: 116, def: 3, atk: 23, spd: 290, weapon: "W002" },
+  H003: { hp: 84, def: 1, atk: 21, spd: 300, weapon: "W003" },
+  H004: { hp: 132, def: 6, atk: 9, spd: 296, weapon: "W004" },
   // D1 落库（hero_roster_design_v1.md §4-D1）：H005 spd 320→306 / def 5→6 / hp 120→126
-  H005: { hp: 126, def: 6, atk: 10, energyMax: 105, spd: 306, weapon: "W005" },
+  H005: { hp: 126, def: 6, atk: 10, spd: 306, weapon: "W005" },
   // D2 落库（hero_roster_design_v1.md §4-D2）：H006 hp 138→128 / def 4→3（atk 30 不动）
-  H006: { hp: 128, def: 3, atk: 30, energyMax: 120, spd: 258, weapon: "W006" },
-  H007: { hp: 106, def: 3, atk: 13, energyMax: 120, spd: 300, weapon: "W007" },
-  H008: { hp: 128, def: 6, atk: 11, energyMax: 110, spd: 288, weapon: "W008" },
-  H009: { hp: 155, def: 8, atk: 8, energyMax: 115, spd: 274, weapon: "W009" },
-  H010: { hp: 110, def: 4, atk: 12, energyMax: 125, spd: 300, weapon: "W010" },
-  H011: { hp: 120, def: 5, atk: 11, energyMax: 120, spd: 294, weapon: "W011" },
+  H006: { hp: 128, def: 3, atk: 30, spd: 258, weapon: "W006" },
+  H007: { hp: 106, def: 3, atk: 13, spd: 300, weapon: "W007" },
+  H008: { hp: 128, def: 6, atk: 11, spd: 288, weapon: "W008" },
+  H009: { hp: 155, def: 8, atk: 8, spd: 274, weapon: "W009" },
+  H010: { hp: 110, def: 4, atk: 12, spd: 300, weapon: "W010" },
+  H011: { hp: 120, def: 5, atk: 11, spd: 294, weapon: "W011" },
   // D3 落库（hero_roster_design_v1.md §4-D3）：H012 atk 14→12
-  H012: { hp: 116, def: 4, atk: 12, energyMax: 130, spd: 298, weapon: "W012" },
+  H012: { hp: 116, def: 4, atk: 12, spd: 298, weapon: "W012" },
 };
 Object.keys(BASE).forEach(id => {
   const h = CFG.heroes.find(x => x.id === id), b = BASE[id];
-  check("七1 " + id + " 基础数值与 26.x 基线一致（hp/def/atk/energyMax/spd/weapon）",
-    !!h && h.hp === b.hp && h.def === b.def && h.atk === b.atk && h.energyMax === b.energyMax && h.spd === b.spd && h.weapon === b.weapon);
+  check("七1 " + id + " 基础数值与 26.x 基线一致（hp/def/atk/spd/weapon；能量字段已由 E-β/D029 退役）",
+    !!h && h.hp === b.hp && h.def === b.def && h.atk === b.atk && h.spd === b.spd && h.weapon === b.weapon
+    && h.energyMax === undefined && h.energyRegen === undefined);
 });
 check("七2 W001~W008 主动技能绑定不变（本次重做只改普攻，不动特色技能）",
   CFG.weapons.W001.skills.skill === "AT102" && CFG.weapons.W002.skills.skill === "AT104"
@@ -252,7 +253,7 @@ check("七8 全部 12 个特色技能都有伤害来源（dmgMul / anchors.dmgMu
   check("七9 有 " + scaled.length + " 条特色技能声明了 scaleBy（属性强化技能）",
     scaled.length >= 4 && scaled.indexOf("AT120") >= 0);
   check("七10 scaleBy 的 stat 都合法（攻击/防御/能量上限 + 未声明除外）",
-    scaled.every(id => ["atk", "def", "hp", "spd", "energyMax"].indexOf(CFG.skills[id].scaleBy.stat) >= 0));
+    scaled.every(id => ["atk", "def", "hp", "spd"].indexOf(CFG.skills[id].scaleBy.stat) >= 0));
 }
 
 console.log(ok ? "ALL PASS" : "HAS FAIL");

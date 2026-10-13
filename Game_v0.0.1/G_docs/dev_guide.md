@@ -1184,6 +1184,23 @@ for (const sid in CFG.moduleSets) {
 - ⚠️ **真机像素级复核仍需人工**：本项目**无浏览器环境**（纯 headless），该测试只抓「**声明层面必然溢出**」与「**本该响应式却写成固定值**」的回归，**抓不到真机渲染后的实际像素** —— 像素级溢出 / 错位仍须**真机人工核对**。
 - 口径提醒：改竖屏布局必**同步 CSS 三处**（主规则 / 竖屏媒体块 / `body.portrait` 钩子），否则改动静默无效（见 §10 与 §5.47-B）。
 
+### 5.57 ✅ 英雄能量字段退役基线 + 赛季配置唯一来源（2026-10-13，见 D029 / D033）
+
+**① 英雄能量字段退役基线（E-β，见 `decision_log_v1.md` D029）**
+
+- **能量已不参与技能门槛**：技能门槛早由**冷却制**取代（`CFG.skillResource.mode = "cooldown"`），能量池不再被读取。
+- **E-β 之后**：英雄属性表 `CFG.heroes[].energyMax / energyRegen` **不再存在**；`CFG.baseStats.int.energyMax`、`CFG.statNames.energyMax/energyRegen`、`CFG.statDesc.energyMax/energyRegen` 一并删除；派生管线（`js/items.js` 的 `ZERO_GEAR` / `runBonus().add` / `computeStats` / `companionStats`，`js/game.js` 队友 `energy/energyMax/regen` 与 `G.run.energyMax`）清空。
+- **技能表 `energy` 数值字段 = 历史遗留**：`CFG.skills[].energy` 的**数值字段本轮保留**（不参与门槛，仅历史遗留），标注为**后续单独清理项**；写新代码不得再消费它。
+- **等价改写**：`AT124 灵能护罩` 的 `scaleBy` 基准由 `{stat:"energyMax",pct:0.008}` 改为 `{stat:"def",pct:0.26}`（在 H012 基础值上等价：130×0.008 = 4×0.26 = 1.04）；装备词条 `G005`/`G008` 的 `energyMax/regen` 改 `hp/def`。
+- 🔴 **别名陷阱**：`cf.energyMax` / `p.energyRegen` 这类旧字段名在退役后**不得再新增消费点**；`statBias` 里若残留 `energyMax/energyRegen` 键（D020 元数据）仅作展示、不影响结算（后续如需清理另立条目）。
+
+**② 赛季配置唯一来源 = `CFG.season`（见 `decision_log_v1.md` D033）**
+
+- **唯一来源**：赛季等级 / 经验曲线 / 周任务 / 奖励 / 开放门槛**一律读 `CFG.season`**（`js/config.js`）；`js/modes.js` 的 `SEASON_CFG` **保留同名变量、值从 `CFG.season` 读取**（数值兜底），现行为不变。
+- **规则真源**（不在本文件复制正文）= `G_docs/season_design_v1.md`：定位与入口（`afterLevels:20`）/ 等级经验（`1000+(n−1)×200`，L10 封顶）/ 经验来源 / 周任务三条 / 奖励结构 / 存档口径 / 与永续内容关系。
+- **难度曲线口径**：主线难度真源 = `CFG.levelCurve.rows`（**20 行**，`countMul/hpMul/hazard/supply`）；**第 21~99 关外推规则**写入 `season_design_v1.md` §5.3（`hpMul = 1+(lv−1)×0.12` / `countMul +0.15/关` / `hazard·supply` 默认 `null` / `chest` 延续 `CT4`）。
+- 🔴 **别再写死**：新增任何赛季数值**必须先落 `CFG.season`**，不得在 `js/modes.js` 或 UI 侧硬编码常量。
+
 ## 6. 并行开发切分（已验证可用）
 
 多路 Agent 并行时**按文件所有权切分**，一方不得碰另一方的文件：

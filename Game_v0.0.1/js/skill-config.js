@@ -163,7 +163,7 @@ const _PARAM_RULES = {
 /* v2 效果类型白名单（节点可选字段 effect.kind） */
 const _EFFECT_KINDS = { heal: 1, aura: 1, barrier: 1, taunt: 1, trap: 1, summon: 1 };
 /* 效果缩放/增益属性白名单（effect.scaleStat / effect.auraStats），与旧表 scaleBy.stat 同源 */
-const _EFFECT_STATS = { atk: 1, def: 1, spd: 1, energyMax: 1 };
+const _EFFECT_STATS = { atk: 1, def: 1, spd: 1 };
 
 /* 各类定义的字段白名单（未知字段 = UNKNOWN_FIELD） */
 const _FIELDS = {

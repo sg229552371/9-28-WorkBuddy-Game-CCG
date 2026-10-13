@@ -1,6 +1,6 @@
 # 决策记录（Decision Log）· 唯一索引 v1
 
-> 建立日期：2026-10-12 ｜ 对应代码版本：`APP_VERSION 20261049`
+> 建立日期：2026-10-12 ｜ 对应代码版本：`APP_VERSION 20261054 → 20261055`（2026-10-13 本轮 D029~D034 落库；**新版本号由主会话定**，此处为暂写）
 > **依据**：`plan_architecture_and_ai_development_v1.md` §5（目录第 8 项「决策记录」+ 第 9 项「反馈与提案」）、§6（更新流程 + 状态词表）、§9-8；`AGENTS.md` §六-4。
 >
 > ⚠️ **本文件不是第二套规则源**（§5 明令禁止）。它只做两件事：
@@ -58,6 +58,12 @@
 | **D026** | **2026-10-13** | **C3 保险来源 / C4 结晶速率 接线** | `CFG.insuranceSource` **消费点接线**（默认值下行为不变）；`CFG.outLevel.unlockMilestones` 接线**用既有 `Meta.data.heroes` 派生（不加新存档键）**：`insuranceSlot` → 开局按里程碑发放保险（默认 0 份）、`altarWeight` → 权重查询；**新增** `CFG.endless.crystalCapPerRun`（默认 `0` = 不封顶） | `js/config.js`（`CFG.insuranceSource` / `CFG.outLevel.unlockMilestones` / `CFG.endless.crystalCapPerRun`）；`game_design_proposal.md` §12-13 / §12-10 / §7.1；真源 `economy_insurance_design_v1.md` §4.2 | **新增**（数据 → 接线） | **已落库（接线）** |
 | **D027** | **2026-10-13** | **E/H LV100 曲线（阶段 E/H 平衡续）** | 采纳 `balance_proposal_eh_v0.1.md` §2.1 / §2.2 / §2.3(a) 建议值：**冷却 LV100 = LV1×0.60**（保留 `skillCurve` 幂曲线）、**伤害系数 LV100 = LV1×6.94（= `g(100)` 线性终点）**、`CR_ARCANE_AMP.more` LV100 `1.50→1.55`；**LV1 一律不动**。曲线**形态**（幂 vs 线性，提案 D1）与 `contactRadius / duration` 等级驱动（D5）等**仍待审** | `js/config.js`（`skillDefs[].levels[].cooldown / coefficient` / `CR_ARCANE_AMP.levels[].parameters.more`）；`game_design_proposal.md` §20.12（缺口 2 / 状态表 E·H 行）；真源 `balance_proposal_eh_v0.1.md` | **替换**（占位曲线 → LV100 端点已定；形态待审） | **已落库** |
 | **D028** | **2026-10-13** | **item5 资源接入层 / item6 竖屏审计 状态回写** | A2 资源清单本轮落**消费入口基建**（`AssetHooks` 消费函数 = `js/core.js` 末尾独立区块 + `js/assets_manifest.js`，配套测试 `assets_hook_test.js`(19 断言) + `asset_hooks_consume_test.js`）；清单仍**未挂载**、渲染侧**未接线**、端到端验收**待素材就绪**。竖屏（390×844）**布局溢出静态审计**测试已存在 = `layout_overflow_test.js`（解析 `css/style.css` 声明值、以竖屏逻辑宽 390 为基准，查固定 `px` 宽 / 左右偏移 / `min-width` / 字号是否溢出）；**该审计只抓「声明层面必然溢出」，真机像素级复核仍需人工**（无浏览器环境） | `full_dev_plan_v1.md` §2 A2 行；`dev_guide.md` §5.56 | **订正**（A2「半个改动，暂缓」→ 消费入口基建已落；补竖屏审计基线） | **已落库（基建）** |
+| **D029** | **2026-10-13** | **E-β：英雄能量字段彻底退役（item1）** | 删除**英雄能量属性链路**——`CFG.heroes[].energyMax / energyRegen`、`CFG.baseStats.int.energyMax`、`CFG.statNames.energyMax/energyRegen`、`CFG.statDesc.energyMax/energyRegen`；派生管线（`js/items.js` 的 `ZERO_GEAR` / `runBonus().add` / `computeStats` / `companionStats`，`js/game.js` 队友 `energy/energyMax/regen` 与 `G.run.energyMax`）一并清空；装备词条 `G005 核心电池 {regen:4,energyMax:20}→{hp:20,def:1}`、`G008 超载电容 {energyMax:30,regen:5}→{hp:30,def:2}`；`AT124 灵能护罩` `scaleBy` 基准 `{stat:"energyMax",pct:0.008}→{stat:"def",pct:0.26}`（在 H012 基础值上等价：130×0.008 = 4×0.26 = 1.04，仅基准属性由「能量」改「防御」）。**本轮保留**技能表 `CFG.skills[].energy` 数值字段（历史遗留、不参与门槛，标注后续单独清理） | `js/config.js`（heroes/baseStats/statNames/statDesc/gearDefs/AT124）；`js/items.js`；`js/game.js`；`game_design_proposal.md` §8.1.2 / §12-7；设计真源 `hero_roster_design_v1.md` §4-E-β | **替换**（D024 的 E-α「保留字段」→ E-β「彻底删」） | **已批准** |
+| **D030** | **2026-10-13** | **C1-Q5：H007 定位归属（item2）** | **保持 `role:"aux"`**（不改 `output`）。理由：① 改 output 会破坏 `CFG.heroRoles` 的 **4/4/4 定位分组**与 `hero_roster_test.js` 七4 定位映射断言；② H007 技能语义 =「召唤 + 维修型无人机」（续航 / 辅助），与该角既有设计自洽。**仅补强 `playtag` / `desc` 表达**，不动物理序与 `role` | `game_design_proposal.md` §12-7 / §8.5 表 1；设计真源 `hero_roster_design_v1.md` §5 Q5 | **新增**（待裁决项 Q5 → 已裁决） | **已批准** |
+| **D031** | **2026-10-13** | **C1-Q7：新增元数据字段进选人 UI（item3）** | **采纳**。`playtag`（战斗风格标签）与 `difficulty`（1~5 难度星级）展示到**选人卡**；`statBias.high/low` 展示到**角色详情面板「属性倾向」区块**。字段名沿用 **D020** 已落库命名 | `js/ui.js` / `css/style.css`；设计真源 `hero_roster_design_v1.md` §5 Q7 | **新增**（待裁决项 Q7 → 已裁决） | **已批准** |
+| **D032** | **2026-10-13** | **阶段 E/H 曲线剩余项裁决（item4）** | **D1 采纳线性 `g(lv)`**（`game_design_proposal.md` §8.5 三级填法①的规约口径；原实现幂曲线 `skillCurve` 属「实现偏离规约」，本轮改为线性插值，**端点与 LV1 一律不动**）；**D4（派生比例随等级成长）维持静态**（保留 `CR_SPLIT` 常数口径）；**D5（`contactRadius` 按晶体等级成长）维持全局 16**；**D6（环绕常驻）维持现状**。理由：提案 §2.4/§2.5 自身即建议「维持现值自洽」，D4 需新增运行时通道（改动面大、收益低） | `js/config.js`（`skillCurve` 实现）；`balance_proposal_eh_v0.1.md` §5；`game_design_proposal.md` §20.12 | **替换**（曲线形态幂 → 线性；D4/D5/D6 待审 → 维持现状） | **已批准** |
+| **D033** | **2026-10-13** | **赛季配置迁入 CFG + 赛季规则（item5）** | 新增 `CFG.season = { maxLv:10, expBase:1000, expStep:200, weekly:{killGoal:200,extractGoal:3,levelUpGoal:10}, rewards:[...], unlock:{afterLevels:20,...} }`；`js/modes.js` 的硬编码 `SEASON_CFG` 改为从 `CFG.season` 读取（保留同名变量与数值兜底，**行为不变**）。**难度曲线口径**：主线难度由 `CFG.levelCurve.rows`（**20 行**，`countMul/hpMul/hazard/supply`）承载，第 **21~99 关外推规则**写入设计稿（本轮**不产关卡内容**） | `js/config.js`（`CFG.season`）；`js/modes.js`；**新增** `G_docs/season_design_v1.md`；`game_design_proposal.md` §12-30 / §12-9 | **新增**（赛季规则 → 配置 + 设计稿） | **已批准** |
+| **D034** | **2026-10-13** | **A3 `SkillSave` 宿主闭包（item6）** | **收口关闭**。D013 已定「技能构筑每局重置」→ **不需要跨局持久化**，因此 **SkillSave 不需要宿主调用**；模块保留为工具（`serialize` / `migrate` / `saveTo` / `loadFrom` 仍可被测试与未来赛季存档复用）。台账 A3 由「❌ 缺宿主调用」改判为「✅ 已收口（按 D013 无需持久化）」 | `full_dev_plan_v1.md` §2 A3 行；`js/game.js` / `js/main.js`（**无需接线**）；依据 `decision_log_v1.md` D013 | **订正**（❌ 缺宿主调用 → ✅ 已收口） | **已完成** |
 
 ---
 
@@ -67,10 +73,10 @@
 |---|---|---|---|---|
 | P001 | 2026-10-12 | 其余 11 英雄是否全部迁移（阶段 G 收口） | ✅ **已全部完成**：H001~H012 全走新路径（D011 批 1 + D012 批 2；`migratedHeroIds` = 12/12）→ 本项关闭 | ~~阶段 G 完成度~~ → 已闭环 |
 | P002 | 2026-10-12 | `castTime`（施放前摇）是否接线 | ✅ **已由 D015 拍板并落库**（本项关闭） | 技能手感 |
-| P003 | 2026-10-12 | 数值平衡（冷却/系数/派生比例/预算阈值） | ⏳ **大部闭环**：阶段 E/H **保守子集已由 D023 落库**、**LV100 曲线端点已由 D027 落库**（冷却 0.60× / 系数 6.94× / `CR_ARCANE_AMP.more 1.55`）；**仅剩**曲线**形态**（幂 vs 线性，提案 D1）与 `contactRadius / duration` 等级驱动（D5）、派生比例等级成长（D4）**待审**（B1/B2/B3/B5 已由 D014 落库） | 阶段 E/H（曲线形态 / 等级驱动） |
+| P003 | 2026-10-12 | 数值平衡（冷却/系数/派生比例/预算阈值） | ✅ **已闭环（2026-10-13，见 D032）**：阶段 E/H **保守子集已由 D023 落库**、**LV100 曲线端点已由 D027 落库**（冷却 0.60× / 系数 6.94× / `CR_ARCANE_AMP.more 1.55`）；**曲线形态（D1）已由 D032 裁定为线性 `g(lv)`**，`contactRadius`（D5）维持全局 16、派生比例（D4）维持静态、环绕常驻（D6）维持现状（均已裁决）；B1/B2/B3/B5 已由 D014 落库 → **本项目关闭** | ~~阶段 E/H（曲线形态 / 等级驱动）~~ → 已闭环 |
 | **P004** | **2026-10-13** | **C2：等级成长口径（加算 `1+0.06×(lv−1)` / 纯乘算 / 混合）** | ✅ **已由 D017 拍板并落库**（数据驱动 `CFG.levelUp.growth`，本项目关闭） | ~~B5 曲线~~ → 已闭环 |
 | **P005** | **2026-10-13** | **C6：卡牌系统去向（彻底退役 / 恢复 4 品质卡池 / 混合只留工匠世界）** | ✅ **已由 D018 拍板并落库**（彻底退役 + 物理清理，本项目关闭） | ~~规则自相矛盾~~ → 已闭环 |
-| **P006** | **2026-10-13** | **C1 剩余待审项**：energy 字段是否走 E-β（彻底删）/ H007 定位归属（`aux` vs `output`，设计稿 Q5）/ 新增元数据字段是否进选人 UI（Q7） | ⏳ **未决**：D024 已取 **E-α**（保留字段，E-β 未做）；H007 定位归属与 Q7 UI 均**未拍板** | C1 收口（字段退役 / 定位 / UI） |
+| **P006** | **2026-10-13** | **C1 剩余待审项**：energy 字段是否走 E-β（彻底删）/ H007 定位归属（`aux` vs `output`，设计稿 Q5）/ 新增元数据字段是否进选人 UI（Q7） | ✅ **已全部闭环（2026-10-13，见 D029/D030/D031）**：**E-β 已做**（D024 的 E-α 被取代 → D029 彻底删字段链路）；**Q5 已裁决**保持 `role:"aux"`（D030）；**Q7 已裁决**采纳进选人 UI（D031）→ 本项目关闭 | ~~C1 收口（字段退役 / 定位 / UI）~~ → 已闭环 |
 
 ---
 

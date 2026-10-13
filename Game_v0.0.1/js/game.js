@@ -51,9 +51,8 @@ function buildModulePoolState() {
 function createRun(heroDef) {
   return {
     heroDef,
-    autoFight: false,               // 自动战斗（HUD 按钮）：19.1 后普攻已移除，技能**全自动**释放（冷却好+能量够即放，与本开关无关）；本开关仅控制**走位托管**
+    autoFight: false,               // 自动战斗（HUD 按钮）：19.1 后普攻已移除，技能**全自动**释放（冷却好+有目标即放，与本开关无关）；本开关仅控制**走位托管**
     hp: heroDef.hp, hpMax: heroDef.hp,
-    energy: heroDef.energyMax, energyMax: heroDef.energyMax,
     lv: 1, exp: 0, expNext: expNextFor(1), coin: 0, kills: 0, eliteKills: 0,
     backpack: new Inventory(CFG.backpack.cols, CFG.backpack.rows, "backpack"),
     weaponInv: new Inventory(CFG.weaponGrid.cols, CFG.weaponGrid.rows, "weapon"),
@@ -107,8 +106,7 @@ function createRun(heroDef) {
       isCompanion: true,   // 标记：吸血 / 增益 / 产物池按「各自独立」结算（applyLifesteal、companionStats）
       skills: null,   // 由 recomputeWeapon() 解析：武器栏内的武器模块对小队全体成员生效
       skillTimer: (i + 1) * (CFG.team.skillStagger || 0.6),   // 主动技能冷却；错峰避免全员同帧起手
-      // 队友是独立个体：**自带能量池**（上限 / 回复可被武器栏装备、属性卡、雕像 Buff 加成）
-      energy: hd.energyMax, energyMax: hd.energyMax, regen: hd.energyRegen,
+      // 能量系统已退役（E-β）：队友不再有能量池字段
       cdMul: 1, lifesteal: 0,   // 由 updateCompanions() 每帧同步（属性卡 / 雕像 Buff 全队生效）
     })),
     // 产物池：**每个成员各自独立**（召唤物 / 陷阱都带 owner = 召唤者），互不顶替、各自计上限
@@ -268,7 +266,7 @@ class Player {
   update(w, dt) {
     const st = computeStats();
     // 同步等级 / 装备带来的上限与吸血（hpMax 随等级成长）
-    G.run.hpMax = st.hpMax; G.run.energyMax = st.energyMax; G.run.lifesteal = st.lifesteal;
+    G.run.hpMax = st.hpMax; G.run.lifesteal = st.lifesteal;
     // 移动（键盘 WASD/方向键；移动端虚拟摇杆优先——摇杆激活时用摇杆归一化向量，死区内视为静止）
     let dx = (G.keys["d"] || G.keys["arrowright"] ? 1 : 0) - (G.keys["a"] || G.keys["arrowleft"] ? 1 : 0);
     let dy = (G.keys["s"] || G.keys["arrowdown"] ? 1 : 0) - (G.keys["w"] || G.keys["arrowup"] ? 1 : 0);
@@ -296,8 +294,7 @@ class Player {
       this.y = U.clamp(this.y + dy * spd * dt, this.r, w.h - this.r);
       resolveObstacles(this, w, { x: this.x + dx * 100, y: this.y + dy * 100 });   // 偏置 = 行进方向前方
     } else { this.mvx = 0; this.mvy = 0; }   // 停止移动即清零
-    // 能量恢复（19.3 能量池退役）：恢复循环停掉——无人消耗能量，条目保留仅为兼容
-    // （G.run.energy / energyMax / regen 字段不删，仅不再参与技能门槛）
+    // 能量系统已退役（E-β）：能量恢复循环与能量门槛均已移除。
     // 自动攻击（19.1 移除普攻 / 19.3 冷却制）：英雄**唯一输出 = 主动技能**——冷却好 + 有目标即释放，
     // 不再看能量门槛、autoFight 开关或 Space（技能全自动，玩家专注走位；autoFight 仅托管移动）
     // 22.x 技能系统分流（合同 §14）：**迁移英雄只走 SkillRuntime 新路径**，旧施放逻辑整体跳过
@@ -480,8 +477,6 @@ function updateCompanions(w, dt) {
     // 属性与队长同源：局内等级成长 + 武器栏装备加成（16.5 武器栏对全队生效）
     const st = companionStats(c);
     if (c.hpMax !== st.hpMax) { c.hpMax = st.hpMax; if (c.hp > c.hpMax) c.hp = c.hpMax; }
-    if (c.energyMax !== st.energyMax) { c.energyMax = st.energyMax; if (c.energy > c.energyMax) c.energy = c.energyMax; }
-    c.regen = st.regen;
     c.cdMul = st.cdMul; c.lifesteal = st.lifesteal;   // 冷却缩减 / 吸血：属性卡与雕像 Buff 全队生效
     // 蛇形跟随：目标 = 队长尾迹上 (i+1)*DEPTH 深度处的历史点（沿真实路径）
     const t = trailTarget(trail, (i + 1) * TEAM_DEPTH, teamLateral(i));
@@ -498,7 +493,6 @@ function updateCompanions(w, dt) {
     // 🔴 19.1 普攻移除：队友与队长一致，唯一输出 = 主动技能（c.fireTimer 已随之退役）
     // 主动技能（技能石）：与队长同一套 SkillSystem。19.3 冷却制——队友**不再有独立能量池**，
     // 释放条件只剩「冷却好 + 有目标」（措峰 skillStagger 逻辑保留，见 createRun）。
-    // 能量字段（c.energy/energyMax/regen）条目保留但不参与门槛、也不再恢复。
     // 22.x 技能系统分流（合同 §14）：迁移队友走 SkillRuntime 新路径，旧施放逻辑跳过
     if (typeof skillV2Owns === "function" && skillV2Owns(c)) return;
     c.skillTimer = (c.skillTimer || 0) - dt;

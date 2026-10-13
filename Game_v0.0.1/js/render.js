@@ -418,9 +418,7 @@ function render() {
     ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(p.x - 20, p.y - 40, 40, 4);
     ctx.fillStyle = "#7de08a";
     ctx.fillRect(p.x - 20, p.y - 40, 40 * Math.max(0, G.run.hp / G.run.hpMax), 4);
-    ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(p.x - 20, p.y - 34, 40, 3);
-    ctx.fillStyle = "#6cb2ff";
-    ctx.fillRect(p.x - 20, p.y - 34, 40 * Math.max(0, Math.min(1, G.run.energy / (G.run.energyMax || 1))), 3);
+    // 能量条已随 E-β 能量字段退役移除（decision_log D029）
   }
   // AI 队友（组队）
   if (G.run && G.run.companions) {
@@ -445,9 +443,7 @@ function render() {
       ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(c.x - 20, c.y - 40, 40, 4);
       ctx.fillStyle = "#7de08a";
       ctx.fillRect(c.x - 20, c.y - 40, 40 * Math.max(0, c.hp / c.hpMax), 4);
-      ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(c.x - 20, c.y - 34, 40, 3);
-      ctx.fillStyle = "#6cb2ff";
-      ctx.fillRect(c.x - 20, c.y - 34, 40 * Math.max(0, Math.min(1, (c.energy || 0) / (c.energyMax || 1))), 3);
+      // 队友能量条已随 E-β 能量字段退役移除（decision_log D029）
     }
   }
   // 陷阱（大地雷）：触发圈虚线 = 触发范围（与伤害范围同源）；引信期闪烁。只画本世界的

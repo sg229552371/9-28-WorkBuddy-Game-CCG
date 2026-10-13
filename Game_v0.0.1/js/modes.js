@@ -670,19 +670,18 @@ function npcTap(clientX, clientY) {
  * ------------------------------------------------------------
  * 定位：99 关主线通关后开放的赛季玩法，本期仅占位实现
  *   （数据结构 + 经验曲线 + 周任务 + 结算钩子，无独立玩法循环）。
- * 铁律遵守：数值常量在本区块顶部声明，【待迁入 CFG】（本轮禁止改 config.js）。
+ * 铁律遵守：数值常量已迁入 CFG.season（见 js/config.js），本区块只做数据读取 + 兜底。
  * 全部接口可被无头测试（season_test.js）直接调用，不依赖 DOM 渲染。
  * ============================================================ */
 
-/* ---- 赛季配置常量（待迁入 CFG） ---- */
-var SEASON_CFG = {
-  expBase: 1000,        // LV1→LV2 所需经验基数
-  expStep: 200,         // 每级递增量（LV n→n+1 需 1000 + (n-1)*200，n 为当前等级）
-  maxLv: 10,            // 赛季等级封顶（L10 不再累计经验）
-  weeklyKillGoal: 200,  // 周任务①：击杀 N 个敌人
-  weeklyExtractGoal: 3, // 周任务②：成功撤离 N 次
-  weeklyLevelUpGoal: 10 // 周任务③：局内升级 N 次
-};
+/* ---- 赛季配置（数据驱动）：数值源 = CFG.season（见 js/config.js）。
+ * 对外变量名 SEASON_CFG 保持不变（season_test.js 与 js/ui-panels.js 依赖）。
+ * CFG.season 缺失时回落到与旧值逐字一致的兜底（保证行为不变）。 ---- */
+var SEASON_CFG = (typeof CFG !== "undefined" && CFG.season) ? {
+  expBase: CFG.season.expBase, expStep: CFG.season.expStep, maxLv: CFG.season.maxLv,
+  weeklyKillGoal: CFG.season.weekly.killGoal, weeklyExtractGoal: CFG.season.weekly.extractGoal,
+  weeklyLevelUpGoal: CFG.season.weekly.levelUpGoal
+} : { expBase: 1000, expStep: 200, maxLv: 10, weeklyKillGoal: 200, weeklyExtractGoal: 3, weeklyLevelUpGoal: 10 };
 
 /* ---- 赛季状态（内存态，占位期不落盘；赛季正式上线再接 Meta 存档） ---- */
 var SeasonState = {

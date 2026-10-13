@@ -94,7 +94,7 @@ const driver = `
 
   /* ============ 一、属性说明（名称 + 文案） ============ */
   {
-    const needKeys = ["atk", "hp", "def", "spd", "energyMax", "energyRegen", "summonMax", "trapMax", "radius"];
+    const needKeys = ["atk", "hp", "def", "spd", "summonMax", "trapMax", "radius"];
     const missName = needKeys.filter(k => !CFG.statNames[k]);
     check("一1 CFG.statNames 覆盖英雄全部属性" + (missName.length ? "（缺：" + missName.join(",") + "）" : ""),
       missName.length === 0);
@@ -106,7 +106,7 @@ const driver = `
     check("一3 每条属性说明都有 name + 足够长的 desc" + (badDesc.length ? "（不合格：" + badDesc.join(",") + "）" : ""),
       badDesc.length === 0);
     check("一4 属性名与说明一致（statDesc.name 与 statNames 对齐）",
-      ["atk", "hp", "def", "spd", "energyMax"].every(k => CFG.statDesc[k].name === CFG.statNames[k]));
+      ["atk", "hp", "def", "spd"].every(k => CFG.statDesc[k].name === CFG.statNames[k]));
     check("一5 UI._statName 读 CFG.statNames（防御）", UI._statName("def") === "防御");
     check("一6 UI._statName 未知键回落原键（不空白）", UI._statName("zzzUnknown") === "zzzUnknown");
     check("一7 UI._statName 空值安全", UI._statName(null) === "属性" && UI._statName("") === "属性");
@@ -207,7 +207,7 @@ const driver = `
       CFG.skills.AT120.scaleBy && CFG.skills.AT120.scaleBy.stat === "def");
     check("四2 AT122 生命脉冲走 atk", CFG.skills.AT122.scaleBy.stat === "atk");
     check("四3 AT123 鼓舞光环走 def", CFG.skills.AT123.scaleBy.stat === "def");
-    check("四4 AT124 灵能护罩走 energyMax", CFG.skills.AT124.scaleBy.stat === "energyMax");
+    check("四4 AT124 灵能护罩走 def（E-β/D029：原走 energyMax，随能量字段退役改吃防御）", CFG.skills.AT124.scaleBy.stat === "def");
 
     const base = { lv: 1, radius: 100, scaleBy: { stat: "def", pct: 0.02 } };
     const low = SkillSystem.withScaleBy(base, { def: 2 });
@@ -278,14 +278,14 @@ const driver = `
     /* --- AT124 灵能护罩：范围伤害 + 全队防御提升 --- */
     {
       G.run.buffs.length = 0;
-      const sk = SkillSystem.withScaleBy(Object.assign({}, CFG.skills.AT124, { lv: 1, radius: 140 }), { energyMax: 130 });
+      const sk = SkillSystem.withScaleBy(Object.assign({}, CFG.skills.AT124, { lv: 1, radius: 140 }), { def: 4 });
       const mob = mkM(1030, 1000);
       SkillSystem.castSupport(fakeW([mob]), caster, sk, { atk: caster.atk }, "barrier");
       check("五12 AT124 写入灵能护罩增益",
         G.run.buffs.some(b => b.id === "灵能护罩" && b.stat === "def"));
       const bo = runBonus();
       check("五13 AT124 生效：runBonus 防御加成 > 0（+" + bo.add.def + "）", bo.add.def > 0);
-      check("五14 AT124 护罩值含能量上限加成（" + bo.add.def + " > 基础 4）", bo.add.def > 4);
+      check("五14 AT124 护罩值含防御加成（" + bo.add.def + " > 基础 4）", bo.add.def > 4);
       check("五15 AT124 对范围内敌人造成伤害", mob.hp < mob.hpMax);
 
       // 防御提升真的进了队伍属性（companionStats 同源 runBonus）
@@ -326,8 +326,8 @@ const driver = `
       near(stAgi.spd - stNone.spd, 10 * bs.agi.spd) && near(stAgi.cdMul, stNone.cdMul * (1 - 10 * bs.agi.cdPct), 1e-6));
     check("六5 冷却缩减有下限（敏捷 500 → 系数钳在 " + bs.agi.cdFloor + "）",
       near(stAgiMax.cdMul, stNone.cdMul * bs.agi.cdFloor, 1e-6));
-    check("六6 智力 +10 → 能量上限 +" + (10 * bs.int.energyMax),
-      near(stInt.energyMax - stNone.energyMax, 10 * bs.int.energyMax));
+    check("六6 智力不再折算能量上限（E-β/D029：能量字段已退役，bs.int.energyMax 与 stats.energyMax 均为 undefined）",
+      bs.int.energyMax === undefined && stInt.energyMax === undefined && stNone.energyMax === undefined);
 
     /* 技能效果强度：castSupport 治疗量随 statSrc.int 提升（statSrc = computeStats 产物，同源） */
     const caster = { x: 1000, y: 1000, atk: 20 };

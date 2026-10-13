@@ -178,14 +178,14 @@ function healExpect(statVal, lv, e) {
   var e = effectOf(sid);
   check("4.0 前提：节点 effect.kind = barrier", !!e && e.kind === "barrier");
 
-  var o = { id: "H012", x: 0, y: 0, energyMax: 100 };
+  var o = { id: "H012", x: 0, y: 0, def: 20 };
   var run = setEnv(o, { hp: 0, hpMax: 1000, companions: [], buffs: [], traps: [], drones: [] });
   SkillRuntime.spawnEffect(mkW([]), snapOf(o, sid, {}, 20), "n_psyshield", { step: 1 });
 
   var defB = run.buffs.filter(function (b) { return b && b.stat === "def"; });
   check("4.1 施放后出现 stat = def 的护罩记录", defB.length === 1);
   var rec = defB[0] || {};
-  var statVal = o.energyMax;
+  var statVal = o[e.scaleStat || "def"];   // E-β/D029：scaleStat 已由 energyMax 改为 def（数据驱动读取）
   var expDef = Math.max(1, Math.round(e.barrierDef + statVal * (e.scalePct || 0)));
   check("4.2 mul 为平坦加值（整数且 > 1），非防御倍率",
     typeof rec.mul === "number" && rec.mul > 1 && Math.floor(rec.mul) === rec.mul);

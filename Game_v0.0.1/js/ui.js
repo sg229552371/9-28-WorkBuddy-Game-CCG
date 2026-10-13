@@ -526,6 +526,13 @@ const UI = {
       // 未解锁：锁形标识 + 条件短文案（保留在卡内供旧断言读取，同时竖排锁标浮在立绘上）。
       const lockMsg = this._unlockRuleText(h.id);
       const lockLine = unlocked ? "" : `🔒 未解锁 · ${lockMsg}`;
+      /* C1-Q7：卡片追加 2 处纯元数据展示（不改选中/解锁语义，不进 selectedChars）——
+       *   playtag   玩法风格标签（如「全队护罩」）；空串/字段缺失 → 不渲染该元素（防 undefined 漏字）
+       *   difficulty 上手难度 1~5 → 字符星级（★☆）；非法/缺失 → 不渲染该元素 */
+      const playtagEl = (typeof h.playtag === "string" && h.playtag)
+        ? `<span class="hero-playtag">${h.playtag}</span>` : "";
+      const diffStars = this._diffStars(h.difficulty);
+      const diffEl = diffStars ? `<span class="hero-diff">${diffStars}</span>` : "";
       // 21.9：卡片显示真名（取消 ??? 打码——与详情区信息公开化口径一致；锁定感由
       // 🔒 锁标 + 置灰 + 剪影立绘表达；图鉴/皮肤系统的 ??? 是收集/皮肤语义，不受影响）
       card.innerHTML =
@@ -533,6 +540,7 @@ const UI = {
         (unlocked ? "" : `<span class="char-lock">🔒</span>`) +
         `</div>` +
         `<div class="char-name">${h.name}</div>` +
+        playtagEl + diffEl +
         `<div class="char-badges">${h.id}${roleBadge}${lockLine}</div>`;
       const cv = card.querySelector(".char-face");
       if (cv) drawHeroPortrait(cv, heroPortraitKey(h), !unlocked, HERO_PORTRAIT_CARD_H);
@@ -639,6 +647,7 @@ const UI = {
         `<div class="cd-stats">HP ${h.hp} · 攻击 ${h.atk} · 防御 ${h.def} · 移速 ${h.spd}` +
         `<span class="cd-id">　力量 ${h.str || 0} / 敏捷 ${h.agi || 0} / 智力 ${h.int || 0}</span>` +
         `<span class="cd-id">　（LV1 基础值 · 解锁后随局外等级成长）</span></div>` +
+        this._statBiasHtml(h) +
         `<div class="cd-skill">⚔ <b>${wpn.name}</b> · 技能 LV1（解锁后可升级）<br>${skLine}</div>` +
         `<div class="cd-desc">解锁后可编入队伍出战。${cost ? "点击上方按钮花结晶解锁" : (ruleTxt !== "暂未解锁" ? "达成条件后自动解锁" : "敬请期待后续版本")}</div>`;
       if (canBuy) {
@@ -670,6 +679,7 @@ const UI = {
       `<div class="cd-stats">HP ${h.hp + g.hp * n} · 攻击 ${h.atk + g.atk * n} · 防御 ${h.def + g.def * n} · 移速 ${h.spd}` +
       `<span class="cd-id">　力量 ${h.str || 0} / 敏捷 ${h.agi || 0} / 智力 ${h.int || 0}</span>` +
       `<span class="cd-id">　（基础 HP ${h.hp} / 攻 ${h.atk} / 防 ${h.def}）</span></div>` +
+      this._statBiasHtml(h) +
       `<div class="cd-skill">⚔ <b>${wpn.name}</b> · 技能 LV${skLv}${skLv < CFG.weaponLevel.maxLv ? `（上限 ${CFG.weaponLevel.maxLv}）` : "（满级）"}<br>${skLine}</div>`;
   },
 
@@ -1421,13 +1431,37 @@ Object.assign(UI, {
   /* 属性键 → 中文属性名。优先 CFG.statNames（另一路 agent 新增），缺失回落本地映射。 */
   _statName(stat) {
     const key = (typeof stat === "string" && stat) ? stat : "";
-    const FALLBACK = { atk: "攻击", hp: "生命", hpMax: "生命", def: "防御", spd: "速度", energyMax: "能量上限" };
+    const FALLBACK = { atk: "攻击", hp: "生命", hpMax: "生命", def: "防御", spd: "速度" };
     let name = "";
     try {
       if (typeof CFG !== "undefined" && CFG && CFG.statNames && key && CFG.statNames[key]) name = CFG.statNames[key];
     } catch (e) { name = ""; }
     if (!name) name = FALLBACK[key] || (key ? key : "属性");
     return name;
+  },
+
+  /* C1-Q7：难度档 1~5 → 字符星级（实心★ + 空心☆，满 5 星，如 ★★★☆☆）。
+   * 非法输入 / 字段缺失（非 1~5 整数）→ 返回 ""，调用方据此不渲染该元素（防 undefined 漏字）。 */
+  _diffStars(n) {
+    if (typeof n !== "number" || !isFinite(n)) return "";
+    const k = Math.round(n);
+    if (k < 1 || k > 5) return "";
+    return "★".repeat(k) + "☆".repeat(5 - k);
+  },
+
+  /* C1-Q7：详情区「属性倾向」区块 HTML（优势 statBias.high / 短板 statBias.low）。
+   * 键 → 中文名统一走 _statName（优先 CFG.statNames，查不到回落键名本身，不抛错）。
+   * statBias 缺失、非对象、或 high/low 皆空 → 返回 ""（整块不渲染）。 */
+  _statBiasHtml(h) {
+    const b = (h && typeof h.statBias === "object") ? h.statBias : null;
+    if (!b) return "";
+    const hi = Array.isArray(b.high) ? b.high : [];
+    const lo = Array.isArray(b.low) ? b.low : [];
+    if (!hi.length && !lo.length) return "";
+    const tags = (keys, cls) => keys.map(k => `<span class="${cls}">${this._statName(k)}</span>`).join("");
+    const hiRow = hi.length ? `<div class="cd-bias-row"><span class="cd-bias-label">优势</span>${tags(hi, "cd-bias-high")}</div>` : "";
+    const loRow = lo.length ? `<div class="cd-bias-row"><span class="cd-bias-label">短板</span>${tags(lo, "cd-bias-low")}</div>` : "";
+    return `<div class="cd-bias">${hiRow}${loRow}</div>`;
   },
 
   /* 「属性说明」弹窗内容（HTML 字符串，26.x 优化排版后仅供右上角 ? 弹窗使用；

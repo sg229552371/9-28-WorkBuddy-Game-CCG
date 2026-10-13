@@ -277,7 +277,7 @@ CFG.starterHeroIds = ["H001", "H006", "H004", "H005", "H010", "H012"];   // 首�
 
 ### 4-D 可选：修正「定位画像越界」的数值（🔧 全部占位，待策划定稿）
 
-> ✅ **已采纳（2026-10-13 本轮落库，见 D024）**：**D1 / D2 / D3 全部采纳并已写入 `js/config.js`**——H005 `spd 306 / def 6 / hp 126`、H006 `hp 128 / def 3`、H012 `atk 12`（均**仍在定位风格带内**，§1.3/§6.1 的风格带与「五4 均值」断言已同步回归）。下表「🔧 占位，待策划定稿」**已落实**（保留原标注供回溯）。**未决**：H005「是否保留高机动防御」的**定位画像**取舍（Q2）与 E-β 仍待审（见 §5 与 `decision_log_v1.md` P006）。
+> ✅ **已采纳（2026-10-13 本轮落库，见 D024）**：**D1 / D2 / D3 全部采纳并已写入 `js/config.js`**——H005 `spd 306 / def 6 / hp 126`、H006 `hp 128 / def 3`、H012 `atk 12`（均**仍在定位风格带内**，§1.3/§6.1 的风格带与「五4 均值」断言已同步回归）。下表「🔧 占位，待策划定稿」**已落实**（保留原标注供回溯）。**剩余未决**：H005「是否保留高机动防御」的**定位画像**取舍（Q2）。（**E-β 已由 D029 裁决为「彻底删」，见 §4-E，不再待审**。）
 
 > ⚠️ 本组**会直接命中快照测试**（`hero_roster_test.js:186~204` 七1 锁定 12 角 `hp/def/atk/energyMax/spd/weapon` 真值），属**高风险**改动。**本节仅列候选，未拍板前不动**（见 §5 待裁决 #2/#3）。
 > 方向：仅在**保持定位风格带内**的前提下，把越界极端值拉回组内中位。
@@ -288,14 +288,16 @@ CFG.starterHeroIds = ["H001", "H006", "H004", "H005", "H010", "H012"];   // 首�
 | D2 | `js/config.js:1220~1223`（H006） | `hp` / `def` | `138 / 4` | `hp 128`、`def 3` 🔧 占位 | 让输出组最高血/防回落到组内次高，恢复"重炮=脆"的代价 |
 | D3 | `js/config.js:1246~1249`（H012） | `atk` | `14` | `12` 🔧 占位 | 把辅助组最高攻回落到组内中位（与 H010 齐平） |
 
-### 4-E 可选：能量字段退役收口（二选一，🔧 占位，待策划定稿）
+### 4-E 可选：能量字段退役收口（✅ 已采纳 E-β，2026-10-13）
 
-> ✅ **已定（2026-10-13 本轮落库，见 D024）**：取 **方案 E-α（保守·推荐）**——**保留** `CFG.heroes[].energyMax / energyRegen` 与 `CFG.baseStats.int.energyMax`，仅在 `CFG.skillResource` 注释中明确「仅供 `energyMax` 类 scaling（如 `SK_PSYSHIELD`）与 UI 展示使用，**不再作技能门槛**」，**零测试改动**。**方案 E-β（彻底删字段）未做**——它会强制把 `SK_PSYSHIELD.effect.scaleStat` 由 `energyMax` 改为其它基准（= 平衡变更），留待用户拍板（见 `decision_log_v1.md` P006）。
+> ✅ **已采纳（2026-10-13 本轮，见 `decision_log_v1.md` D029）**：**取方案 E-β（彻底移除字段链路）** —— 删除 `CFG.heroes[].energyMax / energyRegen`、`CFG.baseStats.int.energyMax`、`CFG.statNames.energyMax/energyRegen`、`CFG.statDesc.energyMax/energyRegen`，派生管线（`js/items.js` / `js/game.js`）一并清空；`SK_PSYSHIELD`（`AT124`）的 `scaleBy` 基准由 `{stat:"energyMax",pct:0.008}` 改为 `{stat:"def",pct:0.26}`（在 H012 基础值上等价：130×0.008 = 4×0.26 = 1.04）。装备词条 `G005/G008` 的 `energyMax/regen` 改 `hp/def`。**本轮保留**技能表 `CFG.skills[].energy` 数值字段（历史遗留、不参与门槛，标注后续单独清理）。
+
+> 🔴 **已被取代（2026-10-13，见 D029）**：下方 **E-α（保留字段）** 口径由 **D024** 落库、现被 **D029 的 E-β** 取代，原文保留供回溯。
 
 > ⚠️ 交叉 `hero_roster_test.js:202~203`（七1 快照含 `energyMax`）与 `hero_kit_test.js:329~330`（六6 int→energyMax 折算）。见 §5 待裁决 #4。
 
-- **方案 E-α（保守·推荐）**：**保留** `CFG.heroes[].energyMax / energyRegen` 与 `CFG.baseStats.int.energyMax`，仅在 `CFG.skillResource` 注释中明确"仅供 `energyMax` 类 scaling（如 `SK_PSYSHIELD`）与 UI 展示使用，不再作技能门槛"。**零测试改动**。
-- **方案 E-β（彻底）**：从 `CFG.heroes` 移除 `energyMax / energyRegen`、从 `CFG.baseStats.int` 移除 `energyMax`、把 `SK_PSYSHIELD.effect.scaleStat` 由 `energyMax` 改为 `def`。**牵动 4 处测试**（见 §6）。
+- ~~**方案 E-α（保守·推荐）**：**保留** `CFG.heroes[].energyMax / energyRegen` 与 `CFG.baseStats.int.energyMax`，仅在 `CFG.skillResource` 注释中明确"仅供 `energyMax` 类 scaling（如 `SK_PSYSHIELD`）与 UI 展示使用，不再作技能门槛"。**零测试改动**。~~（🔴 已被取代，见 D029）
+- ~~**方案 E-β（彻底）**：从 `CFG.heroes` 移除 `energyMax / energyRegen`、从 `CFG.baseStats.int` 移除 `energyMax`、把 `SK_PSYSHIELD.effect.scaleStat` 由 `energyMax` 改为 `def`。**牵动 4 处测试**（见 §6）。~~ ✅ **本轮采纳（见 D029）**
 
 ---
 
@@ -306,10 +308,10 @@ CFG.starterHeroIds = ["H001", "H006", "H004", "H005", "H010", "H012"];   // 首�
 1. **Q1 首版 6 角名单**：是否采纳 §3.2 推荐（H001/H006/H004/H005/H010/H012，三定位各 2），并**新增 `CFG.starterHeroIds`** 把"首发名单"与 `unlockOrder` 物理序解耦？（现状首发 H001~H006 **无 aux**。）
 2. **Q2 H005 定位画像**：是否接受 H005 快枪手维持"高机动防御"（`spd 320 / agi 9`），还是按 §4-D1 拉回防御组中庸？
 3. **Q3 H006 / H012 数值越界**：是否按 §4-D2/D3 修正 H006 的 `hp 138 / def 4`（输出组最高）与 H012 的 `atk 14`（辅助组最高）？
-4. **Q4 能量字段退役收口**：`energyMax / energyRegen` 既已退役技能门槛，是选 §4-E-α（保留，零改动）还是 §4-E-β（彻底移除，牵动 4 处测试）？
-5. **Q5 H007 定位归属**：H007 召唤师归 `aux`（现况）还是 `output`？（现 `desc` 自述"召唤物原型角"，语义偏输出；改则牵动 `hero_roster_test.js:51~53` 分组断言。）
+4. **Q4 能量字段退役收口**：`energyMax / energyRegen` 既已退役技能门槛，是选 §4-E-α（保留，零改动）还是 §4-E-β（彻底移除，牵动 4 处测试）？<br>✅ **已裁决（2026-10-13 本轮，见 `decision_log_v1.md` D029）**：取 **E-β（彻底移除字段链路）**——**替代** D024 的 E-α（保留）口径；`SK_PSYSHIELD` 的 `scaleBy` 基准由 `energyMax` 改 `def`（等价改写）。
+5. **Q5 H007 定位归属**：H007 召唤师归 `aux`（现况）还是 `output`？（现 `desc` 自述"召唤物原型角"，语义偏输出；改则牵动 `hero_roster_test.js:51~53` 分组断言。）<br>✅ **已裁决（2026-10-13 本轮，见 `decision_log_v1.md` D030）**：**保持 `role:"aux"`**（不改 output），仅补强 `playtag` / `desc` 表达。
 6. **Q6 aux 首版可验证性**：若首版引入 aux（H010/H012），是否同步安排多人局（含 AI 队友）验证其团队收益？单人局下治疗/护罩/增益的体感有限。
-7. **Q7 新增字段命名与 UI**：§4-A/C 新增的 `playtag / difficulty / statBias / archetype / difficultyOrder` 命名是否认可？是否要进选人 UI（会牵动 `ui.js` 的 `buildCharList` 与 `hero_portrait_test.js`）？
+7. **Q7 新增字段命名与 UI**：§4-A/C 新增的 `playtag / difficulty / statBias / archetype / difficultyOrder` 命名是否认可？是否要进选人 UI（会牵动 `ui.js` 的 `buildCharList` 与 `hero_portrait_test.js`）？<br>✅ **已裁决（2026-10-13 本轮，见 `decision_log_v1.md` D031）**：**采纳进选人 UI**——`playtag` / `difficulty` 展示到选人卡，`statBias.high/low` 展示到角色详情面板「属性倾向」区块；字段名沿用 D020 已落库命名。
 8. **Q8 H002 身份锁定**：确认 H002 散弹手**保持 `ranged`**（`runtime_test.js:210` 锁"三向散射 = 弹道 3"，改近战会破身份）？
 9. **Q9 文档回写**：本设计经审后，`game_design_proposal.md:1187`（§12-7"待细化"）与 §8.5 表 1（`882~893`）是否按本文更新，并在 `decision_log_v1.md` 新增决策行（拟编号 `D0xx`，权威落点 = §12-7 / §8.5 表 1 / 本文档）？
 

@@ -34,7 +34,7 @@
 |---|---|---|---|---|
 | A1 | **`killer` 伤害归属** | ✅ **已修**：`skill-damage.js:252` 早已透传；本轮补 `skill-runtime.js` 两处（`_applyDamage` 主路径 + `_fallbackDamage` 兜底）→ 技能伤害不再恒 `null`（深渊逐角色统计/吸血/裂变读 owner 恢复） | `js/skill-runtime.js` | ❌ 共享文件 |
 | A2 | **资源清单接线** | ⚠️ **判定为「半个改动」，暂缓**：清单 15 条**磁盘存在 0**；且实测「清单侧 `AssetHooks` 真实消费点 = 0」→ 单个挂载 = 每局 15 个 404 + 零收益 + 打破 7 条现状断言。**必须连同渲染/音频消费接线一起做**（`Assets.images` / `SFX.play` 优先查 `AssetHooks`），且需素材就绪才有端到端验收条件 <br>✅ **订正（2026-10-13 本轮落库，见 D028）**：本轮已落**消费入口基建** —— `AssetHooks` 消费函数（`js/core.js` 末尾独立区块：`Assets.hookedSprite/hookedAudio/hookedHeroSprite`）+ `js/assets_manifest.js`（清单）+ 测试 `assets_hook_test.js`（19 断言）/ `asset_hooks_consume_test.js`（消费入口 null-safe 与回退专项，含 `SFX.play(name,key)`）；**清单仍「未挂载」、渲染侧未接线**、端到端验收**待素材就绪**。故上述「暂缓」仅指**挂载与渲染消费**，消费**入口**本身已可用 | `index.html` + `js/core.js` | ⚠️ 基建已落（挂载/渲染未接线） |
-| A3 | **`SkillSave` 宿主闭环** | 模块本身完备（`serialize`/`migrate`/`saveTo`/`loadFrom`/`_persist`），**仅缺宿主调用** ❌；但「是否跨局保存 / 保存时机」**属设计决策未定** | `js/game.js` / `js/main.js` | ❌ 需先拍板 |
+| A3 | **`SkillSave` 宿主闭环** | ✅ **已收口（2026-10-13 本轮，见 D034，按 D013 无需持久化）**：D013 已定「技能构筑**每局重置**」→ **不需要跨局持久化**，因此 **SkillSave 不需要宿主调用**。模块本身完备（`serialize`/`migrate`/`saveTo`/`loadFrom`/`_persist`），**保留为工具**（仍可被测试与未来赛季存档复用）。原「❌ 仅缺宿主调用」判定**作废**（其前提「需跨局保存」已被 D013 否掉） | `js/game.js` / `js/main.js`（**无需接线**） | ✅ 已收口 |
 | A4 | **`castTime` 调度消费** | ✅ **已落库（2026-10-13，`D015`）**：用户拍板语义 = **不可打断 + 可移动**。实现 = `skill-scheduler.js` 新增 `castTimeFor(def, level)`（真源 `levels[lv-1].castTime` → 回落 `def.castTime` → 0）+ `tick()` 前摇段（**刻意不做任何打断判定**：不读 hp / 不读 mvx,mvy；目标丢失 → 进度**暂停**不归零；`castTime=0` 恒 no-op 零回归）。测试 = `skill_scheduler_test.js` 31 断言（新增 9.1~9.8 共 12 条前摇断言）+ `skill_rule_binding_test` ⑦ 口径同步 | `js/skill-scheduler.js` | ✅ 已完成 |
 | A5 | **全部 12 英雄技能** | ✅ **已全部交付（H001~H012 全走新路径）**：批 1（H001~H006，2026-10-12）+ 批 2（H007~H012，2026-10-12 · 决策 `D012`）——批 2 只需 1 个模板 kind（`summonUnit`）+ 1 个节点字段（`effect`），已拆 2A（H009~H012）/ 2B（H007/H008）全部实现 | `js/config.js` 的 `skillDefs`（表 → 归 config，非独立文件） | ✅ 已完成（测试 38+43 断言）|
 | A6 | **旧路红测根因** | ✅ **已确诊（2026-10-12，见 §6.3）**：= **测试桩喂钟非单调**（⑥ 段把时钟重置为 0，`Game.lastT` 已被 ④ 推到 ~10020 → `main.js` 的 `dt=(t-lastT)/1000` 得 **负步长 ≈ −10.02s**）→ 施放计时器被甩到窗口末尾 → 偶发假红；**非产品逻辑缺陷**。修复 = 同提交 `8b0e1a2` 双重加固（产品侧 dt 钳制 + 测试侧单调续帧）。**书中「根因未诊断」为过期表述，已回写** | 诊断报告 | ✅ 已完成 |
@@ -58,7 +58,7 @@
 | C2 | **等级成长公式：加算 vs 乘算** | §12-38 未定 → ✅ **已由 D017 落库**（`CFG.levelUp.growth`） |
 | C3 | 局内保险来源重设计（原方案已废弃） | §12-13 ✅ **已落库（见 `decision_log_v1.md` D021）**：`ALTAR_007` 保险雕像 + 工匠世界购买；✅ **本轮接线（D026）**：`CFG.insuranceSource` 消费点接线（默认值下行为不变） |
 | C4 | 结晶获取速率 / 局间永久解锁内容 | §12-10 ✅ **已落库（数据，见 `decision_log_v1.md` D022）**：`CFG.outLevel.crystalRate / unlockMilestones`（接线待审）→ ✅ **本轮已接线（D026）**：`unlockMilestones` 用既有 `Meta.data.heroes` 派生接线（`insuranceSlot` 开局发保险 0 份 / `altarWeight` 权重查询）+ 新增 `CFG.endless.crystalCapPerRun`（默认 `0` = 不封顶） |
-| C5 | 难度曲线 + 赛季玩法规则 | §12-9 / §12-30（首版暂缓） |
+| C5 | 难度曲线 + 赛季玩法规则 | §12-9 / §12-30 → ✅ **已出稿（2026-10-13 本轮，见 D033）**：**赛季规则已出稿** `G_docs/season_design_v1.md`（定位/入口/等级经验/经验来源/周任务/奖励/存档/与永续内容关系）+ **`CFG.season` 已落库**（`js/config.js`；`js/modes.js` 的 `SEASON_CFG` 改为从此读取，行为不变）；**难度曲线 21~99 外推口径已写**（`season_design_v1.md` §5.3，主线真源 = `CFG.levelCurve.rows` 20 行）。首版仍为占位（无独立玩法循环） |
 | C6 | **卡牌系统去向** | §12-27 要卡池 vs §19.7 已退役 → **规则自相矛盾，需裁决** → ✅ **已由 D018 落库**（彻底退役 + 物理清理） |
 | C7 | 技能栏排布：字面 `A X X X X A` vs 已落地 `[名][A][X×4][A]` | W2 遗留偏差待确认 ✅ **已落库（见 `decision_log_v1.md` D019）**：承认现状为最终形态 + 回写 `game_design_proposal.md` §20.1.1 |
 

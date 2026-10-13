@@ -337,7 +337,7 @@ const driver = `
     // 端到端：19.1 普攻移除——队友不再有 basic 发射路径（无 isSkill=false 子弹）
     {
       const w = G.mainWorld;
-      r.companions.forEach(k => { k.skillTimer = 999; k.energy = 0; });   // 压技能：只暴露普攻路径
+      r.companions.forEach(k => { k.skillTimer = 999; });   // 压技能：只暴露普攻路径
       w.playerBullets.length = 0;
       w.monsters.push(new Monster("NM0010", c.x + 60, c.y, 1));
       updateCompanions(w, 0.016);
@@ -432,9 +432,7 @@ const driver = `
     w.monsters.push(new Monster("NM0010", c.x + 60, c.y, 1));
     w.playerBullets.length = 0;
     c.fireTimer = 999; c.skillTimer = 0;            // 只让主动技能触发
-    c.energy = c.energyMax;                         // 能量字段保留，但已不参与门槛
     const cs = c.skills.skill;
-    const en0 = c.energy;
     updateCompanions(w, 0.016);
     check("队友技能-主动技能已释放（弹池 " + w.playerBullets.length + " / 技能弹数 " + cs.bullets + "）",
       w.playerBullets.length === cs.bullets && cs.bullets > 1);
@@ -443,24 +441,24 @@ const driver = `
     // 26.x：实际冷却 = 技能 cd × cdMul（cdMul 现含敏捷折算），期望值动态算
     check("队友技能-队友技能施放后进入冷却（cd × 敏捷折算后 cdMul）",
       near(c.skillTimer, cs.cd * companionStats(c).cdMul, 1e-9));
-    check("队友冷却制-施放后能量不被扣除（冷却制已生效，" + en0 + " → " + c.energy.toFixed(2) + "）",
-      near(c.energy, en0, 1e-6));
+    check("队友冷却制-能量字段已物理退役（E-β/D029：energy / energyMax 均不存在）",
+      c.energy === undefined && c.energyMax === undefined);
 
     // 能量不足也释放（冷却制：能量退役，不再是门槛）
     w.playerBullets.length = 0;
-    c.fireTimer = 999; c.skillTimer = 0; c.energy = 0;
+    c.fireTimer = 999; c.skillTimer = 0;
     updateCompanions(w, 0.016);
     check("队友冷却制-能量不足也释放（冷却制，能量为 0 仍出手）",
       w.playerBullets.filter(b => b.isSkill).length === cs.bullets);
 
-    // 冷却制：能量不再恢复（恢复循环停掉，能量保持零不变）
-    c.energy = 0; c.fireTimer = 999; c.skillTimer = 999;
+    // 冷却制：能量恢复循环已随 E-β 整体退役（字段不存在 → 天然无恢复）
+    c.fireTimer = 999; c.skillTimer = 999;
     updateCompanions(w, 1.0);
-    check("队友冷却制-能量不再按 regen 恢复（恢复循环退役，" + c.energy.toFixed(2) + "）", c.energy === 0);
+    check("队友冷却制-能量恢复循环已退役（E-β/D029，energy 字段不存在）", c.energy === undefined);
 
     // 19.1：普攻移除，队友只剩技能一条计时线（原「普攻+技能独立计时」断言按新规则改）
     w.playerBullets.length = 0;
-    c.skillTimer = 0; c.energy = c.energyMax;
+    c.skillTimer = 0;
     updateCompanions(w, 0.016);
     check("队友技能-19.1 普攻移除后仅技能计时（弹数 = cs.bullets " + cs.bullets + "）",
       w.playerBullets.filter(b => b.isSkill).length === cs.bullets);
@@ -469,7 +467,7 @@ const driver = `
     const savedAi = CFG.team.aiSkill;
     CFG.team.aiSkill = false;
     w.playerBullets.length = 0;
-    c.skillTimer = 0; c.energy = c.energyMax;
+    c.skillTimer = 0;
     updateCompanions(w, 0.016);
     check("队友技能-CFG.team.aiSkill=false 时不释放主动技能（19.1 后完全沉默）", w.playerBullets.length === 0);
     CFG.team.aiSkill = savedAi;

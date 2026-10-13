@@ -15,7 +15,7 @@
 
 
 function statName(k) {
-  return { hp: "生命", atk: "攻击", def: "防御", spd: "移速", regen: "能量恢复", energyMax: "能量上限" }[k] || k;
+  return { hp: "生命", atk: "攻击", def: "防御", spd: "移速" }[k] || k;
 }
 
 /* ---------- 遗迹秘宝查询（19.6）：按 defId 在 valuePool + behaviorPool 里找定义 ---------- */
@@ -360,7 +360,15 @@ var CFG_ARTISAN_UI = {
  * ============================================================ */
 UI.showSeason = function () {
   var ss = (typeof SeasonState !== "undefined") ? SeasonState : null;
-  var cfg = (typeof SEASON_CFG !== "undefined") ? SEASON_CFG : { maxLv: 10, expBase: 1000, expStep: 200 };
+  /* 赛季数值三级防御回退（三处取到的 maxLv/expBase/expStep 当前完全相同，行为不变）：
+   *   ① 优先 CFG.season（主会话新增，迁入 CFG 后的权威源）
+   *   ② 次选 SEASON_CFG（modes.js 旧常量，过渡期保留）
+   *   ③ 末位硬编码兜底（两者都缺失时面板仍可渲染，不抛错）
+   * 注：CFG.season.weekly 的键为 { killGoal, extractGoal, levelUpGoal }，与旧 SEASON_CFG 的
+   *   weeklyKillGoal / weeklyExtractGoal / weeklyLevelUpGoal 不同名；本面板周任务取自
+   *   SeasonState.weeklies()（不直接读 cfg.weekly），故此处无需兼容键名。 */
+  var cfg = (typeof CFG !== "undefined" && CFG && CFG.season) ? CFG.season
+    : ((typeof SEASON_CFG !== "undefined") ? SEASON_CFG : { maxLv: 10, expBase: 1000, expStep: 200 });
   if (!ss) return;
   // 等级与经验条（L10 封顶：经验条拉满）
   var lvEl = document.getElementById("season-lv");

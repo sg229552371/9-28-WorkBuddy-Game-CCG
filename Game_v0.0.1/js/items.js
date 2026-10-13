@@ -461,7 +461,7 @@ function recomputeWeapon() {
 /* ---------- 武器栏装备（属性件）提供的属性加成 ----------
  * 16.5：武器栏 = 小队技能栏，栏内物品**对小队全体成员生效**——
  * 武器模块改技能（见 recomputeWeapon），装备改属性（队长 computeStats + 队友 companionStats）。 */
-const ZERO_GEAR = { hp: 0, atk: 0, def: 0, spd: 0, energyMax: 0, regen: 0, summonMax: 0, trapMax: 0 };
+const ZERO_GEAR = { hp: 0, atk: 0, def: 0, spd: 0, summonMax: 0, trapMax: 0 };
 function weaponGearBonus() {
   const b = { ...ZERO_GEAR };
   const inv = G.run && G.run.weaponInv;
@@ -510,11 +510,11 @@ function growthScale(base, stat, lv) {
  *   add —— 加算项（属性卡 flat 值 + Buff 的吸血）
  *   mul —— 乘算项（Buff 的属性倍率 + 属性卡的冷却缩减）
  * 统一结算式：最终 = (基础值 × M(lv) + 武器栏装备 + add) × mul
- * 说明：regen / energyMax 对**队长与队友都有意义**——队友是独立个体，各自有能量池（见 companionStats）。
+ * 说明：能量系统已退役（E-β）——不再有任何能量池 / 能量回复字段参与管线。
  * ⚠️ 等级成长（M(lv)）**不在此函数**——它只对「英雄初始值」生效，故落在 computeStats / companionStats。 */
 function runBonus() {
   const r = G.run;
-  const add = { hp: 0, atk: 0, def: 0, spd: 0, regen: 0, energyMax: 0, lifesteal: 0, summonMax: 0, trapMax: 0 };
+  const add = { hp: 0, atk: 0, def: 0, spd: 0, lifesteal: 0, summonMax: 0, trapMax: 0 };
   const mul = { atk: 1, spd: 1, cd: 1 };
   for (const b of (r.buffs || [])) {          // 战争雕像 Buff（4.4）：**按等级取效果**——同一条 Buff 叠的是等级
     const e = b.skillId ? skillEntry(b.skillId, b.lv || 1) : null;
@@ -545,7 +545,7 @@ function runBonus() {
 }
 /** 队友属性：与队长同源——局内等级成长 + 武器栏装备 + 局内增益（属性卡 / 雕像 Buff）。
  *  16.5：武器栏与局内增益**对小队全体成员生效**。
- *  队友是**独立个体**：有自己的生命 / 攻击 / 防御 / 移速，也有自己的**能量上限与能量回复**。 */
+ *  队友是**独立个体**：有自己的生命 / 攻击 / 防御 / 移速（能量系统已退役，E-β）。 */
 function companionStats(c) {
   const r = G.run, g = weaponGearBonus(), bo = runBonus();
   /* 三大基础属性折算（26.x）：与队长 computeStats 同源同表（CFG.baseStats），全队一致生效。 */
@@ -557,8 +557,6 @@ function companionStats(c) {
     atk: Math.round((growthScale(c.heroDef.atk, "atk", r.lv) + g.atk + sv * ((bs.str && bs.str.atk) || 0)) * bo.mul.atk + bo.add.atk),
     def: growthScale(c.heroDef.def || 0, "def", r.lv) + g.def + bo.add.def,
     spd: (c.heroDef.spd + av * ((bs.agi && bs.agi.spd) || 0) + g.spd + bo.add.spd) * bo.mul.spd,
-    energyMax: c.heroDef.energyMax + iv * ((bs.int && bs.int.energyMax) || 0) + g.energyMax + bo.add.energyMax,   // 能量上限（英雄基础 + 三属性折算 + 装备 + 属性卡）
-    regen: c.heroDef.energyRegen + g.regen + bo.add.regen,             // 能量回复
     // 召唤物 / 陷阱上限（英雄属性，限制该类型技能的上限）：同样走属性管线（基础 + 装备 + 局内增益）
     summonMax: heroUnitLimit(c.heroDef, "summon") + g.summonMax + bo.add.summonMax,
     trapMax: heroUnitLimit(c.heroDef, "trap") + g.trapMax + bo.add.trapMax,
@@ -573,7 +571,8 @@ function companionStats(c) {
 function computeStats() {
   const r = G.run, h = r.heroDef;
   const g = weaponGearBonus(), bo = runBonus();
-  /* 三大基础属性折算（26.x，CFG.baseStats）：力量→生命/攻击、敏捷→移速/冷却缩减、智力→能量/技能强度。
+  /* 三大基础属性折算（26.x，CFG.baseStats）：力量→生命/攻击、敏捷→移速/冷却缩减、智力→技能强度
+   *（能量系统已退役 E-β，智力不再折算能量）。
    * 折算与装备、增益同源（英雄基础值 × M(lv) + 折算 + 装备 + 局内增益），str/agi/int 原值也挂到 st 上
    * ——技能执行器 withScaleBy 的 statSrc 就是本对象，技能表可直接声明 scaleBy:{stat:"str"|"agi"|"int"}。 */
   const bs = CFG.baseStats || {};
@@ -583,8 +582,6 @@ function computeStats() {
     atk: (growthScale(h.atk, "atk", r.lv) + g.atk + sv * ((bs.str && bs.str.atk) || 0)) * bo.mul.atk + bo.add.atk,
     def: growthScale(h.def || 0, "def", r.lv) + g.def + bo.add.def,
     spd: h.spd + av * ((bs.agi && bs.agi.spd) || 0) + g.spd + bo.add.spd,
-    energyMax: h.energyMax + iv * ((bs.int && bs.int.energyMax) || 0) + g.energyMax + bo.add.energyMax,
-    regen: h.energyRegen + g.regen + bo.add.regen,
     summonMax: heroUnitLimit(h, "summon") + g.summonMax + bo.add.summonMax,
     trapMax: heroUnitLimit(h, "trap") + g.trapMax + bo.add.trapMax,
     lifesteal: bo.add.lifesteal,
@@ -599,7 +596,7 @@ function computeStats() {
 
 /* ---------- 召唤物 / 陷阱上限（英雄属性，限制「该类型技能」的上限） ----------
  * 数值口径（12.3 已定）：召唤物上限 / 陷阱数量上限是**英雄属性**，走完整属性管线
- *（英雄基础值 + 武器栏装备 + 局内增益），与能量上限同源。
+ *（英雄基础值 + 武器栏装备 + 局内增益），与其它英雄初始属性同源。
  * 实际上限 = min(技能锚点数量, 英雄该属性) —— 技能等级决定「想召几架」，英雄属性决定「最多几架」。 */
 function heroUnitLimit(heroDef, kind) {
   const h = heroDef || (G.run && G.run.heroDef) || G.heroDef || {};

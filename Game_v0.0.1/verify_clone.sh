@@ -33,26 +33,26 @@ if [ -n "$REPO_ROOT" ]; then
   esac
 fi
 
-EXPECT_VERSION="20261054"
+EXPECT_VERSION="20261055"
 
 # 核心文件 → 期望的 git blob 哈希（该快照的权威指纹；30 个）
 EXPECT_FILES="
-index.html cf1d016a53f77abd47e135ed97584b44a9926ad4
-js/config.js 94fd2d9ec66be0e484248ffbea26f9fb7ef0acda
-js/game.js fb8fbd55f9618640ffcd534ad8b26781ff2240c0
+index.html cf08ab801f14e406ae2b6c414674245015982a45
+js/config.js 77bf01c64cb32e5b96601d97e87684aab06722c7
+js/game.js 96f2a78e4941bad225e408e9daf6e8925c6199cf
 js/combat.js c092387b598e3a84084842ea03ee7e5401163aa8
-js/items.js 0ce8327b59b692a018c4a4302a52cf0ec7030ce1
-js/ui.js 4bb46c62de9b178be6ed00748351b29907ec1564
-js/ui-panels.js c04f72855cdf1daa5de016d71afdc88a21adc9b9
+js/items.js b881ce4b4900e8f4e32a59bef2404db10353dac2
+js/ui.js d0bbe793dc6f8e270bc2c6916d7fce78890cf964
+js/ui-panels.js c4815f3eea7a7e6d66005353338675ef664a2912
 js/main.js 37618095da676ad101708bfeff7ad9d6a2fe36b3
-js/core.js a4901961fb505caab77cde15a814f26c96ac9262
-js/modes.js adfdf2c58a497a3db53845621b0ada334d48f526
-css/style.css ff83117f3ac15f176c6de1d32520c62355997881
-run_tests.sh 301b73bf2b8d8d0a7e5c5fb0a80e3031c977cda7
+js/core.js a15be03271cf80031ee6993bf85bc63bbbd994b4
+js/modes.js 4591525d48332581c83f928873dae0c1af3ea1a8
+css/style.css 280964035adf047c1a38f773c95b82bf2eb51fa1
+run_tests.sh 2d91dce25f78f9757466462b39dc1ec370f2b7ae
 js/skill-compiler.js 61f92b5cc89886f9c567f8b735fce3fac6564784
 js/skill-playtest.js da357b70fe57a56a06617a35a21e32d68c39efe8
 js/skill-scheduler.js ee30f6d3810410080afb01aa4574e22b712c86a5
-js/skill-config.js 47aba0aaea00c645ecf50d098c83f296027bfd3b
+js/skill-config.js 8aab7bfa7812cd85dd1244051edd2999d9489784
 js/skill-runtime.js 9684af1113ebc1c44c49786091b964ca1263e828
 js/skill-events.js a2fa6c17807b6ba7242a0197b58b87f4d9f1fe7e
 skill_playtest_test.js 1f1b60d290c8dc2466be6bd7b8527ab424549aa5
@@ -63,7 +63,7 @@ skill_enable_runtime_test.js 023642f33e8ec3467933ce88c31f29c0cf49386c
 hero_skill_migration_test.js bf4c75f6a82a012ca82c6187311bd33bb1834738
 skill_save_session_test.js 30170e7d16a40edf6e05cf2cf2bb60733229e173
 hero_nondamage_skill_test.js ceaa972085bc7d4ff132c49e7ca1920ef1b09575
-skill_effect_runtime_test.js fa7cca4d8d3313297ee80e632bfc830c0325e719
+skill_effect_runtime_test.js d91f0517ea48d7a862911722d203f720911bd873
 skill_integration_test.js 7f06e350c96624b38818429745391977eb979320
 skill_balance_anchors_test.js d61f2b555d263ff8b7961e2aed74d78cc0a4c4c1
 chest_drop_source_test.js 42548c9cbab3ad170363e7be4ef64c0c80adeedb

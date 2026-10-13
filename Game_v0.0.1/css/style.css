@@ -215,6 +215,34 @@ body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
 }
 .char-card .info p { font-size:12px; color:#8ba0bd; margin-top:4px; }
 
+/* ===== C1-Q7：选人卡元数据（玩法标签 playtag + 难度星级 difficulty）=====
+ * 卡片很窄（390px / 6 列网格，单格 ≈60px），两行小字必须裁切，绝不撑破卡片。 */
+.char-card .hero-playtag {
+  display:block; max-width:100%; margin-top:1px;
+  font-size:8px; line-height:1.2; color:#8fd0ff;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.char-card .hero-diff {
+  display:block; max-width:100%; margin-top:1px;
+  font-size:8px; line-height:1.2; color:#ffd76a; letter-spacing:.5px;
+  white-space:nowrap; overflow:hidden;
+}
+/* 详情区「属性倾向」区块（优势 / 短板）——深色底、与 cd-stats 同风格。
+ * 窄屏换行（flex-wrap）+ max-width + overflow 兜底，390px 竖屏不溢出。 */
+.char-detail .cd-bias { margin:2px 0 4px; font-size:11px; line-height:1.5; }
+.char-detail .cd-bias-row {
+  display:flex; flex-wrap:wrap; align-items:center; gap:4px;
+  max-width:100%; overflow:hidden;
+}
+.char-detail .cd-bias-label { color:#8ba0bd; flex:none; }
+.char-detail .cd-bias-high,
+.char-detail .cd-bias-low {
+  display:inline-block; padding:0 6px; border-radius:8px;
+  font-size:10px; border:1px solid currentColor; background:rgba(0,0,0,.25);
+}
+.char-detail .cd-bias-high { color:#7de08a; }
+.char-detail .cd-bias-low  { color:#e08080; }
+
 /* ===== HUD ===== */
 #hud { position:absolute; inset:0; z-index:10; pointer-events:none; }
 #hud button, #hud .btn { pointer-events:auto; }
