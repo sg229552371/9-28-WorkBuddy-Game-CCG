@@ -145,59 +145,18 @@ vm.runInContext(`
   console.assert(lvMax.cost === 0 && weaponLevelEntry(999).lv === CFG.weaponLevel.maxLv, "满级/越界等级安全");
   console.assert(Math.abs(lvMax.basicMul - (1 + 0.04 * 99)) < 1e-9 && Math.abs(lvMax.skillMul - (1 + 0.06 * 99)) < 1e-9,
     "100 级倍率符合线性曲线，got basic=" + lvMax.basicMul + " skill=" + lvMax.skillMul);
-  // 10) 属性卡牌（8.3：升级获得资产 / 工匠世界使用 / 同属性去重）
-  console.assert(run.cardAssets === 0 && run.cardRefresh === CFG.cardPool.refreshPerRun && run.appliedCards.length === 0, "卡牌初始状态");
+  // 10) 属性卡牌系统已整体退役（D018）——升级只走 D017 等级成长，不再发放卡牌资产
   run.exp = 999; gainExp(0);
-  console.assert(run.lv > 1 && run.cardAssets === 0, "19.7 升级不再发卡（cardAssets 恒 0）, lv=" + run.lv);
-  console.assert(runBonus().add.hp === CFG.levelUp.baseStatGain.hp * (run.lv - 1), "19.4 升级即时属性按级成长");
-  // 候选抽取：内无重复属性、数量正确
-  let cands = drawCardCandidates();
-  console.assert(cands.length === CFG.cardPool.candidateCount, "候选 3 张");
-  console.assert(new Set(cands.map(c => c.attr)).size === cands.length, "候选内属性去重");
-  for (const c of cands) console.assert(c.value === CFG.cardPool.attrs[c.attr].flat[c.q], "品质对应数值");
-  // 工匠世界限制
-  G.inArtisan = false;
-  console.assert(!useCard(0), "非工匠世界不能用卡");
-  console.assert(!refreshCards(), "非工匠世界不能刷新");
-  G.inArtisan = true;
-  // 使用卡牌：19.7 卡牌退役——升级不发卡，cardAssets 恒 0 → useCard 恒 false（逻辑保留供回退）
-  run.cardCandidates = drawCardCandidates();
-  console.assert(useCard(0) === false, "无资产时不能使用卡（19.7 恒 0）");
-  console.assert(run.cardAssets === 0, "资产保持 0");
-  console.assert(run.appliedCards.length === 0, "无已用记录");
-  if (CFG.cardPool.dedupApplied) {
-    const used = new Set(run.appliedCards.map(c => c.attr));
-    for (let i = 0; i < 20; i++) {
-      const cs = drawCardCandidates();
-      console.assert(cs.every(c => !used.has(c.attr)), "已用属性不再出现（去重）");
-    }
-  }
-  // 数值注入：攻/弹道/冷却卡对 computeStats 与 tagCalc 生效
-  run.appliedCards.length = 0;
-  const atkBase = computeStats().atk;
-  run.appliedCards.push({ attr: "atk", q: 0, value: 5 });
-  console.assert(computeStats().atk === atkBase + 5, "攻击卡 +5 生效");
-  const hpBase = computeStats().hpMax;
-  run.appliedCards.push({ attr: "hp", q: 0, value: 30 });
-  console.assert(computeStats().hpMax === hpBase + 30, "生命卡 +30 生效");
-  const bulletsBase = tagCalc("弹道数量");
-  run.appliedCards.push({ attr: "bullets", q: 0, value: 1 });
-  console.assert(tagCalc("弹道数量") === bulletsBase + 1, "弹道卡 +1 生效");
-  run.appliedCards.push({ attr: "cd", q: 0, value: 0.96 });
-  { // 26.x：cdMul = 冷却卡乘算 × 敏捷折算（CFG.baseStats.agi），期望值随当前英雄的敏捷动态算
-    const bsA = (CFG.baseStats && CFG.baseStats.agi) || {};
-    const agiV = (G.heroDef && G.heroDef.agi) || 0;
-    const agiCd = Math.max(bsA.cdFloor || 0, 1 - agiV * (bsA.cdPct || 0));
-    console.assert(Math.abs(computeStats().cdMul - 0.96 * agiCd) < 1e-6, "冷却卡乘算生效（含敏捷折算）");
-  }
-  run.appliedCards.push({ attr: "lifesteal", q: 0, value: 0.02 });
-  console.assert(Math.abs(computeStats().lifesteal - 0.02) < 1e-6, "吸血卡生效");
-  // 刷新次数（规则2：免费次数优先，用完后扣金币；金币不足则失败）
-  run.cardRefresh = 1;
-  console.assert(refreshCards() && run.cardRefresh === 0, "刷新 -1");
-  run.coin = 0;
-  console.assert(!refreshCards(), "免费耗尽且金币不足不能刷新");
-  G.inArtisan = false;
+  console.assert(run.lv > 1, "升级正常, lv=" + run.lv);
+  console.assert(computeStats().hpMax > run.heroDef.hp, "D017 等级成长生效（hpMax 随等级提升）· lv=" + run.lv);
+  // D018 物理清理：卡牌运行时字段 / 函数 / 配置表全部移除
+  console.assert(run.cardAssets === undefined && run.cardCandidates === undefined
+    && run.appliedCards === undefined && run.cardRefresh === undefined,
+    "D018 卡牌运行时字段已物理移除（cardAssets/cardCandidates/appliedCards/cardRefresh）");
+  console.assert(typeof drawCardCandidates === "undefined" && typeof useCard === "undefined"
+    && typeof refreshCards === "undefined" && typeof rollCardQuality === "undefined",
+    "D018 卡牌函数已物理移除（drawCardCandidates/useCard/refreshCards/rollCardQuality）");
+  console.assert(CFG.cardPool === undefined, "D018 CFG.cardPool 已物理移除");
   // 11) 批次 B：关卡扩展（关卡配置完整性 + 解锁链）
   // ⚠️ B 线「关卡 3→10 铺量」需求变更：关卡总数由 3 扩为 10，此处期望值同步更新（非放松断言）。
   // ⚠️ 第 11~20 关扩展批：关卡总数由 10 扩为 20，期望值同步更新（非放松断言）。
@@ -211,7 +170,6 @@ vm.runInContext(`
   }
   // 12) 批次 B：角色 2~6 武器绑定（基础值来自各自武器技能；先重置词条环境避免串扰）
   run.weaponInv = new Inventory(CFG.weaponGrid.cols, CFG.weaponGrid.rows, "weapon");
-  run.appliedCards.length = 0;
   // 26.x 12 角重做：远程英雄各挂专属弹道普攻；近战英雄（H005 快枪手 / H006 重炮手）统一挂 AT121 近战挥砍
   const heroWeaponChecks = { H002: ["AT103", 3], H003: ["AT105", 2], H004: ["AT107", 2], H005: ["AT121", 1], H006: ["AT121", 1] };
   for (const [hid, [skId, baseBullets]] of Object.entries(heroWeaponChecks)) {

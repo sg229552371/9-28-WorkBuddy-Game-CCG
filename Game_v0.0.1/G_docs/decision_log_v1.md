@@ -46,6 +46,8 @@
 | **D014** | **2026-10-13** | **B 类数值提案如何处置** | **全部落库**（B1 技能整数锚点 / B2 Buff 锚点 / B3 祭坛刷出 / B5 宝箱货物含硬编码收口） | `js/config.js`（`skillStepsAnchors` + `anchors` + `altars[].weight` + `chestQualities[].shape`）/ `js/items.js` / `js/game.js`；提案原文 `balance_proposal_b1_b2_v0.1.md` / `_b3_b4_` / `_b5_` | **新增**（提案 → 已生效） | **已完成** |
 | **D015** | **2026-10-13** | **A4 `castTime`（施放前摇）语义** | **不可打断 + 可移动**——前摇进度**只随时间推进**：受击不清零（不读 hp）、移动不清零（不读位移）；目标丢失 → 进度**暂停**（既不推进也不归零）；`castTime=0` 恒 no-op 零回归 | `js/skill-scheduler.js`（`castTimeFor` + `tick()` 前摇段）；`G_docs/full_dev_plan_v1.md` A4 行 | **替换**（原「未定 / 调度器未读」→ 已定 + 已实现） | **已完成** |
 | **D016** | **2026-10-13** | **宝箱主来源（冲突 7.2-1：祭坛雕像 vs 怪物掉落）** | 用户原话逐条落库：① **精英怪有几率掉落低级宝箱**；② **BOSS 有几率掉落中高级宝箱**；③ **宝箱掉落在地面，拾取方式参考雕像**；④ **宝箱就是雕像的一种形态表现**；⑤ **同名宝箱在背包中可叠加** | `game_design_proposal.md` §6.2 / §6.3 / §12-4；`js/config.js` `CFG.chestDrop`；`js/game.js` `eliteDropChest`/`spawnGroundChest`/`bossPhaseChest`；`js/combat.js` 精英掉落块；测试 `chest_drop_source_test.js`(30) | **替换**（旧「精英必掉 + 直接入包」「BOSS 每阶段必掉」→ 几率 + 落地 + 读条拾取） | **已完成** |
+| **D017** | **2026-10-13** | **C2 局内等级成长口径（P004 拍板）** | 用户授权 AI 出设计并落库、**强调「数据驱动、不要写死」**：成长口径 = 「该等级属性 ÷ LV1 初始属性」的倍率 `M(lv)`，**全部读 `CFG.levelUp.growth`**（`mode` add/mul/hybrid + `rate`/`mul`/`hybrid`/`stats`，现值 `mode:"add", rate:0.06`）；`M(1) ≡ 1.00` 锁死迁移基准。口径：**初始值 × M(lv)**，施加在英雄初始值上（`computeStats`/`companionStats`），**不进 `runBonus().add` 通道**（避免与倍率重复计一次） | `js/config.js`（`CFG.levelUp.growth` 替换旧 `baseStatGain`）；`js/items.js`（新增 `levelGrowthMul()` / `growthScale()`；`runBonus` 摘除 `baseStatGain` 循环；`computeStats`/`companionStats` 改 `growthScale(...)`）；测试 `exp_test.js` / `smoke_test.js` / `perf_test.js` | **替换**（旧 `CFG.levelUp.baseStatGain` 固定绝对增量 {hp:6,atk:1.5,def:0.5} 作废） | **已完成** |
+| **D018** | **2026-10-13** | **C6 属性卡牌系统去向（P005 拍板）** | 用户选择「**彻底退役 + 物理清理**」（方案①，非保留/非仅断入口）。原 `CFG.cardPool` 4 档品质卡池 + 候选抽取 + 刷新经济**整表移除**；职能去向为三足鼎立：① 升级加属性→`CFG.levelUp.growth`（D017）② 4 档品质构筑→遗迹秘宝 `CFG.chips` ③ 个人技能构筑→能量水晶。**新代码不得再引入卡牌系统**；如需恢复必须先走决策流程 | `js/config.js`（`CFG.cardPool` 整表删除 + 墓碑注释；`CFG.settleConvert.cardValue` 删除）；`js/items.js`（删 `rollCardQuality`/`drawCardCandidates`/`useCard`/`refreshCards`；`runBonus`/`tagCalc` 摘除 `appliedCards` 读取通道）；`js/game.js`（删 `cardAssets`/`cardRefresh`/`cardCandidates`/`appliedCards`）；`js/main.js`；`js/ui.js`；`js/ui-screens.js`（删 `renderCards`/`_cardEffectText`）；`js/modes.js`（删折算 `b.card` 桶）；`css/style.css`（删 `.card-*`，`.card-assets`→`.codex-count`）；`index.html`；测试 `smoke_test.js`/`econ_test.js`/`shop_test.js`/`skill_table_test.js`/`artisan_layout_test.js`/`exp_test.js`/`endless_hud_test.js`/`xgame_chip_fold_test.js` | **替换**（旧「牌退役但逻辑保留供回退」的半退役过渡态 → 全量物理删除） | **已完成** |
 
 ---
 
@@ -56,8 +58,8 @@
 | P001 | 2026-10-12 | 其余 11 英雄是否全部迁移（阶段 G 收口） | 是，分两批（D011 已做批 1，批 2 见 D012 设计） | 阶段 G 完成度 |
 | P002 | 2026-10-12 | `castTime`（施放前摇）是否接线 | ✅ **已由 D015 拍板并落库**（本项关闭） | 技能手感 |
 | P003 | 2026-10-12 | 数值平衡（冷却/系数/派生比例/预算阈值） | 建议先出「锚点提案表」再填（B1/B2/B3/B5 已由 D014 落库） | 阶段 E/H |
-| **P004** | **2026-10-13** | **C2：等级成长口径（加算 `1+0.06×(lv−1)` / 纯乘算 / 混合）** | 见方案文档（推荐纯加算） | **B5「货物与属性数值随等级成长」曲线**；`js/config.js:1717` + `js/items.js` |
-| **P005** | **2026-10-13** | **C6：卡牌系统去向（彻底退役 / 恢复 4 品质卡池 / 混合只留工匠世界）** | 见方案文档（推荐彻底退役） | **规则自相矛盾**：入口已断，但 `CFG.cardPool` + 4 个卡牌函数 + 读取通道仍在 |
+| **P004** | **2026-10-13** | **C2：等级成长口径（加算 `1+0.06×(lv−1)` / 纯乘算 / 混合）** | ✅ **已由 D017 拍板并落库**（数据驱动 `CFG.levelUp.growth`，本项目关闭） | ~~B5 曲线~~ → 已闭环 |
+| **P005** | **2026-10-13** | **C6：卡牌系统去向（彻底退役 / 恢复 4 品质卡池 / 混合只留工匠世界）** | ✅ **已由 D018 拍板并落库**（彻底退役 + 物理清理，本项目关闭） | ~~规则自相矛盾~~ → 已闭环 |
 
 ---
 

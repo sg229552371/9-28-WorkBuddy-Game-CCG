@@ -511,47 +511,21 @@ const driver = `
       r2.traps.filter(t => t.owner === p0).length === capT && r2.traps.filter(t => t.owner === c2).length === 1);
   }
 
-  /* ============ 十一、局内增益（属性卡 + 战争雕像 Buff）：全队生效、吸血各自独立 ============
-   * 8.3 / 4.4 / 16.5 口径：属性卡与雕像 Buff 都是「本局内生效」的增益，**对小队全体成员生效**
-   *（队长 + 全部 AI 队友），与武器栏装备同源；吸血归属发射者，各自独立。 */
+  /* ============ 十一、局内增益（战争雕像 Buff）：全队生效、吸血各自独立 ============
+   * 4.4 / 16.5 口径：雕像 Buff 是「本局内生效」的增益，**对小队全体成员生效**
+   *（队长 + 全部 AI 队友），与武器栏装备同源；吸血归属发射者，各自独立。
+   * 注：属性卡牌系统已整体退役（D018），本节只保留雕像 Buff 口径。 */
   {
     const team = ["H001", "H004"].map(id => CFG.heroes.find(h => h.id === id));
     Game.startRun(team);
     Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const w = G.mainWorld, r = G.run, c = r.companions[0];
 
-    // 基线：无卡无 Buff → 加算全 0、乘算全 1
-    r.appliedCards.length = 0; r.buffs.length = 0;
+    // 基线：无 Buff → 加算全 0、乘算全 1
+    r.buffs.length = 0;
     const bo0 = runBonus();
     check("增益-基线为空（add 全 0 / mul 全 1）",
       bo0.add.atk === 0 && bo0.add.hp === 0 && bo0.mul.atk === 1 && bo0.mul.cd === 1);
-
-    // 属性卡（加算项）对全队生效
-    const mAtk0 = computeStats().atk, aAtk0 = companionStats(c).atk;
-    const mHp0 = computeStats().hpMax, aHp0 = companionStats(c).hpMax;
-    r.appliedCards.push({ attr: "atk", q: 1, value: 7 });
-    r.appliedCards.push({ attr: "hp", q: 1, value: 35 });
-    check("属性卡-攻击卡对队长生效（+7）", computeStats().atk === mAtk0 + 7);
-    check("属性卡-攻击卡对队友生效（+7）", companionStats(c).atk === aAtk0 + 7);
-    check("属性卡-生命卡对队长生效（+35）", computeStats().hpMax === mHp0 + 35);
-    check("属性卡-生命卡对队友生效（+35）", companionStats(c).hpMax === aHp0 + 35);
-
-    // 属性卡（乘算项：攻速/冷却）对全队生效
-    r.appliedCards.push({ attr: "cd", q: 2, value: 0.92 });
-    // 26.x：cdMul = 冷却卡乘算 × 敏捷折算（CFG.baseStats.agi），期望值随各成员敏捷动态算
-    const agiCdOf = (hd) => { const a = CFG.baseStats.agi; return Math.max(a.cdFloor || 0, 1 - (hd.agi || 0) * a.cdPct); };
-    check("属性卡-攻速卡乘算对队长生效（×0.92×敏捷折算）", near(computeStats().cdMul, 0.92 * agiCdOf(G.heroDef), 1e-9));
-    check("属性卡-攻速卡乘算对队友生效（×0.92×敏捷折算）", near(companionStats(c).cdMul, 0.92 * agiCdOf(c.heroDef), 1e-9));
-
-    // 属性卡：弹道数量卡（走 tagCalc，天然全队同源）
-    recomputeWeapon();
-    const bB = c.skills.basic.bullets, mB = r.weapon.basic.bullets;
-    r.appliedCards.push({ attr: "bullets", q: 2, value: 2 });
-    recomputeWeapon();
-    check("属性卡-弹道数量卡对队长生效（" + mB + " → " + r.weapon.basic.bullets + "）",
-      r.weapon.basic.bullets === mB + 2);
-    check("属性卡-弹道数量卡对队友生效（" + bB + " → " + c.skills.basic.bullets + "）",
-      c.skills.basic.bullets === bB + 2);
 
     // 战争雕像 Buff：乘算（攻击 ×1.3）+ 加算（吸血 +15%）对全队生效
     // 26.x：基础攻击含力量折算（str × CFG.baseStats.str.atk）
@@ -632,8 +606,8 @@ const driver = `
     r.buffs.length = 0;   // 清掉 Buff 等级段的残留，重新按 Lv1 基线验证效果
     r.buffs.push({ skillId: "BF001", id: "狂力", lv: 1, remain: 20 });
     r.buffs.push({ skillId: "BF004", id: "汲血", lv: 1, remain: 20 });
-    check("Buff-攻击乘算对队长生效（(基础+卡)×1.3）", computeStats().atk === Math.round(baseM * 1.3 + 7));
-    check("Buff-攻击乘算对队友生效（(基础+卡)×1.3）", companionStats(c).atk === Math.round(baseA * 1.3 + 7));
+    check("Buff-攻击乘算对队长生效（基础×1.3）", computeStats().atk === Math.round(baseM * 1.3));
+    check("Buff-攻击乘算对队友生效（基础×1.3）", companionStats(c).atk === Math.round(baseA * 1.3));
     check("Buff-吸血对队长生效（+0.15）", near(computeStats().lifesteal, 0.15, 1e-9));
     check("Buff-吸血对队友生效（+0.15）", near(companionStats(c).lifesteal, 0.15, 1e-9));
 
@@ -712,15 +686,17 @@ const driver = `
     const r3 = G.run, w3 = G.mainWorld, p3 = G.player;
     r3.traps.length = 0;
     check("上限-基线（H008 陷阱上限 3）", unitLimitOf(p3, "trap") === 3);
-    r3.weaponInv.place(makeGear("G002", 0), 0, 1);      // 普通装备（无 summonMax/trapMax 词条）不应误加上限
+    const gPlain = makeGear("G002", 0);
+    r3.weaponInv.place(gPlain, 0, 1);                   // 普通装备（无 summonMax/trapMax 词条）不应误加上限
     check("上限-普通装备不影响上限", unitLimitOf(p3, "trap") === 3);
-    r3.appliedCards.push({ attr: "trapMax", q: 0, value: 2 });   // 手造一张「陷阱上限 +2」卡（属性卡管线）
+    // 属性卡退役（D018）后：改由「带 trapMax 词条的武器栏装备」验证属性管线仍支持局内增益抬高上限（同能量上限口径）
+    gPlain.stats = Object.assign({}, gPlain.stats, { trapMax: 2 });
     recomputeWeapon();
-    check("上限-局内增益（属性卡）可抬高上限（3 → " + unitLimitOf(p3, "trap") + "）", unitLimitOf(p3, "trap") === 5);
+    check("上限-局内增益（装备词条 trapMax +2）可抬高上限（3 → " + unitLimitOf(p3, "trap") + "）", unitLimitOf(p3, "trap") === 5);
     const u3 = SkillSystem.cast(w3, p3, resolveSkill(CFG.skills.AT114, 1, { dmgMul: 1, cdMul: 1, bullets: 0 }), null, { atk: 10 });
     check("上限-抬高后仍受技能锚点钳制（min(锚点 " + CFG.skills.AT114.anchors.count[1] + ", 上限 5)）",
       u3.cap === CFG.skills.AT114.anchors.count[1]);
-    r3.appliedCards.length = 0; r3.traps.length = 0;
+    delete gPlain.stats.trapMax; r3.traps.length = 0;
     recomputeWeapon();
 
     // 上限为 0 → 该类型技能不产出（且不能死循环）

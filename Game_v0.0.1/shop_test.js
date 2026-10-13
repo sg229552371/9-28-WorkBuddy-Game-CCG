@@ -60,29 +60,15 @@ const driver = `
   let ok = true;
   const check = (name, cond) => { console.log((cond ? "PASS" : "FAIL") + " " + name); if (!cond) ok = false; };
 
-  /* ============ 一、卡牌刷新（免费优先 → 金币 → 金币不足失败） ============ */
+  /* ============ 一、卡牌刷新 —— 属性卡牌系统已整体退役（D018） ============ */
   {
     Game.startRun([CFG.heroes[0]]);
     Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
-    const r = G.run;
-    // 非工匠世界：禁止刷新，免费次数与金币都不动
-    G.inArtisan = false;
-    r.cardRefresh = CFG.cardPool.refreshPerRun; r.coin = 999;
-    check("刷新-非工匠世界被拒", refreshCards() === false && r.cardRefresh === CFG.cardPool.refreshPerRun && r.coin === 999);
-    G.inArtisan = true;
-    // 免费次数优先：扣次数、不扣金币
-    r.cardRefresh = 1; r.coin = 500;
-    check("刷新-先用免费次数不扣金币", refreshCards() === true && r.cardRefresh === 0 && r.coin === 500);
-    // 免费耗尽 → 扣金币
-    r.cardRefresh = 0; r.coin = 500;
-    check("刷新-免费耗尽扣金币", refreshCards() === true && r.coin === 500 - CFG.cardPool.refreshCost);
-    // 金币不足 → 失败且不扣钱
-    r.coin = CFG.cardPool.refreshCost - 1;
-    check("刷新-金币不足失败且不扣钱", refreshCards() === false && r.coin === CFG.cardPool.refreshCost - 1);
-    // 刷新成功后确实产出候选（数量=候选张数）
-    r.cardRefresh = 1; r.cardCandidates = null;
-    refreshCards();
-    check("刷新-产出候选卡牌", Array.isArray(r.cardCandidates) && r.cardCandidates.length === CFG.cardPool.candidateCount);
+    // D018 物理清理：刷新函数 / 卡池配置 / 刷新运行时字段全部移除
+    check("D018 刷新函数 refreshCards 已移除", typeof refreshCards === "undefined");
+    check("D018 卡池配置 CFG.cardPool 已移除", CFG.cardPool === undefined);
+    check("D018 run.cardRefresh / cardCandidates 已移除",
+      G.run.cardRefresh === undefined && G.run.cardCandidates === undefined);
   }
 
   /* ============ 二、shopBuyModule 契约 ============ */

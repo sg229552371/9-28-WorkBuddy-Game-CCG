@@ -64,7 +64,6 @@ const driver = `
     const r = G.run;
     const R = CFG.settleConvert.valueRate;          // 统一折算率（0.5：2 价值 = 1 结晶）
     r.coin = 100;                                   // 金币归零、不折算
-    r.cardAssets = 3;                               // 3 × 固定价值 4 × 0.5 = 6
     const chest = makeChestItem("epic");            // 固定价值 150 → 75
     r.backpack.place(chest, 0, 0);
     const gear = makeGear("G001", 0);               // 固定价值 30 → 15
@@ -77,9 +76,9 @@ const driver = `
     check("折算-金币不参与（归零不算）", b.coin === undefined);
     check("折算-宝箱 150×" + R + "→" + b.chest, b.chest === Math.floor(150 * R));
     check("折算-装备/模组 (30+81) 同一口径→" + b.gear, b.gear === Math.floor(30 * R) + Math.floor(81 * R));
-    check("折算-卡牌 3×价值4×" + R + "→" + b.card, b.card === Math.floor(3 * CFG.settleConvert.cardValue * R));
     check("折算-保险契约走同一口径 价值" + ins.value + "→" + b.item, b.item === Math.floor(ins.value * R));
-    check("折算-合计 = " + b.total, b.total === b.chest + b.gear + b.item + b.card);
+    check("折算-卡牌桶已退役（D018）→ b.card 不存在", b.card === undefined);
+    check("折算-合计 = " + b.total, b.total === b.chest + b.gear + b.item);
   }
 
   /* ============ 二、诅咒道具（待细化36） ============ */
@@ -145,34 +144,18 @@ const driver = `
     check("连接-不相邻不触发", syn2.links === 0);
   }
 
-  /* ============ 四、卡牌刷新（待细化37 定稿：每局免费 2 次 + 之后扣金币） ============ */
+  /* ============ 四、卡牌刷新 —— 属性卡牌系统已整体退役（D018） ============ */
   {
     Game.startRun([CFG.heroes[0]]);
     Game.skipIntroFreeze();   // 跳过主关卡开场冻结（3s），保持测试时间假设
     const r = G.run;
     G.inArtisan = true;
-    r.cardCandidates = null;
-    // 免费次数优先：扣次数、不扣金币
-    r.cardRefresh = 2; r.coin = 1000;
-    check("刷新-免费次数优先且不扣金币", refreshCards() === true && r.cardRefresh === 1 && r.coin === 1000);
-    // 免费耗尽 → 扣金币
-    r.cardRefresh = 0;
-    check("刷新-金币刷新成功且扣款", refreshCards() === true && r.coin === 1000 - CFG.cardPool.refreshCost);
-    // 金币不足 → 失败且不扣钱
-    r.coin = CFG.cardPool.refreshCost - 1;
-    check("刷新-金币不足失败且不扣钱", refreshCards() === false && r.coin === CFG.cardPool.refreshCost - 1);
-    // 非工匠世界禁止刷新
+    // D018 物理清理：刷新函数 / 卡池配置 / 运行时字段全部移除
+    check("D018 刷新函数 refreshCards 已移除", typeof refreshCards === "undefined");
+    check("D018 卡池配置 CFG.cardPool 已移除", CFG.cardPool === undefined);
+    check("D018 run.cardRefresh / cardCandidates 已移除",
+      r.cardRefresh === undefined && r.cardCandidates === undefined);
     G.inArtisan = false;
-    check("刷新-非工匠世界禁止", refreshCards() === false);
-    G.inArtisan = true;
-    // 卡池含新属性 energyMax 且数值表完整
-    check("卡池-新增能量上限属性", CFG.cardPool.attrs.energyMax && CFG.cardPool.attrs.energyMax.flat.length === 4);
-    computeStats();   // energyMax 卡应能被 computeStats 消费（不抛错）
-    r.appliedCards.push({ attr: "energyMax", q: 2, value: 28 });
-    const st = computeStats();
-    // 26.x：能量上限现含智力折算（int × CFG.baseStats.int.energyMax）
-    check("卡牌-能量上限生效 " + st.energyMax,
-      st.energyMax === r.heroDef.energyMax + 28 + (r.heroDef.int || 0) * CFG.baseStats.int.energyMax);
   }
 
   /* ============ 五、裂缝任务变体（待细化20） ============ */

@@ -1383,15 +1383,7 @@ const UI = {
       el.innerHTML = `裂缝<small>${r.riftKills || 0}/${CFG.rift.rewardKills}</small>`;
       ba.appendChild(el);
     }
-    // 属性卡牌资产提示（工匠世界可用）
-    if (r.cardAssets > 0) {
-      const el = document.createElement("div");
-      el.className = "buff-icon";
-      el.style.borderColor = "#ffd76a";
-      el.title = "属性卡牌资产：工匠世界内使用";
-      el.innerHTML = `卡<small>×${r.cardAssets}</small>`;
-      ba.appendChild(el);
-    }
+    // 🔴 属性卡牌资产 HUD 提示已随 C6「彻底退役」物理删除（D018）。
     // 读条圈已改为进度环直接绑定在雕像/信标上（圈内积累、离开衰退）
     document.getElementById("channel-wrap").classList.add("hidden");
     // 中央提示（撤离点存在提示）

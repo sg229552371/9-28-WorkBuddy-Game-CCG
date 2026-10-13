@@ -592,8 +592,7 @@ Object.assign(UI, {
 
   /* ---------- 工匠合并界面：两页签（开宝箱 / 商店·工坊）+ 背包/武器栏 ----------
    * 20.10 重排（竖屏单屏化）：页签 4 → 2 ——
-   *   ① 「抽卡牌」页签随属性卡牌系统整体废弃而移除（CFG.cardPool.removed，逻辑侧不再读取）；
-   *      注意 renderCards 函数本体保留（避免其他引用炸），只是不再有页签入口。
+   *   ① 「抽卡牌」页签 + `renderCards` / `_cardEffectText` 已随 C6「彻底退役」物理删除（D018）。
    *   ② 「购买·服务」与「遗迹工坊」合并为一页，id 复用 shop（减少改动面），
    *      页面内 #shop-list（购买·服务）+ #forge-list（遗迹工坊）上下排列。 */
   ART_TABS: [
@@ -781,55 +780,9 @@ Object.assign(UI, {
     this.renderArtisan();
   },
 
-  /* ---------- 属性卡牌（8.3：仅工匠世界可用） ---------- */
-  _cardEffectText(c) {
-    const def = CFG.cardPool.attrs[c.attr];
-    if (def.mul) return `冷却 ×${c.value}`;
-    if (c.attr === "lifesteal") return `吸血 +${Math.round(c.value * 100)}%`;
-    return `${def.name} +${c.value}`;
-  },
-  renderCards() {
-    const r = G.run;
-    const assetsEl = document.getElementById("card-assets");
-    if (assetsEl) assetsEl.textContent = `×${r.cardAssets}`;
-    // 刷新按钮三态：① 免费次数 > 0 →「免费剩 n」可点；② 免费耗尽 →「¥cost」；③ 金币不足 → 置灰禁用
-    // 点击行为由 js/main.js 的 btn-card-refresh 绑定统一处理（refreshCards 内部判款并在失败时 toast），此处只负责文案/可用态
-    const btn = document.getElementById("btn-card-refresh");
-    if (btn) {
-      const cost = (CFG.cardPool && CFG.cardPool.refreshCost) || 0;
-      if (r.cardRefresh > 0) {
-        btn.textContent = `刷新候选（免费剩 ${r.cardRefresh}）`;
-        btn.disabled = false;
-      } else {
-        btn.textContent = `刷新候选（¥${cost}）`;
-        btn.disabled = r.coin < cost;
-      }
-    }
-    if (!r.cardCandidates) r.cardCandidates = drawCardCandidates();
-    const box = document.getElementById("card-candidates");
-    if (box) {
-      box.innerHTML = "";
-      r.cardCandidates.forEach((c, i) => {
-        const q = CFG.itemQualities[c.q];
-        const tile = document.createElement("div");
-        tile.className = "card-tile" + (r.cardAssets <= 0 ? " disabled" : "");
-        tile.style.borderColor = q.color;
-        tile.innerHTML = `<b style="color:${q.color}">${CFG.cardPool.attrs[c.attr].name}</b>
-          <span class="cq">${q.name}卡</span><span class="cv">${this._cardEffectText(c)}</span>`;
-        tile.onclick = () => {
-          if (r.cardAssets <= 0) { this.toast("没有可用的属性卡牌（升级获得）", "bad"); return; }
-          if (useCard(i)) { this.toast(`属性卡牌生效（小队全体）：${this._cardEffectText(r.appliedCards[r.appliedCards.length - 1])}`, "gold"); }
-          this.renderCards();
-        };
-        box.appendChild(tile);
-      });
-    }
-    // 已使用卡牌一览
-    const ap = document.getElementById("card-applied");
-    if (ap) ap.innerHTML = r.appliedCards.length
-      ? r.appliedCards.map(c => `<span class="chip"><em>${CFG.cardPool.attrs[c.attr].name}</em> ${this._cardEffectText(c)}</span>`).join("")
-      : `<span class="chip" style="opacity:.5">本局尚未使用卡牌</span>`;
-  },
+  /* ---------- 属性卡牌（8.3）：✅ 已随 C6「彻底退役」物理删除（D018） ----------
+   * `_cardEffectText` / `renderCards` 均已移除（此前只摘页签、保留函数体的过渡态结束）。
+   * 职能去向见 js/config.js 的卡牌墓碑注释（growth / 遗迹秘宝 / 能量水晶）。 */
   openChest() {
     const r = G.run;
     if (!this.selectedChestQ) return;
@@ -1118,7 +1071,7 @@ Object.assign(UI, {
   /* ---------- 结算 ---------- */
   showSettlement(crystals = 0) {
     const r = G.run;
-    const cv = r.settleConv || { chest: 0, gear: 0, item: 0, card: 0, total: 0 };
+    const cv = r.settleConv || { chest: 0, gear: 0, item: 0, total: 0 };
     document.getElementById("settle-stats").innerHTML =
       `<span>击杀 <b>${r.kills}</b></span><span>达到等级 <b>LV ${r.lv}</b></span><span>货币 <b>${r.coin}</b></span><span>◆ 结晶 <b>+${crystals}</b></span>` +
       this._crystalReportLine() +

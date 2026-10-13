@@ -79,10 +79,8 @@ function createRun(heroDef) {
     },
     curse: null,                    // 诅咒道具（待细化36）{defMul,hpMul,atkMul,spdMul,rewardMul,remain}
     lifesteal: 0,
-    cardAssets: 0,                  // 属性卡牌资产（🔴 19.7 已退役：升级不再 +1，恒 0；UI 走 0 分支自然冻结，折算恒 0）
-    cardRefresh: CFG.cardPool.refreshPerRun,   // 本局剩余刷新次数
-    cardCandidates: null,           // 当前候选卡牌（进入工匠世界时抽取）
-    appliedCards: [],               // 已使用卡牌 {attr, q, value}，退出局内随 run 清除
+    /* 🔴 属性卡牌相关运行时字段已随 C6「彻底退役」物理删除（D018）：
+     *    cardAssets / cardRefresh / cardCandidates / appliedCards —— 见 js/config.js 卡牌墓碑注释。 */
     artisanSpawned: false, artisanUsed: false,   // artisanUsed = 本关是否进过（仅用于提示，不再限制次数）
     // 工匠雕像池（4.6）：触发条件投配额 → 限制器决定何时落地；子世界可无限次进入
     artisanPool: createArtisanPool(),

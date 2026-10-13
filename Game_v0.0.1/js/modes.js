@@ -78,7 +78,7 @@ function calcDeathPenalty(run) {
 function calcSettleConvert(run) {
   const sc = CFG.settleConvert;
   const rate = sc.valueRate;
-  const b = { chest: 0, gear: 0, item: 0, card: 0, chip: 0, total: 0 };
+  const b = { chest: 0, gear: 0, item: 0, chip: 0, total: 0 };
   const take = (it) => {
     const v = Math.floor((it.value || 0) * rate);
     if (it.kind === "chest") b.chest += v;                                          // 未开封宝箱（不带出本体，价值折算）
@@ -87,7 +87,7 @@ function calcSettleConvert(run) {
   };
   for (const it of run.backpack.items) take(it);
   for (const it of run.weaponInv.items) take(it);
-  b.card = Math.floor((run.cardAssets || 0) * sc.cardValue * rate);                 // 属性卡牌资产（固定价值 4/张）
+  // 🔴 属性卡牌折算项已随 C6「彻底退役」物理删除（D018）——不再有 b.card 桶。
   /* 遗迹秘宝（chipInv）：单枚价值 = 品质基值 × 等级 lv（占位口径，见 CFG.chips.valueByQuality）；
    * 用 q/lv 计算，不复用 it.value（遗迹秘宝的 value 字段是词条强度，不是货币价值）。 */
   const vbq = (CFG.chips && CFG.chips.valueByQuality) || [];
@@ -98,7 +98,7 @@ function calcSettleConvert(run) {
       b.chip += Math.floor(base * (it.lv || 1) * rate);
     }
   }
-  b.total = b.chest + b.gear + b.item + b.card + b.chip;
+  b.total = b.chest + b.gear + b.item + b.chip;
   return b;
 }
 

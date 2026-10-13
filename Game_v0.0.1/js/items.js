@@ -2,7 +2,7 @@
  * items.js — 物品 / 装备 / 背包 / 遗迹秘宝构造与计算（21.16 物理搬移拆分：原 game.js 第 2 部分）
  * 职责：Inventory / UID；装备/模块/遗迹秘宝/宝箱/保险/诅咒的构造与词条计算
  *       （makeGear/makeModule/makeChip/ZERO_GEAR 等）；属性汇总 tagCalc/recomputeWeapon/computeStats；
- *       升级 4 选 1 候选与入槽（buildLevelUpCandidates/gainExp/useCard 等）；
+ *       升级 4 选 1 候选与入槽（buildLevelUpCandidates/gainExp 等）；
  *       入包与商店（grantItemToRun/ChipForge/shopBuyChip…）；升级刷新 levelUpReroll。
  * ⚠️ 本文件由纯物理搬移生成：除本头部职责注释与 "use strict"; 外，代码逐字沿用原文件。
  * ============================================================ */
@@ -344,9 +344,7 @@ function tagCalc(tag, forSkill) {
       else mul *= (1 + eff);
     }
   }
-  // ④ 卡牌对武器词条的加成（弹道数量卡；19.7 已退役，通道保留占位）
-  if (tag === "弹道数量" && G.run.appliedCards)
-    flat += G.run.appliedCards.filter(c => c.attr === "bullets").reduce((s, c) => s + c.value, 0);
+  // 🔴 卡牌对武器词条的加成通道已随 C6「彻底退役」物理删除（D018）。
   let v = (t.base + flat) * mul;
   v = U.clamp(v, t.min, t.max);
   if (t.round === "floor") v = Math.floor(v);
@@ -474,14 +472,46 @@ function weaponGearBonus() {
   }
   return b;
 }
+/* ---------- 局内等级成长倍率（D017 · **数据驱动**）----------
+ * M(lv) = 「该等级属性 ÷ LV1 初始属性」，口径全部读 `CFG.levelUp.growth`（改平衡只改表，不动代码）：
+ *   mode "add"    : 1 + rate × (lv−1)
+ *   mode "mul"    : mul ^ (lv−1)
+ *   mode "hybrid" : lv ≤ segLv 走 add；之后 × segMul^(lv−segLv)
+ * M(1) 恒 = 1.00 —— 锁死现有迁移基准（开局属性不受本改造影响）。 */
+function levelGrowthMul(lv) {
+  const g = (typeof CFG !== "undefined" && CFG && CFG.levelUp && CFG.levelUp.growth) || null;
+  if (!g) return 1;
+  const L = Math.max(1, Math.floor(lv || 1));
+  const rate = (g.rate != null) ? g.rate : 0.06;
+  if (g.mode === "mul") {
+    const k = (g.mul != null) ? g.mul : 1.01976;
+    return Math.pow(k, L - 1);
+  }
+  if (g.mode === "hybrid") {
+    const segLv = (g.hybrid && g.hybrid.segLv) || 30;
+    const segMul = (g.hybrid && g.hybrid.segMul) || 1.01337;
+    if (L <= segLv) return 1 + rate * (L - 1);
+    return (1 + rate * (segLv - 1)) * Math.pow(segMul, L - segLv);
+  }
+  return 1 + rate * (L - 1);              // "add"（默认）
+}
+/** 按属性名决定是否参与等级成长（`CFG.levelUp.growth.stats`），参与则 × M(lv)。 */
+function growthScale(base, stat, lv) {
+  const g = (typeof CFG !== "undefined" && CFG && CFG.levelUp && CFG.levelUp.growth) || null;
+  if (!g) return base;
+  const stats = g.stats || ["hp", "atk", "def"];
+  if (stats.indexOf(stat) < 0) return base;
+  return base * levelGrowthMul(lv);
+}
 /* ---------- 局内增益修正（属性卡牌 + 战争雕像 Buff）----------
  * 16.5 / 8.3 / 4.4：属性卡与雕像 Buff 都是「本局内生效」的增益，**对小队全体成员生效**
  *（队长 + 全部 AI 队友），与武器栏装备同源共享。
  * 分两个通道返回，避免加算/乘算顺序歧义：
  *   add —— 加算项（属性卡 flat 值 + Buff 的吸血）
  *   mul —— 乘算项（Buff 的属性倍率 + 属性卡的冷却缩减）
- * 统一结算式：最终 = (基础值 + 武器栏装备 + add) × mul
- * 说明：regen / energyMax 对**队长与队友都有意义**——队友是独立个体，各自有能量池（见 companionStats）。 */
+ * 统一结算式：最终 = (基础值 × M(lv) + 武器栏装备 + add) × mul
+ * 说明：regen / energyMax 对**队长与队友都有意义**——队友是独立个体，各自有能量池（见 companionStats）。
+ * ⚠️ 等级成长（M(lv)）**不在此函数**——它只对「英雄初始值」生效，故落在 computeStats / companionStats。 */
 function runBonus() {
   const r = G.run;
   const add = { hp: 0, atk: 0, def: 0, spd: 0, regen: 0, energyMax: 0, lifesteal: 0, summonMax: 0, trapMax: 0 };
@@ -495,23 +525,14 @@ function runBonus() {
     else if (stat === "lifesteal") add.lifesteal += mv;
     else if (stat === "def") add.def += mv;   // 26.x：技能施加的防御护罩（AT124 灵能护罩）走平坦通道
   }
-  for (const c of (r.appliedCards || [])) {    // 属性卡牌（8.3，工匠世界使用后随本局）——19.7 已退役，本循环恒为空
-    if (c.attr === "cd") mul.cd *= c.value;
-    else if (c.attr === "bullets") { /* 弹道数量在 tagCalc / resolveSkill 内生效（全队同源） */ }
-    else if (add[c.attr] != null) add[c.attr] += c.value;
-  }
+  // 🔴 属性卡牌读取通道已随 C6「彻底退役」物理删除（D018）——appliedCards 字段不再存在。
   /* B2 落库（2026-10-13，需确认 #8）：冷却类 Buff 的乘算因子设**防御性下限**（数值进 CFG）。
    * 目的：即便后续锚点/词条叠加，冷却也不会趋 0（锚点已保证，这里只加一道兜底钳制）。 */
   const cdFloorB = (CFG.buffLevel && CFG.buffLevel.cdMulFloor != null) ? CFG.buffLevel.cdMulFloor : 0;
   if (cdFloorB > 0 && mul.cd < cdFloorB) mul.cd = cdFloorB;
-  // 19.4：升级即时属性（原属性卡牌「升级 +1 资产」职能并入）——每升 1 级全队 +baseStatGain，LV1 无加成
-  const g19 = CFG.levelUp && CFG.levelUp.baseStatGain;
-  if (g19) {
-    const n19 = Math.max(0, (r.lv || 1) - 1);
-    add.hp += (g19.hp || 0) * n19;
-    add.atk += (g19.atk || 0) * n19;
-    add.def += (g19.def || 0) * n19;
-  }
+  /* 19.4：升级即时属性 —— 🔴 D017 起**已改为「初始值 × 倍率 M(lv)」**（见 CFG.levelUp.growth），
+   * 由 computeStats / companionStats 直接施加在英雄初始值上，**不再进本函数的 add 通道**
+   *（否则会与倍率重复计一次）。 */
   // 19.10.4：属性小包兜底累计（模块全满级后升级改给）——并入 add 通道，全队生效，不进 tagCalc
   const sp = r.statPackGain;
   if (sp) {
@@ -526,15 +547,15 @@ function runBonus() {
  *  16.5：武器栏与局内增益**对小队全体成员生效**。
  *  队友是**独立个体**：有自己的生命 / 攻击 / 防御 / 移速，也有自己的**能量上限与能量回复**。 */
 function companionStats(c) {
-  const r = G.run, g = weaponGearBonus(), bo = runBonus(), n = r.lv - 1;
+  const r = G.run, g = weaponGearBonus(), bo = runBonus();
   /* 三大基础属性折算（26.x）：与队长 computeStats 同源同表（CFG.baseStats），全队一致生效。 */
   const bs = CFG.baseStats || {};
   const hd = c.heroDef || {};
   const sv = (hd.str || 0), av = (hd.agi || 0), iv = (hd.int || 0);
   return {
-    hpMax: c.heroDef.hp + 8 * n + g.hp + bo.add.hp + sv * ((bs.str && bs.str.hp) || 0),
-    atk: Math.round((c.heroDef.atk + 2 * n + g.atk + sv * ((bs.str && bs.str.atk) || 0)) * bo.mul.atk + bo.add.atk),
-    def: (c.heroDef.def || 0) + g.def + bo.add.def,
+    hpMax: growthScale(c.heroDef.hp, "hp", r.lv) + g.hp + bo.add.hp + sv * ((bs.str && bs.str.hp) || 0),
+    atk: Math.round((growthScale(c.heroDef.atk, "atk", r.lv) + g.atk + sv * ((bs.str && bs.str.atk) || 0)) * bo.mul.atk + bo.add.atk),
+    def: growthScale(c.heroDef.def || 0, "def", r.lv) + g.def + bo.add.def,
     spd: (c.heroDef.spd + av * ((bs.agi && bs.agi.spd) || 0) + g.spd + bo.add.spd) * bo.mul.spd,
     energyMax: c.heroDef.energyMax + iv * ((bs.int && bs.int.energyMax) || 0) + g.energyMax + bo.add.energyMax,   // 能量上限（英雄基础 + 三属性折算 + 装备 + 属性卡）
     regen: c.heroDef.energyRegen + g.regen + bo.add.regen,             // 能量回复
@@ -551,16 +572,16 @@ function companionStats(c) {
  * 与队友 companionStats() 同源：走同一个 runBonus()（属性卡 / 雕像 Buff 全队生效）。 */
 function computeStats() {
   const r = G.run, h = r.heroDef;
-  const g = weaponGearBonus(), bo = runBonus(), n = r.lv - 1;
+  const g = weaponGearBonus(), bo = runBonus();
   /* 三大基础属性折算（26.x，CFG.baseStats）：力量→生命/攻击、敏捷→移速/冷却缩减、智力→能量/技能强度。
-   * 折算与装备、增益同源（英雄基础值 + 折算 + 装备 + 局内增益），str/agi/int 原值也挂到 st 上
+   * 折算与装备、增益同源（英雄基础值 × M(lv) + 折算 + 装备 + 局内增益），str/agi/int 原值也挂到 st 上
    * ——技能执行器 withScaleBy 的 statSrc 就是本对象，技能表可直接声明 scaleBy:{stat:"str"|"agi"|"int"}。 */
   const bs = CFG.baseStats || {};
   const sv = (h.str || 0), av = (h.agi || 0), iv = (h.int || 0);
   const st = {
-    hpMax: h.hp + 8 * n + g.hp + bo.add.hp + sv * ((bs.str && bs.str.hp) || 0),
-    atk: (h.atk + 2 * n + g.atk + sv * ((bs.str && bs.str.atk) || 0)) * bo.mul.atk + bo.add.atk,
-    def: h.def + g.def + bo.add.def,
+    hpMax: growthScale(h.hp, "hp", r.lv) + g.hp + bo.add.hp + sv * ((bs.str && bs.str.hp) || 0),
+    atk: (growthScale(h.atk, "atk", r.lv) + g.atk + sv * ((bs.str && bs.str.atk) || 0)) * bo.mul.atk + bo.add.atk,
+    def: growthScale(h.def || 0, "def", r.lv) + g.def + bo.add.def,
     spd: h.spd + av * ((bs.agi && bs.agi.spd) || 0) + g.spd + bo.add.spd,
     energyMax: h.energyMax + iv * ((bs.int && bs.int.energyMax) || 0) + g.energyMax + bo.add.energyMax,
     regen: h.energyRegen + g.regen + bo.add.regen,
@@ -1152,56 +1173,11 @@ function finishLevelUpChoice(heroId) {
 }
 
 
-/* ---------- 属性卡牌（8.3 / 13.15：资产累积、工匠世界使用、池内同属性去重） ---------- */
-function rollCardQuality() {
-  const w = CFG.cardPool.qualityWeights;
-  return Number(U.weightedPick({ 0: w[0], 1: w[1], 2: w[2], 3: w[3] }));
-}
-function drawCardCandidates() {
-  const r = G.run;
-  // 同属性去重：已使用的属性不再出现（dedupApplied 可关）；候选内也不重复
-  const used = CFG.cardPool.dedupApplied ? new Set(r.appliedCards.map(c => c.attr)) : new Set();
-  const attrs = Object.keys(CFG.cardPool.attrs).filter(a => !used.has(a));
-  const n = Math.min(CFG.cardPool.candidateCount, attrs.length);
-  const out = [], pool = attrs.slice();
-  for (let i = 0; i < n && pool.length; i++) {
-    const a = pool.splice(U.randInt(0, pool.length - 1), 1)[0];
-    const q = rollCardQuality();
-    out.push({ attr: a, q, value: CFG.cardPool.attrs[a].flat[q] });
-  }
-  return out;
-}
-function useCard(idx) {
-  const r = G.run;
-  if (!G.inArtisan || r.cardAssets <= 0 || !r.cardCandidates || !r.cardCandidates[idx]) return false;
-  const c = r.cardCandidates[idx];
-  r.cardAssets--;
-  r.appliedCards.push(c);
-  r.cardCandidates = drawCardCandidates();   // 用掉一张后补抽新候选
-  recomputeWeapon();
-  SFX.play("altar");
-  return true;
-}
-/* 刷新候选卡牌（规则 2：局内金币三用途之一 —— 刷新属性卡牌）
- * 先用每局免费次数；免费次数为 0 后扣金币（CFG.cardPool.refreshCost）；金币不足则刷新失败
- * （不扣钱）并提示。契约：成功返回 true，失败返回 false（界面层据此决定提示）。 */
-function refreshCards() {
-  const r = G.run;
-  if (!G.inArtisan) return false;
-  if (r.cardRefresh > 0) {                     // 免费次数优先（每局固定 2 次）
-    r.cardRefresh--;
-    r.cardCandidates = drawCardCandidates();
-    return true;
-  }
-  const cost = CFG.cardPool.refreshCost;       // 免费次数用完 → 金币刷新
-  if (r.coin < cost) {
-    UI.toast(`金币不足，无法刷新候选卡牌（需 ${cost}）`, "bad");
-    return false;
-  }
-  r.coin -= cost;
-  r.cardCandidates = drawCardCandidates();
-  return true;
-}
+/* ---------- 属性卡牌：✅ 已随 C6「彻底退役」物理删除（D018） ----------
+ * 原 `rollCardQuality` / `drawCardCandidates` / `useCard` / `refreshCards` 四个函数**整体移除**。
+ * 职能去向见 js/config.js 的卡牌墓碑注释（升级加属性 → CFG.levelUp.growth；
+ * 4 档品质构筑 → CFG.chips 遗迹秘宝；个人技能构筑 → 能量水晶）。
+ * 🔒 新代码不得再引入卡牌系统。 */
 
 /* ---------- 工匠世界金币服务（规则 2：局内金币三用途之二三 —— 购买武器模块 / 购买道具） ----------
  * 交易接口契约（界面层按此调用）：返回 {ok:boolean, msg:string}；

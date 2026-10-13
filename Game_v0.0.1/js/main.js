@@ -344,14 +344,7 @@ const Game = {
     // 「遗迹工坊」并入「商店·工坊」（id 复用 shop），故不再单独绑定 art-tab-forge。
     on("art-tab-chest", () => UI.setArtisanTab("chest"));
     on("art-tab-shop", () => UI.setArtisanTab("shop"));
-    // 刷新卡牌按钮（btn-card-refresh）随卡牌页签一并从 DOM 移除，此处绑定改为空转保留：
-    // renderCards 函数本体仍在（避免其他引用炸），但页面上已无该按钮。
-    if (document.getElementById("btn-card-refresh")) {
-      on("btn-card-refresh", () => {
-        refreshCards();          // 免费次数优先，用完后扣金币；失败（金币不足）时内部已 toast
-        UI.renderCards();
-      });
-    }
+    // 🔴 刷新卡牌按钮（btn-card-refresh）+ renderCards 已随 C6「彻底退役」物理删除（D018）。
     /* ---- 主城 NPC 面板（进圈弹窗 / 离圈自动关闭）+ 角色档案 ---- */
     on("btn-npc-outlevel-close", () => UI.closeNpcPanels());
     on("btn-npc-weapon-close", () => UI.closeNpcPanels());
@@ -432,8 +425,7 @@ const Game = {
       seedTrail(G.subWorld, CFG.team.follow.seedDirArtisan[0], CFG.team.follow.seedDirArtisan[1]);
       G.subWorld.exitProgress = 0;
       snapCompanions();   // 队友瞬移到队长身边（原地图位置不保留）
-      if (!G.run.cardCandidates) G.run.cardCandidates = drawCardCandidates();   // 首次进入抽取卡牌候选
-      UI.toast("进入工匠世界（安全区）· 开箱 / 使用属性卡牌 · 底部出口返回", "gold");
+      UI.toast("进入工匠世界（安全区）· 开箱 / 购买服务 · 底部出口返回", "gold");
     });
     EventBus.on("returnToMain", () => {
       G.inArtisan = false;

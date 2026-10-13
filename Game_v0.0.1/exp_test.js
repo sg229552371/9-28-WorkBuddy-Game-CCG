@@ -73,7 +73,7 @@ const driver = `
   check("敌人侧 basic 条目保留（keepEntriesForMonster）", CFG.basicAttack.keepEntriesForMonster === true);
   check("CFG.levelUp.expSource = participation", CFG.levelUp && CFG.levelUp.expSource === "participation");
   check("CFG.levelUp.curve.shape = fastEarly", CFG.levelUp.curve && CFG.levelUp.curve.shape === "fastEarly");
-  check("CFG.levelUp.baseStatGain 存在（hp/atk/def）", !!(CFG.levelUp.baseStatGain && CFG.levelUp.baseStatGain.hp != null && CFG.levelUp.baseStatGain.atk != null && CFG.levelUp.baseStatGain.def != null));
+  check("CFG.levelUp.growth 存在（mode / rate / stats）", !!(CFG.levelUp.growth && CFG.levelUp.growth.mode && CFG.levelUp.growth.rate != null && Array.isArray(CFG.levelUp.growth.stats)));
 
   /* ============ 二、经验曲线：fastEarly 公式驱动（19.4） ============ */
   {
@@ -92,23 +92,26 @@ const driver = `
     check("开局 expNext = expNextFor(1)", G.run.expNext === expNextFor(1));
   }
 
-  /* ============ 三、升级奖励：不发卡牌，改全队即时属性（19.4） ============ */
+  /* ============ 三、升级奖励：改「初始值 × M(lv)」等级成长（D017；属性卡牌系统已退役 D018） ============ */
   {
     Game.startRun(CFG.heroes[0]);
     Game.skipIntroFreeze();
-    const r = G.run, g = CFG.levelUp.baseStatGain;
-    check("开局 cardAssets = 0", r.cardAssets === 0);
+    const r = G.run, gr = CFG.levelUp.growth, h0 = CFG.heroes[0];
+    // D017：LV1 基准锁死 —— M(1) = 1.00，开局属性不受等级成长影响
+    check("D017 LV1 基准：levelGrowthMul(1) = 1.00", near(levelGrowthMul(1), 1));
+    const stLv1 = computeStats();
+    check("D017 LV1 队长 hpMax 含等级项 M(1)=1（无等级加成）", near(stLv1.hpMax, h0.hp * levelGrowthMul(1) + (h0.str || 0) * (((CFG.baseStats || {}).str || {}).hp || 0) + weaponGearBonus().hp + runBonus().add.hp));
     // 升 2 级（喂足经验）
     gainExp(r.expNext + expNextFor(2) + 1);
     check("升级后 LV = 3", r.lv === 3);
-    check("升级不再发放卡牌资产（cardAssets 恒 0）", r.cardAssets === 0);
-    const bo = runBonus();
-    check("全队即时属性：hp 加成 = baseStatGain.hp×2", near(bo.add.hp, g.hp * 2));
-    check("全队即时属性：atk 加成 = baseStatGain.atk×2", near(bo.add.atk, g.atk * 2));
-    check("全队即时属性：def 加成 = baseStatGain.def×2", near(bo.add.def, g.def * 2));
-    // 队长 computeStats 真的吃到（hpMax 变大）
+    // D017：成长口径 = 初始值 × M(lv)（数据驱动，读 CFG.levelUp.growth；不再进 runBonus().add）
+    const M = levelGrowthMul(3);
+    check("D017 M(3) 按 CFG.levelUp.growth 算出（mode=add → 1+rate×2）", near(M, 1 + gr.rate * 2));
+    check("D017 等级成长不再进 runBonus().add 通道（add.hp 与等级无关）", near(runBonus().add.hp, 0));
     const st = computeStats();
-    check("队长 hpMax 含升级成长（> 英雄基础值）", st.hpMax > CFG.heroes[0].hp);
+    check("D017 hpMax 增量 = 初始hp × (M(3)−1)（而非固定绝对增量）", near(st.hpMax - stLv1.hpMax, h0.hp * (M - 1)));
+    check("D017 atk 增量 = 初始atk × (M(3)−1)", Math.abs((st.atk - stLv1.atk) - h0.atk * (M - 1)) < 1.0000001);
+    check("D017 队长 hpMax 随等级变大（> LV1）", st.hpMax > stLv1.hpMax);
   }
 
   /* ============ 四、结晶口径：小怪退役，只留 BOSS（19.8） ============ */

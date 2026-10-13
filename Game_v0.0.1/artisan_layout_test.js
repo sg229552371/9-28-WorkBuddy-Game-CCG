@@ -1,7 +1,7 @@
 /* 工匠世界「竖屏单屏化」布局回归测试（node artisan_layout_test.js）
  * 背景（20.10）：用户反馈工匠世界 UI 上下滚动太多、要求苹果风小而美。
  * 本轮改动：
- *   ① 页签 4 → 2：删除「抽卡牌」页签（属性卡牌系统整体废弃，CFG.cardPool.removed）；
+ *   ① 页签 4 → 2：删除「抽卡牌」页签（属性卡牌系统已整体退役 D018，CFG.cardPool 物理移除）；
  *      「购买·服务」+「遗迹工坊」合并为「商店·工坊」（id 复用 shop）。
  *   ② .art-panel 消灭 overflow:auto → max-height:calc(100dvh - 16px) 锁一屏。
  *   ③ 竖屏三段：上=页签内容区 / 中=搜刮背包 / 下=武器槽+遗迹秘宝背包，物品信息最底。
@@ -49,8 +49,9 @@ check("一 index.html 不存在卡牌候选/已用/资产容器（card-candidate
   htmlSrc.indexOf('id="card-candidates"') < 0 && htmlSrc.indexOf('id="card-applied"') < 0
   && htmlSrc.indexOf('id="card-assets"') < 0);
 check("一 main.js 不再绑定 art-tab-cards", mainSrc.indexOf('on("art-tab-cards"') < 0);
-/* renderCards 函数本体必须保留（可能仍有引用，删了会炸） */
-check("一 ui.js 保留 renderCards 函数本体（只摘页签入口不删函数）", /renderCards\s*\(\s*\)\s*\{/.test(uiSrc));
+/* D018 物理清理：renderCards 函数本体也必须一并删除（卡牌系统整体退役，无残留引用） */
+check("二 ui 层已删除 renderCards 函数本体（D018 物理清理，非仅摘页签入口）",
+  !/renderCards\s*\(/.test(uiSrc));
 
 /* ============================================================
  * ② 页签数量：合并后正好 2 个（开宝箱 / 商店·工坊）

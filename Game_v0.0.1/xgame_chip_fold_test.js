@@ -131,7 +131,6 @@ const driver = `
   /* ---------- 构造 run（真实 Inventory / makeChip / makeGear / makeChestItem） ---------- */
   function makeRun(specs) {
     const run = {
-      cardAssets: 0,
       backpack: new Inventory(CFG.backpack.cols, CFG.backpack.rows, "backpack"),
       weaponInv: new Inventory(CFG.chips.grid.cols, CFG.chips.grid.rows, "weaponInv"),
       chipInv: new Inventory(CFG.chips.grid.cols, CFG.chips.grid.rows, "chip"),
@@ -172,11 +171,11 @@ const driver = `
   check("秘宝桶存在且非 0（撤离确实折算秘宝，值 = " + bc.chip + "）", typeof bc.chip === "number" && bc.chip > 0);
   check("秘宝折算额 = Σ floor(品质基值×lv×" + rate + ") 手算值 " + expChip + "（明细 " + expDetail + "）",
     bc.chip === expChip);
-  check("total = 各桶之和（chest+gear+item+card+chip）",
-    bc.total === bc.chest + bc.gear + bc.item + bc.card + bc.chip);
+  check("total = 各桶之和（chest+gear+item+chip）",
+    bc.total === bc.chest + bc.gear + bc.item + bc.chip);
   check("total 含秘宝折算：确比无秘宝该局合计多出秘宝桶（total " + bc.total + " > 其余合计 " +
-    (bc.chest + bc.gear + bc.item + bc.card) + "）",
-    bc.total > (bc.chest + bc.gear + bc.item + bc.card));
+    (bc.chest + bc.gear + bc.item) + "）",
+    bc.total > (bc.chest + bc.gear + bc.item));
 
   /* ---------- 三、反向防护：不误用词条 value 字段 ---------- */
   const wrongVal = full.chipInv.items.reduce((s, it) => s + Math.floor((it.value || 0) * rate), 0);
@@ -188,7 +187,7 @@ const driver = `
   const be = calcSettleConvert(empty);
   check("空 chipInv → 秘宝桶为 0（" + be.chip + "）", be.chip === 0);
   check("空 chipInv → total 不含秘宝（= 其余桶之和）",
-    be.total === be.chest + be.gear + be.item + be.card);
+    be.total === be.chest + be.gear + be.item);
   check("有/无秘宝差额恰等于秘宝桶（" + (bc.total - be.total) + " = " + bc.chip + "）",
     (bc.total - be.total) === bc.chip);
 

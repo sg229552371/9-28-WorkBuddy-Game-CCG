@@ -355,10 +355,8 @@ const numIdx = ctxCalls.findIndex((c, i) => i > redIdx && c[0] === "fillText" &&
 
 ### 5.4 货币职责边界（已定）
 局外 = **进化结晶**（角色等级 + 武器等级，且**武器等级 = 技能等级**）；
-局内 = **金币**（刷新属性卡牌 / 购买武器模块 / 购买道具 / 工匠服务）。**工匠世界不提供武器升级**。
-卡牌刷新 = 每局免费 2 次（`CFG.cardPool.refreshPerRun`）→ 之后每次 `CFG.cardPool.refreshCost` 120 金币；
-刷新按钮点击绑定**唯一在 `js/main.js`**（`refreshCards()` 内部判款+toast），
-`ui.js` 只负责文案三态，**别在 ui.js 再绑 onclick（会双 toast）**。
+局内 = **金币**（购买武器模块 / 购买道具 / 工匠服务）。**工匠世界不提供武器升级**。
+🔴 **已被取代（D018，2026-10-13）**：原「金币刷新属性卡牌（`CFG.cardPool.refreshPerRun` / `refreshCost`，每局免费 2 次→之后 120 金币）」**整条作废** —— 属性卡牌系统已彻底退役 + 物理清理，`CFG.cardPool` 整表删除、`refreshCards()` 及按钮绑定一并移除。金币现有用途只剩：购买武器模块 / 购买道具 / 工匠服务。
 
 ⚠️ **升级入口在「首页→主城 Hub→传送门出征」重构后已收敛到主城 NPC 面板，
 不要写成「主菜单 → 局外成长」**（该独立界面 `#screen-meta` 已**有意移除**，
@@ -389,10 +387,11 @@ const numIdx = ctxCalls.findIndex((c, i) => i > redIdx && c[0] === "fillText" &&
 ### 5.7 撤离结算 = 统一「固定价值 × 唯一折算率」
 口径已统一，**别再按类别分比例**：`calcSettleConvert()` 遍历**背包 + 武器栏内全部物品**，
 按 `Math.floor(it.value × CFG.settleConvert.valueRate)` 累加；`valueRate = 0.5`（**2 价值 = 1 结晶**）。
-返回 `{chest, gear, item, card, total}` —— 注意 **`gear` = 装备/武器模块、`item` = 消耗品**
-（与旧版 key 语义不同，ui.js 已同步）。
+返回 `{chest, gear, item, chip, total}` —— 注意 **`gear` = 装备/武器模块、`item` = 消耗品、`chip` = 遗迹秘宝**
+（与旧版 key 语义不同，ui.js 已同步）。🔴 **已被取代（D018）**：原 `card` 桶已随属性卡牌系统物理删除。
 物品固定价值来源：宝箱 `CFG.chestQualities[].value`（20/60/150/400/1000）、装备 30×品质系数、
-武器模块 45×品质系数、消耗品各自 `value`（保险契约 60、诅咒道具 40）、卡牌资产 `CFG.settleConvert.cardValue` 4/张。
+武器模块 45×品质系数、消耗品各自 `value`（保险契约 60、诅咒道具 40）、遗迹秘宝 `CFG.chips.valueByQuality[q] × lv`。
+🔴 **已被取代（D018）**：原「卡牌资产 `CFG.settleConvert.cardValue` 4/张」已随卡牌系统删除。
 **未开封宝箱不带出本体，但价值照常折算**；**保险契约无独立折算价**（走同一折算率 60→30）。
 **局内经验与金币归零、不折算**（`coinPerCrystal`/`b.coin` 已删，别加回来）。
 
@@ -456,11 +455,12 @@ const numIdx = ctxCalls.findIndex((c, i) => i > redIdx && c[0] === "fillText" &&
 队友 `hpMax` 在 `updateCompanions` 每帧同步（只涨上限、不补血，与队长一致）。
 
 ### 5.14 局内增益也对全队生效（别再按"只队长"写）
-属性卡牌（`G.run.appliedCards`）+ 战争雕像 Buff（`G.run.buffs`）统一由 **`runBonus()`** 汇总，
-返回 `{add, mul}` 两个通道（`add` = 卡牌 flat + Buff 吸血；`mul` = Buff 属性倍率 + 卡牌冷却缩减）。
+战争雕像 Buff（`G.run.buffs`）统一由 **`runBonus()`** 汇总，
+返回 `{add, mul}` 两个通道（`add` = Buff 吸血 / 小包兜底；`mul` = Buff 属性倍率）。
 **队长 `computeStats()` 与队友 `companionStats()` 都读它**，
-结算式 `最终值 = (基础值 + 武器栏装备 + add) × mul`。
-⚠️ **顺序敏感**：`atk` 是「Buff 乘算、卡牌加算」→ 必须写成 `(base+gear)*mul.atk + add.atk`，写反会改数值。
+结算式 `最终值 = (初始值 × M(lv) + 武器栏装备 + add) × mul`（等级成长 `M(lv)` 见 D017）。
+⚠️ **顺序敏感**：`atk` 是「乘算在前」→ 必须写成 `(base+gear)*mul.atk + add.atk`，写反会改数值。
+🔴 **已被取代（D018，2026-10-13）**：原「属性卡牌（`G.run.appliedCards`）」通道已随卡牌系统物理删除，`runBonus()` 现只读 `buffs`。
 
 ### 5.15 雕像由任一成员触发
 祭坛进度判定用 `aliveHeroes().some(...)`，**队友在圈内也算**（`triggerAltar` 不区分触发者）；
@@ -680,9 +680,10 @@ Boss 从「血多的精英怪」变成**会发弹幕的 2 阶段 Boss**。
 | `CFG.chips` / `chipSources` / `chipCodex` / `chipForge` | 遗迹秘宝系统 / 来源 / 图鉴 / 遗迹工坊 |
 | `CFG.invLayout` | 同屏上下并列：搜刮背包（上）+ 遗迹秘宝背包（下） |
 
-标注废弃（**保留结构防报错**，逻辑侧不再读取）：`CFG.cardPool.removed`、`CFG.moduleSets.removed`、
-`CFG.moduleLevel.linkBonus`、`CFG.weaponGrid`（旧尺寸）、`CFG.settleConvert.cardValue`、
+标注废弃（**保留结构防报错**，逻辑侧不再读取）：`CFG.moduleSets.removed`、
+`CFG.moduleLevel.linkBonus`、`CFG.weaponGrid`（旧尺寸）、
 `CFG.outLevel.crystalKill`（19.8 已定：结晶来源 = 击杀 BOSS + 撤离彻底折算并存，小怪击杀退役）。
+🔴 **已被取代（D018）**：原 `CFG.cardPool.removed`、`CFG.settleConvert.cardValue` 已从「标注废弃」升级为**整表物理删除**（连同整个属性卡牌系统）。
 
 ### 5.37 🔴 给「被遍历的配置对象」加标记字段必须同步加守卫
 
@@ -734,8 +735,9 @@ for (const sid in CFG.moduleSets) {
 - **经验曲线公式化**：`expNextFor(lv)` 读 `CFG.levelUp.curve`（fastEarly：base 8 / growth 1.32 /
   softCap 12 级内 ×0.7 / maxLv 99）；`createRun` 初始 `expNext: expNextFor(1)`。
   经验宝石仍是**中立掉落物 → 队池**（"参与伤害即给"由拾取制天然满足，没有击杀者归属）。
-- **升级奖励**：不再 `cardAssets++`（恒 0，卡牌通道自然冻结）；改为 `runBonus()` 按
-  `(lv-1) × CFG.levelUp.baseStatGain` 给全队即时属性（队长 `computeStats` 与队友 `companionStats` 自动吃到）。
+- **升级奖励**：🔴 **已被取代（D017/D018）**：不再 `cardAssets++`（卡牌系统已物理删除）；改为**等级成长倍率** ——
+  `初始值 × M(lv)`（`M(lv)` 读 `CFG.levelUp.growth`，`M(1)=1`），由 `computeStats`/`companionStats` 直接施加，
+  **不进 `runBonus().add`**（旧 `(lv-1) × CFG.levelUp.baseStatGain` 固定绝对增量口径已作废）。
 - **结晶口径（19.8）**：`Meta.awardRun` 只发 **BOSS 结晶**（`crystalBoss`），`kills × crystalKill` 已删；
   撤离折算（`conv.total`）在 `main.js` 结算处**另行叠加**；死亡 = `floor(crystalBoss × deathRatio)`、
   折算不发生。`crystalKill` 字段保留但**禁止新代码引用**。
@@ -1173,7 +1175,7 @@ for (const sid in CFG.moduleSets) {
 - **文档线**：`G_docs/game_design_proposal.md`（永远可以独立并行，零冲突）
 
 **跨文件状态必须先定「共享字段契约」再派单**（本会话验证有效，一次合并零冲突）：
-例如 `G.run.exitStatue`、`G.run.scale`、`shopBuyModule() → {ok,msg}`、`CFG.cardPool.refreshCost`。
+例如 `G.run.exitStatue`、`G.run.scale`、`shopBuyModule() → {ok,msg}`、`shopBuyChest() → {ok,msg}`。
 把契约原文写进给每个 Agent 的提示里，并注明「对方实现，你只按此调用」。
 
 给每个 Agent 的提示里要写明：职责文件白名单、禁止改的文件、node 路径、验收命令、

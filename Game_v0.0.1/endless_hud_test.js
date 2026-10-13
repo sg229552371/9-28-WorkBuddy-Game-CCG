@@ -140,7 +140,7 @@ vm.runInContext(`(function(){
     companions: [], heroModules: {},
     backpack: { totalWeight: function () { return 0; }, items: [] }, weaponInv: null,   // updateHUD 负重行需要
     weapon: { skill: { name: "测试技能", cd: 1.0 }, basic: null },
-    buffs: [], drones: [], traps: [], scale: null, cardAssets: 0,
+    buffs: [], drones: [], traps: [], scale: null,
     bossSpawned: false, bossDefeated: false, kills: 0, runTime: 0,
   };
   G.player = { heroDef: CFG.heroes[0], x: 100, y: 100, skillTimer: 0 };

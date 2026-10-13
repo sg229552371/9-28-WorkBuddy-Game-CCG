@@ -215,15 +215,18 @@ class Player {
     this.skillTimer = U.rand(0, 1.0);
     this.atk = 12; this.spd = 220; this.def = 1;
   }
-  /** 属性重算：复刻 computeStats（game.js:604）——装备/增益/等级全队同源，每帧调用 */
+  /** 属性重算：复刻 computeStats（game.js:604）——装备/增益/等级全队同源，每帧调用
+   *  ⚠️ D017 起等级成长 = 初始值 × M(lv)（CFG.levelUp.growth，mode=add → 1+rate×(lv-1)），
+   *     不再是固定绝对增量；此处用 n=5 → M = 1+0.06×5 = 1.30 保持与真口径同形。 */
   computeStats() {
     const n = 5;
+    const M = 1 + 0.06 * n;                       // = levelGrowthMul(6)
     const g = { hp: 20, atk: 6, def: 2, spd: 10 };
     const bo = { mul: { atk: 1.2, spd: 1.1, cd: 0.9 }, add: { hp: 30, atk: 4, def: 1, spd: 15, lifesteal: 0.05 } };
     return {
-      hpMax: 100 + 8 * n + g.hp + bo.add.hp,
-      atk: Math.round((12 + 2 * n + g.atk) * bo.mul.atk + bo.add.atk),
-      def: 1 + g.def + bo.add.def,
+      hpMax: 100 * M + g.hp + bo.add.hp,
+      atk: Math.round((12 * M + g.atk) * bo.mul.atk + bo.add.atk),
+      def: 1 * M + g.def + bo.add.def,
       spdMul: bo.mul.spd, cdMul: bo.mul.cd, lifesteal: bo.add.lifesteal,
     };
   }

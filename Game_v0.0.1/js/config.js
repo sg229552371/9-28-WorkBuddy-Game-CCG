@@ -1713,7 +1713,7 @@ CFG.heroRoles = {
  * 影响面（待实现时同步处理）：
  *   - 英雄属性 energyMax / energyRegen 退役（条目保留但不再参与技能门槛，避免连锁改表）
  *   - 队友独立能量池（5.19）随之作废
- *   - 属性卡牌相关能量条目一并删除（见 CFG.cardPool.removed） */
+ *   - 属性卡牌相关能量条目一并删除（卡牌系统已整体退役，见本文件卡牌墓碑注释） */
 CFG.skillResource = {
   mode: "cooldown",        // "cooldown" = 冷却制（旧值 "energy" 已废弃）
   startReady: true,        // 进图时技能是否立即就绪（true = 首次开战即可放技能，不空转）
@@ -1747,8 +1747,21 @@ CFG.levelUp = {
   allowDuplicateOffer: false,     // 21.5：同一次 4 选 1 内去重（重复出现两张完全相同的卡 = 坏体验；同名跨次叠加仍允许）
   weighted: true,                 // 按 CFG.modulePool 的 weight 加权抽取
   rerollFreePerRun: 1,            // 21.4：每局免费刷新 1 次（参考图「刷新 1/1」；0 = 关闭刷新按钮）
-  // 升级时同时给予的基础属性成长（原本由属性卡牌提供，卡牌删除后并入此处）
-  baseStatGain: { hp: 6, atk: 1.5, def: 0.5 },
+  /* ---------- 局内等级成长口径（D017 落库 · **数据驱动**，⚠️ 后期调平衡只改本表，不动代码） ----------
+   * 原「固定绝对增量」（每级给固定点数，与英雄初始值无关）会把**短板属性过度补偿**：
+   *   H009 守护者 攻击 8 → Lv100 放大 44.3×；生命 155 仅 9.9× → 直接抹平角色定位差异。
+   * 改为「初始值 × 倍率 M(lv)」——M(lv) = 该等级属性 ÷ LV1 初始属性，对下面 stats 列出的属性通用：
+   *   mode "add"    : M = 1 + rate × (lv−1)                    ← 默认（与敌人 1+(lv−1)×0.12、局外成长同为线性）
+   *   mode "mul"    : M = mul ^ (lv−1)                          （几何；与 add 在 Lv100 端点同值 ≈ 6.94×）
+   *   mode "hybrid" : lv ≤ hybrid.segLv 走 add，之后 × hybrid.segMul^(lv−segLv)，端点仍 ≈ 6.94×
+   * LV1 恒 M = 1.00（锁死现有迁移基准，开局手感不变）。 */
+  growth: {
+    mode: "add",
+    rate: 0.06,                             // 🔧 add / hybrid 第一段：每级 +6%（复用 CFG.skillScaleBy.levelGrowth）
+    mul: 1.01976,                           // 🔧 mul：每级 ×1.01976（= 6.94^(1/99)）
+    hybrid: { segLv: 30, segMul: 1.01337 }, // 🔧 hybrid 分段参数
+    stats: ["hp", "atk", "def"],            // 参与等级成长的属性（不在表内的属性不随等级成长）
+  },
 
   /* 兜底：属性小包 4 选 1（19.10.4）——
    * 触发条件 = **全队都无可选取模块**（每人池内模块全部满级 9，且槽满无法新装）时，
@@ -2172,32 +2185,17 @@ CFG.outLevel = {
  * **升满预期局数** = 1602 / 75 ≈ 21 局（落在设计目标 15~25 局的舒适区）。
  * 任一数值改动都会使 out_level_flow_test.js 的「配平自检」报警。 */
 
-/* ---------- 属性卡牌（8.3：升级获得资产、仅工匠世界使用、池内同属性去重） ----------
- * 🔴 **已废弃（第十九章 19.7：属性卡牌整体删除）**——保留本表仅为避免运行时引用报错，
- * 逻辑侧已不再读取。卡牌的「局内升级加属性」职能并入 CFG.levelUp.baseStatGain，
- * 卡牌的「4 档品质构筑」职能由 CFG.chips（遗迹秘宝）取代。新代码禁止再引用 CFG.cardPool。 */
-CFG.cardPool = {
-  /* 🔴 已废弃（第十九章 19.7）：整表退役，逻辑侧不再读取。删表会连带炸 settleConvert/artisanServices，
-     故保留结构；仅在确认无引用后再物理删除。 */
-  removed: true,
-  qualityWeights: { 0: 55, 1: 28, 2: 13, 3: 4 },  // 白/蓝/紫/金 抽取权重
-  candidateCount: 3,                   // 每次展示候选张数
-  refreshPerRun: 2,                    // 每局免费刷新次数（待细化 #37 已定：免费 2 次用完 → 花金币刷新）
-  refreshCost: 120,                    // 免费次数用完后的金币刷新价格（局内金币，规则 2 三用途之一）
-  dedupApplied: true,                  // 已使用的属性不再出现在后续候选中（池内去重）
-  // 每属性 4 档品质数值；mul: true 表示乘算（如冷却）、否则加算
-  attrs: {
-    atk:   { name: "攻击强化", flat: [2, 4, 7, 12] },
-    hp:    { name: "生命上限", flat: [10, 20, 35, 60] },
-    def:   { name: "防御强化", flat: [1, 2, 4, 6] },
-    spd:   { name: "移动速度", flat: [8, 15, 25, 40] },
-    regen: { name: "能量回复", flat: [2, 4, 6, 10] },
-    energyMax: { name: "能量上限", flat: [10, 18, 28, 45] },
-    cd:    { name: "攻速(冷却)", flat: [0.96, 0.92, 0.88, 0.84], mul: true },   // 乘算冷却缩减
-    lifesteal: { name: "吸血", flat: [0.02, 0.04, 0.07, 0.12] },
-    bullets: { name: "弹道数量", flat: [1, 1, 2, 2] },
-  },
-};
+/* ---------- 属性卡牌：✅ **已物理删除**（D018 落库 · C6 方案①「彻底退役 + 物理清理」） ----------
+ * 原 `CFG.cardPool`（4 档品质卡池 + 候选抽取 + 刷新经济）**整表移除**。
+ * 职能去向（三足鼎立，卡牌无处安放）：
+ *   ① 升级加属性   → `CFG.levelUp.growth`（初始值 × M(lv)，见上）
+ *   ② 4 档品质构筑 → `CFG.chips`（遗迹秘宝）
+ *   ③ 个人技能构筑 → 能量水晶（第二十章，技能侧唯一方向）
+ * 一并删除：运行时字段 `G.run.cardAssets/cardRefresh/cardCandidates/appliedCards`、
+ *           逻辑函数 `rollCardQuality/drawCardCandidates/useCard/refreshCards`
+ *           （`js/items.js`）、UI `renderCards` + HUD 卡牌计数（`js/ui-screens.js` / `js/ui.js`）、
+ *           `js/modes.js` 折算项、`js/main.js` 页签/按钮接线、`CFG.settleConvert.cardValue`。
+ * 🔒 新代码不得再引入卡牌系统；如需恢复必须先走决策流程（见 `G_docs/decision_log_v1.md`）。 */
 
 /* ---------- 局内→局外资源转化（待细化 5 已定：撤离成功结算） ----------
  * ✅ 19.8 已定：本表是**结晶来源②**（撤离彻底折算），与来源①（击杀 BOSS，crystalBoss）**并存**。
@@ -2207,13 +2205,12 @@ CFG.cardPool = {
  * 统一口径：结晶 = Σ(物品固定价值) × valueRate（`valueRate 0.5` 即「2 价值 = 1 结晶」）。
  * 物品固定价值来源：宝箱 = CFG.chestQualities[].value；装备 = 30×品质系数；武器模块 = 45×品质系数；
  * **遗迹秘宝 = CFG.chips.valueByQuality[q] × lv**（品质价值表，见 CFG.chips；carryOut=true 后随撤离折算）；
- * 消耗品（保险契约 / 诅咒道具）= 各自 CFG 里的 value；属性卡牌资产 = cardValue（走同一折算率）。
+ * 消耗品（保险契约 / 诅咒道具）= 各自 CFG 里的 value。
  * 未开封宝箱同样不带出本体，但价值照常折算（它就在背包里，占 1 格）。
  * **局内经验与金币一律归零、不参与折算**（死亡时同样不折算，见 6.5）。 */
 CFG.settleConvert = {
   valueRate: 0.5,         // 统一折算率（= 结晶来源②）：物品固定价值 × 本率 = 结晶（全类别一致，2 价值 = 1 结晶）
                           //   配平口径见 CFG.outLevel 末尾注释：典型单局剩余物资 ≈ 30 价值 → 15 结晶
-  cardValue: 4,           // 🔴 已废弃（第十九章 19.7）：属性卡牌删除，本项不再参与折算
   chipValue: 0,           // 🔴 已被 CFG.chips.valueByQuality 取代：遗迹秘宝改为按品质价值表折算
                           //    （carryOut=true；单枚价值 = valueByQuality[q]×lv）。本标量保留仅为兼容旧引用，
                           //    逻辑侧（calcSettleConvert）不再读取它。

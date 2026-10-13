@@ -45,7 +45,7 @@ node <name>_test.js      # 单项
 | `levelup_test.js` | 升级弹窗、英雄池候选、入槽逻辑 |
 | `autofight_test.js` | 自动战斗 / 托管逻辑 |
 
-## 技能 · 遗迹秘宝 · 卡牌
+## 技能 · 遗迹秘宝
 
 | 文件 | 覆盖内容 |
 |---|---|
@@ -54,7 +54,7 @@ node <name>_test.js      # 单项
 | `team_trigger_test.js` | 小队技能触发链 |
 | `chip_test.js` | 遗迹秘宝体系 |
 | `chip_behavior_test.js` | 遗迹秘宝行为（触发、叠层） |
-| `shop_test.js` | 商店：刷新、卡牌售卖 |
+| `shop_test.js` | 商店：购买模块 / 宝箱 / 道具 |
 | `grant_test.js` | 奖励发放链路 |
 
 ## 背包 · 经济 · 成长
@@ -73,7 +73,7 @@ node <name>_test.js      # 单项
 | `level_tuning_test.js` | 难度曲线单调性、数值区间、配置自检 |
 | `extract_test.js` | 撤离：波次、护盾、负重读条 |
 | `rift_test.js` | 裂隙子地图 |
-| `artisan_test.js` | 工匠地图（无敌人）与属性卡牌 |
+| `artisan_test.js` | 工匠地图（无敌人） |
 
 ## 角色 · 界面 · 流程
 
