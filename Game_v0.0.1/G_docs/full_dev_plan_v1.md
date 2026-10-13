@@ -58,9 +58,10 @@
 | C2 | **等级成长公式：加算 vs 乘算** | §12-38 未定 → ✅ **已由 D017 落库**（`CFG.levelUp.growth`） |
 | C3 | 局内保险来源重设计（原方案已废弃） | §12-13 ✅ **已落库（见 `decision_log_v1.md` D021）**：`ALTAR_007` 保险雕像 + 工匠世界购买；✅ **本轮接线（D026）**：`CFG.insuranceSource` 消费点接线（默认值下行为不变） |
 | C4 | 结晶获取速率 / 局间永久解锁内容 | §12-10 ✅ **已落库（数据，见 `decision_log_v1.md` D022）**：`CFG.outLevel.crystalRate / unlockMilestones`（接线待审）→ ✅ **本轮已接线（D026）**：`unlockMilestones` 用既有 `Meta.data.heroes` 派生接线（`insuranceSlot` 开局发保险 0 份 / `altarWeight` 权重查询）+ 新增 `CFG.endless.crystalCapPerRun`（默认 `0` = 不封顶） |
-| C5 | 难度曲线 + 赛季玩法规则 | §12-9 / §12-30 → ✅ **已出稿（2026-10-13 本轮，见 D033）**：**赛季规则已出稿** `G_docs/season_design_v1.md`（定位/入口/等级经验/经验来源/周任务/奖励/存档/与永续内容关系）+ **`CFG.season` 已落库**（`js/config.js`；`js/modes.js` 的 `SEASON_CFG` 改为从此读取，行为不变）；**难度曲线 21~99 外推口径已写**（`season_design_v1.md` §5.3，主线真源 = `CFG.levelCurve.rows` 20 行）。首版仍为占位（无独立玩法循环） |
+| C5 | 难度曲线 + 赛季玩法规则 | §12-9 / §12-30 → ✅ **已实现（D035）：赛季对抗玩法循环（入口 / 计分 / 奖励 / 挑战）+ 21~99 关内容（D037）**。① 赛季规则真源 = `G_docs/season_design_v1.md`（**含 §2.5 玩法循环**：入口解锁 → 进赛季挑战（复用深渊 + `G.seasonRun`）→ 击杀/升级/撤离双端计分 → 升赛季等级 → 大厅领奖 → 再挑战）；② **`CFG.season` 已落库**（`expGain` 10/40/200/500、`rewards` `SR001~SR005`、`challenge`）；③ **入口 = 主城「赛季使者」NPC**（`NPC_SEASON`），`SeasonState.isUnlocked()` 判定（`afterLevels:20`）；④ **关卡由 20 → 99 关**（21~99 数据驱动外推，真源 `G_docs/main_levels_21_99_design_v1.md`；`CFG.levels` / `CFG.levelCurve.rows` 同步 99、`CFG.sectors` 章节表落库、`CFG._validateLevelCurve` 自适应） |
 | C6 | **卡牌系统去向** | §12-27 要卡池 vs §19.7 已退役 → **规则自相矛盾，需裁决** → ✅ **已由 D018 落库**（彻底退役 + 物理清理） |
 | C7 | 技能栏排布：字面 `A X X X X A` vs 已落地 `[名][A][X×4][A]` | W2 遗留偏差待确认 ✅ **已落库（见 `decision_log_v1.md` D019）**：承认现状为最终形态 + 回写 `game_design_proposal.md` §20.1.1 |
+| C8（内容生产） | **主线 21~99 关内容生产** | §12-9 → ✅ **已完成（D037）**：关卡 **20 → 99 关**，21~99 关（79 关）**数据驱动外推**（真源 `G_docs/main_levels_21_99_design_v1.md`）；`CFG.levels` / `CFG.levelCurve.rows` 同步 99 行、`CFG.sectors` 8 章节落库、`CFG._validateLevelCurve` 按 `CFG.levels.length` 自适应。数值为**原型档，待策划调优** |
 
 ---
 

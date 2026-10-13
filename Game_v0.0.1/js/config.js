@@ -902,6 +902,10 @@ CFG.city = {
     { id: "NPC_MIRROR",  name: "形象师",   icon: "☺", color: "#7de08a", fx: 0.62, fy: 0.24, func: "profile",  desc: "头像 · 更名 · 称号 · 皮肤" },
     { id: "NPC_CODEX",   name: "图鉴学者", icon: "❖", color: "#6cb2ff", fx: 0.80, fy: 0.32, func: "codex",    desc: "英雄 / 怪物图鉴" },
     { id: "NPC_SHOP",    name: "神秘商人", icon: "◈", color: "#e5a04b", fx: 0.14, fy: 0.62, func: "shop",     desc: "敬请期待" },
+    /* D035 赛季对抗玩法循环入口：未解锁（主线通关数 < CFG.season.unlock.afterLevels）时禁止进入。
+     * ⚠️ 坐标 (0.68,0.62) 为避开「广场空地」测试点 (w/2, 0.6h) 与深渊之门 (0.86,0.60) 而定，
+     *    满足 bugfix_test「NPC 两两判定圈不重叠 / 与传送门分离」约束。 */
+    { id: "NPC_SEASON",  name: "赛季使者", icon: "◈", color: "#4da3ff", fx: 0.68, fy: 0.62, func: "season",   desc: "赛季挑战大厅" },
     // ⚠️ 商人原在 (0.50, 0.14) 顶部中央——与出征传送门 (w/2, 90) 判定圈完全重叠（中心仅差 44px），已移到西翼空位
   ],
   /* ---------- 21.15 深渊之门（无尽模式入口）----------
@@ -1365,34 +1369,34 @@ CFG.skillScaleBy = {
 CFG.skills = {
   /* ===== 表 4a 视图：主动技能（含普攻） ===== */
   AT101: { name: "速射", cat: "active", kind: "basic", type: "bullet",
-    cd: 0.5, energy: 0, dmgMul: 0.75, bullets: 1, bulletSpd: 620, pierce: 0, bounce: 0 },
+    cd: 0.5, dmgMul: 0.75, bullets: 1, bulletSpd: 620, pierce: 0, bounce: 0 },
   AT102: { name: "能量爆发", cat: "active", kind: "skill", type: "bullet",
-    cd: 1.8, energy: 100, tags: ["伤害","冷却","范围","弹道数量"],
+    cd: 1.8, tags: ["伤害","冷却","范围","弹道数量"],
     dmgMul: 1.5, radius: 130 },   // 朝目标发射能量弹，命中后圆形范围爆炸
   AT103: { name: "三向散射", cat: "active", kind: "basic", type: "bullet",
-    cd: 0.8, energy: 0, dmgMul: 0.7, bullets: 3, bulletSpd: 520, pierce: 0, bounce: 0 },
+    cd: 0.8, dmgMul: 0.7, bullets: 3, bulletSpd: 520, pierce: 0, bounce: 0 },
   AT104: { name: "震荡波", cat: "active", kind: "skill", type: "bullet",
-    cd: 1.9, energy: 100, tags: ["伤害","冷却","范围"], dmgMul: 1.3, radius: 150 },
+    cd: 1.9, tags: ["伤害","冷却","范围"], dmgMul: 1.3, radius: 150 },
   AT105: { name: "磁轨弹", cat: "active", kind: "basic", type: "bullet",
-    cd: 0.7, energy: 0, dmgMul: 0.85, bullets: 1, bulletSpd: 760, pierce: 2, bounce: 0 },
+    cd: 0.7, dmgMul: 0.85, bullets: 1, bulletSpd: 760, pierce: 2, bounce: 0 },
   AT106: { name: "贯穿射线", cat: "active", kind: "skill", type: "bullet",
-    cd: 1.8, energy: 100, tags: ["伤害","冷却","穿透","弹速"], dmgMul: 1.6, radius: 120 },
+    cd: 1.8, tags: ["伤害","冷却","穿透","弹速"], dmgMul: 1.6, radius: 120 },
   AT107: { name: "跳弹", cat: "active", kind: "basic", type: "bullet",
-    cd: 0.65, energy: 0, dmgMul: 0.75, bullets: 1, bulletSpd: 560, pierce: 0, bounce: 2 },
+    cd: 0.65, dmgMul: 0.75, bullets: 1, bulletSpd: 560, pierce: 0, bounce: 2 },
   AT108: { name: "环形弹幕", cat: "active", kind: "skill", type: "bullet",
-    cd: 2.0, energy: 110, tags: ["伤害","冷却","范围","弹道数量"],
+    cd: 2.0, tags: ["伤害","冷却","范围","弹道数量"],
     dmgMul: 1.2, radius: 160, bullets: 8 },
   AT109: { name: "双生速射", cat: "active", kind: "basic", type: "bullet",
-    cd: 0.4, energy: 0, dmgMul: 0.55, bullets: 1, bulletSpd: 640, pierce: 0, bounce: 0 },
+    cd: 0.4, dmgMul: 0.55, bullets: 1, bulletSpd: 640, pierce: 0, bounce: 0 },
   AT110: { name: "疾风连爆", cat: "active", kind: "skill", type: "bullet",
-    cd: 1.5, energy: 100, tags: ["伤害","冷却","弹道数量"], dmgMul: 1.2, radius: 120, bullets: 3 },
+    cd: 1.5, tags: ["伤害","冷却","弹道数量"], dmgMul: 1.2, radius: 120, bullets: 3 },
   AT111: { name: "重锤弹", cat: "active", kind: "basic", type: "bullet",
-    cd: 0.9, energy: 0, dmgMul: 1.15, bullets: 1, bulletSpd: 430, pierce: 1, bounce: 0 },
+    cd: 0.9, dmgMul: 1.15, bullets: 1, bulletSpd: 430, pierce: 1, bounce: 0 },
   AT112: { name: "攻城爆破", cat: "active", kind: "skill", type: "bullet",
-    cd: 2.3, energy: 120, tags: ["伤害","冷却","范围","弹速"], dmgMul: 1.9, radius: 190 },
+    cd: 2.3, tags: ["伤害","冷却","范围","弹速"], dmgMul: 1.9, radius: 190 },
 
   /* ===== 召唤物 / 陷阱类技能（离散值走 anchors 锚点表，1~100 级全程有效） ===== */
-  AT113: { name: "召唤无人机", cat: "active", type: "summon", kind: "skill", cd: 5.5, energy: 110,
+  AT113: { name: "召唤无人机", cat: "active", type: "summon", kind: "skill", cd: 5.5,
     tags: ["召唤物", "伤害", "冷却"],
     // 🔴 19.2 恢复定位载体：召唤师 H007 的无人机改造为「维修型」——照常开火，附加持续修理队友。
     // 数值统一在 CFG.skills2.repairDrone（铁律：数值一律进 CFG）；此处只挂开关与定位标记。
@@ -1405,7 +1409,7 @@ CFG.skills = {
       fireCd: { 1: 0.8, 50: 0.65, 100: 0.5 },          // 攻击间隔（含小数 → 保留两位）
       orbit:  { 1: 66, 50: 74, 100: 90 },              // 环绕半径
     } },
-  AT114: { name: "大地雷", cat: "active", type: "trap", kind: "skill", cd: 5.0, energy: 90,
+  AT114: { name: "大地雷", cat: "active", type: "trap", kind: "skill", cd: 5.0,
     tags: ["陷阱", "伤害", "范围", "冷却"], armDelay: 0.5,   // 敌人入圈后引信延迟（固定规则值）
     desc: "在脚下布设地雷：敌人进入范围 0.5 秒后引爆（范围伤害），随后消失",
     anchors: {
@@ -1416,9 +1420,9 @@ CFG.skills = {
 
   /* ===== 召唤/陷阱武器的普攻（W007/W008 专属） ===== */
   AT115: { name: "机炮", cat: "active", kind: "basic", type: "bullet",
-    cd: 0.8, energy: 0, dmgMul: 0.9, bullets: 1, bulletSpd: 560, pierce: 0, bounce: 0 },
+    cd: 0.8, dmgMul: 0.9, bullets: 1, bulletSpd: 560, pierce: 0, bounce: 0 },
   AT116: { name: "掷雷", cat: "active", kind: "basic", type: "bullet",
-    cd: 1.1, energy: 0, dmgMul: 1.2, bullets: 1, bulletSpd: 480, pierce: 0, bounce: 0 },
+    cd: 1.1, dmgMul: 1.2, bullets: 1, bulletSpd: 480, pierce: 0, bounce: 0 },
 
   /* ===== 26.x 新增主动技能（表 4a 视图）=====
    * AT120 嘲讽战吼 —— **属性加成积木 scaleBy 的样板技能**（防御定位载体）。
@@ -1428,7 +1432,7 @@ CFG.skills = {
    *   等级系数 = 1 + (lv - 1) × CFG.skillScaleBy.levelGrowth（与技能 +6%/级 同源）
    *   固定值部分仍走既有 anchors 锚点插值（radius: 1→180 / 50→260 / 100→340）。 */
   AT120: { name: "嘲讽战吼", cat: "active", kind: "skill", type: "taunt",
-    cd: 3.5, energy: 0, tags: ["伤害", "范围", "冷却"],
+    cd: 3.5, tags: ["伤害", "范围", "冷却"],
     dmgMul: 0.5, duration: 4,               // duration = 强制嘲讽时长（秒）
     scaleBy: { stat: "def", pct: 0.02 },    // 半径额外 + 防御 × 0.02 × 等级系数
     desc: "战吼嘲讽：半径内敌人强制攻击自身 4 秒（半径 = 锚点固定值 + 防御×2%×等级系数）",
@@ -1445,14 +1449,14 @@ CFG.skills = {
    *  近距离高伤、出手快；代价是必须贴身（吃弹幕惩罚）——这就是「远程 / 近战」的手感差。
    *  数值：dmgMul 1.35（高于远程普攻的 1.0 左右），cd 0.62（快于远程 0.75~1.1）。 */
   AT121: { name: "近战挥砍", cat: "active", kind: "basic", type: "melee",
-    cd: 0.62, energy: 0, dmgMul: 1.35,
+    cd: 0.62, dmgMul: 1.35,
     reach: 78, meleeArc: 1.75,         // 挥击距离(px) / 扇形张角(弧度，约 100°)
     desc: "贴身扇形挥击：对身前面向约 100° 内、距离 78px 的敌人造成伤害（近战英雄共用的普攻）" },
 
   /** AT122 生命脉冲（医疗兵 H010）：范围伤害 + **全队回复**。
    *  scaleBy 吃「攻击」：攻击越高回复越多 → 加攻击的装备/增益会顺带强化治疗（技能吃角色成长）。 */
   AT122: { name: "生命脉冲", cat: "active", kind: "skill", type: "healNova",
-    cd: 6.0, energy: 80, tags: ["伤害", "范围", "冷却"],
+    cd: 6.0, tags: ["伤害", "范围", "冷却"],
     dmgMul: 1.6, healBase: 18, healPerAdd: 1.0,
     scaleBy: { stat: "atk", pct: 0.04 },
     desc: "生命脉冲：对半径内敌人造成伤害，并回复全队生命（回复量 = 18 + 攻击×4%×等级系数，走攻击成长）",
@@ -1461,7 +1465,7 @@ CFG.skills = {
   /** AT123 鼓舞光环（圣歌者 H011）：范围伤害 + **全队攻击/移速增益**。
    *  scaleBy 吃「防御」：越坦光环越强（防御型辅助的自我强化路径）。 */
   AT123: { name: "鼓舞光环", cat: "active", kind: "skill", type: "aura",
-    cd: 8.0, energy: 90, tags: ["冷却"],
+    cd: 8.0, tags: ["冷却"],
     dmgMul: 0.9, auraDuration: 10, auraPct: 0.08,
     scaleBy: { stat: "def", pct: 0.01 },
     desc: "鼓舞光环：对身周敌人造成伤害，并令全队攻击与移速提升（幅度 = 8% + 防御×1%×等级系数），持续 10 秒",
@@ -1471,7 +1475,7 @@ CFG.skills = {
    *  scaleBy 吃「防御」（E-β/D029：原吃「能量上限」×0.008；能量字段退役后改吃「防御」×0.26，
    *  在 H012 基础值上等价：旧 130×0.008 = 1.04 = 新 4×0.26；随装备的成长口径由能量改为防御）。 */
   AT124: { name: "灵能护罩", cat: "active", kind: "skill", type: "barrier",
-    cd: 7.0, energy: 100, tags: ["伤害", "范围", "冷却"],
+    cd: 7.0, tags: ["伤害", "范围", "冷却"],
     dmgMul: 1.4, barrierDuration: 12, barrierDef: 4,
     scaleBy: { stat: "def", pct: 0.26 },
     desc: "灵能护罩：对身周敌人造成伤害，并为全队附加防御提升（+4 + 防御×26%×等级系数）的护罩，持续 12 秒",
@@ -1748,32 +1752,41 @@ CFG.heroRoles = {
  *   已从 CFG.heroes / CFG.baseStats.int / CFG.statNames / CFG.statDesc / CFG.gearDefs 移除；
  *   派生管线（items.js 的 computeStats/companionStats/runBonus、game.js 的队友能量池与 G.run.energyMax）同步清空。
  *   原 energyMax 类 scaling（AT124 灵能护罩）改吃「防御」×0.26（基础值等价）。
- *   ⚠️ 技能表 CFG.skills[].energy 数值字段为**历史遗留**（不参与门槛），后续单独清理。 */
+ *   ✅ D036 已落库（2026-10-13）：技能表 CFG.skills[].energy 数值字段**物理删除**（全库零消费点，
+ *      属 E-β 后残留的历史遗留）；技能只受冷却（CFG.skills[].cd）约束。 */
 CFG.skillResource = {
   mode: "cooldown",        // "cooldown" = 冷却制（旧值 "energy" 已废弃）
   startReady: true,        // 进图时技能是否立即就绪（true = 首次开战即可放技能，不空转）
 };
 
-/* ---------- 赛季玩法配置（D033，2026-10-13） ----------
+/* ---------- 赛季玩法配置（D033 落库 / D035 扩玩法循环，2026-10-13） ----------
  * 赛季 = 主线通关后开放的永续内容。**数值唯一来源 = 本表**（js/modes.js 的 SEASON_CFG 由此读取，
  * 禁止再在逻辑文件里硬编码）；设计稿见 G_docs/season_design_v1.md。
- * 现有实现为「轻量占位」：赛季等级 / 经验曲线 / 周任务；对抗玩法循环后续按设计稿扩展。
- * 🔧 rewards / expSource 为建议值，未经用户审，暂未接线消费。 */
+ * D035 起 = **可运行的对抗玩法循环**（不再占位）：入口（主城·赛季使者 NPC）→ 赛季挑战
+ *   （复用深渊世界 + G.seasonRun 标记）→ 击杀/升级/撤离双端计分 → 升赛季等级 → 大厅领奖 → 再挑战。
+ * 🔧 rewards / expGain 数值为原型档，待策划调优。 */
 CFG.season = {
   maxLv: 10,                                                    // 赛季等级封顶（升满后经验清零、不再累计）
   expBase: 1000,                                                // LV1→LV2 所需经验基数
   expStep: 200,                                                 // 每级递增量（LV n→n+1 需 expBase + (n-1)*expStep）
   weekly: { killGoal: 200, extractGoal: 3, levelUpGoal: 10 },   // 周任务三条目标
-  /* 经验来源（与 SeasonState.addExp 的调用点一一对应；键名为权威口径） */
-  expSource: { kill: 1, extract: 500, levelUp: 50 },
-  /* 赛季奖励（D033 设计稿建议条目；🔧 数值待用户审，未接线消费） */
+  /* 赛季经验来源（权威键名；消费点 = SeasonState.onKill/onLevelUp/onExtract，双端驱动经验+周任务）。
+   * 撤离沿用既有占位值 500；其余为原型档，待策划调优。 */
+  expGain: { kill: 10, killElite: 40, levelUp: 200, extract: 500 },
+  /* 赛季奖励（D035 落库；赛季大厅可「领取」，等级门 + 去重由 SeasonState.claimReward 把关）。
+   * type 量纲：crystal = 进化结晶枚数 / chip = 遗迹秘宝枚数 / insurance = 保险契约份数。 */
   rewards: [
-    { lv: 2,  key: "crystal",  amount: 100, desc: "进化结晶 ×100" },
-    { lv: 5,  key: "crystal",  amount: 300, desc: "进化结晶 ×300" },
-    { lv: 10, key: "cosmetic", amount: 1,   desc: "赛季限定外观 ×1" },
+    { id: "SR001", unlockAtLv: 1,  type: "crystal",   amount: 200,  desc: "赛季 L1：进化结晶 ×200" },
+    { id: "SR002", unlockAtLv: 3,  type: "chip",      amount: 1,    desc: "赛季 L3：遗迹秘宝 ×1" },
+    { id: "SR003", unlockAtLv: 5,  type: "crystal",   amount: 600,  desc: "赛季 L5：进化结晶 ×600" },
+    { id: "SR004", unlockAtLv: 7,  type: "insurance", amount: 1,    desc: "赛季 L7：保险契约 ×1" },
+    { id: "SR005", unlockAtLv: 10, type: "crystal",   amount: 1500, desc: "赛季 L10：进化结晶 ×1500" },
   ],
-  /* 入口条件：主线全部通关后开放赛季传送门（本项目当前 20 关；99 关目标达成后改 99） */
-  unlock: { afterLevels: 20, note: "主线全部通关后开放赛季入口（seasonPortal）" },
+  /* 赛季挑战参数（消费点 = modes.js startSeasonChallenge：复用深渊世界 + 赛季标记） */
+  challenge: { enabled: true, timeLimit: 900, note: "赛季挑战 = 深渊世界 + G.seasonRun 标记" },
+  /* 入口条件：主线通关后开放赛季入口（主城·赛季使者 NPC）。
+   * 本项目主线 20 关 → 21~99 关（D037）落地后仍以「通关数 ≥ afterLevels」判定。 */
+  unlock: { afterLevels: 20, note: "主线通关 20 关后开放赛季入口（主城·赛季使者 NPC）" },
 };
 
 /* ---------- 局内升级：经验来源 + 选择机制（19.4） ----------
@@ -2530,15 +2543,21 @@ CFG._validateLevelCurve = function () {
     const lv = CFG.levels;
     if (!Array.isArray(lv) || lv.length < 20) { issues.push("CFG.levels 缺失或少于 20 关"); return { ok: false, issues: issues }; }
     const curve = CFG.levelCurve;
-    if (!curve || !Array.isArray(curve.rows) || curve.rows.length !== 20) { issues.push("levelCurve.rows 必须为 20 行"); return { ok: false, issues: issues }; }
+    /* D037：主线扩到 99 关后，rows 行数不再写死 20，改为与 CFG.levels 等长（自适应）。 */
+    if (!curve || !Array.isArray(curve.rows) || curve.rows.length !== lv.length) {
+      issues.push("levelCurve.rows 行数须与 CFG.levels 等长（行=" + (curve && curve.rows ? curve.rows.length : "?") + "，关=" + lv.length + "）");
+      return { ok: false, issues: issues };
+    }
 
     // ---- 1. 倍率：数值合理 + 单调不减 ----
+    /* D037 口径：21~99 关沿 §5.3 外推（hpMul 至 L99=12.76 / countMul 至 L99=15.60），
+     * 故上限由 10 放宽到 20（countMul）/ 16（hpMul），仅作「数值离谱」兜底，仍校验单调不减。 */
     let prevCount = 0, prevHp = 0;
     for (let i = 0; i < curve.rows.length; i++) {
       const r = curve.rows[i];
       if (r.lv !== i + 1) issues.push("rows[" + i + "].lv 应为 " + (i + 1));
-      if (!num(r.countMul) || r.countMul <= 0 || r.countMul > 10) issues.push("第" + r.lv + "关 countMul 超界: " + r.countMul);
-      if (!num(r.hpMul) || r.hpMul <= 0 || r.hpMul > 10) issues.push("第" + r.lv + "关 hpMul 超界: " + r.hpMul);
+      if (!num(r.countMul) || r.countMul <= 0 || r.countMul > 20) issues.push("第" + r.lv + "关 countMul 超界: " + r.countMul);
+      if (!num(r.hpMul) || r.hpMul <= 0 || r.hpMul > 16) issues.push("第" + r.lv + "关 hpMul 超界: " + r.hpMul);
       if (r.countMul < prevCount) issues.push("第" + r.lv + "关 countMul 单调回落: " + prevCount + "→" + r.countMul);
       if (r.hpMul < prevHp) issues.push("第" + r.lv + "关 hpMul 单调回落: " + prevHp + "→" + r.hpMul);
       prevCount = r.countMul; prevHp = r.hpMul;
@@ -3918,3 +3937,108 @@ CFG.skillSystem = {
     "crystal.burn.detail": "命中的敌人身上附着持续燃烧，跟随目标移动；目标死亡后火焰留在原地烧完。",
   },
 };
+
+/* ============================================================================
+ * D037 主线 21~99 关外推生成器（2026-10-13）
+ * ----------------------------------------------------------------------------
+ * 背景：主线由 20 关（1~20 手调）扩到 99 关；21~99 共 79 关**数据驱动生成**，
+ *   口径真源 = G_docs/main_levels_21_99_design_v1.md §2/§3 + season_design_v1.md §5.3。
+ * 外推规则（与 11~20 关同口径的延续）：
+ *   · hpMul 严格沿 1+(lv-1)×0.12；countMul 沿第 9/10 关斜率 +0.15/关（lv ≥ 21 起）。
+ *   · hazard / supply 默认 null（机制关总数维持既有 5 关，不随关卡线性叠加）。
+ *   · chest 延续后期档 CT4（高阶占比不回落）。
+ * 关卡字段（mapW/mapH/eliteBase/elitePool/circles/progressGoal/timeLimit/artisanAtKills/
+ *   boss/altarTimeline）沿既有曲线**同口径延展**；章节表见 CFG.sectors（8 章节）。
+ * 说明：本生成器**只在加载时执行一次**，产出仍是 CFG.levels / CFG.levelCurve.rows 的静态数组，
+ *   与手调部分同源同结构（下游读表逻辑零改动）。
+ * ========================================================================== */
+
+/* ---------- 主线章节表（D037）：21~99 关按每 10 关一章划分，共 8 章 ----------
+ * name 为 AI 提议、待用户审（见 main_levels_21_99_design_v1.md §1）；hue 仅用于生成关卡暗色主题。 */
+CFG.sectors = [
+  { id: "SEC01", name: "余烬荒原", from: 21, to: 30, hue: 15,  desc: "焦土与残焰，前期外推序章" },
+  { id: "SEC02", name: "锈蚀回廊", from: 31, to: 40, hue: 58,  desc: "废弃工业回廊，远程压制加重" },
+  { id: "SEC03", name: "深渊裂谷", from: 41, to: 50, hue: 101, desc: "地裂深渊，精英密度抬升" },
+  { id: "SEC04", name: "星陨禁区", from: 51, to: 60, hue: 144, desc: "陨星残骸带，高速怪占比拉满" },
+  { id: "SEC05", name: "虚空回廊", from: 61, to: 70, hue: 187, desc: "空间扭曲区，同屏压力渐顶" },
+  { id: "SEC06", name: "终焉壁垒", from: 71, to: 80, hue: 230, desc: "邪神前哨壁垒，纯高压对抗" },
+  { id: "SEC07", name: "破碎圣殿", from: 81, to: 90, hue: 273, desc: "崩解的神殿，极限铺量检验场" },
+  { id: "SEC08", name: "神罚之眼", from: 91, to: 99, hue: 316, desc: "终局之眼，99 关终焉" },
+];
+
+(function buildMainLevels21to99() {
+  var N = CFG.levels.length;        // 20（手调上限）
+  var TOTAL = 99;                   // 主线总关数
+  /* HSL → #rrggbb（生成暗色主题，保证 79 关两两不同且与 1~20 关不撞） */
+  function hsl2hex(h, s, l) {
+    function comp(n) {
+      var k = (n + h / 30) % 12;
+      var a = s * Math.min(l, 1 - l);
+      var c = l - a * Math.max(-1, Math.min(k - 3, Math.min(9 - k, 1)));
+      var v = Math.round(255 * c).toString(16);
+      return v.length < 2 ? "0" + v : v;
+    }
+    return "#" + comp(0) + comp(8) + comp(4);
+  }
+  function pad(n, w) { var s = "" + n; while (s.length < w) s = "0" + s; return s; }
+
+  CFG.mainLevelCount = TOTAL;
+
+  for (var lv = N + 1; lv <= TOTAL; lv++) {
+    var t = lv - N;                                 // 1..79
+    var sidx = Math.floor((lv - 21) / 10);          // 0..7
+    var sec = CFG.sectors[sidx] || CFG.sectors[CFG.sectors.length - 1];
+    var within = ((lv - 21) % 10) + 1;              // 章内序号 1..10（末章 1..9）
+
+    /* ---- 倍率曲线（与 rows 同源） ---- */
+    var countMul = Math.round((3.75 + t * 0.15) * 100) / 100;
+    var hpMul = Math.round((1 + (lv - 1) * 0.12) * 100) / 100;
+
+    /* ---- elitePool：高威胁 ED0003 占比随关卡抬升（与 11~20 关同口径） ---- */
+    var ed1 = Math.max(0, 10 - Math.floor(t / 2));
+    var ed2 = Math.max(3, 29 - Math.floor(t / 3));
+    var ed3 = 100 - ed1 - ed2;
+    var poolParts = [];
+    if (ed1 > 0) poolParts.push("ED0001:" + ed1);
+    poolParts.push("ED0002:" + ed2);
+    poolParts.push("ED0003:" + ed3);
+
+    /* ---- boss：10 模板按序循环（((lv-1)%10)+1）——每 10 关一个轮回，lv%10===0 恒为 BS0010；
+     *      第 99 关（终局）强制 BS0010（终焉·邪神本体）。 ---- */
+    var boss = (lv === TOTAL) ? "BS0010" : ("BS" + pad(((lv - 1) % 10) + 1, 4));
+
+    /* ---- 时间轴：每 ~55s 投 1 座（t 严格递增；宝箱不在开局 10s 内） ---- */
+    var timeLimit = Math.min(1200, 720 + t * 12);
+    var tl = [], at = 20;
+    while (at <= timeLimit - 40) {
+      tl.push({ t: at, pool: ["ALTAR_001", "ALTAR_002", "ALTAR_003", "ALTAR_004a"], pick: 1 });
+      at += 55;
+    }
+
+    var mapSize = Math.min(3000, 2400 + t * 40);
+    CFG.levels.push({
+      id: "LEVEL_" + pad(lv, 3),
+      name: "第 " + lv + " 关 · " + sec.name + " " + within,
+      theme: hsl2hex(sec.hue + within * 4, 0.34, 0.075 + within * 0.003),
+      mapW: mapSize, mapH: mapSize,
+      monsterLevel: 10,
+      eliteBase: Math.min(30, 15 + Math.floor(t / 2)),
+      elitePool: poolParts.join("/"),
+      boss: boss,
+      monsterCap: 300,
+      circles: [
+        { tpl: "SC03", count: 12 + Math.floor(t / 2) },
+        { tpl: "SC02", count: 8 + Math.floor(t / 3) },
+        { tpl: "SC01", count: 6 + Math.floor(t / 4) }
+      ],
+      progressGoal: 440 + t * 24,
+      timeLimit: timeLimit,
+      artisanAtKills: Math.min(240, 96 + t * 2),
+      altarTimeline: tl,
+    });
+
+    CFG.levelCurve.rows.push({ lv: lv, countMul: countMul, hpMul: hpMul, hazard: null, supply: null, chest: "CT4" });
+  }
+})();
+
+/* D037 主线 21~99 关外推生成器结束 */

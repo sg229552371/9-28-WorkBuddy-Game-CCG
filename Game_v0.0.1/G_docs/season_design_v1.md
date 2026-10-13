@@ -2,7 +2,7 @@
 
 > ⚠️ **本设计由 AI 出稿、用户事后审** —— 依用户裁决「C 类玩法决策授权 AI 出设计并落库，用户事后审」（沿用 D012 先例，见 `G_docs/decision_log_v1.md`）。
 > 定位：`game_design_proposal.md` §12-30「赛季玩法」与 §12-9「关卡结构 / 难度曲线」的**规则真源**。
-> 决策依据：`decision_log_v1.md` **D033**（赛季配置迁入 CFG + 赛季规则）。
+> 决策依据：`decision_log_v1.md` **D033**（赛季配置迁入 CFG + 赛季规则）+ **D035**（C5 赛季对抗玩法循环实现）。
 > 代码真源（撰写时实测）：`js/modes.js` §21.6 赛季区块（`js/modes.js:668~737`）、`js/ui-panels.js` 赛季面板（`renderSeason` / `UI.grantSeasonExp`）、`js/ui-screens.js:1086`（撤离成功发赛季经验钩子）、`js/config.js` 的 `CFG.levelCurve.rows` 与预留 `CFG.outLevel.seasonPortal`。
 > 口径：本文所写「实现现状」均**直读代码**；「设计建议」标注为待用户审；「落库字段」= 已写入 / 待主会话写入 `CFG.season` 的结构。
 > 换行统一 LF；中文书写。
@@ -14,17 +14,17 @@
 ### 0.1 定位
 
 - 赛季玩法 = **主线 99 关之外的长线承载层**：主线打通后提供**无限重复、逐周刷新**的目标循环，用于消化已毕业玩家。
-- 玩法形态方向（§12-30 已定方向）：**无限地图玩法**；本期（首版）为**数据结构 + 经验 / 周任务 / 面板**占位，**无独立玩法循环**（见 §0.4）。
+- 玩法形态方向（§12-30 已定方向）：**无限地图玩法**；首版原为**数据结构 + 经验 / 周任务 / 面板占位**，本轮（D035）**已升级为可运行的对抗玩法循环**（复用深渊世界 + 赛季标记，见 §2.5）。
 - 与主线/无尽的关系：**并列而非取代**，详见 §6。
 
 ### 0.2 入口条件
 
 | 项 | 现值 / 建议值 | 真源 |
 | ---- | ---- | ---- |
-| 开放门槛 | 主线**通关 20 关后**开放（`unlock.afterLevels:20`） | 与现有 `CFG.levelCurve.rows` 的 20 行主线对齐（`js/config.js:2436~2462`） |
-| 入口形态 | 独立界面 `#screen-season`（占位），由 `UI.openSeason()` 打开 | `js/ui-panels.js`（`renderSeason` 前置） |
+| 开放门槛 | 主线**通关 20 关后**开放（`unlock.afterLevels:20`） | `CFG.season.unlock.afterLevels`；与现有 `CFG.levelCurve.rows` 的 20 行主线对齐 |
+| 入口形态 | **主城·赛季使者 NPC**（`CFG.city.npcs` 内 `id:"NPC_SEASON"`, `func:"season"`）；进圈交互 → 打开赛季大厅（`#screen-season`，`UI.openSeason()`） | `js/config.js` `CFG.city.npcs`；`js/ui-screens.js`（NPC 派发） |
 | 入口门（局内） | `CFG.outLevel.seasonPortal` 预留传送门（当前 `null` = 不渲染不判定） | `js/config.js:891/897`；`js/game.js:995/1552~1555` |
-| 判定钩子 | 到达门槛后置位开放；**当前为占位，未接主线完成度判定** | 待接线（见 §7 待办） |
+| 判定钩子 | **已接线**（D035）：`SeasonState.isUnlocked()` 读主线通关数；未达标禁止进入并提示 | `js/modes.js`（`isUnlocked`）；`js/ui-screens.js` |
 
 > 说明：本轮 `afterLevels:20` 与**现有 20 关主线内容**对齐；设计稿同时给出 21~99 关难度外推口径（§5.3），但**本轮不产关卡内容**。
 
@@ -33,11 +33,13 @@
 - 状态词表沿用 `decision_log_v1.md` §1：本稿对应 **D033**（状态：已批准）。
 - 赛季状态数据结构 = `js/modes.js` 的 `SeasonState`（内存单例）。
 
-### 0.4 首版范围（明确不做的）
+### 0.4 本轮范围（首版占位 → 已升级为实现）
 
-- ❌ 不新增独立赛季玩法循环（无限地图实际玩法）。
-- ❌ 不接落盘存档（见 §5）。
-- ❌ 不产 21~99 关关卡内容（仅写外推口径）。
+- ✅ **已实现（D035）**：**赛季对抗玩法循环** —— 原「不新增独立玩法循环」**已被取代**；循环六步 = 入口解锁 → 进赛季挑战（复用深渊）→ 击杀/升级/撤离双端计分 → 升赛季等级 → 大厅领奖 → 再挑战（详见 §2.5）。
+- ✅ **已实现（D035）**：击杀 / 局内升级 / 成功撤离**三类事件**同时驱动**赛季经验 + 周任务进度**（`SeasonState.onKill` / `onLevelUp` / `onExtract`，双端计分，接线见 §2）。
+- ✅ **已实现（D035）**：赛季奖励 `SR001~SR005` 落库 + 赛季大厅「领取」（`SeasonState.claimReward(id)`，等级门 + 去重，见 §4.1）。
+- ❌ 仍不接**落盘存档**（内存态，见 §5）。
+- ↩️ 原「不产 21~99 关关卡内容」**已不再适用**：21~99 关由 **D037** 另行落库（数据驱动外推，设计真源 = `main_levels_21_99_design_v1.md`）。
 - ✅ 落 `CFG.season` 配置 + 面板渲染 + 经验 / 周任务接口（与 `SeasonState` 逐条对应）。
 
 ---
@@ -79,16 +81,42 @@
 
 ## 2. 经验来源
 
-> 赛季经验 `SeasonState.addExp(n)` 由以下**三类事件**注入（占位期接钩子，语义已冻结）。
+> 赛季经验 `SeasonState.addExp(n)` 由以下**三类事件**注入；本轮（D035）**均已接线**，数值来源 = **`CFG.season.expGain`**（落库值）。
 
-| # | 来源 | 触发时机 | 建议经验值 | 现状 |
+| # | 来源 | 触发时机 | **落库经验值** | 现状 |
 | ---- | ---- | ---- | ---- | ---- |
-| ① | **击杀** | 局内击杀敌人 | 按击杀目标价值给（🔧 数值待用户审） | ✅ 周任务钩子已定义（`weekly-kill`）；赛季经验的击杀增量**待接线** |
-| ② | **成功撤离** | 撤离结算成功 | **+500**（现状占位值） | ✅ 已接线：`js/ui-screens.js:1086` `SeasonState.addExp(500)` |
-| ③ | **局内升级** | 队长局内等级提升 | 按升级次数 / 等级给（🔧 数值待用户审） | ✅ 周任务钩子已定义（`weekly-levelup`）；赛季经验的升级增量**待接线** |
+| ① | **击杀（普通）** | 局内击杀敌人 | **+10** | ✅ 已接线（`SeasonState.onKill`，经 `js/combat.js` 击杀块） |
+| ①′ | **击杀（精英 / Boss）** | 击杀精英怪 / Boss | **+40** | ✅ 已接线（`SeasonState.onKill` 按目标类型区分） |
+| ② | **局内升级** | 队长局内等级提升 | **+200** | ✅ 已接线（`SeasonState.onLevelUp`，经 `js/items.js` `gainExp` 升级块） |
+| ③ | **成功撤离** | 撤离结算成功 | **+500** | ✅ 已接线（`SeasonState.onExtract`，经 `js/ui-screens.js` 撤离钩子） |
 
-- **口径统一**：三类事件**同时**驱动两端 —— ① 赛季经验（`addExp`）② 周任务进度（`addWeeklyProgress`）。当前仅「成功撤离」两端都接了，其余两类**待接线**（见 §7）。
-- **数值标注**：撤离 +500 为占位值；其余两项数值待用户审，**不改动 `SEASON_CFG` 现值语义**。
+- **数值真源**：`CFG.season.expGain = { kill: 10, eliteKill: 40, levelUp: 200, extract: 500 }`（**落库值**，取代原「建议值」）。
+- **口径统一**：三类事件**同时**驱动两端 —— ① 赛季经验（`addExp`）② 周任务进度（`addWeeklyProgress`）；本轮**三类事件的赛季经验增量与周任务进度均已接线**（`onKill` / `onLevelUp` / `onExtract`，双端计分，见 §2.5）。
+- **保留不变**：`addExp` / `addWeeklyProgress` 的语义与封顶口径同 §1 / §3（非正输入拒绝、跨级逐次结算、L10 封顶清零）。
+
+---
+
+## 2.5 赛季对抗玩法循环（D035 · 本轮已实现）
+
+> 本节取代 §0.4 原「不新增独立玩法循环」——赛季玩法**从占位升级为可运行的对抗玩法循环**。
+> 实现落点：`js/modes.js`（`SeasonState` 扩展 + `startSeasonChallenge` / `exitSeasonChallenge`）、`js/combat.js`（击杀接线）、`js/items.js`（`gainExp` 升级接线）、`js/ui-screens.js`（NPC 派发 + 撤离钩子）、`js/ui-panels.js` + `index.html` + `css/style.css`（赛季大厅 UI）。
+
+### 2.5.1 循环六步
+
+| 步 | 环节 | 说明 | 落点 |
+| ---- | ---- | ---- | ---- |
+| ① | **入口解锁** | 主城「赛季使者」NPC 交互；`SeasonState.isUnlocked()` 校验主线通关数 ≥ `CFG.season.unlock.afterLevels`（20）；未达标**禁止进入并提示** | `js/ui-screens.js`；`js/modes.js` |
+| ② | **进赛季挑战（复用深渊）** | `startSeasonChallenge()` **复用现有「深渊 / 无尽」世界**（`enterEndless`）+ 打赛季标记 `G.seasonRun = true`；**不新增独立玩法 / 地图 / 敌人表** | `js/modes.js` |
+| ③ | **击杀/升级/撤离双端计分** | 三类事件经 `SeasonState.onKill` / `onLevelUp` / `onExtract` → **同时**折算 **赛季经验**（`addExp`）+ **周任务进度**（`addWeeklyProgress`） | `js/combat.js` / `js/items.js` / `js/ui-screens.js` |
+| ④ | **升赛季等级** | 经验按 §1 曲线逐级结算（L10 封顶）；升级即时反馈 | `js/modes.js` |
+| ⑤ | **大厅领奖** | 赛季大厅展示 `CFG.season.rewards`；`SeasonState.claimReward(id)` 领取（**等级门 + 去重**，已领不可重复） | `js/ui-panels.js` + `index.html` + `css/style.css` |
+| ⑥ | **再挑战** | 退出赛季挑战 `exitSeasonChallenge()` → 回主城；周任务未刷新前进度累计，刷新后重来 | `js/modes.js` |
+
+### 2.5.2 与深渊的关系
+
+- **复用而非复制**：赛季挑战**直接进入深渊世界**（`enterEndless`），仅以 `G.seasonRun = true` 标记「本局为赛季局」；结算走**深渊结算**，并额外把「击杀 / 局内升级 / 撤离」三类事件折算为赛季经验 + 周任务进度。
+- **难度口径**：赛季为无限地图，难度与主线解耦（不读 `levelCurve.rows` 之外的新表，见 §5.3）。
+- **保留不改**：赛季等级曲线 `1000+(n−1)×200`、L10 封顶、三条周任务（200/3/10）、`resetWeekly` 语义、**内存态不落盘**。
 
 ---
 
@@ -117,27 +145,29 @@
 
 ## 4. 赛季奖励与产出
 
-### 4.1 `CFG.season.rewards` 字段表（结构建议）
+### 4.1 `CFG.season.rewards` 落库表（D035）
 
-> 🔧 **全部条目数值 / 内容待用户审**；本轮只定**结构**与**建议条目**，不含最终数值。
+> ✅ **本轮落库**：`SR001~SR005` 共 5 条，`unlockAtLv` = **1 / 3 / 5 / 7 / 10**（落库值，取代原「建议条目」）。
+> 领取 = 赛季大厅调 `SeasonState.claimReward(id)`（**等级门 + 去重**）。
+> 数值真源 = **`CFG.season.rewards`**（码为准）；下表 `type` 为**已落库槽位**，`amount` / `desc` 为**原型档、待策划调优**。
 
-| 字段 | 类型 | 语义 | 建议 |
-| ---- | ---- | ---- | ---- |
-| `id` | string | 奖励条目 id | `SR001`… |
-| `unlockAtLv` | number | 达到该赛季等级解锁 | 1 / 3 / 5 / 7 / 10 |
-| `type` | string | 奖励类型 | `crystal`（进化结晶）/ `chip`（遗迹秘宝）/ `insurance`（保险契约）/ `cosmetic`（外观） |
-| `amount` | number | 数量（`type` 决定量纲） | 🔧 待用户审 |
-| `desc` | string | 展示文案 | 「L3 解锁：进化结晶 ×N」 |
+| 字段 | 类型 | 语义 |
+| ---- | ---- | ---- |
+| `id` | string | 奖励条目 id（`SR001`…`SR005`） |
+| `unlockAtLv` | number | 达到该赛季等级解锁（**落库：1 / 3 / 5 / 7 / 10**） |
+| `type` | string | 奖励类型（`crystal` 进化结晶 / `chip` 遗迹秘宝 / `insurance` 保险契约 / `cosmetic` 外观） |
+| `amount` | number | 数量（`type` 决定量纲；原型档，待策划） |
+| `desc` | string | 展示文案 |
 
-**建议条目（🔧 数值待用户审，仅示意节奏）**：
+**落库条目（`SR001~SR005`；`unlockAtLv` 为落库值，`type` 为已落槽位）**：
 
 | 条目 | `unlockAtLv` | `type` | 说明 |
 | ---- | ---- | ---- | ---- |
-| SR001 | 1 | crystal | 入门产出（低额结晶） |
-| SR002 | 3 | chip | 遗迹秘宝 1 枚 |
-| SR003 | 5 | crystal | 中额结晶 |
-| SR004 | 7 | insurance | 保险契约 1 份 |
-| SR005 | 10 | cosmetic | 满级外观 / 称号 |
+| SR001 | **1** | crystal | 入门产出（低额结晶） |
+| SR002 | **3** | chip | 遗迹秘宝 1 枚 |
+| SR003 | **5** | crystal | 中额结晶 |
+| SR004 | **7** | insurance | 保险契约 1 份 |
+| SR005 | **10** | cosmetic | 满级外观 / 称号 |
 
 ### 4.2 产出与既有经济的关系
 
@@ -168,14 +198,14 @@
 
 ### 5.3 难度曲线口径（主线 20 关 + 21~99 外推）
 
-- **主线难度真源** = `CFG.levelCurve.rows`（**20 行**，逐行手调；字段 `countMul` / `hpMul` / `hazard` / `supply` / `chest`），见 `js/config.js:2436~2462`。
-- **第 21~99 关外推规则（本稿口径，本轮不产关卡内容）**：
+- **主线难度真源** = `CFG.levelCurve.rows`（**1~20 关逐行手调 + 21~99 关数据驱动生成**，共 **99 行**；字段 `countMul` / `hpMul` / `hazard` / `supply` / `chest`），见 `js/config.js`。
+- **第 21~99 关外推规则（本稿口径；内容已由 D037 落库，展开版见 `main_levels_21_99_design_v1.md`）**：
   1. `hpMul` 严格沿 `1 + (lv − 1) × 0.12`（对齐怪物等级成长口径，`js/config.js:110` 注释）。
   2. `countMul` 沿第 9/10 关斜率 **+0.15 / 关**线性外推（`lv ≥ 11` 起）。
   3. `hazard` / `supply` 默认 `null`（机制关总数维持既有 5 关，不随关卡线性叠加）。
   4. `chest` 延续后期档 `CT4`（高阶占比不回落）。
   - 上述 4 条与现有 11~20 关外推**同口径**（`js/config.js:2448~2461`），21 关以后只是**同一规则的延续**。
-- **赛季本身的难度**：赛季玩法为无限地图，难度与主线关卡解耦，**不读 `levelCurve.rows` 之外的新表**（首版）。
+- **赛季本身的难度**：赛季玩法为无限地图，难度与主线关卡解耦，**不读 `levelCurve.rows` 之外的新表**。
 
 ---
 
@@ -195,7 +225,7 @@
 
 ## 7. 落库字段与待办
 
-### 7.1 `CFG.season` 结构（D033 落库目标）
+### 7.1 `CFG.season` 结构（D033 落库 + D035 扩展）
 
 ```js
 /* 赛季配置（唯一来源；js/modes.js 的 SEASON_CFG 改为从此读取，保留同名变量与数值兜底） */
@@ -204,7 +234,11 @@ CFG.season = {
   expBase: 1000,
   expStep: 200,
   weekly: { killGoal: 200, extractGoal: 3, levelUpGoal: 10 },
-  rewards: [ /* 见 §4.1 字段表；数值待用户审 */ ],
+  /* 经验来源落库值（D035）：普通击杀 +10 / 精英·Boss 击杀 +40 / 局内升级 +200 / 成功撤离 +500 */
+  expGain: { kill: 10, eliteKill: 40, levelUp: 200, extract: 500 },
+  rewards: [ /* SR001~SR005，unlockAtLv 1/3/5/7/10，见 §4.1 落库表 */ ],
+  /* 对抗挑战（D035）：复用深渊世界 + G.seasonRun 标记，见 §2.5 */
+  challenge: { world: "endless", flag: "seasonRun" },
   unlock: { afterLevels: 20 /* 主线通关 20 关后开放 */ }
 };
 ```
@@ -213,23 +247,25 @@ CFG.season = {
 
 ### 7.2 待办（本轮不做，登记备查）
 
-| # | 待办 | 归属 |
-| ---- | ---- | ---- |
-| 1 | 主线完成度 → 赛季开放判定接线（`unlock.afterLevels`） | 工程 |
-| 2 | 击杀 / 局内升级 → `addExp` + `addWeeklyProgress` 双端接线 | 工程 |
-| 3 | `CFG.season.rewards` 数值 + 领取表单 | 策划 + 工程 |
-| 4 | 赛季进度落盘（并入 `Meta`） | 工程 + 决策 |
-| 5 | 赛季独立玩法循环（无限地图） | 设计（后续版本） |
-| 6 | 21~99 关关卡内容 | 设计（后续版本） |
+| # | 待办 | 归属 | 状态 |
+| ---- | ---- | ---- | ---- |
+| 1 | ~~主线完成度 → 赛季开放判定接线（`unlock.afterLevels`）~~ | 工程 | ✅ **已完成（D035）**：`SeasonState.isUnlocked()` |
+| 2 | ~~击杀 / 局内升级 → `addExp` + `addWeeklyProgress` 双端接线~~ | 工程 | ✅ **已完成（D035）**：`onKill` / `onLevelUp` / `onExtract` |
+| 3 | 赛季奖励领取表单**细化**（`claimReward` 已实现；表单交互 / 文案待打磨） | 策划 + 工程 | 🟡 **保留**（奖励条目已落库，表单细化待做） |
+| 4 | 赛季进度落盘（并入 `Meta`） | 工程 + 决策 | 🟡 **保留**（内存态，见 §5） |
+| 5 | ~~赛季独立玩法循环（无限地图）~~ | 设计 | ✅ **已完成（D035）**：复用深渊 + `G.seasonRun`（见 §2.5） |
+| 6 | ~~21~99 关关卡内容~~ | 设计 | ✅ **已完成（D037）**：数据驱动外推（见 `main_levels_21_99_design_v1.md`） |
 
 ---
 
 ## 8. 结论
 
 - **已定（D033）**：赛季等级 / 经验曲线 / 周任务 / 经验来源 / 奖励结构 / 存档口径 / 与永续内容关系。
-- **落库**：`CFG.season`（唯一来源）+ `js/modes.js` 改读（行为不变）+ 本文档（设计真源）。
-- **待用户审**：`rewards` 数值与条目（§4.1）、经验来源数值（§2）、领取表单形态（§7.2）。
-- **本轮不做**：独立玩法循环、落盘存档、21~99 关内容。
+- **已实现（D035）**：**赛季对抗玩法循环**（入口/计分/奖励/挑战，见 §2.5）+ 三类事件双端计分 + `SR001~SR005` 领取 + `CFG.season.expGain/rewards/challenge` 落库。
+- **落库**：`CFG.season`（唯一来源）+ `js/modes.js`（`SeasonState` 扩展）+ 本文档（设计真源）。
+- **待用户审**：`rewards` 条目文案与 `amount`（§4.1）、全部原型数值（§2 / §6.2）、领取表单细化形态（§7.2）。
+- **本轮不做**：落盘存档（内存态）、领取表单细化。
+- **另由 D037 落库**：21~99 关关卡内容（数据驱动外推，设计真源 = `main_levels_21_99_design_v1.md`）。
 
 ---
 

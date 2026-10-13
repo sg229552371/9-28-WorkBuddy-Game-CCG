@@ -755,6 +755,10 @@ function onMonsterKilled(w, m, killer) {
   if (G.inEndless && typeof Endless !== "undefined" && Endless && typeof Endless.recordKill === "function") {
     Endless.recordKill();
   }
+  // 赛季挑战：击杀上报（精英判定 m.isElite || Boss m.d.type==="boss"；SeasonState 未就绪时静默跳过，安全降级）
+  if (G.seasonRun && typeof SeasonState !== "undefined" && SeasonState && typeof SeasonState.onKill === "function") {
+    SeasonState.onKill(!!(m.isElite || (m.d && m.d.type === "boss")));
+  }
 }
 
 function spawnPickup(w, x, y, type, value) {

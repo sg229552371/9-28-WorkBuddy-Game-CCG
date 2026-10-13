@@ -34,6 +34,12 @@ function joyVector(dxi, dyi, maxR, deadZone) {
 const Game = {
   async boot() {
     BootGuard.arm();   // 20.6 首屏看门狗：12s 未进首页 → 弹兜底面板
+    /* D035 赛季入口门槛初始化：把「已解锁关卡数」折算为「主线通关数」
+     * （cleared = unlockedLevels − 1；初始 unlockedLevels=1 → cleared=0）。
+     * 赛季进度为内存态（见 season_design_v1.md §5.1），此处每局启动做一次同步。 */
+    if (typeof SeasonState !== "undefined" && SeasonState && typeof SeasonState.markLevelCleared === "function" && typeof Meta !== "undefined" && Meta && Meta.data) {
+      SeasonState.markLevelCleared(Math.max(0, (Meta.data.unlockedLevels || 1) - 1));
+    }
     G.canvas = document.getElementById("game-canvas");
     G.ctx = G.canvas.getContext("2d");
     this.fitCanvas();
@@ -491,6 +497,11 @@ const Game = {
         UI.toast(`🔓 解锁 ${CFG.levels[idx + 1].name}`, "gold");
       }
       Meta.setFlag("firstExtract");   // 称号成就：完成一次撤离
+      /* D035 赛季入口门槛：回写主线通关数（通关第 idx+1 关 → cleared ≥ idx+1；
+       * 通关第 20 关后 cleared=20 → 主城「赛季使者」开放，可进赛季挑战）。 */
+      if (idx >= 0 && typeof SeasonState !== "undefined" && SeasonState && typeof SeasonState.markLevelCleared === "function") {
+        SeasonState.markLevelCleared(idx + 1);
+      }
       SFX.play("extract");
       UI.toggleArtisan(false); UI.toggleBackpack(false);
       UI.showSettlement(crystals);

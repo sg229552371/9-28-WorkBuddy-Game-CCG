@@ -1760,3 +1760,19 @@ body.portrait .crystal-panel-slots { grid-template-columns:repeat(2, 1fr); }
 
 /* 技能面板入口按钮（右上 #hud-tr 内，位于等级·货币行之下，右对齐） */
 #btn-skill-panel { margin-top:6px; }
+
+/* ===== 21.6 赛季大厅：赛季奖励区块（C5 界面层）=====
+ * 深色主题，与 .chip / .items-list 同调（底色 #1d2a3d / 边框 #33486b）。
+ * 每行 desc 自适应换行、状态右对齐；竖屏 390px 宽不横向溢出。 */
+#season-rewards { display:flex; flex-direction:column; gap:6px; width:100%; }
+.season-reward { display:flex; align-items:center; gap:8px; width:100%;
+  background:#1d2a3d; border:1px solid #33486b; border-radius:6px; padding:4px 9px;
+  font-size:11px; line-height:1.5; box-sizing:border-box; }
+.season-reward-desc { flex:1 1 auto; min-width:0; color:#cfe0ff; word-break:break-word; overflow-wrap:anywhere; }
+.season-reward-state { flex:0 0 auto; font-size:11px; white-space:nowrap; }
+.season-reward-state.locked { color:#8ba0bd; }
+.season-reward-state.done { color:#7de08a; }
+.season-reward-claim { flex:0 0 auto; margin:0; }
+.season-reward-empty { color:#8ba0bd; font-size:11px; }
+/* 未解锁：进入赛季挑战按钮置灰（点击仍给提示，故不设 disabled，避免吞掉提示） */
+#btn-season-challenge.season-locked { opacity:.5; filter:grayscale(.6); }

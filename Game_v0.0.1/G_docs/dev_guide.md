@@ -1190,7 +1190,7 @@ for (const sid in CFG.moduleSets) {
 
 - **能量已不参与技能门槛**：技能门槛早由**冷却制**取代（`CFG.skillResource.mode = "cooldown"`），能量池不再被读取。
 - **E-β 之后**：英雄属性表 `CFG.heroes[].energyMax / energyRegen` **不再存在**；`CFG.baseStats.int.energyMax`、`CFG.statNames.energyMax/energyRegen`、`CFG.statDesc.energyMax/energyRegen` 一并删除；派生管线（`js/items.js` 的 `ZERO_GEAR` / `runBonus().add` / `computeStats` / `companionStats`，`js/game.js` 队友 `energy/energyMax/regen` 与 `G.run.energyMax`）清空。
-- **技能表 `energy` 数值字段 = 历史遗留**：`CFG.skills[].energy` 的**数值字段本轮保留**（不参与门槛，仅历史遗留），标注为**后续单独清理项**；写新代码不得再消费它。
+- **技能表 `energy` 数值字段 = 已删除（D036）**：🔴 **就地订正**——本行原写「`CFG.skills[].energy` 的数值字段本轮保留（历史遗留）」，**已被 D036 取代**：该字段已**物理删除**（共 21 处），`js/ui.js` 技能详情「耗能 N」文案一并移除；技能**仅受冷却约束**（`CFG.skills[].cd`）。详见 §5.58 ①。
 - **等价改写**：`AT124 灵能护罩` 的 `scaleBy` 基准由 `{stat:"energyMax",pct:0.008}` 改为 `{stat:"def",pct:0.26}`（在 H012 基础值上等价：130×0.008 = 4×0.26 = 1.04）；装备词条 `G005`/`G008` 的 `energyMax/regen` 改 `hp/def`。
 - 🔴 **别名陷阱**：`cf.energyMax` / `p.energyRegen` 这类旧字段名在退役后**不得再新增消费点**；`statBias` 里若残留 `energyMax/energyRegen` 键（D020 元数据）仅作展示、不影响结算（后续如需清理另立条目）。
 
@@ -1200,6 +1200,30 @@ for (const sid in CFG.moduleSets) {
 - **规则真源**（不在本文件复制正文）= `G_docs/season_design_v1.md`：定位与入口（`afterLevels:20`）/ 等级经验（`1000+(n−1)×200`，L10 封顶）/ 经验来源 / 周任务三条 / 奖励结构 / 存档口径 / 与永续内容关系。
 - **难度曲线口径**：主线难度真源 = `CFG.levelCurve.rows`（**20 行**，`countMul/hpMul/hazard/supply`）；**第 21~99 关外推规则**写入 `season_design_v1.md` §5.3（`hpMul = 1+(lv−1)×0.12` / `countMul +0.15/关` / `hazard·supply` 默认 `null` / `chest` 延续 `CT4`）。
 - 🔴 **别再写死**：新增任何赛季数值**必须先落 `CFG.season`**，不得在 `js/modes.js` 或 UI 侧硬编码常量。
+
+### 5.58 ✅ 技能无 energy · 赛季=深渊标记 · 主线 99 关三条基线（2026-10-13，见 D035 / D036 / D037）
+
+**① 技能表不再有 `energy` 数值字段（D036）**
+
+- **物理删除**：`CFG.skills[]` 各条的 `energy` 数值字段已**全部删除**（共 **21 处**）；`js/ui.js` 技能详情文案的「耗能 N」展示一并移除。
+- **技能只受冷却约束**：门槛 = `CFG.skills[].cd`；不再有「攒能量 → 释放」循环（能量系统整体退役见 §5.57 ① / D029）。
+- 🔴 **别再引入**：写新技能或新代码**不得再读 / 写 `energy`**（该字段已不存在）；如需恢复必须先走决策流程。
+
+**② 赛季 = 深渊世界 + `G.seasonRun` 标记，事件经 `SeasonState.onKill/onLevelUp/onExtract` 双端计分（D035）**
+
+- **复用而非复制**：赛季挑战**直接进入现有深渊 / 无尽世界**（`enterEndless`），仅以 `G.seasonRun = true` 标记「本局为赛季局」；**不新增独立玩法 / 地图 / 敌人表**，结算走深渊结算。
+- **双端计分**：击杀（普通 +10 / 精英·Boss +40）、局内升级（+200）、成功撤离（+500）三类事件经 `SeasonState.onKill / onLevelUp / onExtract` **同时**折算**赛季经验**（`addExp`）+ **周任务进度**（`addWeeklyProgress`）；数值真源 = `CFG.season.expGain`。
+- **入口**：主城「赛季使者」NPC（`CFG.city.npcs` 内 `id:"NPC_SEASON"`），`SeasonState.isUnlocked()` 判定（主线通关数 ≥ `CFG.season.unlock.afterLevels`=20）。
+- **奖励**：`CFG.season.rewards`（`SR001~SR005`，`unlockAtLv` 1/3/5/7/10），大厅调 `SeasonState.claimReward(id)` 领取（**等级门 + 去重**）。
+- 🔴 **别再复制循环**：赛季**不得另起一套玩法循环**——永远走「深渊世界 + `G.seasonRun` 标记 + 三个计分钩子」；规则真源 = `season_design_v1.md` §2.5。
+
+**③ 主线 99 关 = 20 关手调 + 79 关生成器外推（D037）**
+
+- **规模**：主线关卡 **20 → 99 关**；`CFG.levels` 与 `CFG.levelCurve.rows` **同步 99 条 / 99 行**（`rows[i].lv === i + 1`）。
+- **两段口径**：第 **1~20 关 = 逐关手调**（`js/config.js` 手写）；第 **21~99 关（79 关）= 生成器外推**（`hpMul = 1+(lv−1)×0.12` / `countMul +0.15/关`（lv≥21）/ `hazard·supply` 默认 `null` / `chest` 延续 `CT4`，其它字段同 11~20 关口径延展）。
+- **章节表**：`CFG.sectors`（8 章节：21-30 / 31-40 / … / 81-90 / 91-99）；章节终关与 99 关 Boss = `BS0010`。
+- **校验自适应**：`CFG._validateLevelCurve()` 的 **20 行硬校验已改为按 `CFG.levels.length` 自适应**。🔴 **倍率上限提醒**：高关卡 `hpMul` / `countMul` 会越 `10`，倍率区间校验需同步放宽（详见外推稿 §3）。
+- **改数值先改生成器**：任何 21~99 关字段调整**必须改 `js/config.js` 生成器**，再回对设计稿；**不得只手改 `CFG.levels` 某一行**。外推真源 = **`G_docs/main_levels_21_99_design_v1.md`**（数值为原型档，待策划调优）。
 
 ## 6. 并行开发切分（已验证可用）
 

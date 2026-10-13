@@ -693,6 +693,13 @@ var SeasonState = {
     "weekly-levelup": 0
   },
 
+  /* ---- 21.6+ 赛季对抗玩法循环：新增状态（全部内存态，玩家侧/UI 侧置位） ---- */
+  clearedLevels: 0,          // 主线已通关数（markLevelCleared 置位；赛季入口门槛判定用）
+  _claimedRewards: {},       // 已领取奖励集合 { [id:string]: true }
+  challengeActive: false,    // 赛季挑战进行中标记（startChallenge / endChallenge 切换）
+  _challengeLvStart: 0,      // 本次挑战起始赛季等级（供 endChallenge 结算 levelBefore）
+  _challengeExpGained: 0,    // 本次挑战内累计赛季经验（供 endChallenge 结算 expGained）
+
   /* 加赛季经验：升级曲线 每级 1000+n*200（n 从 0 计），L10 封顶后不再累计。
    * 支持一次跨多级（while 循环逐级结算）；非正数输入直接拒绝。 */
   addExp: function (n) {
@@ -730,8 +737,174 @@ var SeasonState = {
   /* 周重置：三个任务进度归零（每周一刷新，占位期手动调用） */
   resetWeekly: function () {
     for (var k in this._weeklyProgress) this._weeklyProgress[k] = 0;
+  },
+
+  /* ====== 21.6+ 赛季对抗玩法循环：新增 API（签名与语义见需求；UI/接线代理按此调用） ====== */
+
+  /* 主线通关数置位：取 max(现值, n)，只增不减；非法输入（非数字/负数）静默忽略。 */
+  markLevelCleared: function (n) {
+    if (typeof n !== "number" || !(n >= 0)) return;
+    if (typeof this.clearedLevels !== "number") this.clearedLevels = 0;
+    if (n > this.clearedLevels) this.clearedLevels = n;
+  },
+
+  /* 赛季是否解锁：cleared >= CFG.season.unlock.afterLevels（兜底 20）。
+   * 未传参时读取本对象 clearedLevels。 */
+  isUnlocked: function (cleared) {
+    var c = (typeof cleared === "number") ? cleared : (this.clearedLevels || 0);
+    var need = (typeof CFG !== "undefined" && CFG.season && CFG.season.unlock && CFG.season.unlock.afterLevels) || 20;
+    return c >= need;
+  },
+
+  /* 赛季奖励表（结构统一）：[{ id, unlockAtLv, type, amount, desc, claimed }]。
+   * CFG.season.rewards 缺失时返回 []；兼容旧键名（lv/key）以做到 null-safe。 */
+  rewards: function () {
+    var s = (typeof CFG !== "undefined" && CFG.season) || {};
+    var list = Array.isArray(s.rewards) ? s.rewards : [];
+    var out = [];
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i] || {};
+      var id = (r.id != null) ? r.id : ((r.key != null) ? r.key : ("SR" + (i + 1)));
+      var lv = (typeof r.unlockAtLv === "number") ? r.unlockAtLv
+        : ((typeof r.lv === "number") ? r.lv : 1);
+      out.push({
+        id: id,
+        unlockAtLv: lv,
+        type: (r.type != null) ? r.type : ((r.key != null) ? r.key : "crystal"),
+        amount: (typeof r.amount === "number") ? r.amount : 0,
+        desc: r.desc || "",
+        claimed: !!(this._claimedRewards && this._claimedRewards[id])
+      });
+    }
+    return out;
+  },
+
+  /* 领取赛季奖励：仅当奖励表存在该 id、seasonLv >= unlockAtLv、且未领取时成功并置位。 */
+  claimReward: function (id) {
+    var list = this.rewards();
+    var target = null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) { target = list[i]; break; }
+    }
+    if (!target) return false;                       // 奖励表中不存在该 id
+    if (this.seasonLv < target.unlockAtLv) return false;   // 等级不足
+    if (!this._claimedRewards || this._claimedRewards[id]) return false;  // 已领取
+    this._claimedRewards[id] = true;
+    return true;
+  },
+
+  /* 经验来源表（惰性读取 CFG.season.expGain + 逐字兜底）：
+   * kill=10 / killElite=40 / levelUp=200 / extract=500（见需求口径）。 */
+  _expGain: function () {
+    var e = (typeof CFG !== "undefined" && CFG.season && CFG.season.expGain) || {};
+    return {
+      kill: e.kill || 10,
+      killElite: e.killElite || 40,
+      levelUp: e.levelUp || 200,
+      extract: e.extract || 500
+    };
+  },
+
+  /* 击杀上报（精英/Boss 判定由调用方给出）：加赛季经验 + 周任务「击杀」进度。
+   * 两个来源同时驱动（口径统一，见 G_docs/season_design_v1.md §2）。 */
+  onKill: function (isElite) {
+    var eg = this._expGain();
+    var exp = isElite ? eg.killElite : eg.kill;
+    var okExp = this.addExp(exp);
+    var okWk = this.addWeeklyProgress("weekly-kill", 1);
+    if (this.challengeActive && okExp) this._challengeExpGained += exp;
+    return !!(okExp || okWk);
+  },
+
+  /* 局内升级上报：加赛季经验 + 周任务「局内升级」进度。 */
+  onLevelUp: function () {
+    var eg = this._expGain();
+    var okExp = this.addExp(eg.levelUp);
+    var okWk = this.addWeeklyProgress("weekly-levelup", 1);
+    if (this.challengeActive && okExp) this._challengeExpGained += eg.levelUp;
+    return !!(okExp || okWk);
+  },
+
+  /* 成功撤离上报：加赛季经验 + 周任务「撤离」进度。 */
+  onExtract: function () {
+    var eg = this._expGain();
+    var okExp = this.addExp(eg.extract);
+    var okWk = this.addWeeklyProgress("weekly-extract", 1);
+    if (this.challengeActive && okExp) this._challengeExpGained += eg.extract;
+    return !!(okExp || okWk);
+  },
+
+  /* 赛季重置（测试与赛季重置用）：等级/经验/已领奖励/周任务进度全部归零。 */
+  resetSeason: function () {
+    this.seasonLv = 1;
+    this.seasonExp = 0;
+    this._claimedRewards = {};
+    for (var k in this._weeklyProgress) this._weeklyProgress[k] = 0;
+    this._challengeExpGained = 0;
+  },
+
+  /* 开启赛季挑战：已在挑战中返回 false；否则置位并记录起始等级/经验。 */
+  startChallenge: function (chars) {
+    if (this.challengeActive) return false;
+    this.challengeActive = true;
+    this._challengeLvStart = this.seasonLv;
+    this._challengeExpGained = 0;
+    return true;
+  },
+
+  /* 结束赛季挑战：返回结算结构 { levelBefore, levelAfter, expGained, weeklies }，
+   * 并清除挑战标记与本次挑战的累计经验。 */
+  endChallenge: function (result) {
+    var before = (typeof this._challengeLvStart === "number") ? this._challengeLvStart : this.seasonLv;
+    var after = this.seasonLv;
+    var gained = (typeof this._challengeExpGained === "number") ? this._challengeExpGained : 0;
+    var wk = this.weeklies();
+    this.challengeActive = false;
+    this._challengeLvStart = after;
+    this._challengeExpGained = 0;
+    return { levelBefore: before, levelAfter: after, expGained: gained, weeklies: wk };
   }
 };
+
+/* ---------- 赛季挑战流程（B）：复用深渊世界（enterEndless），外部包一层 + 打赛季标记 ----------
+ * 复用而非重写：startSeasonChallenge = 「未解锁守卫」+ enterEndless(chars) + G.seasonRun 标记；
+ * exitSeasonChallenge = 结算 + 清标记 + 复用 exitEndlessToCity 回主城。
+ * ⚠️ 不改 enterEndless / exitEndlessToCity / abyssPortal / Endless 的既有语义。 */
+
+/* 当前是否处于赛季挑战（读新增标志 G.seasonRun）。 */
+function isSeasonRun() {
+  return !!(typeof G !== "undefined" && G && G.seasonRun);
+}
+
+/* 开启赛季挑战：
+ *  - 未解锁（主线通关数 < CFG.season.unlock.afterLevels）→ 返回 false 且不改任何状态；
+ *  - 已解锁 → 复用 enterEndless(chars) 构建深渊世界，成功后置 G.seasonRun = true 并调
+ *    SeasonState.startChallenge(chars)；返回是否成功进入。 */
+function startSeasonChallenge(chars) {
+  if (typeof SeasonState === "undefined" || !SeasonState) return false;
+  if (typeof SeasonState.isUnlocked === "function" && !SeasonState.isUnlocked()) return false;  // 未解锁：零改动
+  var ch = (typeof CFG !== "undefined" && CFG.season && CFG.season.challenge) || {};
+  if (ch.enabled === false) return false;    // 配置显式关闭（缺省视为开启）
+  var entered = (typeof enterEndless === "function") ? enterEndless(chars) : false;
+  if (!entered) return false;                // 进入失败（深渊未就绪等）：不置赛季标记
+  if (typeof G !== "undefined" && G) G.seasonRun = true;
+  if (typeof SeasonState.startChallenge === "function") SeasonState.startChallenge(chars);
+  return true;
+}
+
+/* 退出赛季挑战：结算 → 清标记 → 回主城（复用 exitEndlessToCity 或其等效返回）。
+ * 返回 SeasonState.endChallenge() 的结算结构（SeasonState 缺失时为 null）。 */
+function exitSeasonChallenge() {
+  if (typeof G !== "undefined" && G) G.seasonRun = false;   // 先清标记，避免结算期间被误判为赛季局
+  var r = null;
+  if (typeof SeasonState !== "undefined" && SeasonState && typeof SeasonState.endChallenge === "function") {
+    r = SeasonState.endChallenge();
+  }
+  if (typeof exitEndlessToCity === "function") exitEndlessToCity();
+  else if (typeof Game !== "undefined" && Game && typeof Game.returnToCity === "function") Game.returnToCity();
+  if (typeof G !== "undefined" && G) G.seasonRun = false;   // 再清一次，杜绝残留
+  return r;
+}
 
 /* 21.6 赛季玩法区块结束 */
 
@@ -937,6 +1110,8 @@ function enterEndless(chars) {
   /* 21.18：允许两个入口状态 —— 主城直接进（旧路径）/ 深渊选角界面点「开始」进（新路径）。
    * ⚠️ 选角界面 G.state === "charSel"，若只放行 "city" 会导致「点开始无反应」。 */
   if (G.state !== "city" && G.state !== "charSel") return false;
+  G.seasonRun = false;   // D035：任何「直接进无尽的路径」一律先清赛季标记，防赛季计分残留污染
+                         //（startSeasonChallenge 在本函数返回后立刻重新置 true）
   // 首次进入：先记存档标记（G.saved.endlessSeen，跨会话只弹一次）。
   // ⚠️ 面板弹窗**不能在这里做**——下方 Game.startRun 会调 UI.showHudOnly() 把 screen 层
   //    切走（真机复现：说明面板一闪而过/根本看不到）。挪到本函数末尾再弹。
@@ -1038,6 +1213,7 @@ function enterEndless(chars) {
  *  - 清无尽世界/旗标，回到主城（Hub）。 */
 function exitEndlessToCity() {
   G.inEndless = false;
+  G.seasonRun = false;   // D035：退出无尽/赛季挑战一律清赛季标记（防结算后残留 → 主线被误计赛季分）
   G.endlessWorld = null;
   if (typeof Endless !== "undefined" && Endless && typeof Endless.reset === "function") {
     Endless.reset();
@@ -1052,10 +1228,13 @@ function exitEndlessToCity() {
 
 /** 无尽模式「再来一次」：结算后不回国、直接重开一局。 */
 function restartEndless() {
+  var wasSeason = !!(typeof G !== "undefined" && G && G.seasonRun);   // D035：赛季挑战「再来一次」需保留赛季标记
   if (typeof Game !== "undefined" && Game && typeof Game.enterCity === "function") {
     Game.enterCity();          // 先回主城清场
   }
-  return enterEndless();       // 立即重进（数值置零由 Endless.reset/begin 保证）
+  var ok = enterEndless();     // 立即重进（数值置零由 Endless.reset/begin 保证；内部会先清赛季标记）
+  if (ok && wasSeason && typeof G !== "undefined" && G) G.seasonRun = true;   // 还原赛季标记（保留赛季计分）
+  return ok;
 }
 
 /** 无尽模式死亡结算：读 Endless.settle() → 结晶入存档 → 弹结算面板。

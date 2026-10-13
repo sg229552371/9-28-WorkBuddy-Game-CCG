@@ -98,7 +98,7 @@ const driver = `
 
   /* ============ 一、10 关配置齐全 + 字段合法 ============ */
   {
-    check("关卡总数为 20（10+10 扩展批，" + CFG.levels.length + "）", CFG.levels.length === 20);
+    check("关卡总数为 99（D037 主线外推，" + CFG.levels.length + "）", CFG.levels.length === 99);
 
     const ids = CFG.levels.map(l => l.id);
     const uniq = new Set(ids);
@@ -158,11 +158,12 @@ const driver = `
   /* ============ 三、10 关 Boss 无重复且依次对应 ============ */
   {
     const bosses = CFG.levels.map(l => l.boss);
-    check("10 关 Boss 无重复（" + bosses.join(",") + "）", new Set(bosses).size === 10 && bosses.length === 20);
+    check("Boss 全员覆盖 10 只且每关有 Boss（" + bosses.length + " 关）", new Set(bosses).size === 10 && bosses.length === CFG.levels.length);
     const expected = ["BS0001","BS0002","BS0003","BS0004","BS0005","BS0006","BS0007","BS0008","BS0009","BS0010"];
     // 11~20 关为「二周目」第二轮：按序复用 BS0001~BS0010（每只 Boss 恰好对应 2 关，与「无重复」口径自洽）
+    // D037：21~99 关同为 10 模板按序循环（21~30 关继续 i%10 口径），故断言仅锁定前 20 关。
     check("LEVEL_001~010 依次对应 BS0001~BS0010，11~20 关二周目按序轮换",
-      bosses.every((b, i) => b === expected[i % 10]));
+      bosses.slice(0, 20).every((b, i) => b === expected[i % 10]));
 
     // 主题色：新增关卡各有不同 theme 且均为暗色系（#rrggbb）
     const themes = CFG.levels.slice(3).map(l => l.theme);

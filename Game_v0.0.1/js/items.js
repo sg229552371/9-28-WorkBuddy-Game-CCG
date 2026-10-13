@@ -1135,6 +1135,10 @@ function gainExp(v) {
     SFX.play("levelup");
     UI.toast(`升级！LV ${r.lv}（全队属性提升）`, "gold");
     ups.push(r.lv);
+    // 赛季挑战：局内升级上报（每升 1 级一次；SeasonState 未就绪时静默跳过，安全降级）
+    if (typeof G !== "undefined" && G && G.seasonRun && typeof SeasonState !== "undefined" && SeasonState && typeof SeasonState.onLevelUp === "function") {
+      SeasonState.onLevelUp();
+    }
   }
   if (r.lv >= c.maxLv) r.exp = 0;              // 封顶后经验不再累积
   // 19.10.2 第 7 步：多级连升排队逐个弹（第 1 个结算完才弹第 2 个）

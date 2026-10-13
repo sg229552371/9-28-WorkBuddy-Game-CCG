@@ -39,8 +39,8 @@ mobile_test mobile_ctrl_test mobile_polish_test artisan_test artisan_layout_test
 hero_roster_test hero_kit_test hero_portrait_test sprite_view_test camera_view_test audio_sprite_test autofight_test \
 endless_hud_test layout_overflow_test"
 
-FEATURE="rift_test extract_test boss_test boss_ux_test chest_drop_source_test bugfix_test shop_test laser_test season_test \
-levels_11_20_test special_monster_test assets_hook_test stress_test \
+FEATURE="rift_test extract_test boss_test boss_ux_test chest_drop_source_test bugfix_test shop_test laser_test season_test season_loop_test \
+levels_11_20_test levels_21_99_test special_monster_test assets_hook_test stress_test \
 endless_test endless_flow_test hud_endless_test endless_reward_test rift_extract_test rift_hud_test endless_growth_test \
 endless_restart_test \
 endless_affix_test endless_arena_test endless_record_test endless_team_test \

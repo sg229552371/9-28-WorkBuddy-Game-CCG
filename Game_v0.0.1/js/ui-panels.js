@@ -391,6 +391,53 @@ UI.showSeason = function () {
     });
     tasksEl.innerHTML = rows.length ? rows.join("") : '<span class="chip">（本周暂无任务）</span>';
   }
+  /* 解锁判定 + 主线门槛文案（读 CFG.season.unlock.afterLevels，兜底 20）：
+   * 供「赛季奖励」状态与「进入赛季挑战」按钮共用。isUnlocked 为新增 API，须 null-safe。 */
+  var afterLevels = (cfg.unlock && cfg.unlock.afterLevels) || 20;
+  var unlocked = (typeof ss.isUnlocked === "function") ? !!ss.isUnlocked() : false;
+  // 赛季奖励区块：渲染 SeasonState.rewards()（新增 API，须 null-safe），
+  // 每行 = desc + 状态（未达成「需 Lv N」/ 可领取「领取」按钮 / 已领取「已领取」）。
+  var rewardEl = document.getElementById("season-rewards");
+  if (rewardEl) {
+    var rewards = (typeof ss.rewards === "function") ? (ss.rewards() || []) : [];
+    if (!rewards.length) {
+      rewardEl.innerHTML = '<span class="season-reward-empty">（赛季奖励待公布）</span>';
+    } else {
+      rewardEl.innerHTML = rewards.map(function (r) {
+        var done = !!r.claimed;
+        var ready = !done && ss.seasonLv >= r.unlockAtLv;
+        var state = done
+          ? '<span class="season-reward-state done">已领取</span>'
+          : (ready
+            ? '<button class="btn small season-reward-claim" data-id="' + r.id + '">领取</button>'
+            : '<span class="season-reward-state locked">需 Lv ' + r.unlockAtLv + '</span>');
+        return '<div class="season-reward"><span class="season-reward-desc">' + r.desc + "</span>" + state + "</div>";
+      }).join("");
+    }
+    // 领取按钮：每次渲染重绑 onclick（幂等）；成功后重渲染面板并 toast 提示
+    var claimBtns = rewardEl.querySelectorAll ? rewardEl.querySelectorAll(".season-reward-claim") : [];
+    for (var ci = 0; ci < claimBtns.length; ci++) {
+      (function (btn) {
+        btn.onclick = function () {
+          var rid = (btn.dataset && btn.dataset.id) ? btn.dataset.id : (btn.getAttribute ? btn.getAttribute("data-id") : "");
+          var ok = (typeof ss.claimReward === "function") ? ss.claimReward(rid) : false;
+          if (ok) { UI.toast("赛季奖励已领取", "gold"); UI.showSeason(); }
+          else UI.toast("暂不可领取", "bad");
+        };
+      })(claimBtns[ci]);
+    }
+  }
+  // 进入赛季挑战按钮：未解锁置灰（.season-locked）且点击提示；已解锁调全局 startSeasonChallenge（modes.js 新增，typeof 防护）
+  var chBtn = document.getElementById("btn-season-challenge");
+  if (chBtn) {
+    if (chBtn.classList) chBtn.classList.toggle("season-locked", !unlocked);
+    chBtn.onclick = function () {
+      var u = (typeof ss.isUnlocked === "function") ? !!ss.isUnlocked() : false;
+      if (!u) { UI.toast("赛季尚未开放：需主线通关 " + afterLevels + " 关", "bad"); return; }
+      if (typeof startSeasonChallenge === "function") startSeasonChallenge(UI.selectedChars ? UI.selectedChars.slice() : []);
+      else UI.toast("赛季挑战尚未开放", "bad");
+    };
+  }
   // 返回按钮（每次渲染重绑，幂等）
   var backEl = document.getElementById("btn-season-back");
   if (backEl) backEl.onclick = function () { UI.showScreen("screen-main"); };

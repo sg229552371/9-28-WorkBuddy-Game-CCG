@@ -114,13 +114,14 @@ const uiSrc = fs.readFileSync("js/ui.js", "utf8") + "\n" + fs.readFileSync("js/u
 const gameSrc = ["game","items","combat","modes","render"].map(function(n){return fs.readFileSync("js/" + n + ".js", "utf8");}).join("\n");
 ok("UI：ui.js 定义 UI.showSeason 渲染赛季大厅（经验条+周任务+返回主城）", /UI\.showSeason\s*=\s*function/.test(uiSrc) && uiSrc.includes('showScreen("screen-season")') && uiSrc.includes('showScreen("screen-main")'));
 ok("UI：UI.grantSeasonExp 为单行薄封装（调用 SeasonState.addExp 并在面板开着时重渲染）", /UI\.grantSeasonExp\s*=\s*function/.test(uiSrc) && /SeasonState\.addExp\(n\)/.test(uiSrc));
-/* 结算钩子：showSettlement 函数体内新增恰好 1 行 SeasonState.addExp(500)，且带 typeof 防护 */
+/* 结算钩子：showSettlement 函数体内新增恰好 1 行 SeasonState.onExtract()，且带 typeof 防护
+ * （D035：撤离钩子由旧的 addExp(500) 升级为 onExtract —— 同时驱动赛季经验与周任务双端）。 */
 const settleFrom = uiSrc.indexOf("showSettlement(crystals = 0)");
 const settleTo = uiSrc.indexOf("showDeath(penalty", settleFrom);      // 下一个函数起点 = showSettlement 作用域边界
 const settleBody = (settleFrom >= 0 && settleTo > settleFrom) ? uiSrc.slice(settleFrom, settleTo) : "";
-const hookLines = uiSrc.split("\n").filter(l => l.includes("SeasonState.addExp(500)"));
-ok("钩子：结算函数 showSettlement 内含单行 SeasonState.addExp(500)（撤离成功发赛季经验）", hookLines.length === 1 && hookLines[0].includes("typeof SeasonState !== \"undefined\""));
-ok("钩子：该单行确实落在 showSettlement 函数体内（showDeath 之前），其余函数体零侵入", settleBody.includes("SeasonState.addExp(500)"));
+const hookLines = uiSrc.split("\n").filter(l => l.includes("SeasonState.onExtract()"));
+ok("钩子：结算函数 showSettlement 内含单行 SeasonState.onExtract()（撤离成功 → 赛季经验+周任务双端）", hookLines.length === 1 && hookLines[0].includes("typeof SeasonState !== \"undefined\""));
+ok("钩子：该单行确实落在 showSettlement 函数体内（showDeath 之前），其余函数体零侵入", settleBody.includes("SeasonState.onExtract()"));
 
 /* ====== 五、driver：vm 内走通 UI.showSeason / UI.grantSeasonExp（FakeEl 环境不抛异常） ====== */
 const driver = `

@@ -39,7 +39,7 @@ try {
 check("一 config.js 无 DOM 沙箱加载不抛错且 levels 为数组", loadOk && CFG && typeof CFG === "object" && Array.isArray(CFG.levels));
 
 if (CFG) {
-  const L = CFG.levels, NEW = L.slice(10);
+  const L = CFG.levels, NEW = L.slice(10, 20);   // D037：主线扩到 99 关，本测试只针对 11~20 关切片
   const curve = CFG.levelCurve;
   const near = (a, b, eps) => Math.abs(a - b) <= (eps == null ? 1e-9 : eps);
   // 解析 elitePool 权重串 → {总权重, 条目映射}；非法返回 null
@@ -59,7 +59,7 @@ if (CFG) {
   };
 
   /* ---- 一、连续存在 + 字段齐全 ---- */
-  check("一 关卡总数为 20（10+10 扩展批，" + L.length + "）", L.length === 20);
+  check("一 关卡总数 ≥ 20（10+10 扩展批之上，D037 已扩到 99，" + L.length + "）", L.length >= 20);
   check("一 LEVEL_011~020 连续存在无缺号（" + NEW.map(l => l.id).join(",") + "）",
     NEW.every((l, i) => l.id === "LEVEL_" + String(i + 11).padStart(3, "0")));
   check("一 新 10 关字段齐全（id/name/theme/mapW/mapH/progressGoal/timeLimit/monsterCap/circles/boss/monsterLevel/eliteBase/elitePool/artisanAtKills）",
@@ -100,7 +100,7 @@ if (CFG) {
   check("三 eliteBase 单调不减（" + L[9].eliteBase + "→" + NEW[9].eliteBase + "）",
     NEW.every((l, i) => i === 0 ? l.eliteBase >= L[9].eliteBase : l.eliteBase >= NEW[i - 1].eliteBase));
   check("三 monsterCap 四档递增无回落（1~5=120 / 6~10=160 / 11~15=220 / 16~20=300）",
-    CFG.levels.length === 20 && CFG.levels.every((l, i) => l.monsterCap === [120, 160, 220, 300][Math.floor(i / 5)]));
+    CFG.levels.slice(0, 20).every((l, i) => l.monsterCap === [120, 160, 220, 300][Math.floor(i / 5)]));
   check("三 monsterLevel 封顶 10（全表口径 ≤10，压力由曲线倍率承载）", NEW.every(l => l.monsterLevel === 10));
 
   /* ---- 四、circles 引用与节奏 ---- */
@@ -125,16 +125,16 @@ if (CFG) {
   check("六 高威胁精英 ED0003 权重随关卡抬升（" + ed3.join("→") + "）", ed3.every((w, i) => i === 0 || w > ed3[i - 1]));
 
   /* ---- 七、levelCurve 补全 20 行 ---- */
-  check("七 levelCurve.rows 补全 20 行且 lv=1..20 连续", !!curve && Array.isArray(curve.rows) && curve.rows.length === 20 && curve.rows.every((r, i) => r.lv === i + 1));
+  check("七 levelCurve.rows 行数与 CFG.levels 等长且 lv 连续（" + (curve && curve.rows ? curve.rows.length : "?") + " 行）", !!curve && Array.isArray(curve.rows) && curve.rows.length === L.length && curve.rows.every((r, i) => r.lv === i + 1));
   check("七 countMul/hpMul 全表单调不减、无断崖（" + curve.rows[9].countMul + "→" + curve.rows[19].countMul + "，步长 ≤ 0.2）",
     curve.rows.every((r, i) => i === 0 || (r.countMul >= curve.rows[i - 1].countMul && r.hpMul >= curve.rows[i - 1].hpMul
       && r.countMul - curve.rows[i - 1].countMul <= 0.2)));
   check("七 新 10 行 hpMul 与 monsterLevel 成长口径一致（1+(lv-1)×0.12）",
-    curve.rows.slice(10).every((r, i) => near(r.hpMul, 1 + (i + 10) * 0.12)));
+    curve.rows.slice(10, 20).every((r, i) => near(r.hpMul, 1 + (i + 10) * 0.12)));
   check("七 新 10 行不启用毒圈/补给（hazard/supply=null 且关卡未开 hazardEnabled/supplyEnabled）",
-    curve.rows.slice(10).every(r => r.hazard === null && r.supply === null)
+    curve.rows.slice(10, 20).every(r => r.hazard === null && r.supply === null)
       && NEW.every(l => !l.hazardEnabled && !l.supplyEnabled));
-  check("七 新 10 行宝箱档为 CT4（key 存在、高阶占比不回落）", curve.rows.slice(10).every(r => !!curve.chestTiers[r.chest]));
+  check("七 新 10 行宝箱档为 CT4（key 存在、高阶占比不回落）", curve.rows.slice(10, 20).every(r => !!curve.chestTiers[r.chest]));
 
   /* ---- 八、自检函数（含 11~20 关一致性核对）---- */
   let v1 = null, vThrew = false;

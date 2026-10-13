@@ -38,6 +38,16 @@ Object.assign(UI, {
   /* ---------- 主城 NPC 面板（进圈弹窗，离圈自动关闭） ---------- */
   NPC_PANELS: { outlevel: "panel-npc-outlevel", weapon: "panel-npc-weapon", profile: "panel-profile", codex: null, shop: null },
   openNpcPanel(npc) {
+    /* 21.6 赛季使者：openNpcPanel 不挂面板，改派发到赛季大厅整屏。
+     * 未解锁 → 提示所需主线通关数（读 CFG.season.unlock.afterLevels，兜底 20）并关闭入口；
+     * 已解锁 → 切屏赛季大厅。SeasonState.isUnlocked 为新增 API，须 null-safe。 */
+    if (npc.func === "season") {
+      const afterLevels = (typeof CFG !== "undefined" && CFG.season && CFG.season.unlock && CFG.season.unlock.afterLevels) || 20;
+      const unlocked = (typeof SeasonState !== "undefined" && SeasonState && typeof SeasonState.isUnlocked === "function") ? SeasonState.isUnlocked() : false;
+      if (!unlocked) { this.toast("赛季尚未开放：需主线通关 " + afterLevels + " 关", "bad"); this.closeNpcPanels(); G.cityNpcOpen = null; return; }
+      this.showSeason();
+      return;
+    }
     if (npc.func === "shop") { this.toast("神秘商人：敬请期待（赛季玩法上线后开放）", "gold"); G.cityNpcOpen = null; return; }
     if (npc.func === "codex") { this.toast("图鉴也可从首页进入；这里打开英雄图鉴", ""); this.showCodex(); return; }
     const id = this.NPC_PANELS[npc.func];
@@ -1083,7 +1093,7 @@ Object.assign(UI, {
       ? items.map(it => `<span class="chip">${it.name}${it.kind === "chest" ? " ×" + it.count : ""}（${it.kind === "chest" ? "宝箱" : CFG.itemQualities[it.itemQ].name}）</span>`).join("")
       : `<span class="chip">（无装备/武器模块保留）</span>`;
     document.getElementById("screen-settle").classList.remove("hidden");
-    if (typeof SeasonState !== "undefined") SeasonState.addExp(500);   // 21.6 赛季钩子：撤离成功发赛季经验 +500（占位，待迁 CFG）
+    if (typeof SeasonState !== "undefined" && SeasonState && typeof SeasonState.onExtract === "function") SeasonState.onExtract();   // 赛季钩子：撤离成功 → onExtract（经验 + 周任务双端）
   },
   /* 结晶获取明细行（20.10 产出可见化）：读 G.lastSettleReport（game.js publishCrystalReport 写入），
    * 把 lines 逐行拼成带换行的说明；无报告（老存档/异常路径）返回空串，不报错、不占位。 */

@@ -714,10 +714,10 @@ const UI = {
       const eff = e.type === "summon"
         ? `${e.count} 架无人机 · 机体 HP${e.hp} · 攻击 ${e.atk} · 射速 ${e.fireCd}s`
         : `${e.count} 颗地雷 · 伤害 ${e.dmgMul}×攻击 · 半径 ${e.radius} · 入圈 ${e.armDelay}s 引爆`;
-      return `${e.name}：${eff} · 冷却 ${e.cd}s · 耗能 ${e.energy} · 受词条影响：${tags}`;
+      return `${e.name}：${eff} · 冷却 ${e.cd}s · 受词条影响：${tags}`;
     }
     const dmg = Math.round(e.dmgMul * 100);
-    return `${e.name}：伤害 ${dmg}% 攻击 · 冷却 ${e.cd}s · 耗能 ${e.energy} · 爆炸半径 ${e.radius || 0} · 受词条影响：${tags}`;
+    return `${e.name}：伤害 ${dmg}% 攻击 · 冷却 ${e.cd}s · 爆炸半径 ${e.radius || 0} · 受词条影响：${tags}`;
   },
 
   /* ---------- HUD 每帧刷新 ---------- */
