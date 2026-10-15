@@ -1,12 +1,12 @@
 {
-  "checkedAt": "2026-10-12T17:37:13.823412+08:00",
+  "checkedAt": "2026-10-15T17:56:52.926639+08:00",
   "sourceCount": 14,
   "markdownCount": 20,
-  "relativeLinks": 201,
+  "relativeLinks": 203,
   "fragmentLinks": 0,
-  "ownershipPaths": 17,
+  "ownershipPaths": 151,
   "errors": [],
   "exit": 0,
-  "sourceChars": 32600,
-  "bookBytes": 67866
+  "sourceChars": 41226,
+  "bookBytes": 83197
 }
