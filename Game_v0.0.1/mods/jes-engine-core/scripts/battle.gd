@@ -5,7 +5,14 @@ extends Node2D
 
 var combat := JesCombat.new()
 var cam: Camera2D
-var hud: Label
+var hud_layer: CanvasLayer = null        # HUD 挂 CanvasLayer（不随镜头移动）
+var hud_top: Label                       # 顶部击杀进度胶囊
+var hud_hp: Label                        # 左上 HP / 等级 / 经验
+var hud_res: Label                       # 右上 金币 / 宝箱 / 波次
+var hud_skill: Label                     # 底部技能栏
+var hud_weight: Label                    # 左下负重
+var hud_hint: Label                      # 右下操作提示
+var hud_notice: Label                    # 左中信息行（裂隙/无尽/冻结提示）
 var paused := false
 var bag_ui: BagUI                        # 背包 UI（Tab 开关；临时 5×6 + 遗物 5×7）
 var _skill_cfg := SkillConfigCore.new()  # 技能水晶配置加载层
@@ -71,15 +78,18 @@ func _ready() -> void:
 	GameState.set_state("playing")
 	print("[Battle] 开局：英雄=", hero.get("id", "?"), " 关卡=", level.get("id", "?"),
 		" 怪表=", (monsters as Dictionary).size() if monsters is Dictionary else 0)
-	# 相机跟随玩家
+	# 相机跟随玩家：make_current 生效 + 按地图尺寸设边界（不越界露出黑边）
 	cam = Camera2D.new()
-	cam.zoom = Vector2(0.55, 0.55)
+	cam.zoom = Vector2(1.0, 1.0)   # 视口 1280x720 → 可见世界 1280x720 像素（对齐 HTML 观感）
 	add_child(cam)
-	# HUD
-	hud = Label.new()
-	hud.position = Vector2(16, 12)
-	hud.add_theme_font_size_override("font_size", 22)
-	add_child(hud)
+	cam.make_current()
+	cam.limit_left = 0
+	cam.limit_top = 0
+	cam.limit_right = maxi(int(combat.world_size.x), 1280)
+	cam.limit_bottom = maxi(int(combat.world_size.y), 720)
+	cam.position_smoothing_enabled = true
+	cam.position_smoothing_speed = 8.0
+	_build_hud()
 	# --- 背包 UI（Tab 开关；未注入时 BagUI 自建双包 + 示范装备）---
 	var bag_scene: PackedScene = load("res://mods/jes-inventory/scenes/bag_ui.tscn")
 	if bag_scene != null:
@@ -144,10 +154,10 @@ func _show_levelup_panel() -> void:
 	_levelup_layer = CanvasLayer.new()
 	add_child(_levelup_layer)
 	var panel := Panel.new()
-	panel.offset_left = 560.0
-	panel.offset_top = 300.0
-	panel.offset_right = 1360.0
-	panel.offset_bottom = 700.0
+	panel.offset_left = 240.0
+	panel.offset_top = 160.0
+	panel.offset_right = 1040.0
+	panel.offset_bottom = 560.0
 	_levelup_layer.add_child(panel)
 	var vbox := VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -225,10 +235,10 @@ func _show_death_settlement() -> void:
 	_settle_layer = CanvasLayer.new()
 	add_child(_settle_layer)
 	var panel := Panel.new()
-	panel.offset_left = 560.0
-	panel.offset_top = 280.0
-	panel.offset_right = 1360.0
-	panel.offset_bottom = 800.0
+	panel.offset_left = 240.0
+	panel.offset_top = 140.0
+	panel.offset_right = 1040.0
+	panel.offset_bottom = 620.0
 	_settle_layer.add_child(panel)
 	var vbox := VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -422,65 +432,143 @@ func _process(delta: float) -> void:
 	queue_redraw()
 	_update_hud()
 
+## HUD 构建（对齐 HTML 布局：顶部击杀胶囊 / 左上血蓝 / 右上资源 / 底部技能栏）
+func _make_label(size: int, color := Color.WHITE) -> Label:
+	var lb := Label.new()
+	lb.add_theme_font_size_override("font_size", size)
+	lb.add_theme_color_override("font_color", color)
+	lb.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	lb.add_theme_constant_override("outline_size", 6)
+	return lb
+
+func _build_hud() -> void:
+	hud_layer = CanvasLayer.new()
+	hud_layer.layer = 10
+	add_child(hud_layer)
+	# 顶部居中：击杀进度胶囊（黑底金字）
+	hud_top = _make_label(26, Color(1.0, 0.88, 0.45))
+	hud_top.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hud_top.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	hud_top.anchor_left = 0.5
+	hud_top.anchor_right = 0.5
+	hud_top.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	hud_top.offset_top = 10.0
+	hud_layer.add_child(hud_top)
+	# 左上：HP / Lv / 经验
+	hud_hp = _make_label(24, Color(0.95, 0.98, 1.0))
+	hud_hp.position = Vector2(16, 10)
+	hud_layer.add_child(hud_hp)
+	# 右上：金币 / 宝箱 / 波次
+	hud_res = _make_label(24, Color(1.0, 0.9, 0.55))
+	hud_res.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	hud_res.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	hud_res.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	hud_res.offset_right = -16.0
+	hud_res.offset_top = 10.0
+	hud_layer.add_child(hud_res)
+	# 左中：信息行（冻结 / 裂隙 / 无尽 / 撤离提示）
+	hud_notice = _make_label(20, Color(0.75, 0.95, 1.0))
+	hud_notice.position = Vector2(16, 64)
+	hud_layer.add_child(hud_notice)
+	# 左下：负重
+	hud_weight = _make_label(22, Color(0.9, 0.85, 0.7))
+	hud_weight.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	hud_weight.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	hud_weight.offset_left = 16.0
+	hud_weight.offset_top = -42.0
+	hud_layer.add_child(hud_weight)
+	# 底部居中：技能栏
+	hud_skill = _make_label(24, Color(1.0, 0.95, 0.8))
+	hud_skill.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hud_skill.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	hud_skill.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	hud_skill.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	hud_skill.offset_top = -46.0
+	hud_layer.add_child(hud_skill)
+	# 右下：操作提示
+	hud_hint = _make_label(18, Color(0.8, 0.85, 0.9, 0.9))
+	hud_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	hud_hint.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	hud_hint.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	hud_hint.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	hud_hint.offset_right = -16.0
+	hud_hint.offset_top = -40.0
+	hud_hint.text = "WASD移动 · 鼠标瞄准 · 左键/J射击 · Tab背包 · C水晶 · Esc暂停 · G自动战斗"
+	hud_layer.add_child(hud_hint)
+
 func _update_hud() -> void:
-	if hud == null:
+	if hud_top == null:
 		return
 	var p := combat.player
-	var st := "暂停" if paused else ("阵亡" if not bool(p.alive) else "战斗中")
+	# 顶部胶囊：击杀进度（含冻结/撤离状态提示）
+	var top_txt := "击杀 %d / %d" % [combat.kills, combat.progress_goal]
 	if combat.freeze_time > 0.0:
-		st = "全场冻结中·%s %.1fs" % [combat.freeze_hint, combat.freeze_time]
-	hud.text = "状态:%s  HP:%d/%d  击杀:%d/%d  波次:%d  怪:%d  经验:%d  金币:%d  暴击:%d  宝箱:%d  负重:%d  Lv%d\n技能:%s  水晶:%d  伤害倍率:%.2f  冷却:%.2fs  自动战斗:%s\n操作：WASD 移动 · 鼠标瞄准 · 左键/J 射击 · Tab 背包 · Esc 暂停 · G 自动战斗" % [
-		st, int(p.hp), int(p.hp_max), combat.kills, combat.progress_goal, combat.wave_index,
-		combat.monsters.size(), combat.exp_gained, combat.coin_gained,
-		combat.crit_count, combat.chests.size(), int(combat.weight), combat.player_lv,
-		_skill_id if _skill_id != "" else "无", _crystals.size(),
-		combat.bullet_dmg_mul, combat.shoot_interval,
-		"开" if combat.auto_fight else "关"]
-	# 撤离状态提示（BOSS 死 → 雕像出现 → 进圈读条）
+		top_txt = "全场冻结中 · %s %.1fs" % [combat.freeze_hint, combat.freeze_time]
+	elif not bool(p.alive):
+		top_txt = "阵亡"
+	elif paused:
+		top_txt = "已暂停"
+	hud_top.text = top_txt
+	# 左上：HP / Lv / 经验
+	hud_hp.text = "HP %d/%d   Lv%d   经验 %d" % [
+		int(p.hp), int(p.hp_max), combat.player_lv, combat.exp_gained]
+	# 右上：金币 / 宝箱 / 波次 / 怪数
+	hud_res.text = "金币 %d\n宝箱 %d\n波次 %d\n场上怪 %d" % [
+		combat.coin_gained, combat.chests.size(), combat.wave_index, combat.monsters.size()]
+	# 左下：负重
+	hud_weight.text = "负重 %d" % int(combat.weight)
+	# 底部：技能 + 自动战斗 + 赛季
+	var skill_txt := "技能 %s · 水晶 %d · 冷却 %.1fs" % [
+		_skill_id if _skill_id != "" else "无", _crystals.size(), combat.shoot_interval]
+	skill_txt += " · 自动战斗[%s]" % ("开" if combat.auto_fight else "关")
+	if season != null:
+		skill_txt += " · 赛季Lv%d" % season.season_lv
+	hud_skill.text = skill_txt
+	# 左中信息行：撤离 / 裂隙 / 无尽
+	var lines: Array[String] = []
 	var ep: ExtractPoint = combat.extract_point
 	if ep != null and ep.active and bool(p.alive):
 		var need := maxf(0.1, ep.channel_seconds(combat.weight))
 		var inside := ep.contains(Vector2(p.pos))
 		var base := maxf(0.1, float(ep.cfg.get("channel", 1.0)))
-		var pct := ep.progress / base * 100.0   # 进度按基准秒数计（extract_point.update 口径）
-		hud.text += "\n撤离点已出现（读条 %.0fs）：进圈读条撤离%s" % [need,
-			"（读条中 %.0f%%）" % pct if inside else ""]
+		var pct := ep.progress / base * 100.0
+		lines.append("撤离点已出现（读条 %.0fs）%s" % [need,
+			"（读条中 %.0f%%）" % pct if inside else "：进圈读条撤离"])
 	if combat.endless_mode == null:
-		hud.text += " · F 开启无尽 · R 裂隙任务"
 		if rift_mode != null and rift_mode.active:
 			var t: Dictionary = rift_mode.task
 			var remain := ""
 			if float(t.get("time", 0.0)) > 0.0:
 				remain = " · 剩余%.0fs" % maxf(0.0, float(t.get("remain", 0.0)))
 			var rstatus := "失败" if bool(t.get("failed", false)) else ("完成" if bool(t.get("done", false)) else "进行中")
-			hud.text += "\n裂隙任务[%s]：%s %d/%d%s" % [rstatus,
-				str(t.get("name", "")), rift_mode.kills, int(t.get("goal", 0)), remain]
-		if season != null:
-			hud.text += " · 赛季Lv%d（%.0f/%.0f）" % [season.season_lv, season.season_exp, season.exp_needed()]
-		return
-	var mode = combat.endless_mode
-	var affix_names: Array[String] = []
-	for entry in mode.current_affixes():
-		affix_names.append(str(entry.get("name", entry.get("id", ""))))
-	hud.text += "\n无尽 第%d层 · 词缀：%s · 层内波次：%d/%d" % [
-		mode.wave, "、".join(affix_names) if not affix_names.is_empty() else "无",
-		combat.wave_index, mode.wave_cap(mode.wave)]
-	if not bool(p.alive):
-		if _endless_settlement.is_empty():
-			_endless_settlement = mode.settle()
-		var result := _endless_settlement
-		hud.text += "\n无尽结算：第%d层 · 击杀%d · 结晶%d · 最佳层%d · 超时：%s" % [
-			int(result.get("wave", 0)), int(result.get("kills", 0)),
-			int(result.get("crystals", 0)), int(result.get("bestWave", 0)),
-			"是" if bool(result.get("timedOut", false)) else "否"]
-	elif not _endless_rewards.is_empty():
-		hud.text += "\n层间奖励三选一（战斗等待选择）："
-		for i in range(mini(3, _endless_rewards.size())):
-			var reward: Dictionary = _endless_rewards[i]
-			hud.text += "\n[%d] %s（金币 +%d）" % [i + 1,
-				str(reward.get("name", "奖励")), int(reward.get("amount", 0))]
+			lines.append("裂隙任务[%s]：%s %d/%d%s" % [rstatus,
+				str(t.get("name", "")), rift_mode.kills, int(t.get("goal", 0)), remain])
+		if _endless_notice != "":
+			lines.append(_endless_notice)
 	else:
-		hud.text += "\n" + _endless_notice
+		var mode = combat.endless_mode
+		var affix_names: Array[String] = []
+		for entry in mode.current_affixes():
+			affix_names.append(str(entry.get("name", entry.get("id", ""))))
+		lines.append("无尽 第%d层 · 词缀：%s · 层内波次 %d/%d" % [
+			mode.wave, "、".join(affix_names) if not affix_names.is_empty() else "无",
+			combat.wave_index, mode.wave_cap(mode.wave)])
+		if not bool(p.alive):
+			if _endless_settlement.is_empty():
+				_endless_settlement = mode.settle()
+			var result := _endless_settlement
+			lines.append("无尽结算：第%d层 · 击杀%d · 结晶%d · 最佳层%d" % [
+				int(result.get("wave", 0)), int(result.get("kills", 0)),
+				int(result.get("crystals", 0)), int(result.get("bestWave", 0))])
+		elif not _endless_rewards.is_empty():
+			lines.append("层间奖励三选一（按数字键选择）：")
+			for i in range(mini(3, _endless_rewards.size())):
+				var reward: Dictionary = _endless_rewards[i]
+				lines.append("[%d] %s（金币 +%d）" % [i + 1,
+					str(reward.get("name", "奖励")), int(reward.get("amount", 0))])
+		else:
+			lines.append(_endless_notice)
+	hud_notice.text = "\n".join(lines)
 
 ## ============================================================
 ## 绘制（纯 _draw，不依赖美术资源；P4 换贴图）

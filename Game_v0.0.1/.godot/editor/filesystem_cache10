@@ -311,7 +311,7 @@ VSplitContainer.svg::CompressedTexture2D::2887385407422649463::1792847215::17928
 yellow.png::CompressedTexture2D::1043265824178416429::1792847215::1792897103::1::::<><><>0<>0<>e1c5049147dc1aeb62405fc086032860<>res://.godot/imported/yellow.png-b3cf3d463958a169d909273d3d742052.ctex::
 ::res://autoload/::1792847215
 cfg.gd::GDScript::2012422690361157530::1792925000::0::1::::<>Node<><>0<>0<><>::
-event_bus.gd::GDScript::5920885156918101360::1792924894::0::1::::<>Node<><>0<>0<><>::
+event_bus.gd::GDScript::5920885156918101360::1792933830::0::1::::<>Node<><>0<>0<><>::
 game_state.gd::GDScript::877215008368950434::1792924991::0::1::::<>Node<><>0<>0<><>::
 ::res://cfg/::1792924844
 affixTags.json::JSON::-1::1792847215::0::1::::<><><>0<>0<><>::
@@ -796,7 +796,7 @@ flow.tscn::PackedScene::-1::1792924981::0::1::::<><><>0<>0<><>::res://mods/jes-e
 fx_feedback.tscn::PackedScene::-1::1792924973::0::1::::<><><>0<>0<><>::res://mods/jes-engine-core/scripts/fx_feedback.gd
 screens.tscn::PackedScene::-1::1792855821::0::1::::<><><>0<>0<><>::
 ::res://mods/jes-engine-core/scripts/::1792925488
-battle.gd::GDScript::8474279882178205202::1792925159::0::1::::<>Node2D<><>0<>0<><>::
+battle.gd::GDScript::8474279882178205202::1792934107::0::1::::<>Node2D<><>0<>0<><>::
 boot.gd::GDScript::1897631991648570767::1792847216::0::1::::<>Node2D<><>0<>0<><>::
 city.gd::GDScript::8676862771618485923::1792896202::0::1::::<>Node2D<><>0<>0<><>::
 combat.gd::GDScript::3221708031938283289::1792925609::0::1::::JesCombat<>RefCounted<><>0<>0<><>::
@@ -1105,12 +1105,12 @@ test_tag_param_contract.gd::GDScript::1950287329654650514::1792847217::0::1::::<
 ::res://mods/jes-skills/tools/::1792847217
 api_map_generator.gd::GDScript::501010888787318088::1792847217::0::1::::ApiMapGenerator<>RefCounted<><>0<>0<><>::
 gen_api_map.gd::GDScript::3324906868688030809::1792847217::0::1::::<>SceneTree<><>0<>0<><>::
-::res://tests/::1792926046
+::res://tests/::1792926417
 autopilot.gd::GDScript::5128211502193293889::1792926373::0::1::::<>Node<><>0<>0<><>::
 autopilot.tscn::PackedScene::-1::1792926046::0::1::::<><><>0<>0<><>::res://tests/autopilot.gd
 flow_smoke.gd::GDScript::3121844338051793028::1792926005::0::1::::<>SceneTree<><>0<>0<><>::
 README.md::TextFile::-1::1791892678::0::1::::<><><>0<>0<><>::
-::res://tests/unit/::1792925559
+::res://tests/unit/::1792934113
 test_artisan_chip_econ.gd::GDScript::1285086139143079594::1792897292::0::1::::<>GutTest<><>0<>0<><>::
 test_babel_cfg_terrain.gd::GDScript::2856484155309618858::1792911977::0::1::::<>GutTest<><>0<>0<><>::
 test_babel_events_totems.gd::GDScript::6085872798244915259::1792911462::0::1::::<>GutTest<><>0<>0<><>::
@@ -1123,7 +1123,7 @@ test_combat.gd::GDScript::1217175212525215797::1792847217::0::1::::<>GutTest<><>
 test_combat_expansion.gd::GDScript::3600405146205040213::1792847740::0::1::::<>GutTest<><>0<>0<><>::
 test_combat_flow.gd::GDScript::371783264367223960::1792925623::0::1::::<>GutTest<><>0<>0<><>::
 test_crystal_panel.gd::GDScript::246829266368136241::1792855836::0::1::::<>GutTest<><>0<>0<><>::
-test_endless_battle.gd::GDScript::4992277540354789279::1792855796::0::1::::<>GutTest<><>0<>0<><>::
+test_endless_battle.gd::GDScript::4992277540354789279::1792934113::0::1::::<>GutTest<><>0<>0<><>::
 test_endless_core.gd::GDScript::873141655590635896::1792847217::0::1::::<>GutTest<><>0<>0<><>::
 test_flow_field.gd::GDScript::5300467820363009488::1792847217::0::1::::<>GutTest<><>0<>0<><>::
 test_flow_screens.gd::GDScript::7425463191447439080::1792925037::0::1::::<>GutTest<><>0<>0<><>::

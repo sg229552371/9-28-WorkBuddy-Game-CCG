@@ -120,8 +120,7 @@ func _make_battle() -> Node2D:
 	var battle = script.new()
 	autofree(battle)
 	battle.combat = combat
-	battle.hud = Label.new()
-	battle.add_child(battle.hud)
+	battle._build_hud()
 	combat.floor_advanced.connect(battle._on_floor_advanced)
 	return battle
 
@@ -144,7 +143,7 @@ func test_f_key_starts_endless_and_preserves_crystals_and_chests() -> void:
 	assert_eq(combat.monsters.size(), 0, "旧关卡怪物不带入无尽")
 	assert_eq(combat.chests.size(), 1, "开启无尽不丢弃地上宝箱")
 	assert_eq(battle._crystals.size(), 1, "开启无尽不丢弃已装备水晶")
-	assert_string_contains(battle.hud.text, "无尽 第1层", "HUD 显示当前无尽层数")
+	assert_string_contains(battle.hud_notice.text, "无尽 第1层", "HUD 显示当前无尽层数")
 	combat.endless_mode.next_floor()
 	_press_key(battle, KEY_F)
 	assert_eq(combat.endless_mode.wave, 2, "重复按 F 不重置本局进度")
@@ -155,7 +154,7 @@ func test_reward_keys_grant_configured_coins_once_and_refresh_hud() -> void:
 	var offer: Array = combat.endless_mode.next_floor()
 	battle._on_floor_advanced(2, offer)
 	assert_eq(battle._endless_rewards.size(), 3, "HUD 接收三选一候选")
-	assert_string_contains(battle.hud.text, "层间奖励三选一", "层间提示选择按键")
+	assert_string_contains(battle.hud_notice.text, "层间奖励三选一", "层间提示选择按键")
 	var gold_index := -1
 	for i in range(offer.size()):
 		if offer[i].id == "gold":
@@ -168,7 +167,7 @@ func test_reward_keys_grant_configured_coins_once_and_refresh_hud() -> void:
 	_press_key(battle, keys[gold_index])
 	assert_eq(combat.coin_gained, coins_before + int(offer[gold_index].amount), "数字键奖励金币直接来自候选配置")
 	assert_true(battle._endless_rewards.is_empty(), "选中后清空候选恢复战斗")
-	assert_string_contains(battle.hud.text, "已选择", "奖励领取后立即刷新提示")
+	assert_string_contains(battle.hud_notice.text, "已选择", "奖励领取后立即刷新提示")
 	_press_key(battle, keys[gold_index])
 	assert_eq(combat.coin_gained, coins_before + int(offer[gold_index].amount), "重复按键不能重复领奖")
 
@@ -180,8 +179,8 @@ func test_death_hud_contains_settlement_and_affix_names() -> void:
 	_kill_all()
 	combat._damage_player(float(combat.player.hp) + float(combat.player.def))
 	battle._update_hud()
-	assert_string_contains(battle.hud.text, "坚韧", "HUD 显示词缀中文名")
-	assert_string_contains(battle.hud.text, "迅捷", "HUD 显示全部当前词缀")
-	assert_string_contains(battle.hud.text, "无尽结算", "死亡 HUD 显示结算")
+	assert_string_contains(battle.hud_notice.text, "坚韧", "HUD 显示词缀中文名")
+	assert_string_contains(battle.hud_notice.text, "迅捷", "HUD 显示全部当前词缀")
+	assert_string_contains(battle.hud_notice.text, "无尽结算", "死亡 HUD 显示结算")
 	assert_eq(battle._endless_settlement, combat.endless_mode.settle(), "HUD 结算直接使用核心 settle 返回值")
 
