@@ -32,6 +32,20 @@ const SHARD_TO_INCENSE: float = 0.4
 ## 战间回复比例 # PLACEHOLDER
 const INTER_BATTLE_HEAL: float = 0.3
 
+## ---------- 视觉常量（HTML 风格，仅表现层） ----------
+## 页面底色 = 战场深藏青
+const COLOR_PAGE: Color = Color("131c2c")
+## 按钮深蓝底 / 主行动金色
+const COLOR_BTN: Color = Color("2a3a52")
+const COLOR_BTN_PRIMARY: Color = Color("e8b33c")
+## 卡片底色（比页面亮一档）
+const COLOR_CARD: Color = Color("162234")
+
+## 调试截图模式（--shot / BABEL_SHOT_DIR）
+var shot_mode: bool = false
+var shot_dir: String = ""
+var shot_idx: int = 0
+
 ## 状态切换完成（state: String）
 signal state_changed(state: String)
 
@@ -77,6 +91,77 @@ func _ready() -> void:
 	_ensure_meta()
 	_build_screens()
 	_show_state(STATE_MAIN_CITY)
+	_check_shot_mode()
+
+
+## ---------- 调试截图钩子：--shot 或 BABEL_SHOT_DIR 时自动进战斗截图后退出 ----------
+func _check_shot_mode() -> void:
+	var want_shot: bool = false
+	var dir: String = OS.get_environment("BABEL_SHOT_DIR")
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	var next_is_dir: bool = false
+	for a: String in args:
+		if next_is_dir:
+			dir = a
+			next_is_dir = false
+		elif a == "--shot":
+			want_shot = true
+		elif a.begins_with("--babel-shot-dir="):
+			dir = a.trim_prefix("--babel-shot-dir=")
+			want_shot = true
+		elif a == "--babel-shot-dir":
+			next_is_dir = true
+	if OS.get_environment("BABEL_SHOT_DIR") != "":
+		want_shot = true
+	if not want_shot:
+		return
+	shot_mode = true
+	shot_dir = dir
+	if shot_dir == "":
+		shot_dir = OS.get_user_data_dir() + "/shots"
+	_auto_enter_battle()
+
+
+func _auto_enter_battle() -> void:
+	# 自动选 3 人（默认解锁优先，不足补前 3 名）
+	var team: Array[String] = []
+	var unlocked: Array[String] = []
+	var locked: Array[String] = []
+	for c: Variant in cfg.chiefs():
+		if c is Dictionary:
+			var cd: Dictionary = c as Dictionary
+			var cid: String = str(cd.get("id", ""))
+			if bool(cd.get("unlocked_default", false)) or (meta_data.get("unlocked_chiefs", []) as Array).has(cid):
+				unlocked.append(cid)
+			else:
+				locked.append(cid)
+	for cid2: String in unlocked:
+		team.append(cid2)
+	for cid3: String in locked:
+		if team.size() < 3:
+			team.append(cid3)
+	# 上限 3 人
+	while team.size() > 3:
+		team.remove_at(team.size() - 1)
+	start_run(team)
+	_refresh_hero_select()
+	_enter_battle()
+	_shot_loop()
+
+
+func _shot_loop() -> void:
+	var dir: String = shot_dir
+	var err: int = DirAccess.make_dir_recursive_absolute(dir)
+	if err != OK:
+		push_warning("[BabelMain] 截图目录创建失败: " + dir)
+	for i: int in range(5):
+		await get_tree().create_timer(2.0).timeout
+		await RenderingServer.frame_post_draw
+		var img: Image = get_viewport().get_texture().get_image()
+		if img != null:
+			img.save_png(dir + "/shot_%d.png" % [shot_idx])
+			shot_idx += 1
+	get_tree().quit()
 
 
 func _ensure_meta() -> void:
@@ -225,6 +310,7 @@ func _build_screens() -> void:
 		scr.name = "Scr_" + k
 		scr.set_anchors_preset(Control.PRESET_FULL_RECT)
 		scr.visible = false
+		scr.draw.connect(_draw_screen_bg.bind(scr))
 		add_child(scr)
 		screens[k] = scr
 	_build_main_city()
@@ -251,18 +337,53 @@ func _mk_button(parent: Control, pos: Vector2, sz: Vector2, text: String, cb: Ca
 	b.size = sz
 	b.text = text
 	b.pressed.connect(cb)
+	_style_button(b, false)
 	parent.add_child(b)
 	return b
 
 
+## HTML 风格按钮：深蓝圆角胶囊白字；primary = 金底深色字
+func _style_button(b: Button, primary: bool) -> void:
+	var bg: Color = COLOR_BTN_PRIMARY if primary else COLOR_BTN
+	var fg: Color = Color("1a1408") if primary else Color.WHITE
+	var normal: StyleBoxFlat = StyleBoxFlat.new()
+	normal.bg_color = bg
+	normal.set_corner_radius_all(8)
+	normal.content_margin_left = 14.0
+	normal.content_margin_right = 14.0
+	normal.content_margin_top = 6.0
+	normal.content_margin_bottom = 6.0
+	var hover: StyleBoxFlat = normal.duplicate() as StyleBoxFlat
+	hover.bg_color = bg.lightened(0.1)
+	var pressed: StyleBoxFlat = normal.duplicate() as StyleBoxFlat
+	pressed.bg_color = bg.darkened(0.12)
+	var disabled: StyleBoxFlat = normal.duplicate() as StyleBoxFlat
+	disabled.bg_color = Color(bg.darkened(0.4), 0.6)
+	b.add_theme_stylebox_override("normal", normal)
+	b.add_theme_stylebox_override("hover", hover)
+	b.add_theme_stylebox_override("pressed", pressed)
+	b.add_theme_stylebox_override("disabled", disabled)
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	b.add_theme_color_override("font_color", fg)
+	b.add_theme_color_override("font_hover_color", fg)
+	b.add_theme_color_override("font_pressed_color", fg)
+	b.add_theme_color_override("font_disabled_color", Color(fg, 0.5))
+	b.add_theme_color_override("font_focus_color", fg)
+
+
+## 页面底色（深藏青）
+func _draw_screen_bg(scr: Control) -> void:
+	scr.draw_rect(Rect2(Vector2.ZERO, scr.size), COLOR_PAGE)
+
+
 func _build_main_city() -> void:
 	var scr: Control = screens[STATE_MAIN_CITY] as Control
-	scr.draw.connect(_draw_main_bg)
 	var title: Label = _mk_label(scr, Vector2(190, 180), "巴别回路", 48)
 	title.add_theme_color_override("font_color", Color("c63d2f"))
 	_mk_label(scr, Vector2(240, 250), "神话拼图割草 · v1.2 即时制", 16)
 	lbl_main_incense = _mk_label(scr, Vector2(280, 330), "", 20)
-	_mk_button(scr, Vector2(260, 420), Vector2(200, 60), "开始游戏", _on_start_pressed)
+	var b_start: Button = _mk_button(scr, Vector2(260, 420), Vector2(200, 60), "开始游戏", _on_start_pressed)
+	_style_button(b_start, true)
 	_mk_button(scr, Vector2(260, 500), Vector2(200, 60), "失落之城 · 图腾", func() -> void: switch_state(STATE_TOTEM))
 	_mk_button(scr, Vector2(260, 580), Vector2(200, 60), "渎神教义树（占位）", func() -> void: pass)
 	_mk_button(scr, Vector2(260, 660), Vector2(200, 48), "重置存档", _on_reset_save)
@@ -271,7 +392,7 @@ func _build_main_city() -> void:
 func _draw_main_bg() -> void:
 	var scr: Control = screens.get(STATE_MAIN_CITY, null) as Control
 	if scr != null:
-		scr.draw_rect(Rect2(Vector2.ZERO, scr.size), Color("d8b98a"))
+		scr.draw_rect(Rect2(Vector2.ZERO, scr.size), COLOR_PAGE)
 
 
 func _on_reset_save() -> void:
@@ -292,13 +413,15 @@ func _on_start_pressed() -> void:
 
 func _build_hero_select() -> void:
 	var scr: Control = screens[STATE_HERO_SELECT] as Control
-	_mk_label(scr, Vector2(200, 60), "选人（1~3 人，第 1 位勾选者为队长）", 22)
-	lbl_hero_hint = _mk_label(scr, Vector2(60, 110), "", 16)
+	_mk_label(scr, Vector2(140, 40), "选人（1~3 人，第 1 位勾选者为队长）", 22)
+	lbl_hero_hint = _mk_label(scr, Vector2(60, 92), "", 16)
 	hero_box = VBoxContainer.new()
-	hero_box.position = Vector2(60, 160)
-	hero_box.custom_minimum_size = Vector2(600, 700)
+	hero_box.position = Vector2(50, 130)
+	hero_box.custom_minimum_size = Vector2(620, 980)
+	hero_box.add_theme_constant_override("separation", 14)
 	scr.add_child(hero_box)
-	_mk_button(scr, Vector2(120, 1150), Vector2(220, 70), "出战！", _on_team_confirm)
+	var b_go: Button = _mk_button(scr, Vector2(120, 1150), Vector2(220, 70), "出战！", _on_team_confirm)
+	_style_button(b_go, true)
 	_mk_button(scr, Vector2(400, 1150), Vector2(200, 70), "返回", func() -> void: switch_state(STATE_MAIN_CITY))
 
 
@@ -315,15 +438,43 @@ func _refresh_hero_select() -> void:
 		var cd: Dictionary = c as Dictionary
 		var cid: String = str(cd.get("id", ""))
 		var is_unlocked: bool = bool(cd.get("unlocked_default", false)) or unlocked.has(cid)
+		# 竖排大卡：名字 + 神权一句话，勾选态金框
 		var cb: Button = Button.new()
 		cb.toggle_mode = true
 		cb.disabled = not is_unlocked
-		cb.text = "%s [%s] 神权：%s" % [
+		cb.text = "%s  %s\n%s" % [
 			str(cd.get("name_cn", "?")),
 			"已解锁" if is_unlocked else "未解锁",
 			str((cd.get("passive", {}) as Dictionary).get("desc_cn", "")),
 		]
-		cb.custom_minimum_size = Vector2(600, 56)
+		cb.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var card: StyleBoxFlat = StyleBoxFlat.new()
+		card.bg_color = COLOR_CARD if is_unlocked else Color(COLOR_CARD.darkened(0.3), 0.6)
+		card.set_corner_radius_all(10)
+		card.set_border_width_all(2)
+		card.border_color = Color(1, 1, 1, 0.15) if is_unlocked else Color(1, 1, 1, 0.06)
+		card.content_margin_left = 16.0
+		card.content_margin_top = 10.0
+		card.content_margin_bottom = 10.0
+		card.content_margin_right = 16.0
+		var card_on: StyleBoxFlat = card.duplicate() as StyleBoxFlat
+		card_on.border_color = COLOR_BTN_PRIMARY
+		card_on.bg_color = COLOR_CARD.lightened(0.06)
+		var card_hover: StyleBoxFlat = card.duplicate() as StyleBoxFlat
+		card_hover.border_color = Color(COLOR_BTN_PRIMARY, 0.5)
+		cb.add_theme_stylebox_override("normal", card)
+		cb.add_theme_stylebox_override("hover", card_hover)
+		cb.add_theme_stylebox_override("pressed", card_on)
+		cb.add_theme_stylebox_override("pressed_hover", card_on)
+		cb.add_theme_stylebox_override("pressed_focus", card_on)
+		cb.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		cb.add_theme_stylebox_override("disabled", card)
+		cb.add_theme_color_override("font_color", Color.WHITE if is_unlocked else Color(1, 1, 1, 0.4))
+		cb.add_theme_color_override("font_pressed_color", COLOR_BTN_PRIMARY)
+		cb.add_theme_color_override("font_hover_color", Color.WHITE)
+		cb.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.35))
+		cb.add_theme_font_size_override("font_size", 16)
+		cb.custom_minimum_size = Vector2(620, 88)
 		cb.toggled.connect(_on_hero_toggled.bind(cid))
 		hero_checks.append(cb)
 		hero_box.add_child(cb)
@@ -640,7 +791,7 @@ func _build_settle() -> void:
 	mvp_card.position = Vector2(120, 420)
 	mvp_card.size = MVP_CARD_SIZE
 	var sb: StyleBoxFlat = StyleBoxFlat.new()
-	sb.bg_color = Color(0.1, 0.09, 0.08)
+	sb.bg_color = COLOR_CARD
 	sb.border_color = Color("e8b33c")
 	sb.set_border_width_all(4)
 	mvp_card.add_theme_stylebox_override("panel", sb)

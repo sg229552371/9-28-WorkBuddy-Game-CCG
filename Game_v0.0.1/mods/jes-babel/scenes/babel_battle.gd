@@ -8,17 +8,44 @@ extends Node2D
 
 ## 战斗结束（result: {"winner": "player"|"enemy", "kills": int, "shards": int, "time_s": float}）
 signal battle_finished(result: Dictionary)
+## 精英/BOSS 出现（ename: String）→ 顶部横幅
+signal elite_spawned(ename: String)
 
-const COLOR_ENEMY: Color = Color("c63d2f")
+## ---------- 视觉常量（对齐 HTML 原型基准，仅表现层） ----------
+## 战场底色：深藏青
+const COLOR_BG: Color = Color("131c2c")
+## 网格线：比底色亮约 8%
+const COLOR_GRID: Color = Color("1b2536")
+## 地形格填充（半透明圆角矩形）
+const COLOR_TERRAIN_COVER: Color = Color("2a3a52")
+const COLOR_TERRAIN_WATER: Color = Color("2e5f8a")
+const COLOR_TERRAIN_FIRE: Color = Color("8a4a2e")
+const COLOR_TERRAIN_ALTAR: Color = Color("b98a2e")
+## 地形格样式参数：fill alpha / 描边 alpha / 圆角
+const TERRAIN_FILL_A: float = 0.25
+const TERRAIN_STROKE_A: float = 0.5
+const TERRAIN_CORNER: int = 6
+## 单位配色：我方松石绿 / 敌方朱砂红 / 精英金圈
 const COLOR_ALLY: Color = Color("2a9d8f")
+const COLOR_ENEMY: Color = Color("c63d2f")
 const COLOR_RELIC_GOLD: Color = Color("e8b33c")
+const COLOR_GEM_PURPLE: Color = Color("9b59d0")
+## 单位半径（表现层）：我方固定 / 敌方 radius_px 换算
+const HERO_DRAW_R: float = 14.0
+const ENEMY_DRAW_R_DIV: float = 2.0
+const ENEMY_DRAW_R_MIN: float = 8.0
+## HUD 配色：底部面板 / 胶囊底
+const COLOR_PANEL: Color = Color("0e1622")
+const COLOR_SLOT: Color = Color("2a3a52")
+## 子弹尾迹长度（帧）
+const BULLET_TRAIL_N: int = 3
+
 const COLOR_NEON: Color = Color("35e0d8")
 const COLOR_SAND: Color = Color("d8b98a")
 const COLOR_WATER: Color = Color("3a86ff")
 const COLOR_FIRE: Color = Color("e76f51")
 const COLOR_COVER: Color = Color("6c757d")
 const COLOR_ALTAR: Color = Color("35e0d8")
-const COLOR_BG: Color = Color("2b2620")
 
 const VIEW_W: float = 720.0
 const VIEW_H: float = 1280.0
@@ -89,15 +116,36 @@ var hud: CanvasLayer = null
 var world_node: Node2D = null
 var terrain_node: Node2D = null
 var unit_node: Node2D = null
-var portraits_box: HBoxContainer = null
-var lbl_timer: Label = null
-var bar_timer: ProgressBar = null
+## 击杀总数目标（波次敌数 + Boss）
+var kill_target: int = 0
+## 顶部 HUD：击杀进度胶囊 / 等级经验 / 头像
+var cap_kills: Panel = null
+var cap_kills_fill: ColorRect = null
+var lbl_kills: Label = null
+var lbl_level: Label = null
 var bar_xp: ProgressBar = null
-var lbl_combo: Label = null
-var lbl_danmaku: Label = null
+var portraits_box: HBoxContainer = null
+## 头像卡刷新节流计时（0.25s 一刷，血条/金框跟手）
+var portrait_t: float = 0.0
+## 底部面板：主技能圆钮 / 侧槽 / CD 大字 / 词条卡
 var btn_q: Button = null
 var btn_e: Button = null
 var btn_tab: Button = null
+var lbl_q_cd: Label = null
+var lbl_e_cd: Label = null
+var lbl_tab_cd: Label = null
+var lbl_e_name: Label = null
+var lbl_danmaku: Label = null
+var cards_box: VBoxContainer = null
+## 精英横幅
+var banner: Panel = null
+var banner_lbl: Label = null
+var banner_tween: Tween = null
+## 地形圆角样式缓存（type → StyleBoxFlat）
+var terrain_sb: Dictionary = {}
+## 状态兼容引用（保留旧变量名防外部误用）
+var lbl_timer: Label = null
+var bar_timer: ProgressBar = null
 var levelup_box: Control = null
 
 
@@ -136,6 +184,12 @@ func setup(p_cfg: BabelCfgData, p_chapter: Dictionary, p_team: Array[Dictionary]
 	relics = p_relics
 	boss_mod = BabelEventLogic.normalize_boss_mod(p_boss_mod)
 	run_mods = p_run_mods
+	# 重复 setup 时清空旧编队/实体（防止演示局 + 正式局叠加）
+	heroes.clear()
+	enemies.clear()
+	bullets.clear()
+	shards.clear()
+	telegraphs.clear()
 	var rules: Dictionary = cfg.rules()
 	var rt: Dictionary = rules.get("realtime", {}) if rules.get("realtime") is Dictionary else {}
 	tile_px = float(rt.get("tile_px", 64.0))
@@ -149,6 +203,20 @@ func setup(p_cfg: BabelCfgData, p_chapter: Dictionary, p_team: Array[Dictionary]
 	xp_anchors = rules.get("xp_anchors", [1.0, 25.0, 60.0, 100.0]) if rules.get("xp_anchors") is Array else [1.0, 25.0, 60.0, 100.0]
 	punish_cfg = rules.get("punishment_timer", {}) if rules.get("punishment_timer") is Dictionary else {}
 	shard_xp = float(chapter.get("shard_xp", 1.0))
+	# 击杀进度目标：全波次敌数 + Boss（仅 HUD 展示用）
+	kill_target = 0
+	var waves_for_count: Variant = chapter.get("waves", [])
+	if waves_for_count is Array:
+		for w: Variant in (waves_for_count as Array):
+			if not (w is Dictionary):
+				continue
+			var wl: Variant = (w as Dictionary).get("enemies", [])
+			if wl is Array:
+				for ed0: Variant in (wl as Array):
+					if ed0 is Dictionary:
+						kill_target += int((ed0 as Dictionary).get("count", 0))
+	if str(chapter.get("boss_id", "")) != "":
+		kill_target += 1
 	# 地形：3 屏宽 1 屏高
 	terrain.generate(rng, Vector2(world_w, world_h), tile_px, 0.35)
 	flow.setup(Vector2(world_w, world_h), tile_px)
@@ -176,7 +244,7 @@ func setup(p_cfg: BabelCfgData, p_chapter: Dictionary, p_team: Array[Dictionary]
 			"passive": t.get("passive", {}),
 			"skill_a": t.get("skill_a", {}),
 			"skill_b": t.get("skill_b", {}),
-			"pos": Vector2(200.0 + float(idx) * 60.0, world_h - 140.0),
+			"pos": Vector2(200.0 + float(idx) * 60.0, 300.0),
 			"facing": Vector2i(0, -1),
 			"hp": base_hp * float(comp["hp_mul"]),
 			"max_hp": base_hp * float(comp["hp_mul"]),
@@ -218,6 +286,13 @@ func setup(p_cfg: BabelCfgData, p_chapter: Dictionary, p_team: Array[Dictionary]
 ## ---------- 场景构建 ----------
 
 func _build_scene() -> void:
+	# 防重复构建（_ready 演示局 + main setup 会各调一次）
+	if world_node != null:
+		world_node.queue_free()
+		world_node = null
+	if hud != null:
+		hud.queue_free()
+		hud = null
 	world_node = Node2D.new()
 	world_node.name = "World"
 	add_child(world_node)
@@ -237,71 +312,241 @@ func _build_scene() -> void:
 	add_child(hud)
 	_build_hud()
 	# 地形/单位绘制挂在本节点 _draw（world_node 空绘制壳，绘制走 self）
-	terrain_node.draw.connect(_draw_terrain)
-	unit_node.draw.connect(_draw_world)
+	terrain_node.draw.connect(_draw_terrain.bind(terrain_node))
+	unit_node.draw.connect(_draw_world.bind(unit_node))
 	set_process(true)
 
 
+func _mk_sb(bg: Color, corner: int, border: Color, border_w: int) -> StyleBoxFlat:
+	var sb: StyleBoxFlat = StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.set_corner_radius_all(corner)
+	sb.border_color = border
+	sb.set_border_width_all(border_w)
+	return sb
+
+
 func _build_hud() -> void:
-	# 顶部头像血条
+	# ---- 顶部左：出战角色小卡（当前操控金框） ----
 	portraits_box = HBoxContainer.new()
 	portraits_box.position = Vector2(8, 8)
 	portraits_box.add_theme_constant_override("separation", 8)
 	hud.add_child(portraits_box)
 	_refresh_portraits()
-	# 底部信息面板
-	var panel: Panel = Panel.new()
-	panel.position = Vector2(0, PLAY_H)
-	panel.size = Vector2(VIEW_W, VIEW_H - PLAY_H)
-	var sb: StyleBoxFlat = StyleBoxFlat.new()
-	sb.bg_color = Color(0.08, 0.07, 0.06, 0.96)
-	panel.add_theme_stylebox_override("panel", sb)
-	hud.add_child(panel)
-	lbl_timer = Label.new()
-	lbl_timer.position = Vector2(16, 12)
-	lbl_timer.text = ""
-	panel.add_child(lbl_timer)
-	bar_timer = ProgressBar.new()
-	bar_timer.position = Vector2(16, 40)
-	bar_timer.size = Vector2(VIEW_W - 32, 16)
-	bar_timer.min_value = 0.0
-	bar_timer.max_value = float(punish_cfg.get("start_s", 75.0))
-	bar_timer.show_percentage = false
-	panel.add_child(bar_timer)
+	# ---- 顶部中：击杀进度胶囊（黑底圆角 320×22，金色填充） ----
+	cap_kills = Panel.new()
+	cap_kills.position = Vector2((VIEW_W - 320.0) * 0.5, 52.0)
+	cap_kills.size = Vector2(320, 22)
+	cap_kills.add_theme_stylebox_override("panel", _mk_sb(Color(0, 0, 0, 0.75), 11, COLOR_RELIC_GOLD, 1))
+	hud.add_child(cap_kills)
+	cap_kills_fill = ColorRect.new()
+	cap_kills_fill.position = Vector2(2, 2)
+	cap_kills_fill.size = Vector2(0, 18)
+	cap_kills_fill.color = COLOR_RELIC_GOLD
+	cap_kills_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cap_kills.add_child(cap_kills_fill)
+	lbl_kills = Label.new()
+	lbl_kills.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lbl_kills.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_kills.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl_kills.add_theme_font_size_override("font_size", 13)
+	lbl_kills.add_theme_color_override("font_color", Color.WHITE)
+	lbl_kills.add_theme_constant_override("outline_size", 3)
+	lbl_kills.add_theme_color_override("font_outline_color", Color.BLACK)
+	cap_kills.add_child(lbl_kills)
+	# ---- 顶部右：LV N + 细经验条 ----
+	lbl_level = Label.new()
+	lbl_level.position = Vector2(VIEW_W - 110.0, 4.0)
+	lbl_level.add_theme_font_size_override("font_size", 18)
+	lbl_level.add_theme_color_override("font_color", Color.WHITE)
+	lbl_level.add_theme_constant_override("outline_size", 3)
+	lbl_level.add_theme_color_override("font_outline_color", Color.BLACK)
+	hud.add_child(lbl_level)
 	bar_xp = ProgressBar.new()
-	bar_xp.position = Vector2(16, 64)
-	bar_xp.size = Vector2(VIEW_W - 32, 10)
+	bar_xp.position = Vector2(VIEW_W - 170.0, 30.0)
+	bar_xp.size = Vector2(160, 6)
 	bar_xp.min_value = 0.0
 	bar_xp.max_value = 1.0
 	bar_xp.show_percentage = false
-	panel.add_child(bar_xp)
-	btn_q = Button.new()
-	btn_q.position = Vector2(16, 88)
-	btn_q.size = Vector2(150, 64)
-	btn_q.pressed.connect(_on_q_pressed)
-	panel.add_child(btn_q)
+	bar_xp.add_theme_stylebox_override("background", _mk_sb(Color(0, 0, 0, 0.6), 3, Color(1, 1, 1, 0.15), 1))
+	bar_xp.add_theme_stylebox_override("fill", _mk_sb(COLOR_RELIC_GOLD, 3, Color(0, 0, 0, 0), 0))
+	hud.add_child(bar_xp)
+	# ---- 精英横幅（屏幕上 1/3，红胶囊，1.5s 渐隐） ----
+	banner = Panel.new()
+	banner.position = Vector2(160, 240)
+	banner.size = Vector2(400, 44)
+	banner.add_theme_stylebox_override("panel", _mk_sb(Color("5a1f18"), 22, COLOR_ENEMY, 2))
+	banner.visible = false
+	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud.add_child(banner)
+	banner_lbl = Label.new()
+	banner_lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	banner_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	banner_lbl.add_theme_font_size_override("font_size", 20)
+	banner_lbl.add_theme_color_override("font_color", Color("ff9c8a"))
+	banner.add_child(banner_lbl)
+	# ---- 底部信息区（720~1280）：深色面板 ----
+	var panel: Panel = Panel.new()
+	panel.position = Vector2(0, PLAY_H)
+	panel.size = Vector2(VIEW_W, VIEW_H - PLAY_H)
+	panel.add_theme_stylebox_override("panel", _mk_sb(COLOR_PANEL, 0, Color(1, 1, 1, 0.06), 1))
+	hud.add_child(panel)
+	# 中央技能栏：左方槽(E) — 圆形主技能(Q) — 右方槽(Tab)
 	btn_e = Button.new()
-	btn_e.position = Vector2(180, 88)
-	btn_e.size = Vector2(150, 64)
+	btn_e.position = Vector2(210, 26.0)
+	btn_e.size = Vector2(56, 56)
+	btn_e.add_theme_stylebox_override("normal", _mk_sb(COLOR_SLOT, 8, Color(1, 1, 1, 0.25), 1))
+	btn_e.add_theme_stylebox_override("pressed", _mk_sb(COLOR_SLOT.lightened(0.15), 8, Color(1, 1, 1, 0.4), 1))
+	btn_e.add_theme_stylebox_override("hover", _mk_sb(COLOR_SLOT.lightened(0.1), 8, Color(1, 1, 1, 0.35), 1))
 	btn_e.pressed.connect(_on_e_pressed)
 	panel.add_child(btn_e)
+	lbl_e_name = Label.new()
+	lbl_e_name.position = Vector2(0, 4)
+	lbl_e_name.size = Vector2(56, 20)
+	lbl_e_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_e_name.add_theme_font_size_override("font_size", 12)
+	btn_e.add_child(lbl_e_name)
+	lbl_e_cd = _mk_cd_label(btn_e, 56)
+	btn_q = Button.new()
+	btn_q.position = Vector2(328, 18.0)
+	btn_q.size = Vector2(64, 64)
+	btn_q.add_theme_stylebox_override("normal", _mk_sb(COLOR_SLOT, 32, COLOR_RELIC_GOLD, 2))
+	btn_q.add_theme_stylebox_override("pressed", _mk_sb(COLOR_SLOT.lightened(0.15), 32, COLOR_RELIC_GOLD, 2))
+	btn_q.add_theme_stylebox_override("hover", _mk_sb(COLOR_SLOT.lightened(0.1), 32, COLOR_RELIC_GOLD, 2))
+	btn_q.pressed.connect(_on_q_pressed)
+	panel.add_child(btn_q)
+	lbl_q_cd = _mk_cd_label(btn_q, 64)
 	btn_tab = Button.new()
-	btn_tab.position = Vector2(344, 88)
-	btn_tab.size = Vector2(150, 64)
-	btn_tab.text = "Tab 切人"
+	btn_tab.position = Vector2(454, 26.0)
+	btn_tab.size = Vector2(56, 56)
+	btn_tab.add_theme_stylebox_override("normal", _mk_sb(COLOR_SLOT, 8, Color(1, 1, 1, 0.25), 1))
+	btn_tab.add_theme_stylebox_override("pressed", _mk_sb(COLOR_SLOT.lightened(0.15), 8, Color(1, 1, 1, 0.4), 1))
+	btn_tab.add_theme_stylebox_override("hover", _mk_sb(COLOR_SLOT.lightened(0.1), 8, Color(1, 1, 1, 0.35), 1))
 	btn_tab.pressed.connect(_on_tab_pressed)
 	panel.add_child(btn_tab)
+	lbl_tab_cd = _mk_cd_label(btn_tab, 56)
+	var lbl_tab_hint: Label = Label.new()
+	lbl_tab_hint.text = "Tab"
+	lbl_tab_hint.position = Vector2(0, 4)
+	lbl_tab_hint.size = Vector2(56, 20)
+	lbl_tab_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_tab_hint.add_theme_font_size_override("font_size", 12)
+	btn_tab.add_child(lbl_tab_hint)
+	# 弹幕信息行（单行提示）
 	lbl_danmaku = Label.new()
-	lbl_danmaku.position = Vector2(16, 166)
-	lbl_danmaku.size = Vector2(VIEW_W - 32, 90)
+	lbl_danmaku.position = Vector2(16, 96.0)
+	lbl_danmaku.size = Vector2(VIEW_W - 32, 24)
+	lbl_danmaku.add_theme_font_size_override("font_size", 14)
+	lbl_danmaku.add_theme_color_override("font_color", Color(1, 1, 1, 0.7))
 	panel.add_child(lbl_danmaku)
-	lbl_combo = Label.new()
-	lbl_combo.position = Vector2(16, 262)
-	lbl_combo.size = Vector2(VIEW_W - 32, 280)
-	lbl_combo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	panel.add_child(lbl_combo)
-	var combo_text: Array[String] = BabelRelicLogic.combo_lines(_team_display(), _relic_display())
-	lbl_combo.text = "\n".join(combo_text)
+	# 组合词条卡（技能卡 + 每祭司一条神权卡，含圣物加成，已去重）
+	cards_box = VBoxContainer.new()
+	cards_box.position = Vector2(16, 128.0)
+	cards_box.size = Vector2(VIEW_W - 32, VIEW_H - PLAY_H - 140.0)
+	cards_box.add_theme_constant_override("separation", 8)
+	panel.add_child(cards_box)
+	_build_combo_cards()
+	if not elite_spawned.is_connected(_on_elite_spawned):
+		elite_spawned.connect(_on_elite_spawned)
+
+
+func _mk_cd_label(parent: Control, sz: float) -> Label:
+	var lbl: Label = Label.new()
+	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", int(sz * 0.36))
+	lbl.add_theme_color_override("font_color", Color.WHITE)
+	lbl.add_theme_constant_override("outline_size", 4)
+	lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+	parent.add_child(lbl)
+	return lbl
+
+
+## 组合词条去重（同名词条只显示一条）
+func _dedup_lines(lines: Array[String]) -> Array[String]:
+	var seen: Dictionary = {}
+	var out: Array[String] = []
+	for line: String in lines:
+		if not seen.has(line):
+			seen[line] = true
+			out.append(line)
+	return out
+
+
+## 底部圆角卡片分组：技能卡 + 每祭司神权卡（含圣物加成词条）
+func _build_combo_cards() -> void:
+	for c: Node in cards_box.get_children():
+		c.queue_free()
+	# 技能卡（当前队长的 Q/E 技能名）
+	var l0: Dictionary = _first_alive_hero()
+	if l0.is_empty() and heroes.size() > 0:
+		l0 = heroes[0]
+	if not l0.is_empty():
+		var sk_a: Dictionary = l0.get("skill_a", {}) as Dictionary
+		var sk_b: Dictionary = l0.get("skill_b", {}) as Dictionary
+		var card: Panel = Panel.new()
+		card.custom_minimum_size = Vector2(VIEW_W - 32.0, 46)
+		card.add_theme_stylebox_override("panel", _mk_sb(COLOR_SLOT, 8, Color(1, 1, 1, 0.15), 1))
+		cards_box.add_child(card)
+		var lbl: Label = Label.new()
+		lbl.position = Vector2(12, 4)
+		lbl.text = "技能　Q %s　·　E %s" % [str(sk_a.get("name_cn", "-")), str(sk_b.get("name_cn", "-"))]
+		lbl.add_theme_font_size_override("font_size", 15)
+		lbl.add_theme_color_override("font_color", Color("35e0d8"))
+		card.add_child(lbl)
+	# 神权卡：每祭司一条（含圣物加成词条，去重）
+	var team_lines: Array[String] = []
+	for h: Dictionary in heroes:
+		var p: Variant = h.get("passive", {})
+		if p is Dictionary:
+			var desc: String = str((p as Dictionary).get("desc_cn", ""))
+			if desc != "":
+				team_lines.append("神权·%s：%s" % [str(h.get("name_cn", "?")), desc])
+	for line: String in _dedup_lines(team_lines):
+		var card2: Panel = Panel.new()
+		card2.custom_minimum_size = Vector2(VIEW_W - 32.0, 40)
+		card2.add_theme_stylebox_override("panel", _mk_sb(Color("162234"), 8, COLOR_RELIC_GOLD.darkened(0.4), 1))
+		cards_box.add_child(card2)
+		var lbl2: Label = Label.new()
+		lbl2.position = Vector2(12, 2)
+		lbl2.text = line
+		lbl2.add_theme_font_size_override("font_size", 14)
+		lbl2.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
+		card2.add_child(lbl2)
+	# 圣物加成词条并入最后一张卡下方（去重）
+	var relic_lines: Array[String] = []
+	var rmap: Dictionary = cfg.relic_map() if cfg != null else {}
+	for rid: Variant in relics:
+		var rd: Variant = rmap.get(str(rid), null)
+		if rd is Dictionary:
+			relic_lines.append("圣物·%s：%s" % [str((rd as Dictionary).get("name_cn", "?")), str((rd as Dictionary).get("desc_cn", ""))])
+	for line2: String in _dedup_lines(relic_lines):
+		var card3: Panel = Panel.new()
+		card3.custom_minimum_size = Vector2(VIEW_W - 32.0, 40)
+		card3.add_theme_stylebox_override("panel", _mk_sb(Color("162234"), 8, COLOR_GEM_PURPLE.darkened(0.35), 1))
+		cards_box.add_child(card3)
+		var lbl3: Label = Label.new()
+		lbl3.position = Vector2(12, 2)
+		lbl3.text = line2
+		lbl3.add_theme_font_size_override("font_size", 14)
+		lbl3.add_theme_color_override("font_color", Color(1, 1, 1, 0.75))
+		card3.add_child(lbl3)
+
+
+func _on_elite_spawned(ename: String) -> void:
+	if banner == null:
+		return
+	banner_lbl.text = "★ 精英 %s 出现!" % ename
+	banner.visible = true
+	banner.modulate.a = 1.0
+	if banner_tween != null:
+		banner_tween.kill()
+	banner_tween = create_tween()
+	banner_tween.tween_interval(0.4)
+	banner_tween.tween_property(banner, "modulate:a", 0.0, 1.5)
+	banner_tween.tween_callback(func() -> void: banner.visible = false)
 
 
 func _team_display() -> Array:
@@ -325,29 +570,37 @@ func _refresh_portraits() -> void:
 	if portraits_box == null:
 		return
 	for c: Node in portraits_box.get_children():
-		c.queue_free()
+		portraits_box.remove_child(c)
+		c.free()
 	for i: int in range(heroes.size()):
 		var h: Dictionary = heroes[i]
 		var p: Panel = Panel.new()
-		p.custom_minimum_size = Vector2(150, 46)
-		var sb: StyleBoxFlat = StyleBoxFlat.new()
-		sb.bg_color = Color(0.1, 0.1, 0.1, 0.85)
-		sb.border_color = COLOR_RELIC_GOLD if i == leader_idx else Color(0.3, 0.3, 0.3)
-		sb.set_border_width_all(3 if i == leader_idx else 1)
-		p.add_theme_stylebox_override("panel", sb)
+		p.custom_minimum_size = Vector2(104, 40)
+		var is_leader: bool = i == leader_idx
+		p.add_theme_stylebox_override("panel", _mk_sb(
+			Color(0, 0, 0, 0.65), 8,
+			COLOR_RELIC_GOLD if is_leader else Color(1, 1, 1, 0.2),
+			2 if is_leader else 1))
 		portraits_box.add_child(p)
 		var lbl: Label = Label.new()
-		lbl.position = Vector2(6, 2)
+		lbl.position = Vector2(8, 1)
 		lbl.text = str(h.get("name_cn", "?"))
+		lbl.add_theme_font_size_override("font_size", 13)
 		p.add_child(lbl)
-		var bar: ProgressBar = ProgressBar.new()
-		bar.position = Vector2(6, 26)
-		bar.size = Vector2(138, 12)
-		bar.min_value = 0.0
-		bar.max_value = 1.0
-		bar.value = float(h.get("hp", 0.0)) / maxf(float(h.get("max_hp", 1.0)), 1.0)
-		bar.show_percentage = false
-		p.add_child(bar)
+		# 细血条：直接用 ColorRect 画（ProgressBar 样式盒会被撑高，改用双矩形确定 6px 高）
+		var track: ColorRect = ColorRect.new()
+		track.position = Vector2(6, 26)
+		track.size = Vector2(92, 6)
+		track.color = Color(0, 0, 0, 0.7)
+		track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		p.add_child(track)
+		var ratio: float = clampf(float(h.get("hp", 0.0)) / maxf(float(h.get("max_hp", 1.0)), 1.0), 0.0, 1.0)
+		var fill: ColorRect = ColorRect.new()
+		fill.position = Vector2(7, 27)
+		fill.size = Vector2(90.0 * ratio, 4)
+		fill.color = COLOR_ALLY
+		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		p.add_child(fill)
 
 
 ## ---------- 波次 ----------
@@ -411,6 +664,11 @@ func _process(delta: float) -> void:
 	_update_punish()
 	_update_boss_mod(dt)
 	_update_hud()
+	# 头像卡节流刷新（血条比例 / 金框随切换变化）
+	portrait_t += dt
+	if portrait_t >= 0.25:
+		portrait_t = 0.0
+		_refresh_portraits()
 	_update_danmaku(dt)
 	if terrain_node != null:
 		terrain_node.queue_redraw()
@@ -673,6 +931,12 @@ func _update_bullets(dt: float) -> void:
 		if not hit and life > 0.0 and pos.x > -32.0 and pos.x < world_w + 32.0 and pos.y > -32.0 and pos.y < world_h + 32.0:
 			b["pos"] = pos
 			b["life"] = life
+			# 尾迹：存最近 N 帧位置（仅表现层）
+			var trail: Array = b.get("trail", []) as Array
+			trail.append(pos)
+			while trail.size() > BULLET_TRAIL_N:
+				trail.remove_at(0)
+			b["trail"] = trail
 			next_bullets.append(b)
 	bullets = next_bullets
 
@@ -775,24 +1039,27 @@ func _spawn_boss() -> void:
 	e["max_hp"] = e["hp"]
 	e["dmg"] = float(chapter.get("boss_damage", float(spec.get("damage", 8.0))))
 	e["stacks"] = float(run_mods.get("boss_stacks", 0.0))
-	e["pos"] = Vector2(world_w * 0.5, 160.0)
+	e["pos"] = Vector2(world_w * 0.5, 140.0)
 	e["radius_px"] = 40.0
 	e["trait"] = str(spec.get("trait", "boss_stack"))
 	e["tparams"] = spec.get("trait_params", {}) if spec.get("trait_params") is Dictionary else {}
 	e["name_cn"] = str(spec.get("name_cn", "神孽"))
 	enemies.append(e)
 	boss = e
+	elite_spawned.emit("BOSS %s" % str(e.get("name_cn", "?")))
 	_push_danmaku("BOSS 降临：%s" % str(e.get("name_cn", "?")))
 
 
 func _spawn_enemy(spec: Dictionary, is_elite: bool) -> void:
 	var e: Dictionary = _make_enemy(spec, is_elite)
-	# 出生点：远离队长的地图边缘
+	# 出生点：队长视野外侧（画面外一点，避免过远导致空场）
 	var l: Dictionary = _leader()
 	var lx: float = float((l.get("pos", Vector2(world_w * 0.5, 0.0)) as Vector2).x)
-	var side_x: float = 40.0 if lx > world_w * 0.5 else world_w - 40.0
-	e["pos"] = Vector2(side_x + rng.randf_range(-40.0, 40.0), rng.randf_range(60.0, world_h - 60.0))
+	var side_x: float = clampf(lx + 420.0 if lx < world_w * 0.5 else lx - 420.0, 40.0, world_w - 40.0)
+	e["pos"] = Vector2(side_x + rng.randf_range(-40.0, 40.0), rng.randf_range(60.0, 420.0))
 	enemies.append(e)
+	if is_elite:
+		elite_spawned.emit(str(e.get("name_cn", "?")))
 
 
 func _make_enemy(spec: Dictionary, is_elite: bool) -> Dictionary:
@@ -1210,43 +1477,53 @@ func _push_danmaku(line: String) -> void:
 
 
 func _update_hud() -> void:
-	if lbl_timer != null:
+	# 顶部击杀进度胶囊
+	if lbl_kills != null:
 		var punish_left: float = maxf(float(punish_cfg.get("start_s", 75.0)) - battle_t, 0.0)
-		if punish_left > 0.0:
-			lbl_timer.text = "%s 战斗 %ds（神罚 %ds）" % [str(chapter.get("name_cn", "?")), int(battle_t), int(punish_left)]
-			lbl_timer.add_theme_color_override("font_color", Color.WHITE)
-		else:
-			lbl_timer.text = "%s 神罚进行中！每 %ds 掉 10%% 最大HP" % [str(chapter.get("name_cn", "?")), int(float(punish_cfg.get("tick_s", 10.0)))]
-			lbl_timer.add_theme_color_override("font_color", COLOR_ENEMY)
-	if bar_timer != null:
-		bar_timer.value = minf(battle_t, float(punish_cfg.get("start_s", 75.0)))
+		var time_part: String = "%.0fs" % [punish_left] if punish_left > 0.0 else "神罚中"
+		lbl_kills.text = "击杀 %d/%d (剩余时间 %s)" % [kills, kill_target, time_part]
+		var kratio: float = clampf(float(kills) / maxf(float(kill_target), 1.0), 0.0, 1.0)
+		if cap_kills_fill != null:
+			cap_kills_fill.size.x = 316.0 * kratio
+	# 等级 / 经验
+	if lbl_level != null:
+		lbl_level.text = "LV %d" % [level]
 	if bar_xp != null:
 		bar_xp.value = BabelRules.level_progress(xp, xp_anchors)
+	# 技能栏 CD 大字与灰显
 	if btn_q != null:
 		var l: Dictionary = _leader()
 		if not l.is_empty():
 			var sk: Dictionary = l.get("skill_a", {}) as Dictionary
 			var cd_left: float = float((l["cds"] as Dictionary).get("a", 0.0))
-			btn_q.text = "Q %s\n%s" % [str(sk.get("name_cn", "-")), ("%.1fs" % [cd_left]) if cd_left > 0.0 else "就绪"]
+			lbl_q_cd.text = ("%.0f" % [cd_left]) if cd_left > 0.0 else str(sk.get("name_cn", "-")).left(2)
+			btn_q.modulate = Color(1, 1, 1, 0.5) if cd_left > 0.0 else Color(1, 1, 1, 1.0)
 	if btn_e != null:
 		var l2: Dictionary = _leader()
 		if not l2.is_empty():
 			var sk2: Dictionary = l2.get("skill_b", {}) as Dictionary
 			var cd2: float = float((l2["cds"] as Dictionary).get("b", 0.0))
-			btn_e.text = "E %s\n%s" % [str(sk2.get("name_cn", "-")), ("%.1fs" % [cd2]) if cd2 > 0.0 else "就绪"]
+			lbl_e_name.text = str(sk2.get("name_cn", "-")).left(3)
+			lbl_e_cd.text = ("%.1f" % [cd2]) if cd2 > 0.0 else ""
+			btn_e.modulate = Color(1, 1, 1, 0.5) if cd2 > 0.0 else Color(1, 1, 1, 1.0)
 	if btn_tab != null:
-		btn_tab.text = "Tab 切人" if switch_cd <= 0.0 else "切人 CD %.1f" % [switch_cd]
+		lbl_tab_cd.text = ("%.1f" % [switch_cd]) if switch_cd > 0.0 else ""
+		btn_tab.modulate = Color(1, 1, 1, 0.5) if switch_cd > 0.0 else Color(1, 1, 1, 1.0)
 
 
 func _spawn_float(pos: Vector2, text: String, color: Color) -> void:
 	if not is_inside_tree():
 		return
+	var is_crit: bool = color == COLOR_RELIC_GOLD
 	var lbl: Label = Label.new()
 	lbl.text = text
 	lbl.position = pos + Vector2(-10, -30)
 	lbl.z_index = 20
-	lbl.add_theme_color_override("font_color", color)
-	lbl.add_theme_font_size_override("font_size", 18 if color != COLOR_RELIC_GOLD else 26)
+	# 白字黑描边；暴击金色放大
+	lbl.add_theme_color_override("font_color", COLOR_RELIC_GOLD if is_crit else Color.WHITE)
+	lbl.add_theme_font_size_override("font_size", 24 if is_crit else 18)
+	lbl.add_theme_constant_override("outline_size", 5)
+	lbl.add_theme_color_override("font_outline_color", Color.BLACK)
 	unit_node.add_child(lbl)
 	var tw: Tween = create_tween()
 	tw.set_parallel(true)
@@ -1269,74 +1546,119 @@ func _finish(winner: String) -> void:
 
 ## ---------- 绘制 ----------
 
-func _draw_terrain() -> void:
+## 地形格圆角样式（缓存）：fill alpha + 同色描边
+func _terrain_style(col: Color) -> StyleBoxFlat:
+	if not terrain_sb.has(col):
+		var sb: StyleBoxFlat = StyleBoxFlat.new()
+		sb.bg_color = Color(col, TERRAIN_FILL_A)
+		sb.border_color = Color(col, TERRAIN_STROKE_A)
+		sb.set_border_width_all(2)
+		sb.set_corner_radius_all(TERRAIN_CORNER)
+		terrain_sb[col] = sb
+	return terrain_sb.get(col) as StyleBoxFlat
+
+
+func _draw_terrain(tn: Node2D = null) -> void:
 	var vp_center: Vector2 = cam.get_screen_center_position() if cam != null else Vector2(world_w * 0.5, PLAY_H * 0.5)
 	var x0: int = maxi(int((vp_center.x - VIEW_W * 0.5) / tile_px) - 1, 0)
 	var x1: int = mini(int((vp_center.x + VIEW_W * 0.5) / tile_px) + 1, terrain.cols - 1)
-	# 底色
-	terrain_node.draw_rect(Rect2(0, 0, world_w, world_h), COLOR_BG)
+	# 深藏青底色（向上扩展覆盖镜头可视区）
+	tn.draw_rect(Rect2(-VIEW_W * 2.0, -VIEW_H * 2.0, world_w + VIEW_W * 4.0, world_h + VIEW_H * 2.0), COLOR_BG)
+	# 暗网格线（比底色亮 ~8%，格距 64px）
+	var gy: float = -VIEW_H * 2.0
+	while gy <= world_h:
+		tn.draw_line(Vector2(float(x0) * tile_px, gy), Vector2(float(x1 + 1) * tile_px, gy), COLOR_GRID, 1.0)
+		gy += tile_px
+	var gx: float = float(x0) * tile_px
+	while gx <= float(x1 + 1) * tile_px:
+		tn.draw_line(Vector2(gx, 0.0), Vector2(gx, world_h), COLOR_GRID, 1.0)
+		gx += tile_px
+	# 地形格：半透明圆角矩形 + 同色描边（离散分布，不铺满战场）
+	var ci: RID = terrain_node.get_canvas_item()
 	for cy: int in range(terrain.rows):
 		for cx: int in range(x0, x1 + 1):
 			var t: String = str(terrain.grid.get(Vector2i(cx, cy), ""))
 			if t == "":
 				continue
-			var rect: Rect2 = Rect2(float(cx) * tile_px, float(cy) * tile_px, tile_px, tile_px)
+			var col: Color = COLOR_TERRAIN_COVER
 			match t:
 				BabelTerrain.TYPE_WATER:
-					terrain_node.draw_rect(rect, Color(COLOR_WATER, 0.35))
+					col = COLOR_TERRAIN_WATER
 				BabelTerrain.TYPE_FIRE:
-					terrain_node.draw_rect(rect, Color(COLOR_FIRE, 0.4))
+					col = COLOR_TERRAIN_FIRE
 				BabelTerrain.TYPE_COVER:
-					terrain_node.draw_rect(rect.grow(-4), COLOR_COVER)
-					terrain_node.draw_rect(rect.grow(-4), Color(1, 1, 1, 0.4), false, 3.0)
+					col = COLOR_TERRAIN_COVER
 				BabelTerrain.TYPE_ALTAR:
-					terrain_node.draw_rect(rect.grow(-6), Color(COLOR_ALTAR, 0.3))
-					terrain_node.draw_circle(rect.get_center(), 10.0, Color(COLOR_NEON, 0.8))
+					col = COLOR_TERRAIN_ALTAR
+			var rect: Rect2 = Rect2(float(cx) * tile_px + 3.0, float(cy) * tile_px + 3.0, tile_px - 6.0, tile_px - 6.0)
+			(_terrain_style(col) as StyleBoxFlat).draw(ci, rect)
+			if t == BabelTerrain.TYPE_ALTAR:
+				# 圣坛金色微光
+				tn.draw_circle(rect.get_center(), 8.0, Color(COLOR_TERRAIN_ALTAR, 0.7))
+				tn.draw_circle(rect.get_center(), 14.0, Color(COLOR_TERRAIN_ALTAR, 0.18))
 
 
-func _draw_world() -> void:
-	# 残片
+func _draw_world(un: Node2D = null) -> void:
+	# 残片：金色小圆 + 外发光；少量紫色宝石点缀（按位置伪随机，仅表现层）
 	for s: Dictionary in shards:
-		unit_node.draw_circle(s["pos"] as Vector2, 7.0, COLOR_RELIC_GOLD)
+		var sp: Vector2 = s["pos"] as Vector2
+		var is_gem: bool = int(absf(sp.x * 7.0 + sp.y * 13.0)) % 5 == 0
+		var base: Color = COLOR_GEM_PURPLE if is_gem else COLOR_RELIC_GOLD
+		un.draw_circle(sp, 10.0, Color(base, 0.3))
+		un.draw_circle(sp, 4.0, base)
 	# 预警红圈
 	for tg: Dictionary in telegraphs:
 		var p: float = 1.0 - float(tg.get("t", 1.0))
-		unit_node.draw_circle(tg["pos"] as Vector2, float(tg.get("r", 96.0)) * p, Color(0.8, 0.1, 0.1, 0.15))
-		unit_node.draw_arc(tg["pos"] as Vector2, float(tg.get("r", 96.0)), 0.0, TAU, 40, Color(0.9, 0.15, 0.1, 0.9), 4.0)
-	# 子弹
+		un.draw_circle(tg["pos"] as Vector2, float(tg.get("r", 96.0)) * p, Color(0.8, 0.1, 0.1, 0.15))
+		un.draw_arc(tg["pos"] as Vector2, float(tg.get("r", 96.0)), 0.0, TAU, 40, Color(0.9, 0.15, 0.1, 0.9), 4.0)
+	# 子弹：亮色小圆 + 短尾迹（最近 3 帧渐隐）
 	for b: Dictionary in bullets:
-		unit_node.draw_circle(b["pos"] as Vector2, 5.0, COLOR_NEON if bool(b.get("from_player", true)) else COLOR_ENEMY)
-	# 敌人
+		var bp: Vector2 = b["pos"] as Vector2
+		var bcol: Color = COLOR_NEON if bool(b.get("from_player", true)) else COLOR_ENEMY
+		var trail: Array = b.get("trail", []) as Array
+		for ti: int in range(trail.size()):
+			var tp: Variant = trail[ti]
+			if tp is Vector2:
+				un.draw_circle(tp as Vector2, 3.0 + float(ti), Color(bcol, 0.12 + 0.12 * float(ti)))
+		un.draw_circle(bp, 5.0, bcol)
+	# 敌人：圆形 + 深色描边 + 高光 + 血条；精英/Boss 金圈外环
 	for e: Dictionary in enemies:
 		if not bool(e.get("alive", false)):
 			continue
 		var pos: Vector2 = e["pos"] as Vector2
-		var r: float = float(e.get("radius_px", 16.0))
-		unit_node.draw_circle(pos, r, COLOR_ENEMY)
-		unit_node.draw_circle(pos, r, Color(1, 1, 1, 0.9), false, 3.0)
+		var r: float = maxf(float(e.get("radius_px", 16.0)) / ENEMY_DRAW_R_DIV, ENEMY_DRAW_R_MIN)
+		var is_elite: bool = str(e.get("elite_affix", "")) != "" or e == boss
+		var body_r: float = r * 1.3 if is_elite else r
+		un.draw_circle(pos, body_r, COLOR_ENEMY)
+		un.draw_circle(pos, body_r, Color("5a1f18"), false, 3.0)
+		un.draw_circle(pos + Vector2(-body_r * 0.3, -body_r * 0.35), body_r * 0.3, Color(1, 1, 1, 0.55))
+		if is_elite:
+			un.draw_arc(pos, body_r + 5.0, 0.0, TAU, 32, COLOR_RELIC_GOLD, 3.0)
 		if float(e.get("shield", 0.0)) > 0.0:
-			unit_node.draw_arc(pos, r + 5.0, 0.0, TAU, 24, Color("90caf9"), 3.0)
-		_draw_hp_bar(pos, r + 12.0, float(e.get("hp", 0.0)), float(e.get("max_hp", 1.0)), COLOR_ENEMY)
-	# 英雄
+			un.draw_arc(pos, body_r + 3.0, 0.0, TAU, 24, Color("90caf9"), 3.0)
+		_draw_hp_bar(un, pos, body_r + 10.0, float(e.get("hp", 0.0)), float(e.get("max_hp", 1.0)), COLOR_ENEMY)
+	# 英雄：松石绿圆身 + 深描边 + 高光 + 血条；队长白瞄准圈 + 朝向箭头
 	for i: int in range(heroes.size()):
 		var h: Dictionary = heroes[i]
 		if not bool(h.get("alive", false)):
 			continue
 		var hpos: Vector2 = h["pos"] as Vector2
-		var hr: float = 18.0
-		unit_node.draw_circle(hpos, hr, COLOR_ALLY)
-		unit_node.draw_circle(hpos, hr, Color(1, 1, 1, 1.0), false, 3.0)
+		var hr: float = HERO_DRAW_R
+		un.draw_circle(hpos, hr, COLOR_ALLY)
+		un.draw_circle(hpos, hr, Color("14524a"), false, 3.0)
+		un.draw_circle(hpos + Vector2(-4.0, -5.0), 4.0, Color(1, 1, 1, 0.7))
 		if i == leader_idx:
-			unit_node.draw_arc(hpos, hr + 6.0, 0.0, TAU, 32, COLOR_RELIC_GOLD, 3.0)
-		# 朝向箭头（4 向吸附示意）
-		var f: Vector2i = h["facing"] as Vector2i
-		unit_node.draw_line(hpos, hpos + Vector2(f) * (hr + 10.0), Color(1, 1, 1, 0.9), 3.0)
+			# 白色瞄准圈
+			un.draw_arc(hpos, hr + 7.0, 0.0, TAU, 32, Color(1, 1, 1, 0.9), 2.0)
+			# 朝向小箭头（三角）
+			var f: Vector2i = h["facing"] as Vector2i
+			var fv: Vector2 = Vector2(f)
+			var tip: Vector2 = hpos + fv * (hr + 13.0)
+			var side_v: Vector2 = Vector2(-fv.y, fv.x) * 5.0
+			un.draw_colored_polygon(PackedVector2Array([tip, hpos + fv * (hr + 4.0) + side_v, hpos + fv * (hr + 4.0) - side_v]), Color(1, 1, 1, 0.9))
 		if float(h.get("shield", 0.0)) > 0.0:
-			unit_node.draw_arc(hpos, hr + 4.0, 0.0, TAU, 24, Color("90caf9"), 3.0)
-		_draw_hp_bar(hpos, hr + 12.0, float(h.get("hp", 0.0)), float(h.get("max_hp", 1.0)), COLOR_ALLY)
-		# 名字
-		var font: Font = ThemeDB.fallback_font
-		unit_node.draw_string(font, hpos + Vector2(-20, -hr - 16), str(h.get("name_cn", "?")), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 1, 1, 0.85))
+			un.draw_arc(hpos, hr + 3.0, 0.0, TAU, 24, Color("90caf9"), 3.0)
+		_draw_hp_bar(un, hpos, hr + 9.0, float(h.get("hp", 0.0)), float(h.get("max_hp", 1.0)), COLOR_ALLY)
 	# 镜头跟随队长（在绘制回调外更新也可以，此处同步）
 	if cam != null:
 		var l: Dictionary = _leader()
@@ -1344,9 +1666,10 @@ func _draw_world() -> void:
 			cam.position = Vector2(clampf((l["pos"] as Vector2).x, VIEW_W * 0.5, world_w - VIEW_W * 0.5), PLAY_H * 0.5)
 
 
-func _draw_hp_bar(pos: Vector2, y_off: float, hp: float, max_hp: float, col: Color) -> void:
-	var w: float = 40.0
-	var bg: Rect2 = Rect2(pos + Vector2(-w * 0.5, -y_off), Vector2(w, 5))
-	unit_node.draw_rect(bg, Color(0, 0, 0, 0.6))
+func _draw_hp_bar(un: Node2D, pos: Vector2, y_off: float, hp: float, max_hp: float, col: Color) -> void:
+	var w: float = 36.0
+	var bg: Rect2 = Rect2(pos + Vector2(-w * 0.5, -y_off - 6.0), Vector2(w, 6))
+	# 红条 = 受伤（已损失）比例，前景 = 现有 HP
+	un.draw_rect(bg, Color("8a2a22"))
 	var ratio: float = clampf(hp / maxf(max_hp, 1.0), 0.0, 1.0)
-	unit_node.draw_rect(Rect2(bg.position, Vector2(w * ratio, 5)), col)
+	un.draw_rect(Rect2(bg.position, Vector2(w * ratio, 6)), col)
