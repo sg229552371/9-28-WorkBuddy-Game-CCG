@@ -2,49 +2,49 @@
   {
     "id": "CH_jin",
     "name_cn": "焚香者·烬",
-    "hp": 30,
-    "move": 3,
-    "passive": {"type": "reflect_adjacent", "value": 2, "tags": ["aura"]},
-    "skills": ["SK_PYRE", "SK_OFFER"]
+    "unlocked_default": true,
+    "passive": {"id": "PS_REFLECT_ADJ", "desc_cn": "相邻友军受击时反弹 2 点伤害给攻击者。", "params": {"reflect_damage": 2}},
+    "skill_a": "SK_PYRE",
+    "skill_b": "SK_OFFER"
   },
   {
     "id": "CH_tong",
     "name_cn": "观星者·瞳",
-    "hp": 30,
-    "move": 3,
-    "passive": {"type": "far_damage_bonus", "value": 0.4, "range": 3, "tags": ["aura"]},
-    "skills": ["SK_STARFALL", "SK_REWIND"]
+    "unlocked_default": true,
+    "passive": {"id": "PS_FAR_BONUS", "desc_cn": "对 3 格以外的敌人伤害 +40%。", "params": {"range_px": 192, "damage_bonus": 0.4}},
+    "skill_a": "SK_STARFALL",
+    "skill_b": "SK_REWIND"
   },
   {
     "id": "CH_pan",
     "name_cn": "承棺者·磐",
-    "hp": 30,
-    "move": 3,
-    "passive": {"type": "side_guard", "value": 0.25, "tags": ["aura"]},
-    "skills": ["SK_COFFIN_WALL", "SK_COFFIN_CHARGE"]
+    "unlocked_default": true,
+    "passive": {"id": "PS_SIDE_GUARD", "desc_cn": "朝向盾对侧面也生效：侧面减伤 25%。", "params": {"side_damage_mul": 0.75}},
+    "skill_a": "SK_COFFIN_WALL",
+    "skill_b": "SK_COFFIN_CHARGE"
   },
   {
     "id": "CH_xi",
     "name_cn": "唤雨者·汐",
-    "hp": 30,
-    "move": 3,
-    "passive": {"type": "water_free_move", "tags": ["aura"]},
-    "skills": ["SK_TIDE", "SK_HOLY_RAIN"]
+    "unlocked_default": true,
+    "passive": {"id": "PS_WATER_FREE", "desc_cn": "水格上我方移速 +50% 且不触发地面陷阱。", "params": {"water_speed_bonus": 0.5, "immune_ground_trap": true}},
+    "skill_a": "SK_TIDE",
+    "skill_b": "SK_HOLY_RAIN"
   },
   {
     "id": "CH_mo",
     "name_cn": "缄默者·默",
-    "hp": 30,
-    "move": 3,
-    "passive": {"type": "silence_aura", "value": 2, "tags": ["aura"]},
-    "skills": ["SK_CUT_TONGUE", "SK_SHADOW_SWAP"]
+    "unlocked_default": true,
+    "passive": {"id": "PS_SILENCE_AURA", "desc_cn": "其 2 格内的敌人不能施法。", "params": {"radius_px": 128}},
+    "skill_a": "SK_CUT_TONGUE",
+    "skill_b": "SK_SHADOW_SWAP"
   },
   {
     "id": "CH_man",
     "name_cn": "拾骨者·蔓",
-    "hp": 30,
-    "move": 3,
-    "passive": {"type": "death_shield", "value": 1, "cap": 6, "tags": ["aura"]},
-    "skills": ["SK_BONE_SPEAR", "SK_BONE_MAUSOLEUM"]
+    "unlocked_default": true,
+    "passive": {"id": "PS_DEATH_SHIELD", "desc_cn": "每次敌方死亡，随机友军 +1 盾（上限 6）。", "params": {"shield_per_death": 1, "cap": 6}},
+    "skill_a": "SK_BONE_SPEAR",
+    "skill_b": "SK_BONE_MAUSOLEUM"
   }
 ]

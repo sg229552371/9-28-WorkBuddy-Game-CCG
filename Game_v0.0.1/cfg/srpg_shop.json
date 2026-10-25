@@ -1,5 +1,6 @@
 {
-  "base_price": {"white": 10, "blue": 18, "gold": 30},
-  "reroll_cost": 5,
-  "stock_count": 3
+  "reroll_cost_base": 5,
+  "relic_price": {"white": 8, "blue": 15, "gold": 25},
+  "skill_upgrade_cost": 12,
+  "gold_chance": 0.12
 }

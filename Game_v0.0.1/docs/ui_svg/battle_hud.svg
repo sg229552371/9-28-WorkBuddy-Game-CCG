@@ -1,70 +1,56 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" width="720" height="1280">
-  <rect x="0" y="0" width="720" height="1280" fill="#f5f0e6" stroke="#666" stroke-width="2"/>
-  <text x="360" y="30" font-size="20" text-anchor="middle" fill="#333">战斗 HUD battle_hud.svg ｜ 720×1280 ｜ 9:16（上棋盘、下信息）</text>
-
-  <!-- Z1 背景 -->
-  <rect x="8" y="44" width="704" height="1228" fill="none" stroke="#999" stroke-dasharray="4"/>
-  <text x="20" y="66" font-size="14" fill="#666">Z1 底层：战斗背景 bg_battle_chN（全屏，720×1280）</text>
-
-  <!-- Z2 棋盘区 -->
-  <rect x="8" y="64" width="704" height="640" fill="#efe7d5" stroke="#666" stroke-width="2"/>
-  <text x="360" y="88" font-size="16" text-anchor="middle" fill="#333">Z2 棋盘区：上棋盘区 704×640 居中 y=64~704（11×9 格，tile 64px 等比缩放至宽占满）</text>
-  <!-- 棋盘格示意 -->
-  <g stroke="#b8ab8f" fill="none">
-    <rect x="40" y="120" width="640" height="560"/>
-    <line x1="120" y1="120" x2="120" y2="680"/><line x1="200" y1="120" x2="200" y2="680"/>
-    <line x1="280" y1="120" x2="280" y2="680"/><line x1="360" y1="120" x2="360" y2="680"/>
-    <line x1="440" y1="120" x2="440" y2="680"/><line x1="520" y1="120" x2="520" y2="680"/>
-    <line x1="600" y1="120" x2="600" y2="680"/>
-    <line x1="40" y1="200" x2="680" y2="200"/><line x1="40" y1="280" x2="680" y2="280"/>
-    <line x1="40" y1="360" x2="680" y2="360"/><line x1="40" y1="440" x2="680" y2="440"/>
-    <line x1="40" y1="520" x2="680" y2="520"/><line x1="40" y1="600" x2="680" y2="600"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" font-family="sans-serif">
+  <desc>战斗HUD 720x1280，布局「上战场、下信息」：上半屏战场，下半屏信息层</desc>
+  <rect x="0" y="0" width="720" height="1280" fill="#EFE4CE" stroke="#4A3B2A" stroke-width="4"/>
+  <!-- z1 上半屏战场 y0~760 -->
+  <rect x="0" y="0" width="720" height="760" fill="#F3E8D2" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="360" y="40" text-anchor="middle" font-size="24" fill="#4A3B2A">z1 战场层 y0 h760（连续地图+地形格64px）</text>
+  <g stroke="#B8A88A" stroke-width="1" fill="none">
+    <path d="M0 150 H720 M0 250 H720 M0 350 H720 M0 450 H720 M0 550 H720 M0 650 H720"/>
+    <path d="M100 0 V760 M220 0 V760 M340 0 V760 M460 0 V760 M580 0 V760"/>
   </g>
-
-  <!-- Z3 hover 三层信息（演示于一格） -->
-  <text x="360" y="740" font-size="14" text-anchor="middle" fill="#333">Z3 棋盘 hover 三层信息（tile 128×128 显示区，示例于格 [5,3]）：</text>
-  <!-- 第1层 承伤预演红描边 -->
-  <rect x="280" y="360" width="80" height="80" fill="none" stroke="#C63D2F" stroke-width="3"/>
-  <text x="370" y="410" font-size="12" fill="#C63D2F">hover层1：承伤预演红描边 fx_dmg_preview（本格将受伤害数字预演）</text>
-  <!-- 第2层 神权光圈 -->
-  <ellipse cx="320" cy="480" rx="44" ry="20" fill="none" stroke="#35E0D8" stroke-width="2"/>
-  <text x="370" y="486" font-size="12" fill="#35E0D8">hover层2：神权光圈 fx_aura_ring（角色底光圈常显，范围示意）</text>
-  <!-- 第3层 朝向箭头 -->
-  <polygon points="320,440 340,460 300,460" fill="none" stroke="#666" stroke-width="2"/>
-  <text x="370" y="458" font-size="12" fill="#666">hover层3：朝向箭头 fx_facing_arrow（4 向朝向盾示意）</text>
-
-  <!-- Z4 左下组合面板 -->
-  <rect x="16" y="712" width="480" height="96" fill="#e0f5f3" stroke="#35E0D8" stroke-width="2"/>
-  <text x="256" y="748" font-size="15" text-anchor="middle" fill="#333">Z4 左下组合面板 ui_panel_combo（x=16~496, y=712~808, h=96）</text>
-  <text x="256" y="784" font-size="14" text-anchor="middle" fill="#333">当前 3 人神权+圣物组合函数：1 行白话词条（「火格击杀→供盾」）</text>
-
-  <!-- Z5 回合日志 -->
-  <rect x="16" y="824" width="480" height="160" fill="#efe9dc" stroke="#666"/>
-  <text x="256" y="856" font-size="15" text-anchor="middle" fill="#333">Z5 回合日志窗 ui_panel_log（x=16~496, y=824~984, h=160，滚动文本）</text>
-  <text x="30" y="890" font-size="13" fill="#666">· 烬 使用 火刑柱 → 泥塑俑 -5</text>
-  <text x="30" y="914" font-size="13" fill="#666">· 泥塑俑 正面受击（-30%）</text>
-  <text x="30" y="938" font-size="13" fill="#666">· 朝向盾格挡：石壁闷响（-2）</text>
-
-  <!-- Z6 技能按钮区 -->
-  <rect x="512" y="712" width="192" height="272" fill="#f0e8d8" stroke="#666"/>
-  <text x="608" y="740" font-size="14" text-anchor="middle" fill="#333">Z6 技能按钮区（x=512~704, y=712~984）</text>
-  <rect x="544" y="760" width="96" height="96" fill="#fff" stroke="#35E0D8" stroke-width="3"/>
-  <text x="592" y="816" font-size="13" text-anchor="middle" fill="#333">技A 96×96（CD3）</text>
-  <rect x="544" y="872" width="96" height="96" fill="#fff" stroke="#666"/>
-  <text x="592" y="928" font-size="13" text-anchor="middle" fill="#666">技B 96×96（冷却中灰）</text>
-  <text x="608" y="984" font-size="12" text-anchor="middle" fill="#666">共享冷却槽说明</text>
-
-  <!-- Z7 当前角色信息条 -->
-  <rect x="16" y="1000" width="688" height="88" fill="#e8e2d4" stroke="#666"/>
-  <text x="360" y="1032" font-size="14" text-anchor="middle" fill="#333">Z7 当前角色信息条（y=1000~1088, h=88）：3 名祭司头像 96×96 + HP/护盾条 + 移动/行动剩余点</text>
-
-  <!-- Z8 回合计时条 -->
-  <rect x="16" y="1104" width="688" height="32" fill="#d8cdb4" stroke="#666"/>
-  <rect x="18" y="1106" width="420" height="28" fill="#35E0D8" fill-opacity="0.4"/>
-  <text x="360" y="1126" font-size="13" text-anchor="middle" fill="#333">Z8 回合计时条 ui_bar_turn_timer（y=1104~1136, h=32；18 回合后变朱砂红=神罚倒计时；长按空格 3 倍速提示）</text>
-
-  <!-- Z9 顶层：伤害飘字层 -->
-  <text x="320" y="240" font-size="28" text-anchor="middle" fill="#C63D2F">-8</text>
-  <text x="440" y="300" font-size="40" text-anchor="middle" fill="#E8B33C">-12 暴击·星坠</text>
-  <text x="360" y="1240" font-size="12" text-anchor="middle" fill="#666">Z9 顶层：伤害飘字层（1.2s，暴击/连锁放大 1.5×+技能名小标）→ 覆盖于棋盘之上；技能名弹幕/神权台词条同层</text>
+  <rect x="220" y="250" width="120" height="100" fill="#BFE3DF" stroke="#35E0D8" stroke-width="3"/>
+  <text x="280" y="305" text-anchor="middle" font-size="14" fill="#2A7F79">水格</text>
+  <rect x="460" y="450" width="120" height="100" fill="#F0C9B8" stroke="#C63D2F" stroke-width="3"/>
+  <text x="520" y="505" text-anchor="middle" font-size="14" fill="#8F2318">火格</text>
+  <circle cx="300" cy="560" r="26" fill="#CFE8D8" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="300" y="620" text-anchor="middle" font-size="14" fill="#4A3B2A">队长（青光圈+朝向箭头）</text>
+  <circle cx="470" cy="300" r="22" fill="#E8B8B0" stroke="#C63D2F" stroke-width="3"/>
+  <text x="470" y="360" text-anchor="middle" font-size="14" fill="#8F2318">敌人群</text>
+  <circle cx="560" cy="620" r="60" fill="none" stroke="#C63D2F" stroke-width="4" stroke-dasharray="10 8"/>
+  <text x="560" y="705" text-anchor="middle" font-size="14" fill="#8F2318">红圈预警（1s 蓄力）</text>
+  <!-- z2 下半信息层 y760~1280 -->
+  <rect x="0" y="760" width="720" height="520" fill="#EFE4CE" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="360" y="800" text-anchor="middle" font-size="22" fill="#4A3B2A">z2 信息层 y760 h520</text>
+  <!-- z2a 头像血条组 -->
+  <g stroke="#4A3B2A" stroke-width="3" fill="#F7EEDB">
+    <rect x="40" y="820" width="150" height="80"/><rect x="210" y="820" width="150" height="80"/><rect x="380" y="820" width="150" height="80"/>
+  </g>
+  <rect x="40" y="820" width="150" height="80" fill="none" stroke="#E8B33C" stroke-width="5"/>
+  <rect x="50" y="870" width="130" height="16" fill="#CFE8D8" stroke="#4A3B2A" stroke-width="2"/>
+  <text x="115" y="862" text-anchor="middle" font-size="15" fill="#4A3B2A">头像+血条（金框=操控中）</text>
+  <text x="290" y="862" text-anchor="middle" font-size="15" fill="#4A3B2A">队友1</text>
+  <text x="455" y="862" text-anchor="middle" font-size="15" fill="#4A3B2A">队友2</text>
+  <rect x="560" y="820" width="120" height="80" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="620" y="855" text-anchor="middle" font-size="14" fill="#4A3B2A">Tab切人</text>
+  <text x="620" y="880" text-anchor="middle" font-size="14" fill="#6B5B45">CD 2s 灰显</text>
+  <!-- z2b 技能CD行 -->
+  <g stroke="#4A3B2A" stroke-width="3" fill="#F7EEDB">
+    <circle cx="110" cy="980" r="48"/><circle cx="240" cy="980" r="48"/><circle cx="370" cy="980" r="48"/>
+  </g>
+  <path d="M110 932 A48 48 0 1 1 66 1004" fill="none" stroke="#35E0D8" stroke-width="5"/>
+  <text x="110" y="986" text-anchor="middle" font-size="15" fill="#4A3B2A">技A环CD</text>
+  <text x="240" y="986" text-anchor="middle" font-size="15" fill="#4A3B2A">技B环CD</text>
+  <text x="370" y="986" text-anchor="middle" font-size="15" fill="#4A3B2A">神权图标</text>
+  <!-- z2c 计时条 -->
+  <rect x="40" y="1060" width="640" height="34" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="3"/>
+  <rect x="42" y="1062" width="400" height="30" fill="#CFE8D8"/>
+  <text x="360" y="1084" text-anchor="middle" font-size="15" fill="#4A3B2A">z2c 章节计时条（临近神罚变朱砂闪烁）</text>
+  <!-- z2d 组合面板 -->
+  <rect x="40" y="1120" width="640" height="60" fill="#F7EEDB" stroke="#E8B33C" stroke-width="4"/>
+  <text x="360" y="1158" text-anchor="middle" font-size="18" fill="#4A3B2A">z2d 组合面板（1 行白话：火格击杀→供盾）</text>
+  <!-- z2e 残片计数 -->
+  <rect x="40" y="1200" width="300" height="56" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="190" y="1236" text-anchor="middle" font-size="17" fill="#4A3B2A">残片/经验条 ◆ 128</text>
+  <rect x="380" y="1200" width="300" height="56" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="530" y="1236" text-anchor="middle" font-size="17" fill="#4A3B2A">暂停 ｜ 伤害飘字层</text>
 </svg>

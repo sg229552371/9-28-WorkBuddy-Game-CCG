@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" font-family="sans-serif">
+  <desc>选人界面 720x1280，z序：1标题 2候选列表 3编队栏 4确认按钮</desc>
+  <!-- z1 标题区 -->
+  <rect x="0" y="0" width="720" height="1280" fill="#EFE4CE" stroke="#4A3B2A" stroke-width="4"/>
+  <text x="360" y="70" text-anchor="middle" font-size="34" fill="#4A3B2A">z1 标题「选入你的祭司」 y40 h60</text>
+  <text x="360" y="110" text-anchor="middle" font-size="18" fill="#6B5B45">z1 副标：选 1~3 名，第 1 位为队长</text>
+  <!-- z2 候选网格 4x3，卡片 150x200 -->
+  <text x="360" y="165" text-anchor="middle" font-size="22" fill="#4A3B2A">z2 候选区（4列x3行，卡 150x200，间距20）</text>
+  <g stroke="#4A3B2A" stroke-width="3" fill="#F7EEDB">
+    <rect x="45"  y="185" width="150" height="200"/><rect x="215" y="185" width="150" height="200"/>
+    <rect x="385" y="185" width="150" height="200"/><rect x="555" y="185" width="150" height="200"/>
+    <rect x="45"  y="405" width="150" height="200"/><rect x="215" y="405" width="150" height="200"/>
+    <rect x="385" y="405" width="150" height="200"/><rect x="555" y="405" width="150" height="200"/>
+    <rect x="45"  y="625" width="150" height="200"/><rect x="215" y="625" width="150" height="200"/>
+    <rect x="385" y="625" width="150" height="200"/><rect x="555" y="625" width="150" height="200"/>
+  </g>
+  <g font-size="16" fill="#4A3B2A" text-anchor="middle">
+    <text x="120" y="290">祭司卡（立绘+名）</text><text x="290" y="290">祭司卡</text>
+    <text x="460" y="290">祭司卡</text><text x="630" y="290">锁定卡</text>
+    <text x="120" y="510">祭司卡</text><text x="290" y="510">祭司卡</text>
+    <text x="460" y="510">锁定卡</text><text x="630" y="510">锁定卡</text>
+    <text x="120" y="730">祭司卡</text><text x="290" y="730">锁定卡</text>
+    <text x="460" y="730">锁定卡</text><text x="630" y="730">锁定卡</text>
+  </g>
+  <rect x="45" y="185" width="150" height="200" fill="none" stroke="#E8B33C" stroke-width="5"/>
+  <text x="120" y="215" text-anchor="middle" font-size="14" fill="#B8860B">金框=队长位</text>
+  <!-- z3 编队栏 + 组合提示 -->
+  <rect x="40" y="860" width="640" height="200" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="60" y="900" font-size="20" fill="#4A3B2A">z3 编队栏 y860 h200</text>
+  <g stroke="#4A3B2A" stroke-width="3" fill="#EFE4CE">
+    <rect x="60" y="920" width="140" height="100"/><rect x="230" y="920" width="140" height="100"/>
+    <rect x="400" y="920" width="140" height="100"/>
+  </g>
+  <text x="130" y="975" text-anchor="middle" font-size="16" fill="#4A3B2A">队长槽</text>
+  <text x="300" y="975" text-anchor="middle" font-size="16" fill="#4A3B2A">队友槽1</text>
+  <text x="470" y="975" text-anchor="middle" font-size="16" fill="#4A3B2A">队友槽2</text>
+  <text x="620" y="975" font-size="14" fill="#6B5B45">+组合提示</text>
+  <text x="620" y="1000" font-size="14" fill="#6B5B45">词条区</text>
+  <!-- z4 出战按钮 -->
+  <rect x="180" y="1100" width="360" height="110" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="4"/>
+  <text x="360" y="1165" text-anchor="middle" font-size="28" fill="#4A3B2A">z4 出战按钮 y1100 360x110</text>
+</svg>

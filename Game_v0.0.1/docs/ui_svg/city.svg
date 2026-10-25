@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" font-family="sans-serif">
+  <desc>主城（失落之城）界面 720x1280，z序：1底景 2图腾区 3信息栏 4导航</desc>
+  <!-- z1 底景 -->
+  <rect x="0" y="0" width="720" height="1280" fill="#EFE4CE" stroke="#4A3B2A" stroke-width="4"/>
+  <text x="360" y="60" text-anchor="middle" font-size="34" fill="#4A3B2A">z1 底景：失落之城全景（暖沙底+城墙剪影）</text>
+  <!-- z2 图腾区：3x3 九宫格 -->
+  <text x="360" y="130" text-anchor="middle" font-size="26" fill="#4A3B2A">z2 图腾插位区（9 座图腾 3x3）</text>
+  <g stroke="#4A3B2A" stroke-width="3" fill="#F7EEDB">
+    <rect x="60" y="160" width="180" height="240" id="t1"/><rect x="270" y="160" width="180" height="240"/><rect x="480" y="160" width="180" height="240"/>
+    <rect x="60" y="430" width="180" height="240"/><rect x="270" y="430" width="180" height="240"/><rect x="480" y="430" width="180" height="240"/>
+    <rect x="60" y="700" width="180" height="240"/><rect x="270" y="700" width="180" height="240"/><rect x="480" y="700" width="180" height="240"/>
+  </g>
+  <g font-size="18" fill="#4A3B2A" text-anchor="middle">
+    <text x="150" y="285">图腾槽1</text><text x="360" y="285">图腾槽2</text><text x="570" y="285">图腾槽3</text>
+    <text x="150" y="555">图腾槽4</text><text x="360" y="555">图腾槽5</text><text x="570" y="555">图腾槽6</text>
+    <text x="150" y="825">图腾槽7</text><text x="360" y="825">图腾槽8</text><text x="570" y="825">图腾槽9</text>
+  </g>
+  <g stroke="#35E0D8" stroke-width="3" fill="none">
+    <circle cx="150" cy="230" r="34"/><circle cx="360" cy="230" r="34"/><circle cx="570" cy="500" r="34"/>
+  </g>
+  <text x="360" y="980" text-anchor="middle" font-size="18" fill="#4A3B2A">青圈=已建图腾图标位 128x128；空槽=虚线金框</text>
+  <!-- z3 信息栏 -->
+  <rect x="40" y="990" width="640" height="120" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="60" y="1035" font-size="20" fill="#4A3B2A">z3 信息栏 y990 h120：</text>
+  <text x="60" y="1075" font-size="20" fill="#4A3B2A">香火余额 ◆ 120 ｜ 下局规则预览词条 1 行</text>
+  <!-- z4 底部导航 -->
+  <g stroke="#4A3B2A" stroke-width="3" fill="#F7EEDB">
+    <rect x="40" y="1140" width="190" height="100"/>
+    <rect x="265" y="1140" width="190" height="100"/>
+    <rect x="490" y="1140" width="190" height="100"/>
+  </g>
+  <g font-size="22" fill="#4A3B2A" text-anchor="middle">
+    <text x="135" y="1198">z4 开始下一局</text>
+    <text x="360" y="1198">z4 教义树</text>
+    <text x="585" y="1198">z4 设置</text>
+  </g>
+</svg>

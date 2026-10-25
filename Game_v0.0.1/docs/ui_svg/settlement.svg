@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" font-family="sans-serif">
+  <desc>结算+图腾页 720x1280，z序：1底 2战果 3MVP卡 4香火结算 5图腾页 6按钮</desc>
+  <rect x="0" y="0" width="720" height="1280" fill="#EFE4CE" stroke="#4A3B2A" stroke-width="4"/>
+  <!-- z1 标题 -->
+  <rect x="60" y="50" width="600" height="90" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="360" y="90" text-anchor="middle" font-size="26" fill="#4A3B2A">z1 结算「远征归来」</text>
+  <text x="360" y="122" text-anchor="middle" font-size="16" fill="#6B5B45">到达章节 / 击杀数 / 用时 15:42</text>
+  <!-- z2 MVP组合词条卡（分享图 480x270 逻辑位） -->
+  <rect x="120" y="170" width="480" height="270" fill="#F7EEDB" stroke="#E8B33C" stroke-width="5"/>
+  <text x="360" y="215" text-anchor="middle" font-size="20" fill="#B8860B">z2 本局 MVP 组合词条卡 480x270</text>
+  <rect x="150" y="240" width="120" height="120" fill="#EFE4CE" stroke="#4A3B2A" stroke-width="3"/>
+  <rect x="300" y="240" width="120" height="120" fill="#EFE4CE" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="210" y="305" text-anchor="middle" font-size="15" fill="#4A3B2A">祭司立绘1</text>
+  <text x="360" y="305" text-anchor="middle" font-size="15" fill="#4A3B2A">祭司立绘2</text>
+  <text x="360" y="405" text-anchor="middle" font-size="16" fill="#6B5B45">组合白话：「火墙+骨墙」滚雪球</text>
+  <!-- z3 香火结算 -->
+  <rect x="60" y="470" width="600" height="150" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="90" y="515" font-size="20" fill="#4A3B2A">z3 香火结算 y470 h150</text>
+  <text x="90" y="555" font-size="17" fill="#B8860B">基础 40 + 章节奖励 20 = 香火 ◆ 60</text>
+  <text x="90" y="590" font-size="15" fill="#6B5B45">计数音连击动效位（sfx_incense_tick）</text>
+  <!-- z4 图腾页 -->
+  <text x="360" y="670" text-anchor="middle" font-size="20" fill="#4A3B2A">z4 失落之城图腾页（3列x3行，格 200x180）</text>
+  <g stroke="#4A3B2A" stroke-width="3" fill="#F7EEDB">
+    <rect x="40"  y="690" width="200" height="180"/><rect x="260" y="690" width="200" height="180"/><rect x="480" y="690" width="200" height="180"/>
+    <rect x="40"  y="890" width="200" height="180"/><rect x="260" y="890" width="200" height="180"/><rect x="480" y="890" width="200" height="180"/>
+    <rect x="40"  y="1090" width="200" height="180"/><rect x="260" y="1090" width="200" height="180"/>
+  </g>
+  <g font-size="15" fill="#4A3B2A" text-anchor="middle">
+    <text x="140" y="785">初火图腾（已建）</text><text x="360" y="785">残钟图腾</text><text x="580" y="785">未解锁</text>
+    <text x="140" y="985">未解锁</text><text x="360" y="985">未解锁</text><text x="580" y="985">未解锁</text>
+    <text x="140" y="1185">未解锁</text><text x="360" y="1185">未解锁</text>
+  </g>
+  <!-- z5 按钮组 -->
+  <rect x="480" y="1090" width="200" height="180" fill="#F7EEDB" stroke="#E8B33C" stroke-width="5"/>
+  <text x="580" y="1160" text-anchor="middle" font-size="18" fill="#B8860B">z5 购买图腾</text>
+  <text x="580" y="1200" text-anchor="middle" font-size="15" fill="#6B5B45">30~120 香火</text>
+  <rect x="520" y="530" width="120" height="60" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="580" y="568" text-anchor="middle" font-size="16" fill="#4A3B2A">z5 再来一局</text>
+</svg>

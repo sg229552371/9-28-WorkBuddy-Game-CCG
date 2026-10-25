@@ -1,46 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" width="720" height="1280">
-  <rect x="0" y="0" width="720" height="1280" fill="#f5f0e6" stroke="#666" stroke-width="2"/>
-  <text x="360" y="36" font-size="22" text-anchor="middle" fill="#333">事件界面 event.svg（渎神/敬神双轨）｜ 720×1280 ｜ 9:16</text>
-
-  <!-- Z1 背景 -->
-  <rect x="8" y="56" width="704" height="1216" fill="none" stroke="#999" stroke-dasharray="4"/>
-  <text x="20" y="80" font-size="16" fill="#666">Z1 底层：事件场景背景（按章节换色，泥塑神像剪影，全屏 720×1280）</text>
-
-  <!-- Z2 章节标题条 -->
-  <rect x="16" y="96" width="688" height="56" fill="#e8e2d4" stroke="#666"/>
-  <text x="360" y="132" font-size="16" text-anchor="middle" fill="#333">Z2 章节标题条（y=96~152, h=56）：「第 N 章 · 泥胎/铜喉/金面」+ 事件名</text>
-
-  <!-- Z3 事件插画区 -->
-  <rect x="60" y="180" width="600" height="400" fill="#f0e8d8" stroke="#666" stroke-width="2"/>
-  <text x="360" y="380" font-size="16" text-anchor="middle" fill="#333">Z3 事件插画区（x=60~660, y=180~580, 600×400）：立绘/场景插画，渎神侧朱砂红、敬神侧青霓虹光晕</text>
-
-  <!-- Z4 事件文本区 -->
-  <rect x="60" y="600" width="600" height="220" fill="#fff" stroke="#666"/>
-  <text x="360" y="650" font-size="15" text-anchor="middle" fill="#333">Z4 事件文本区（y=600~820, h=220）：叙事文本 3~6 行（逐字显现）</text>
-  <text x="360" y="690" font-size="14" text-anchor="middle" fill="#666">「神像的眼睛望向你，香火在指缝间明灭……」</text>
-  <text x="360" y="730" font-size="13" text-anchor="middle" fill="#999">决策记忆点：渎神/敬神双轨，每章 1 次二选一</text>
-
-  <!-- Z5 抉择按钮×2 -->
-  <rect x="40" y="850" width="300" height="260" fill="#f7e6e2" stroke="#C63D2F" stroke-width="3"/>
-  <text x="190" y="900" font-size="16" text-anchor="middle" fill="#C63D2F">Z5-A 渎神按钮 ui_btn_event_blasphemy</text>
-  <text x="190" y="940" font-size="13" text-anchor="middle" fill="#333">（x=40~340, y=850~1110, 300×260）</text>
-  <text x="190" y="980" font-size="13" text-anchor="middle" fill="#333">高风险收益描述</text>
-  <text x="190" y="1010" font-size="13" text-anchor="middle" fill="#333">（如：圣物栏+1，但随机 1 人</text>
-  <text x="190" y="1036" font-size="13" text-anchor="middle" fill="#333">2 回合无法行动）</text>
-  <rect x="380" y="850" width="300" height="260" fill="#e0f5f3" stroke="#35E0D8" stroke-width="3"/>
-  <text x="530" y="900" font-size="16" text-anchor="middle" fill="#35E0D8">Z5-B 敬神按钮 ui_btn_event_devotion</text>
-  <text x="530" y="940" font-size="13" text-anchor="middle" fill="#333">（x=380~680, y=850~1110, 300×260）</text>
-  <text x="530" y="980" font-size="13" text-anchor="middle" fill="#333">即时光明面收益</text>
-  <text x="530" y="1010" font-size="13" text-anchor="middle" fill="#333">（如：全队 +8 盾，</text>
-  <text x="530" y="1036" font-size="13" text-anchor="middle" fill="#333">Boss 获「圣偿」每 5 回合回 5% HP）</text>
-
-  <!-- Z6 Boss 后果提示条 -->
-  <rect x="40" y="1130" width="640" height="56" fill="#e8e2d4" stroke="#666"/>
-  <text x="360" y="1166" font-size="14" text-anchor="middle" fill="#333">Z6 Boss 后果提示条（y=1130~1186, h=56）：两种选择对终 Boss 的影响预览（圣偿/神怒词条）</text>
-
-  <!-- Z9 顶层：确认弹窗 -->
-  <rect x="160" y="440" width="400" height="180" fill="none" stroke="#C63D2F" stroke-dasharray="6"/>
-  <text x="360" y="540" font-size="14" text-anchor="middle" fill="#C63D2F">Z9 顶层：二次确认弹窗（居中 400×180，防止误触）</text>
-
-  <text x="360" y="1268" font-size="12" text-anchor="middle" fill="#999">Z序：Z1背景 → Z2标题条 → Z3插画 → Z4文本 → Z5抉择按钮 → Z6后果提示 → Z9确认弹窗</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" font-family="sans-serif">
+  <desc>事件界面（渎神/敬神二选一）720x1280，z序：1底 2标题 3双卡 4结果词条</desc>
+  <rect x="0" y="0" width="720" height="1280" fill="#EFE4CE" stroke="#4A3B2A" stroke-width="4"/>
+  <!-- z1 底景 -->
+  <text x="360" y="60" text-anchor="middle" font-size="18" fill="#6B5B45">z1 底景：祭坛暗化场景（半透明遮罩）</text>
+  <!-- z2 标题 -->
+  <rect x="60" y="100" width="600" height="110" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="360" y="145" text-anchor="middle" font-size="26" fill="#4A3B2A">z2 事件标题「香案前的选择」</text>
+  <text x="360" y="185" text-anchor="middle" font-size="17" fill="#6B5B45">z2 事件正文 2 行（第 X 章 · 双轨不互斥）</text>
+  <!-- z3 双卡：渎神（左）/ 敬神（右） -->
+  <g>
+    <rect x="45" y="280" width="290" height="560" fill="#F7EEDB" stroke="#C63D2F" stroke-width="5"/>
+    <text x="190" y="330" text-anchor="middle" font-size="24" fill="#8F2318">z3 渎神卡</text>
+    <rect x="75" y="360" width="230" height="180" fill="#F0C9B8" stroke="#C63D2F" stroke-width="3"/>
+    <text x="190" y="455" text-anchor="middle" font-size="16" fill="#8F2318">插画位 230x180</text>
+    <text x="190" y="590" text-anchor="middle" font-size="16" fill="#4A3B2A">收益：圣物栏 +1</text>
+    <text x="190" y="625" text-anchor="middle" font-size="16" fill="#4A3B2A">代价：随机 1 人 CD 翻倍 10s</text>
+    <text x="190" y="670" text-anchor="middle" font-size="16" fill="#8F2318">Boss 获「神怒」</text>
+    <text x="190" y="705" text-anchor="middle" font-size="16" fill="#8F2318">半血时全体 AoE 12 点</text>
+    <rect x="95" y="760" width="190" height="60" fill="#F7EEDB" stroke="#C63D2F" stroke-width="4"/>
+    <text x="190" y="798" text-anchor="middle" font-size="19" fill="#8F2318">渎神按钮</text>
+  </g>
+  <g>
+    <rect x="385" y="280" width="290" height="560" fill="#F7EEDB" stroke="#E8B33C" stroke-width="5"/>
+    <text x="530" y="330" text-anchor="middle" font-size="24" fill="#B8860B">z3 敬神卡</text>
+    <rect x="415" y="360" width="230" height="180" fill="#F5E6C0" stroke="#E8B33C" stroke-width="3"/>
+    <text x="530" y="455" text-anchor="middle" font-size="16" fill="#B8860B">插画位 230x180</text>
+    <text x="530" y="590" text-anchor="middle" font-size="16" fill="#4A3B2A">收益：全队 +8 盾</text>
+    <text x="530" y="625" text-anchor="middle" font-size="16" fill="#4A3B2A">代价：无即时惩罚</text>
+    <text x="530" y="670" text-anchor="middle" font-size="16" fill="#B8860B">Boss 获「圣偿」</text>
+    <text x="530" y="705" text-anchor="middle" font-size="16" fill="#B8860B">每 15s 回复 5% HP</text>
+    <rect x="435" y="760" width="190" height="60" fill="#F7EEDB" stroke="#E8B33C" stroke-width="4"/>
+    <text x="530" y="798" text-anchor="middle" font-size="19" fill="#B8860B">敬神按钮</text>
+  </g>
+  <!-- z4 结果词条位 -->
+  <rect x="60" y="900" width="600" height="90" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="3" stroke-dasharray="8 6"/>
+  <text x="360" y="940" text-anchor="middle" font-size="18" fill="#6B5B45">z4 结果词条区 y900 h90</text>
+  <text x="360" y="970" text-anchor="middle" font-size="16" fill="#6B5B45">（抉择后显示规则变更白话）</text>
+  <!-- z5 继续 -->
+  <rect x="180" y="1060" width="360" height="100" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="4"/>
+  <text x="360" y="1120" text-anchor="middle" font-size="24" fill="#4A3B2A">z5 继续按钮 360x100</text>
 </svg>

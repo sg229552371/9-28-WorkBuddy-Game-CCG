@@ -1,11 +1,11 @@
 [
-  {"id": "TT01", "name_cn": "初火图腾", "cost": 30, "effect": {"type": "start_rule", "params": {"chief": "CH_jin", "atk_add": 3}}, "desc": "下局开局：焚香者初始攻击 +3。"},
-  {"id": "TT02", "name_cn": "残钟图腾（推荐默认）", "cost": 40, "effect": {"type": "start_rule", "params": {"shop_price_mul": 0.8}}, "desc": "下局开局：商店价格 -20%。"},
-  {"id": "TT03", "name_cn": "基石图腾（推荐默认）", "cost": 50, "effect": {"type": "start_rule", "params": {"team_start_shield": 3}}, "desc": "下局开局：全队自带 3 点护盾。"},
-  {"id": "TT04", "name_cn": "白垩图腾（推荐默认）", "cost": 60, "effect": {"type": "start_rule", "params": {"start_relic_rarity": "white", "start_relic_count": 1}}, "desc": "下局开局：携带 1 枚随机白色圣物。"},
-  {"id": "TT05", "name_cn": "星盘图腾（推荐默认）", "cost": 70, "effect": {"type": "start_rule", "params": {"chief": "CH_tong", "range_add": 1}}, "desc": "下局开局：观星者技能射程 +1。"},
-  {"id": "TT06", "name_cn": "骨堆图腾（推荐默认）", "cost": 80, "effect": {"type": "start_rule", "params": {"chief": "CH_man", "shield_cap_add": 2}}, "desc": "下局开局：拾骨者护盾上限 +2。"},
-  {"id": "TT07", "name_cn": "香满图腾（推荐默认）", "cost": 90, "effect": {"type": "start_rule", "params": {"incense_add_ratio": 0.25}}, "desc": "下局开局：香火收益 +25%。"},
-  {"id": "TT08", "name_cn": "湿土图腾（推荐默认）", "cost": 100, "effect": {"type": "start_rule", "params": {"chief": "CH_xi", "skill_cd_reduce": 1}}, "desc": "下局开局：唤雨者技能冷却 -1。"},
-  {"id": "TT09", "name_cn": "金面图腾（推荐默认）", "cost": 120, "effect": {"type": "start_rule", "params": {"team_hp_add": 5, "start_relic_rarity": "blue", "start_relic_count": 1}}, "desc": "下局开局：全队最大 HP +5，并携带 1 枚随机蓝色圣物。"}
+  {"id": "TT01", "name_cn": "初火图腾", "cost": 30, "desc_cn": "下局开局：焚香者初始攻击 +3。", "effect": {"type": "start_bonus", "params": {"chief": "CH_jin", "damage_add": 3}}},
+  {"id": "TT02", "name_cn": "残钟图腾", "cost": 40, "desc_cn": "下局开局：商店价格 -20%。", "effect": {"type": "shop_discount", "params": {"price_mul": 0.8}}},
+  {"id": "TT03", "name_cn": "基石图腾", "cost": 50, "desc_cn": "下局开局：全队自带 3 点护盾。", "effect": {"type": "start_bonus", "params": {"team_start_shield": 3}}},
+  {"id": "TT04", "name_cn": "白垩图腾", "cost": 60, "desc_cn": "下局开局：携带 1 枚随机白色圣物。", "effect": {"type": "start_bonus", "params": {"start_relic_rarity": "white", "start_relic_count": 1}}},
+  {"id": "TT05", "name_cn": "星盘图腾", "cost": 70, "desc_cn": "下局开局：观星者技能伤害 +2。", "effect": {"type": "start_bonus", "params": {"chief": "CH_tong", "skill_damage_add": 2}}},
+  {"id": "TT06", "name_cn": "骨堆图腾", "cost": 80, "desc_cn": "下局开局：拾骨者的死亡供盾上限 +2。", "effect": {"type": "start_bonus", "params": {"chief": "CH_man", "shield_cap_add": 2}}},
+  {"id": "TT07", "name_cn": "雨纹图腾", "cost": 90, "desc_cn": "下局开局：唤雨者在水格上的移速加成提升至 +80%。", "effect": {"type": "start_bonus", "params": {"chief": "CH_xi", "water_speed_bonus": 0.8}}},
+  {"id": "TT08", "name_cn": "灰烬香炉", "cost": 100, "desc_cn": "下局开局：残片掉落 +15%，香火收益同步提升。", "effect": {"type": "start_bonus", "params": {"shard_drop_mul": 1.15}}},
+  {"id": "TT09", "name_cn": "断碑图腾", "cost": 120, "desc_cn": "下局开局：神罚倒计时推迟 15 秒启动。", "effect": {"type": "start_bonus", "params": {"punishment_delay_s": 15}}}
 ]

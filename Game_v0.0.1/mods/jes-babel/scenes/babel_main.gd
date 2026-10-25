@@ -1,93 +1,95 @@
-## 《巴别回路》主流程：9:16 竖屏状态机 main_city|hero_select|battle|settle|totem。
-## 批次 D：事件二选一/商店（读表定价）/封圣三选一/meta 存档（BabelSave）全闭环。
+## 《巴别回路》主流程：9:16 竖屏状态机
+## main_city → hero_select → battle ⇄ (event|shop|canonize) → … → settle → totem/main_city
+## 全部界面代码构建（无美术资源，色块+粗描边风格）；meta 存档走 BabelSave（与单局分离）。
 class_name BabelMain
 extends Control
 
 const STATE_MAIN_CITY: String = "main_city"
 const STATE_HERO_SELECT: String = "hero_select"
 const STATE_BATTLE: String = "battle"
+const STATE_EVENT: String = "event"
+const STATE_SHOP: String = "shop"
+const STATE_CANONIZE: String = "canonize"
 const STATE_SETTLE: String = "settle"
 const STATE_TOTEM: String = "totem"
+
 ## 合法状态迁移表（headless 测试用）
 const VALID_TRANSITIONS: Dictionary = {
 	"main_city": ["hero_select", "totem"],
 	"hero_select": ["battle", "main_city"],
-	"battle": ["settle"],
-	"settle": ["battle", "totem", "main_city"],
+	"battle": ["event", "shop", "canonize", "settle"],
+	"event": ["battle", "shop", "canonize", "settle"],
+	"shop": ["battle", "canonize", "settle"],
+	"canonize": ["battle", "settle", "shop"],
+	"settle": ["main_city", "totem"],
 	"totem": ["main_city"],
 }
-## 残片兑换香火：击杀数 × 2（兼容保留；正式香火走 meta_system.settle）
-const SHARD_PER_KILL: int = 2
-const CHAPTER_COUNT: int = 3
-## 封圣章（第二章末，chapter_idx = 1）
-const CANONIZE_CHAPTER_IDX: int = 1
+## MVP 组合词条卡规格（480×270 比例）
+const MVP_CARD_SIZE: Vector2 = Vector2(480, 270)
+const TEAM_MAX: int = 3
+## 残片→香火换算系数（期望单局 60 香火口径）# PLACEHOLDER
+const SHARD_TO_INCENSE: float = 0.4
+## 战间回复比例 # PLACEHOLDER
+const INTER_BATTLE_HEAL: float = 0.3
 
 ## 状态切换完成（state: String）
 signal state_changed(state: String)
 
-## systems 装配
-var event_sys: BabelEventSystem = BabelEventSystem.new()
-var relic_sys: BabelRelicSystem = BabelRelicSystem.create_from_cfg()
-var shop_sys: BabelShopSystem = BabelShopSystem.new(BabelRelicSystem.create_from_cfg())
-var meta_sys: BabelMetaSystem = BabelMetaSystem.create_from_cfg()
+var cfg: BabelCfgData = BabelCfgData.load_default()
 var save: BabelSave = BabelSave.new()
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-## 元进度（持久化段）：{"incense": int, "totems": Array[String], "unlocked_chiefs": Array[String]}
+## meta 持久化段：{"incense": int, "totems": Array[String], "unlocked_chiefs": Array[String]}
 var meta_data: Dictionary = {}
-## 事件系统当前待选组
-var pending_event_group: Dictionary = {}
-## 封圣三选一缓存
-var canonize_choices: Array[Dictionary] = []
-
+## 当前状态
 var state: String = STATE_MAIN_CITY
-## 本局会话数据
-var run: Dictionary = {
-	"team": [],
-	"incense": 0,
-	"shards": 0,
-	"kills": 0,
-	"totems": [],
-	"relics": [],
-	"chapter_idx": 0,
-	"hp_carry": {},
-	"pending_shield": 0,
-	"stun_next": false,
-	"boss_mutation": {},
-	"price_mod": 1.0,
-	"start_rules": {},
-}
-var battle: BabelBattle = null
-
-var scr_main: Control
-var scr_hero: Control
-var scr_battle: Control
-var scr_settle: Control
-var scr_totem: Control
+## 单局会话数据
+var run: Dictionary = {}
+## 事件页当前事件
+var pending_event: Dictionary = {}
+## 商店当前货架
+var shop_stock: Array = []
+var shop_rerolls: int = 0
+## 封圣三选一缓存
+var canonize_choices: Array = []
+## 场景引用
+var battle_scene: BabelBattle = null
+var screens: Dictionary = {}
 var hero_picked: Array[String] = []
-var hero_buttons: Array[Button] = []
-var lbl_settle_body: Label
-var lbl_hero_hint: Label
-var lbl_incense: Label
-var settle_event_box: VBoxContainer
-var settle_next_btn: Button
+var hero_checks: Array[Button] = []
+var hero_box: VBoxContainer = null
+var lbl_hero_hint: Label = null
+var lbl_main_incense: Label = null
+var lbl_event_name: Label = null
+var lbl_event_desc: Label = null
+var shop_box: VBoxContainer = null
+var lbl_shop_shards: Label = null
+var canon_box: HBoxContainer = null
+var lbl_settle: Label = null
+var mvp_card: Panel = null
+var lbl_mvp: Label = null
+var totem_box: VBoxContainer = null
+var lbl_totem_incense: Label = null
 
 
 func _ready() -> void:
 	rng.randomize()
 	meta_data = save.load_meta()
-	if not meta_data.has("incense"):
-		meta_data["incense"] = 0
-	if not meta_data.has("totems"):
-		meta_data["totems"] = []
-	if not meta_data.has("unlocked_chiefs"):
-		meta_data["unlocked_chiefs"] = []
+	_ensure_meta()
 	_build_screens()
 	_show_state(STATE_MAIN_CITY)
 
 
+func _ensure_meta() -> void:
+	if not (meta_data.get("incense") is float or meta_data.get("incense") is int):
+		meta_data["incense"] = 0
+	if not (meta_data.get("totems") is Array):
+		meta_data["totems"] = []
+	if not (meta_data.get("unlocked_chiefs") is Array):
+		meta_data["unlocked_chiefs"] = []
+
+
 ## ---------- 纯逻辑（可 headless 测试） ----------
 
-## 状态迁移是否合法
 static func is_transition_valid(from: String, to: String) -> bool:
 	var nexts: Variant = VALID_TRANSITIONS.get(from, [])
 	if nexts is Array:
@@ -95,9 +97,9 @@ static func is_transition_valid(from: String, to: String) -> bool:
 	return false
 
 
-## 切换状态（合法迁移才生效，返回是否成功）
-func transition_to(to: String) -> bool:
+func switch_state(to: String) -> bool:
 	if not is_transition_valid(state, to):
+		push_warning("[BabelMain] 非法状态迁移: " + state + " -> " + to)
 		return false
 	state = to
 	_show_state(to)
@@ -105,176 +107,145 @@ func transition_to(to: String) -> bool:
 	return true
 
 
-## 选人装配：从 chiefs 表挑 picked 的职业描述数组
-static func build_team(chiefs_table: Variant, picked: Array[String]) -> Array[Dictionary]:
-	var out: Array[Dictionary] = []
-	if chiefs_table is Array:
-		for c: Variant in (chiefs_table as Array):
-			if c is Dictionary:
-				var d: Dictionary = c as Dictionary
-				if picked.has(str(d.get("id", ""))):
-					out.append({
-						"id": str(d.get("id", "")),
-						"name_cn": str(d.get("name_cn", "")),
-						"hp": int(d.get("hp", 30)),
-						"move": int(d.get("move", 3)),
-						"skills": d.get("skills", []),
-					})
+## 开新局：读图腾开局规则注入
+func start_run(team: Array[String]) -> void:
+	var totem_rules: Dictionary = BabelTotemLogic.start_rules(meta_data.get("totems", []) as Array, cfg.totems())
+	run = {
+		"team": team,
+		"relics": [] as Array,
+		"chapter_idx": 0,
+		"battles_done": 0,
+		"event_done": false,
+		"shop_done": false,
+		"canon_done": false,
+		"shards": 0,
+		"kills": 0,
+		"incense_add": 0.0,
+		"team_shield": 0.0,
+		"team_dmg_add": 0.0,
+		"cd_penalty_s": 0.0,
+		"cd_penalty_targets": 1,
+		"boss_stacks": 0.0,
+		"boss_mod": {},
+		"price_mul": BabelTotemLogic.rule_val(totem_rules, "shop_price_mul", 1.0),
+		"mvp_line": "",
+		"settle_incense": 0,
+	}
+	# 图腾开局赠送圣物
+	for rarity: String in BabelTotemLogic.start_relics(totem_rules):
+		var relic: Dictionary = BabelRelicLogic.roll_relic(rng, cfg.relics(), rarity)
+		if not relic.is_empty():
+			(run["relics"] as Array).append(str(relic.get("id", "")))
+
+
+## 单局香火结算（残片→香火 + 事件加成 + 圣物 battle_end 加成），并写 meta
+func settle_run(result: Dictionary) -> Dictionary:
+	var shards: int = int(result.get("shards", 0))
+	var incense: int = int(round(float(shards) * SHARD_TO_INCENSE)) + int(round(float(run.get("incense_add", 0.0))))
+	var relic_dicts: Array = _relic_dicts()
+	for trig: Dictionary in BabelRelicLogic.triggers_for(relic_dicts, "battle_end"):
+		incense += int(round(float((trig.get("params", {}) as Dictionary).get("incense_add", 0.0))))
+	meta_data["incense"] = int(meta_data.get("incense", 0)) + incense
+	save.save_meta(meta_data)
+	save.clear_run()
+	run["settle_incense"] = incense
+	# MVP 组合词条（白话一句话，推荐默认 = 第 1 条组合词条）
+	var lines: Array[String] = BabelRelicLogic.combo_lines(_team_dicts(), relic_dicts)
+	run["mvp_line"] = lines[0] if lines.size() > 0 else "-empty-"
+	return {"incense": incense, "shards": shards, "kills": int(result.get("kills", 0))}
+
+
+func _team_dicts() -> Array:
+	var out: Array = []
+	var chiefs: Array = cfg.chiefs()
+	for cid: Variant in run.get("team", []) as Array:
+		for c: Variant in chiefs:
+			if c is Dictionary and str((c as Dictionary).get("id", "")) == str(cid):
+				out.append(c as Dictionary)
 	return out
 
 
-## 按章节滚动敌人：mob 数 = 3 + 章序号（3~6 含 Boss 位），最终章附加 Boss；traits/params 透传
-static func roll_enemies(enemies_table: Variant, chapter: Dictionary, is_final: bool) -> Array[Dictionary]:
-	var ch_num: int = _chapter_number(str(chapter.get("id", "CH1")))
-	var pool: Array[Dictionary] = []
-	if enemies_table is Array:
-		for e: Variant in (enemies_table as Array):
-			if e is Dictionary:
-				var d: Dictionary = e as Dictionary
-				if int(d.get("chapter", 0)) == ch_num and ch_num < 3 or (ch_num == 3 and int(d.get("chapter", 0)) == 3 and str(d.get("id", "")) != str(chapter.get("boss_id", ""))):
-					pool.append(d)
-	var out: Array[Dictionary] = []
-	var count: int = 3 + mini(ch_num, CHAPTER_COUNT) - 1
-	for i: int in range(count):
-		if pool.is_empty():
-			break
-		var pick: Dictionary = pool[randi() % pool.size()]
-		var hp_lo: int = int(chapter.get("mob_hp_min", 8))
-		var hp_hi: int = maxi(int(chapter.get("mob_hp_max", 12)), hp_lo)
-		var dmg_lo: int = int(chapter.get("mob_dmg_min", 3))
-		var dmg_hi: int = maxi(int(chapter.get("mob_dmg_max", 4)), dmg_lo)
-		out.append({
-			"id": str(pick.get("id", "")) + "_%d" % [i],
-			"name_cn": str(pick.get("name_cn", "")),
-			"hp": randi_range(hp_lo, hp_hi),
-			"dmg": randi_range(dmg_lo, dmg_hi),
-			"move": int(pick.get("move", 2)),
-			"traits": pick.get("traits", []),
-			"params": pick.get("params", {}),
-		})
-	if is_final:
-		var boss_id: String = str(chapter.get("boss_id", ""))
-		if boss_id != "" and enemies_table is Array:
-			for e2: Variant in (enemies_table as Array):
-				if e2 is Dictionary and str((e2 as Dictionary).get("id", "")) == boss_id:
-					var bd: Dictionary = e2 as Dictionary
-					out.append({
-						"id": boss_id,
-						"name_cn": str(bd.get("name_cn", "")),
-						"hp": int(chapter.get("boss_hp", int(bd.get("hp", 90)))),
-						"dmg": int(chapter.get("boss_dmg", int(bd.get("dmg", 8)))),
-						"move": int(bd.get("move", 3)),
-						"traits": bd.get("traits", []),
-						"params": bd.get("params", {}),
-					})
-					break
+func _relic_dicts() -> Array:
+	var out: Array = []
+	var rmap: Dictionary = cfg.relic_map()
+	for rid: Variant in run.get("relics", []) as Array:
+		var rd: Variant = rmap.get(str(rid), null)
+		if rd is Dictionary:
+			out.append(rd as Dictionary)
 	return out
 
 
-static func _chapter_number(chapter_id: String) -> int:
-	var digits: String = ""
-	for ch: String in chapter_id:
-		if ch >= "0" and ch <= "9":
-			digits += ch
-	if digits != "":
-		return int(digits)
-	return 1
+## 战斗结算后的推进：返回下一状态名（event/shop/canonize/settle/battle）
+func next_after_battle(result: Dictionary) -> String:
+	var chs: Array = cfg.chapters()
+	var idx: int = int(run.get("chapter_idx", 0))
+	if idx >= chs.size():
+		return STATE_SETTLE
+	var ch: Dictionary = chs[idx] as Dictionary
+	run["shards"] = int(run.get("shards", 0)) + int(result.get("shards", 0))
+	run["kills"] = int(run.get("kills", 0)) + int(result.get("kills", 0))
+	# 渎神叠层：每章战斗 +1（Boss 伤害成长载体）# PLACEHOLDER
+	run["boss_stacks"] = float(run.get("boss_stacks", 0.0)) + 1.0
+	run["battles_done"] = int(run.get("battles_done", 0)) + 1
+	var battles_total: int = int(ch.get("battles", 1))
+	var more_battles: bool = int(run.get("battles_done", 0)) < battles_total
+	if not bool(run.get("event_done", false)) and bool(ch.get("has_event", false)):
+		return STATE_EVENT
+	if more_battles:
+		return STATE_BATTLE
+	if not bool(run.get("shop_done", false)) and bool(ch.get("has_shop", false)):
+		return STATE_SHOP
+	if not bool(run.get("canon_done", false)) and bool(ch.get("has_canonization", false)):
+		return STATE_CANONIZE
+	run["event_done"] = false
+	run["shop_done"] = false
+	run["canon_done"] = false
+	run["battles_done"] = 0
+	run["chapter_idx"] = idx + 1
+	if int(run["chapter_idx"]) >= chs.size():
+		return STATE_SETTLE
+	return STATE_BATTLE
 
 
-## 香火结算：残片模拟 = 击杀数 × 2（兼容保留）
-static func settle_incense(kills: int) -> int:
-	return kills * SHARD_PER_KILL
+## 是否还有本章战斗未打
+func has_more_battles() -> bool:
+	var chs: Array = cfg.chapters()
+	var idx: int = int(run.get("chapter_idx", 0))
+	if idx >= chs.size():
+		return false
+	var ch: Dictionary = chs[idx] as Dictionary
+	return int(run.get("battles_done", 0)) < int(ch.get("battles", 1))
 
 
-## 把开局规则应用到队伍描述（team_start_shield/team_hp_add/atk_add/起始圣物）
-func apply_start_rules(team: Array[Dictionary], rules: Dictionary) -> void:
-	for d: Dictionary in team:
-		if rules.has("team_start_shield"):
-			d["shield"] = int(d.get("shield", 0)) + int(rules.get("team_start_shield", 0))
-		if rules.has("team_hp_add"):
-			d["hp"] = int(d.get("hp", 30)) + int(rules.get("team_hp_add", 0))
-		var extras: Dictionary = d.get("state", {}) as Dictionary
-		if rules.has("atk_add"):
-			extras["atk_bonus"] = int(extras.get("atk_bonus", 0)) + int(rules.get("atk_add", 0))
-		d["state"] = extras
-	# 起始圣物
-	var count: int = int(rules.get("start_relic_count", 0))
-	if count > 0:
-		var pool: Array[Dictionary] = _relic_pool()
-		for i: int in range(count):
-			var r: Dictionary = relic_sys.roll_relic(rng, pool, false)
-			if not r.is_empty():
-				relic_sys.add_relic(r)
-
-
-## ---------- 场景 UI ----------
+## ---------- 界面构建 ----------
 
 func _build_screens() -> void:
-	scr_main = _mk_screen()
-	var title: Label = _mk_label(scr_main, "《巴别回路》", Vector2(0, 300), 720, 64, 40)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var sub: Label = _mk_label(scr_main, "SRPG 组队肉鸽 · 竖屏闭环", Vector2(0, 380), 720, 40, 20)
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_mk_button(scr_main, "开始远征", Vector2(210, 560), Vector2(300, 70), _on_start_run)
-	_mk_button(scr_main, "图腾页", Vector2(210, 660), Vector2(300, 70), func() -> void: transition_to(STATE_TOTEM))
-
-	scr_hero = _mk_screen()
-	_mk_label(scr_hero, "选人：六祭司选三", Vector2(0, 60), 720, 50, 30)
-	lbl_hero_hint = _mk_label(scr_hero, "已选 0/3", Vector2(0, 110), 720, 36, 22)
-	var chiefs: Array = _table("srpg_chiefs") as Array if _table("srpg_chiefs") is Array else []
-	hero_buttons.clear()
-	for i: int in range(chiefs.size()):
-		var c: Dictionary = chiefs[i] as Dictionary
-		var b: Button = _mk_button(scr_hero, str(c.get("name_cn", "")), Vector2(60 + (i % 2) * 320, 180 + (i / 2) * 130), Vector2(290, 100), _on_hero_toggled.bind(i))
-		b.toggle_mode = true
-		hero_buttons.append(b)
-	_mk_button(scr_hero, "确认出征", Vector2(210, 780), Vector2(300, 70), _on_team_confirmed)
-	_mk_button(scr_hero, "返回主城", Vector2(210, 880), Vector2(300, 60), func() -> void: transition_to(STATE_MAIN_CITY))
-
-	scr_battle = _mk_screen()
-
-	scr_settle = _mk_screen()
-	_mk_label(scr_settle, "战斗结算", Vector2(0, 40), 720, 50, 30)
-	lbl_settle_body = _mk_label(scr_settle, "", Vector2(40, 110), 640, 200, 20)
-	settle_event_box = VBoxContainer.new()
-	settle_event_box.position = Vector2(40, 330)
-	settle_event_box.size = Vector2(640, 200)
-	scr_settle.add_child(settle_event_box)
-	_mk_button(scr_settle, "商店", Vector2(40, 560), Vector2(180, 60), _on_shop_pressed)
-	settle_next_btn = _mk_button(scr_settle, "继续", Vector2(500, 560), Vector2(180, 60), _on_settle_next)
-	_mk_button(scr_settle, "回主城", Vector2(270, 650), Vector2(180, 60), func() -> void: transition_to(STATE_MAIN_CITY))
-	lbl_incense = _mk_label(scr_settle, "", Vector2(40, 740), 640, 40, 22)
-
-	scr_totem = _mk_screen()
-	_mk_label(scr_totem, "图腾页（香火持久化）", Vector2(0, 40), 720, 50, 24)
-	var totems: Array = _table("srpg_totems") as Array if _table("srpg_totems") is Array else []
-	for i: int in range(totems.size()):
-		var t: Dictionary = totems[i] as Dictionary
-		var b2: Button = _mk_button(scr_totem, "%s（%d 香火）" % [str(t.get("name_cn", "")), int(t.get("cost", 0))], Vector2(40 + (i % 2) * 330, 110 + (i / 2) * 105), Vector2(310, 90), _on_totem_buy.bind(str(t.get("id", ""))))
-		b2.name = "totem_" + str(t.get("id", ""))
-	_mk_button(scr_totem, "返回主城", Vector2(210, 1080), Vector2(300, 70), func() -> void: transition_to(STATE_MAIN_CITY))
+	for k: String in [STATE_MAIN_CITY, STATE_HERO_SELECT, STATE_EVENT, STATE_SHOP, STATE_CANONIZE, STATE_SETTLE, STATE_TOTEM]:
+		var scr: Control = Control.new()
+		scr.name = "Scr_" + k
+		scr.set_anchors_preset(Control.PRESET_FULL_RECT)
+		scr.visible = false
+		add_child(scr)
+		screens[k] = scr
+	_build_main_city()
+	_build_hero_select()
+	_build_event()
+	_build_shop()
+	_build_canonize()
+	_build_settle()
+	_build_totem()
 
 
-func _mk_screen() -> Control:
-	var c: Control = Control.new()
-	c.position = Vector2.ZERO
-	c.size = Vector2(720, 1280)
-	c.visible = false
-	add_child(c)
-	return c
+func _mk_label(parent: Control, pos: Vector2, text: String, size: int = 18) -> Label:
+	var lbl: Label = Label.new()
+	lbl.position = pos
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", size)
+	parent.add_child(lbl)
+	return lbl
 
 
-func _mk_label(parent: Control, text: String, pos: Vector2, w: int, h: int, font_size: int) -> Label:
-	var l: Label = Label.new()
-	l.position = pos
-	l.size = Vector2(w, h)
-	l.text = text
-	l.add_theme_font_size_override("font_size", font_size)
-	parent.add_child(l)
-	return l
-
-
-func _mk_button(parent: Control, text: String, pos: Vector2, sz: Vector2, cb: Callable) -> Button:
+func _mk_button(parent: Control, pos: Vector2, sz: Vector2, text: String, cb: Callable) -> Button:
 	var b: Button = Button.new()
 	b.position = pos
 	b.size = sz
@@ -284,325 +255,486 @@ func _mk_button(parent: Control, text: String, pos: Vector2, sz: Vector2, cb: Ca
 	return b
 
 
-func _table(key: String) -> Variant:
-	var cfg_node: Variant = Engine.get_main_loop().root.get_node_or_null("Cfg")
-	if cfg_node == null:
-		return null
-	var cfg_obj: Object = cfg_node as Object
-	if cfg_obj.has_method("get_table"):
-		return cfg_obj.call("get_table", key)
-	return null
+func _build_main_city() -> void:
+	var scr: Control = screens[STATE_MAIN_CITY] as Control
+	scr.draw.connect(_draw_main_bg)
+	var title: Label = _mk_label(scr, Vector2(190, 180), "巴别回路", 48)
+	title.add_theme_color_override("font_color", Color("c63d2f"))
+	_mk_label(scr, Vector2(240, 250), "神话拼图割草 · v1.2 即时制", 16)
+	lbl_main_incense = _mk_label(scr, Vector2(280, 330), "", 20)
+	_mk_button(scr, Vector2(260, 420), Vector2(200, 60), "开始游戏", _on_start_pressed)
+	_mk_button(scr, Vector2(260, 500), Vector2(200, 60), "失落之城 · 图腾", func() -> void: switch_state(STATE_TOTEM))
+	_mk_button(scr, Vector2(260, 580), Vector2(200, 60), "渎神教义树（占位）", func() -> void: pass)
+	_mk_button(scr, Vector2(260, 660), Vector2(200, 48), "重置存档", _on_reset_save)
 
 
-func _relic_pool() -> Array[Dictionary]:
+func _draw_main_bg() -> void:
+	var scr: Control = screens.get(STATE_MAIN_CITY, null) as Control
+	if scr != null:
+		scr.draw_rect(Rect2(Vector2.ZERO, scr.size), Color("d8b98a"))
+
+
+func _on_reset_save() -> void:
+	meta_data = {"incense": 0, "totems": [], "unlocked_chiefs": []}
+	save.save_meta(meta_data)
+	_refresh_main_city()
+
+
+func _refresh_main_city() -> void:
+	if lbl_main_incense != null:
+		lbl_main_incense.text = "香火：%d" % [int(meta_data.get("incense", 0))]
+
+
+func _on_start_pressed() -> void:
+	_refresh_hero_select()
+	switch_state(STATE_HERO_SELECT)
+
+
+func _build_hero_select() -> void:
+	var scr: Control = screens[STATE_HERO_SELECT] as Control
+	_mk_label(scr, Vector2(200, 60), "选人（1~3 人，第 1 位勾选者为队长）", 22)
+	lbl_hero_hint = _mk_label(scr, Vector2(60, 110), "", 16)
+	hero_box = VBoxContainer.new()
+	hero_box.position = Vector2(60, 160)
+	hero_box.custom_minimum_size = Vector2(600, 700)
+	scr.add_child(hero_box)
+	_mk_button(scr, Vector2(120, 1150), Vector2(220, 70), "出战！", _on_team_confirm)
+	_mk_button(scr, Vector2(400, 1150), Vector2(200, 70), "返回", func() -> void: switch_state(STATE_MAIN_CITY))
+
+
+func _refresh_hero_select() -> void:
+	for c: Node in hero_box.get_children():
+		c.queue_free()
+	hero_checks.clear()
+	hero_picked.clear()
+	var chiefs: Array = cfg.chiefs()
+	var unlocked: Array = meta_data.get("unlocked_chiefs", []) as Array
+	for c: Variant in chiefs:
+		if not (c is Dictionary):
+			continue
+		var cd: Dictionary = c as Dictionary
+		var cid: String = str(cd.get("id", ""))
+		var is_unlocked: bool = bool(cd.get("unlocked_default", false)) or unlocked.has(cid)
+		var cb: Button = Button.new()
+		cb.toggle_mode = true
+		cb.disabled = not is_unlocked
+		cb.text = "%s [%s] 神权：%s" % [
+			str(cd.get("name_cn", "?")),
+			"已解锁" if is_unlocked else "未解锁",
+			str((cd.get("passive", {}) as Dictionary).get("desc_cn", "")),
+		]
+		cb.custom_minimum_size = Vector2(600, 56)
+		cb.toggled.connect(_on_hero_toggled.bind(cid))
+		hero_checks.append(cb)
+		hero_box.add_child(cb)
+
+
+func _on_hero_toggled(on: bool, cid: String) -> void:
+	if on:
+		if hero_picked.size() >= TEAM_MAX:
+			# 超编：拒绝最后一个勾选（保持前 3 个）
+			for i: int in range(hero_checks.size()):
+				var cid_i: String = _check_cid(i)
+				if cid_i == cid:
+					hero_checks[i].set_pressed_no_signal(false)
+			return
+		hero_picked.append(cid)
+	else:
+		hero_picked.erase(cid)
+	if lbl_hero_hint != null:
+		var hint: String = ", ".join(hero_picked)
+		var leader: String = hero_picked[0] if hero_picked.size() > 0 else "-"
+		lbl_hero_hint.text = "组合提示：%s（队长=%s）" % [hint, leader]
+
+
+func _check_cid(i: int) -> String:
+	# hero_checks 与 chiefs 表同序
+	var chiefs: Array = cfg.chiefs()
+	if i >= 0 and i < chiefs.size() and chiefs[i] is Dictionary:
+		return str((chiefs[i] as Dictionary).get("id", ""))
+	return ""
+
+
+func _on_team_confirm() -> void:
+	if hero_picked.is_empty():
+		return
+	start_run(hero_picked.duplicate() as Array[String])
+	_enter_battle()
+
+
+## ---------- 战斗 ----------
+
+func _enter_battle() -> void:
+	if battle_scene != null:
+		battle_scene.queue_free()
+		battle_scene = null
+	_show_state(STATE_BATTLE)
+	state = STATE_BATTLE
+	state_changed.emit(STATE_BATTLE)
+	battle_scene = (load("res://mods/jes-babel/scenes/babel_battle.tscn") as PackedScene).instantiate() as BabelBattle
+	add_child(battle_scene)
+	var chs: Array = cfg.chapters()
+	var idx: int = int(run.get("chapter_idx", 0))
+	var ch: Dictionary = chs[idx] as Dictionary if idx < chs.size() else {}
+	battle_scene.setup(cfg, ch, _build_team_dicts(), BabelTotemLogic.start_rules(meta_data.get("totems", []) as Array, cfg.totems()), run.get("relics", []) as Array, run.get("boss_mod", {}) as Dictionary, {
+		"team_shield": float(run.get("team_shield", 0.0)),
+		"team_dmg_add": float(run.get("team_dmg_add", 0.0)),
+		"cd_penalty_s": float(run.get("cd_penalty_s", 0.0)),
+		"cd_penalty_targets": int(run.get("cd_penalty_targets", 1)),
+		"boss_stacks": float(run.get("boss_stacks", 0.0)),
+		"dps_mul": 1.0,
+		"shard_mul": 1.0,
+	})
+	battle_scene.battle_finished.connect(_on_battle_finished)
+
+
+func _build_team_dicts() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
-	var raw: Variant = _table("srpg_relics")
-	if raw is Array:
-		for r: Variant in (raw as Array):
-			if r is Dictionary:
-				out.append(r as Dictionary)
+	var chiefs: Array = cfg.chiefs()
+	var smap: Dictionary = cfg.skill_map()
+	for cid: Variant in run.get("team", []) as Array:
+		for c: Variant in chiefs:
+			if c is Dictionary and str((c as Dictionary).get("id", "")) == str(cid):
+				var cd: Dictionary = c as Dictionary
+				out.append({
+					"id": str(cid),
+					"name_cn": str(cd.get("name_cn", "?")),
+					"passive": cd.get("passive", {}),
+					"skill_a": smap.get(str(cd.get("skill_a", "")), {}),
+					"skill_b": smap.get(str(cd.get("skill_b", "")), {}),
+				})
 	return out
 
 
-func _show_state(to: String) -> void:
-	if scr_main == null:
-		state = to
+func _on_battle_finished(result: Dictionary) -> void:
+	if str(result.get("winner", "enemy")) == "enemy":
+		settle_run(result)
+		switch_state(STATE_SETTLE)
+		_refresh_settle()
 		return
-	scr_main.visible = to == STATE_MAIN_CITY
-	scr_hero.visible = to == STATE_HERO_SELECT
-	scr_battle.visible = to == STATE_BATTLE
-	scr_settle.visible = to == STATE_SETTLE
-	scr_totem.visible = to == STATE_TOTEM
-	if to == STATE_HERO_SELECT:
-		_refresh_hero_hint()
-	elif to == STATE_TOTEM:
-		_refresh_totems()
+	var next: String = next_after_battle(result)
+	match next:
+		STATE_EVENT:
+			_open_event()
+		STATE_SHOP:
+			_open_shop()
+		STATE_CANONIZE:
+			_open_canonize()
+		STATE_SETTLE:
+			settle_run(result)
+			switch_state(STATE_SETTLE)
+			_refresh_settle()
+		_:
+			_enter_battle()
 
 
-## ---------- 状态流转 ----------
+## ---------- 事件页（渎神/敬神二选一） ----------
 
-func _on_start_run() -> void:
-	# 已购图腾写进开局规则（meta 持久化）
-	var owned_totems: Array[Dictionary] = []
-	var totems: Array = _table("srpg_totems") as Array if _table("srpg_totems") is Array else []
-	for t: Variant in totems:
-		if t is Dictionary and (meta_data.get("totems", []) as Array).has(str((t as Dictionary).get("id", ""))):
-			owned_totems.append(t as Dictionary)
-	run = {
-		"team": [],
-		"incense": int(meta_data.get("incense", 0)),
-		"shards": 0,
-		"kills": 0,
-		"totems": meta_data.get("totems", []).duplicate(),
-		"relics": [],
-		"chapter_idx": 0,
-		"hp_carry": {},
-		"pending_shield": 0,
-		"stun_next": false,
-		"boss_mutation": {},
-		"price_mod": 1.0,
-		"start_rules": meta_sys.start_rules(owned_totems),
-	}
-	hero_picked.clear()
-	transition_to(STATE_HERO_SELECT)
+func _build_event() -> void:
+	var scr: Control = screens[STATE_EVENT] as Control
+	lbl_event_name = _mk_label(scr, Vector2(200, 200), "", 30)
+	lbl_event_desc = _mk_label(scr, Vector2(80, 320), "", 18)
+	lbl_event_desc.custom_minimum_size = Vector2(560, 300)
+	lbl_event_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_mk_button(scr, Vector2(120, 700), Vector2(220, 90), "敬神", func() -> void: _on_event_pick("devotion"))
+	_mk_button(scr, Vector2(400, 700), Vector2(220, 90), "渎神", func() -> void: _on_event_pick("blasphemy"))
 
 
-func _on_hero_toggled(idx: int) -> void:
-	var chiefs: Array = _table("srpg_chiefs") as Array if _table("srpg_chiefs") is Array else []
-	if idx >= chiefs.size():
-		return
-	var cid: String = str((chiefs[idx] as Dictionary).get("id", ""))
-	if hero_picked.has(cid):
-		hero_picked.erase(cid)
-		hero_buttons[idx].button_pressed = false
-	else:
-		if hero_picked.size() >= 3:
-			return
-		hero_picked.append(cid)
-		hero_buttons[idx].button_pressed = true
-	_refresh_hero_hint()
-
-
-func _refresh_hero_hint() -> void:
-	lbl_hero_hint.text = "已选 %d/3" % [hero_picked.size()]
-
-
-func _on_team_confirmed() -> void:
-	if hero_picked.size() != 3:
-		lbl_hero_hint.text = "必须选满 3 名祭司"
-		return
-	run["team"] = hero_picked.duplicate()
-	run["chapter_idx"] = 0
-	_start_battle()
-
-
-## 开局规则 / 携带 HP / 渎神眩晕 / Boss 突变 / boss_dread 层数 全部在此装配
-func _start_battle() -> void:
-	var chapter_idx: int = int(run.get("chapter_idx", 0))
-	var chapters: Array = _table("srpg_chapters") as Array if _table("srpg_chapters") is Array else []
-	if chapter_idx >= chapters.size():
-		transition_to(STATE_TOTEM)
-		return
-	var chapter: Dictionary = chapters[chapter_idx] as Dictionary
-	var team: Array[Dictionary] = build_team(_table("srpg_chiefs"), run.get("team", []) as Array[String])
-	apply_start_rules(team, run.get("start_rules", {}) as Dictionary)
-	for d: Dictionary in team:
-		var uid: String = str(d.get("id", ""))
-		var carry: int = int((run.get("hp_carry", {}) as Dictionary).get(uid, 0))
-		if carry > 0:
-			d["hp"] = carry
-		if int(run.get("pending_shield", 0)) > 0:
-			d["shield"] = int(d.get("shield", 0)) + int(run.get("pending_shield", 0))
-	var enemies: Array[Dictionary] = roll_enemies(_table("srpg_enemies"), chapter, chapter_idx == CHAPTER_COUNT - 1)
-	if battle != null:
-		battle.queue_free()
-	battle = BabelBattle.new()
-	battle.skills_cfg = _table("srpg_skills") as Dictionary if _table("srpg_skills") is Dictionary else {}
-	battle.boss_mutation = run.get("boss_mutation", {}) as Dictionary
-	battle.boss_id = str(chapter.get("boss_id", ""))
-	battle.boss_dread_stacks = chapter_idx
-	battle.enemy_turn_hook = Callable()
-	battle.battle_finished.connect(_on_battle_finished)
-	battle.kills_changed.connect(_on_kills_changed)
-	scr_battle.add_child(battle)
-	battle.setup("第 %d 章 %s" % [chapter_idx + 1, str(chapter.get("name_cn", ""))], team, enemies)
-	# 圣物效果落地到全队
-	for r: Dictionary in relic_sys.relics:
-		for u: BabelUnit in battle.tm.players:
-			relic_sys.apply_effect(r, u, battle.board)
-	# 渎神事件：下场战斗开打随机 1 人眩晕 2 回合
-	if bool(run.get("stun_next", false)):
-		var stunned: BabelUnit = event_sys.roll_stun_target(battle.tm.players, rng)
-		if stunned != null:
-			print("[BabelMain] 渎神惩罚：%s 开场眩晕" % [str(stunned.unit_id)])
-		run["stun_next"] = false
-	run["pending_shield"] = 0
-	transition_to(STATE_BATTLE)
-
-
-func _on_kills_changed(count: int) -> void:
-	run["kills"] = count
-
-
-func _on_battle_finished(winner: String) -> void:
-	run["hp_carry"] = {}
-	if battle != null:
-		for u: BabelUnit in battle.tm.players:
-			run["hp_carry"][u.chief_id] = u.hp if u.alive else 0
-	# 残片入包 + 香火写 meta（meta_system.settle）
-	var kills: int = int(run.get("kills", 0))
-	run["shards"] = int(run.get("shards", 0)) + kills
-	var gained: int = meta_sys.settle(kills, 1)
-	meta_data["incense"] = int(meta_data.get("incense", 0)) + gained
-	run["incense"] = int(meta_data.get("incense", 0))
-	save.save_meta(meta_data)
-	_fill_settle(winner, gained)
-	transition_to(STATE_SETTLE)
-
-
-func _fill_settle(winner: String, gained: int) -> void:
-	var lines: String = "胜者：%s\n剩余 HP：%s\n总回合数：%s\n击杀 %d → 香火 +%d\n残片：%d" % [
-		winner, _hp_carry_text(), str(battle.tm.round_idx if battle != null else 0),
-		int(run.get("kills", 0)), gained, int(run.get("shards", 0)),
+func _open_event() -> void:
+	var idx: int = int(run.get("chapter_idx", 0))
+	var ev: Dictionary = {}
+	for e: Variant in cfg.events():
+		if e is Dictionary and int((e as Dictionary).get("chapter", 1)) == idx + 1:
+			ev = e as Dictionary
+			break
+	if ev.is_empty() and cfg.events().size() > 0:
+		ev = cfg.events()[0] as Dictionary
+	pending_event = ev
+	var dev: Dictionary = ev.get("devotion", {}) as Dictionary
+	var bla: Dictionary = ev.get("blasphemy", {}) as Dictionary
+	lbl_event_name.text = str(ev.get("name_cn", "无名事件"))
+	lbl_event_desc.text = "敬神：%s\n\n渎神：%s\n（代价：每次开战随机 1 人技能 CD 翻倍 10s）" % [
+		str(dev.get("desc_cn", "")), str(bla.get("desc_cn", "")),
 	]
-	lbl_settle_body.text = lines
-	lbl_incense.text = "当前香火：%d" % int(meta_data.get("incense", 0))
-	_clear_event_box()
-	# 事件二选一（BabelEventSystem.pick + choose）
-	var chapter_idx: int = int(run.get("chapter_idx", 0))
-	var events: Array[Dictionary] = []
-	var raw: Variant = _table("srpg_events")
-	if raw is Array:
-		for g: Variant in (raw as Array):
-			if g is Dictionary:
-				events.append(g as Dictionary)
-	pending_event_group = event_sys.pick(events, chapter_idx + 1, rng)
-	var opts: Variant = pending_event_group.get("options", [])
-	if opts is Array:
-		for o: Variant in (opts as Array):
-			if o is Dictionary:
-				var opt: Dictionary = o as Dictionary
-				var b: Button = Button.new()
-				b.text = "事件：%s" % str(opt.get("name_cn", ""))
-				b.size = Vector2(640, 56)
-				b.pressed.connect(_on_event_pick.bind(opt))
-				settle_event_box.add_child(b)
-	if winner != "player":
-		settle_next_btn.text = "重打本章"
+	switch_state(STATE_EVENT)
+
+
+func _on_event_pick(track: String) -> void:
+	var res: Dictionary = BabelEventLogic.apply_choice(pending_event, track, run)
+	run["boss_mod"] = BabelEventLogic.normalize_boss_mod(res.get("boss_mod", {}) as Dictionary)
+	run["event_done"] = true
+	_after_interstitial()
+
+
+## 章内间隙页之后的推进
+func _after_interstitial() -> void:
+	var chs: Array = cfg.chapters()
+	var idx: int = int(run.get("chapter_idx", 0))
+	if idx >= chs.size():
+		switch_state(STATE_SETTLE)
+		_refresh_settle()
+		return
+	var ch: Dictionary = chs[idx] as Dictionary
+	if has_more_battles():
+		_enter_battle()
+	elif not bool(run.get("shop_done", false)) and bool(ch.get("has_shop", false)):
+		_open_shop()
+	elif not bool(run.get("canon_done", false)) and bool(ch.get("has_canonization", false)):
+		_open_canonize()
 	else:
-		settle_next_btn.text = "继续"
+		_advance_chapter()
 
 
-func _clear_event_box() -> void:
-	for c: Node in settle_event_box.get_children():
+## ---------- 商店页（残片货币，推荐默认） ----------
+
+func _build_shop() -> void:
+	var scr: Control = screens[STATE_SHOP] as Control
+	_mk_label(scr, Vector2(220, 80), "神殿商店（货币：神话残片）", 22)
+	lbl_shop_shards = _mk_label(scr, Vector2(300, 130), "", 18)
+	shop_box = VBoxContainer.new()
+	shop_box.position = Vector2(60, 180)
+	shop_box.custom_minimum_size = Vector2(600, 640)
+	scr.add_child(shop_box)
+	_mk_button(scr, Vector2(80, 950), Vector2(260, 70), "刷新货架", _on_shop_reroll)
+	_mk_button(scr, Vector2(400, 950), Vector2(240, 70), "离开商店", _on_shop_leave)
+
+
+func _open_shop() -> void:
+	shop_rerolls = 0
+	_roll_shop()
+	switch_state(STATE_SHOP)
+
+
+func _roll_shop() -> void:
+	shop_stock = BabelShopLogic.roll_stock(rng, cfg.shop(), cfg.relics(), float(run.get("price_mul", 1.0)), 3)
+	_refresh_shop()
+
+
+func _on_shop_reroll() -> void:
+	var cost: int = BabelShopLogic.reroll_cost(cfg.shop(), shop_rerolls, float(run.get("price_mul", 1.0)))
+	if int(run.get("shards", 0)) < cost:
+		return
+	run["shards"] = int(run.get("shards", 0)) - cost
+	shop_rerolls += 1
+	_roll_shop()
+
+
+func _refresh_shop() -> void:
+	if shop_box == null:
+		return
+	for c: Node in shop_box.get_children():
 		c.queue_free()
-
-
-func _hp_carry_text() -> String:
-	var parts: PackedStringArray = PackedStringArray()
-	var chiefs: Array = _table("srpg_chiefs") as Array if _table("srpg_chiefs") is Array else []
-	for c: Variant in chiefs:
-		if c is Dictionary:
-			var d: Dictionary = c as Dictionary
-			var cid: String = str(d.get("id", ""))
-			if (run.get("team", []) as Array).has(cid):
-				var hp: int = int((run.get("hp_carry", {}) as Dictionary).get(cid, int(d.get("hp", 30))))
-				parts.append("%s %d/%d" % [str(d.get("name_cn", "")), hp, int(d.get("hp", 30))])
-	return ", ".join(parts)
-
-
-## 事件二选一：效果真正 apply 到队伍；渎神记录眩晕；Boss mutation 存入章 Boss
-func _on_event_pick(opt: Dictionary) -> void:
-	event_sys.choose(pending_event_group, str(opt.get("track", "")))
-	if battle != null:
-		event_sys.apply_effects(battle.tm.players, battle.board, relic_sys)
-	for fx: Variant in event_sys.pending_effects:
-		if fx is Dictionary and str((fx as Dictionary).get("type", "")) == "battle_start_stun":
-			run["stun_next"] = true
-	if not event_sys.boss_mutation.is_empty():
-		run["boss_mutation"] = event_sys.boss_mutation
-	# 事件加价（shop_price_add 落在 board meta）
-	if battle != null and battle.board.has_meta("shop_price_add"):
-		run["price_mod"] = float(run.get("price_mod", 1.0)) + float(battle.board.get_meta("shop_price_add"))
-	lbl_incense.text = "已选事件：%s（效果已生效）" % str(event_sys.last_choice.get("name_cn", ""))
-	_clear_event_box()
-	# 第二章末：封圣三选一（relic_system.roll 三选一 UI）
-	if int(run.get("chapter_idx", 0)) == CANONIZE_CHAPTER_IDX:
-		_show_canonize_choices()
-
-
-## 封圣三选一：抽 3 枚圣物供选择，选一入包
-func _show_canonize_choices() -> void:
-	canonize_choices.clear()
-	var pool: Array[Dictionary] = _relic_pool()
-	for i: int in range(3):
-		var r: Dictionary = relic_sys.roll_relic(rng, pool, false)
-		if r.is_empty():
-			continue
-		canonize_choices.append(r)
+	lbl_shop_shards.text = "残片：%d" % [int(run.get("shards", 0))]
+	var shop_cfg: Dictionary = cfg.shop()
+	var up_cost: int = BabelShopLogic.skill_upgrade_cost(shop_cfg, float(run.get("price_mul", 1.0)))
+	var up_btn: Button = Button.new()
+	up_btn.text = "升级技能（全队伤害 +2）— %d 残片" % [up_cost]
+	up_btn.custom_minimum_size = Vector2(600, 60)
+	up_btn.pressed.connect(_on_skill_upgrade.bind(up_cost))
+	shop_box.add_child(up_btn)
+	for i: int in range(shop_stock.size()):
+		var offer: Dictionary = shop_stock[i] as Dictionary
+		var relic: Dictionary = offer.get("relic", {}) as Dictionary
 		var b: Button = Button.new()
-		b.text = "封圣：%s（%s）" % [str(r.get("name_cn", "")), str(r.get("rarity", "white"))]
-		b.size = Vector2(640, 56)
-		b.pressed.connect(_on_canonize_pick.bind(r))
-		settle_event_box.add_child(b)
+		b.text = "[%s] %s — %d 残片\n%s" % [
+			str(offer.get("rarity", "?")), str(relic.get("name_cn", "缺货")),
+			int(offer.get("price", 0)), str(relic.get("desc_cn", "")),
+		]
+		b.custom_minimum_size = Vector2(600, 80)
+		b.pressed.connect(_on_buy.bind(i))
+		shop_box.add_child(b)
 
 
-func _on_canonize_pick(relic: Dictionary) -> void:
-	relic_sys.add_relic(relic)
-	if not (run.get("relics", []) as Array).has(str(relic.get("id", ""))):
+func _on_skill_upgrade(cost: int) -> void:
+	if int(run.get("shards", 0)) >= cost:
+		run["shards"] = int(run.get("shards", 0)) - cost
+		run["team_dmg_add"] = float(run.get("team_dmg_add", 0.0)) + 2.0
+		_refresh_shop()
+
+
+func _on_buy(i: int) -> void:
+	if i < 0 or i >= shop_stock.size():
+		return
+	var offer: Dictionary = shop_stock[i] as Dictionary
+	var price: int = int(offer.get("price", 999999))
+	if int(run.get("shards", 0)) < price:
+		return
+	run["shards"] = int(run.get("shards", 0)) - price
+	var relic: Dictionary = offer.get("relic", {}) as Dictionary
+	if not relic.is_empty():
 		(run["relics"] as Array).append(str(relic.get("id", "")))
-	lbl_incense.text = "封圣完成：%s 已入圣物栏" % str(relic.get("name_cn", ""))
-	_clear_event_box()
+	shop_stock.remove_at(i)
+	_refresh_shop()
 
 
-## 商店：BabelShopSystem 进货（读 cfg/srpg_shop.json 定价），残片支付
-func _on_shop_pressed() -> void:
-	var pool: Array[Dictionary] = _relic_pool()
-	var price_mod: float = float(run.get("price_mod", 1.0))
-	var stock_n: int = BabelShopSystem.stock_count()
-	var items: Array[Dictionary] = shop_sys.stock(rng, pool, stock_n)
-	var bought: int = 0
-	var lines: PackedStringArray = PackedStringArray()
-	for item: Dictionary in items:
-		var rid: String = str(item.get("id", ""))
-		if (run.get("relics", []) as Array).has(rid):
-			continue
-		var result: Dictionary = shop_sys.buy(item, int(run.get("shards", 0)), price_mod)
-		if bool(result.get("ok", false)):
-			run["shards"] = int(result.get("shards_left", 0))
-			relic_sys.add_relic(item)
-			(run["relics"] as Array).append(rid)
-			bought += 1
-			lines.append("%s（%d 残片）" % [str(item.get("name_cn", rid)), int(result.get("cost", 0))])
-	# 未购入的货架提供刷新（reroll 读表计费）
-	if bought == 0 and int(run.get("shards", 0)) >= BabelShopSystem.reroll_cost():
-		var refreshed: Array[Dictionary] = shop_sys.reroll(rng, pool, int(run.get("shards", 0)), stock_n, price_mod)
-		if not refreshed.is_empty():
-			run["shards"] = int(run.get("shards", 0)) - BabelShopSystem.reroll_cost()
-			lines.append("已刷新货架（-%d 残片）" % [BabelShopSystem.reroll_cost()])
-	save.save_run(run)
-	lbl_incense.text = "商店：购入 %d 件%s，剩余残片 %d" % [bought, " | ".join(lines) if not lines.is_empty() else "", int(run.get("shards", 0))]
+func _on_shop_leave() -> void:
+	run["shop_done"] = true
+	_after_interstitial()
 
 
-func _on_settle_next() -> void:
-	if int(run.get("chapter_idx", 0)) < CHAPTER_COUNT - 1:
-		run["chapter_idx"] = int(run.get("chapter_idx", 0)) + 1
-		save.save_run(run)
-		transition_to(STATE_BATTLE)
-		_start_battle()
+## ---------- 封圣抉择（3 选 1 圣物卡） ----------
+
+func _build_canonize() -> void:
+	var scr: Control = screens[STATE_CANONIZE] as Control
+	_mk_label(scr, Vector2(230, 120), "封圣抉择：三选一圣物", 24)
+	canon_box = HBoxContainer.new()
+	canon_box.position = Vector2(30, 300)
+	canon_box.custom_minimum_size = Vector2(660, 300)
+	canon_box.add_theme_constant_override("separation", 10)
+	scr.add_child(canon_box)
+
+
+func _open_canonize() -> void:
+	canonize_choices = []
+	var table: Array = cfg.relics()
+	for i: int in range(3):
+		var rarity: String = ["white", "blue", "gold"][mini(i, 2)]
+		canonize_choices.append(BabelRelicLogic.roll_relic(rng, table, rarity))
+	for c: Node in canon_box.get_children():
+		c.queue_free()
+	for i: int in range(canonize_choices.size()):
+		var relic: Dictionary = canonize_choices[i] as Dictionary
+		var b: Button = Button.new()
+		b.text = "[%s]\n%s\n%s" % [str(relic.get("rarity", "?")), str(relic.get("name_cn", "?")), str(relic.get("desc_cn", ""))]
+		b.custom_minimum_size = Vector2(210, 260)
+		b.pressed.connect(_on_canon_pick.bind(i))
+		canon_box.add_child(b)
+	switch_state(STATE_CANONIZE)
+
+
+func _on_canon_pick(i: int) -> void:
+	if i < 0 or i >= canonize_choices.size():
+		return
+	var relic: Dictionary = canonize_choices[i] as Dictionary
+	if not relic.is_empty():
+		(run["relics"] as Array).append(str(relic.get("id", "")))
+	run["canon_done"] = true
+	_after_interstitial()
+
+
+## ---------- 章节推进 ----------
+
+func _advance_chapter() -> void:
+	run["event_done"] = false
+	run["shop_done"] = false
+	run["canon_done"] = false
+	run["battles_done"] = 0
+	run["chapter_idx"] = int(run.get("chapter_idx", 0)) + 1
+	if int(run.get("chapter_idx", 0)) >= cfg.chapters().size():
+		settle_run({"shards": int(run.get("shards", 0)), "kills": int(run.get("kills", 0))})
+		switch_state(STATE_SETTLE)
+		_refresh_settle()
 	else:
-		# 局结束：清 run 快照，meta（香火/图腾）保留
-		save.clear_run()
-		transition_to(STATE_TOTEM)
+		_enter_battle()
 
 
-## 图腾：meta_system.buy_totem 扣香火；购买写 meta 并持久化
-func _on_totem_buy(tid: String) -> void:
-	var totems: Array = _table("srpg_totems") as Array if _table("srpg_totems") is Array else []
-	for t: Variant in totems:
-		if t is Dictionary and str((t as Dictionary).get("id", "")) == tid:
-			var d: Dictionary = t as Dictionary
-			if (meta_data.get("totems", []) as Array).has(tid):
-				return
-			var result: Dictionary = meta_sys.buy_totem(d, int(meta_data.get("incense", 0)))
-			if bool(result.get("ok", false)):
-				meta_data["incense"] = int(result.get("incense_left", 0))
-				(meta_data["totems"] as Array).append(tid)
-				if not (run.get("totems", []) as Array).has(tid):
-					(run["totems"] as Array).append(tid)
-				save.save_meta(meta_data)
-	_refresh_totems()
+## ---------- 结算页 ----------
+
+func _build_settle() -> void:
+	var scr: Control = screens[STATE_SETTLE] as Control
+	_mk_label(scr, Vector2(280, 100), "结算", 32)
+	lbl_settle = _mk_label(scr, Vector2(80, 180), "", 18)
+	lbl_settle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl_settle.custom_minimum_size = Vector2(560, 200)
+	mvp_card = Panel.new()
+	mvp_card.position = Vector2(120, 420)
+	mvp_card.size = MVP_CARD_SIZE
+	var sb: StyleBoxFlat = StyleBoxFlat.new()
+	sb.bg_color = Color(0.1, 0.09, 0.08)
+	sb.border_color = Color("e8b33c")
+	sb.set_border_width_all(4)
+	mvp_card.add_theme_stylebox_override("panel", sb)
+	scr.add_child(mvp_card)
+	lbl_mvp = _mk_label(mvp_card, Vector2(20, 20), "", 18)
+	lbl_mvp.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl_mvp.custom_minimum_size = Vector2(440, 220)
+	_mk_button(scr, Vector2(120, 780), Vector2(220, 70), "返回主城", func() -> void:
+		switch_state(STATE_MAIN_CITY)
+		_refresh_main_city())
+	_mk_button(scr, Vector2(400, 780), Vector2(220, 70), "失落之城 · 图腾", func() -> void: switch_state(STATE_TOTEM))
 
 
-func _refresh_totems() -> void:
-	var totems: Array = _table("srpg_totems") as Array if _table("srpg_totems") is Array else []
-	for t: Variant in totems:
-		if t is Dictionary:
-			var d: Dictionary = t as Dictionary
-			var tid: String = str(d.get("id", ""))
-			var node: Node = scr_totem.find_child("totem_" + tid, false, false)
-			if node is Button:
-				var b: Button = node as Button
-				var owned: bool = (meta_data.get("totems", []) as Array).has(tid)
-				b.disabled = owned or int(meta_data.get("incense", 0)) < int(d.get("cost", 0))
-				b.text = "%s（%d 香火）%s" % [str(d.get("name_cn", "")), int(d.get("cost", 0)), "已购" if owned else ""]
+func _refresh_settle() -> void:
+	lbl_settle.text = "击杀 %d　残片 %d　获得香火 %d\n队伍：%s" % [
+		int(run.get("kills", 0)), int(run.get("shards", 0)), int(run.get("settle_incense", 0)),
+		", ".join(_team_names()),
+	]
+	lbl_mvp.text = "本局 MVP 组合\n%s\n\n圣物：%s" % [str(run.get("mvp_line", "-")), ", ".join(_relic_names())]
+
+
+func _team_names() -> Array[String]:
+	var out: Array[String] = []
+	for c: Dictionary in _team_dicts():
+		out.append(str(c.get("name_cn", "?")))
+	return out
+
+
+func _relic_names() -> Array[String]:
+	var out: Array[String] = []
+	var rmap: Dictionary = cfg.relic_map()
+	for rid: Variant in run.get("relics", []) as Array:
+		var rd: Variant = rmap.get(str(rid), null)
+		if rd is Dictionary:
+			out.append(str((rd as Dictionary).get("name_cn", "?")))
+	return out
+
+
+## ---------- 图腾页（失落之城 meta） ----------
+
+func _build_totem() -> void:
+	var scr: Control = screens[STATE_TOTEM] as Control
+	lbl_totem_incense = _mk_label(scr, Vector2(280, 60), "", 20)
+	totem_box = VBoxContainer.new()
+	totem_box.position = Vector2(30, 120)
+	totem_box.custom_minimum_size = Vector2(660, 950)
+	scr.add_child(totem_box)
+	_mk_button(scr, Vector2(260, 1150), Vector2(200, 70), "返回主城", func() -> void: switch_state(STATE_MAIN_CITY))
+
+
+func _refresh_totem() -> void:
+	if totem_box == null:
+		return
+	for c: Node in totem_box.get_children():
+		c.queue_free()
+	lbl_totem_incense.text = "香火：%d" % [int(meta_data.get("incense", 0))]
+	var owned: Array = meta_data.get("totems", []) as Array
+	for t: Variant in cfg.totems():
+		if not (t is Dictionary):
+			continue
+		var td: Dictionary = t as Dictionary
+		var tid: String = str(td.get("id", ""))
+		var is_owned: bool = owned.has(tid)
+		var b: Button = Button.new()
+		b.text = "%s [%s] %d 香火\n%s" % [
+			str(td.get("name_cn", "?")), "已购" if is_owned else "未购",
+			int(td.get("cost", 30)), str(td.get("desc_cn", "")),
+		]
+		b.custom_minimum_size = Vector2(660, 84)
+		b.disabled = is_owned or not BabelTotemLogic.can_buy(td, int(meta_data.get("incense", 0)), owned)
+		b.pressed.connect(_on_buy_totem.bind(td))
+		totem_box.add_child(b)
+
+
+func _on_buy_totem(t: Dictionary) -> void:
+	var owned: Array = meta_data.get("totems", []) as Array
+	if not BabelTotemLogic.can_buy(t, int(meta_data.get("incense", 0)), owned):
+		return
+	meta_data["incense"] = int(meta_data.get("incense", 0)) - int(t.get("cost", 30))
+	owned.append(str(t.get("id", "")))
+	meta_data["totems"] = owned
+	save.save_meta(meta_data)
+	_refresh_totem()
+
+
+## ---------- 状态显示 ----------
+
+func _show_state(to: String) -> void:
+	for k: String in screens.keys():
+		(screens[k] as Control).visible = (k == to)
+	if battle_scene != null:
+		battle_scene.visible = (to == STATE_BATTLE)
+		battle_scene.process_mode = Node.PROCESS_MODE_INHERIT if to == STATE_BATTLE else Node.PROCESS_MODE_DISABLED
+	if to == STATE_MAIN_CITY:
+		_refresh_main_city()
+	if to == STATE_TOTEM:
+		_refresh_totem()

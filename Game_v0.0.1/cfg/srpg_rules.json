@@ -1,9 +1,16 @@
 {
-  "board": {"cols": 11, "rows": 9, "tile": 64},
   "facing": {"front_damage_mul": 0.7, "back_damage_mul": 1.3, "side_damage_mul": 1.0, "side_damage_mul_coffin": 0.75},
   "unit": {"shield_cap": 6, "base_move": 3},
-  "round": {"cap": 25, "overcap_dmg_mul_step": 0.10},
-  "punishment": {"start_round": 18, "hp_loss_ratio": 0.10},
+  "punishment": {"start_s": 75, "hp_loss_ratio": 0.10},
   "relic_drop": {"white_w": 70, "blue_w": 25, "gold_w": 5, "shop_gold_chance": 0.12, "blue_feedback_threshold": 4, "blue_feedback_event_bonus": 0.15},
-  "meta": {"incense_per_run_expect": 60}
+  "meta": {"incense_per_run_expect": 60},
+  "realtime": {
+    "tile_px": 64,
+    "map_width_screens": 3,
+    "switch_cd": 2,
+    "telemetry_1s": true,
+    "compensation": {"solo_hp_dps": 1.25, "solo_shard": 1.10, "duo_hp_dps": 1.12, "duo_shard": 1.05}
+  },
+  "xp_anchors": [1, 25, 60, 100],
+  "punishment_timer": {"start_s": 75, "tick_s": 10, "hp_loss_ratio": 0.10}
 }

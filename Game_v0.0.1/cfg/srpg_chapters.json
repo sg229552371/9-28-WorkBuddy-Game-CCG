@@ -1,47 +1,43 @@
 [
   {
-    "id": "CH1",
-    "name_cn": "泥胎",
-    "team_avg_hp": 30,
-    "mob_hp_min": 8,
-    "mob_hp_max": 12,
-    "mob_dmg_min": 3,
-    "mob_dmg_max": 4,
-    "boss_id": "EN13",
-    "boss_hp": 90,
-    "boss_dmg": 8,
-    "battle_count": 1,
-    "event_count": 1,
-    "shop_count": 1
+    "id": "CH1", "name_cn": "泥胎",
+    "minion_hp": [8, 12], "minion_damage": [3, 4],
+    "boss_id": "EN09", "boss_hp": 90, "boss_damage": 8,
+    "shard_xp": 1,
+    "waves": [
+      {"enemies": [{"enemy_id": "EN01", "count": 12}, {"enemy_id": "EN07", "count": 8}], "elite": false, "spawn_interval_s": 3.0},
+      {"enemies": [{"enemy_id": "EN01", "count": 14}, {"enemy_id": "EN08", "count": 6}], "elite": false, "spawn_interval_s": 2.5},
+      {"enemies": [{"enemy_id": "EN02", "count": 3}, {"enemy_id": "EN01", "count": 12}], "elite": false, "spawn_interval_s": 2.5},
+      {"enemies": [{"enemy_id": "EN08", "count": 10}, {"enemy_id": "EN07", "count": 8}, {"enemy_id": "EN02", "count": 2}], "elite": true, "spawn_interval_s": 2.0}
+    ],
+    "battles": 1, "has_event": true, "has_shop": true, "has_canonization": false
   },
   {
-    "id": "CH2",
-    "name_cn": "铜喉",
-    "team_avg_hp": 38,
-    "mob_hp_min": 16,
-    "mob_hp_max": 24,
-    "mob_dmg_min": 6,
-    "mob_dmg_max": 8,
-    "boss_id": "EN13",
-    "boss_hp": 170,
-    "boss_dmg": 13,
-    "battle_count": 2,
-    "event_count": 1,
-    "shop_count": 1
+    "id": "CH2", "name_cn": "铜喉",
+    "minion_hp": [16, 24], "minion_damage": [6, 8],
+    "boss_id": "EN11", "boss_hp": 170, "boss_damage": 13,
+    "shard_xp": 1,
+    "waves": [
+      {"enemies": [{"enemy_id": "EN10", "count": 14}, {"enemy_id": "EN03", "count": 6}], "elite": false, "spawn_interval_s": 2.5},
+      {"enemies": [{"enemy_id": "EN05", "count": 6}, {"enemy_id": "EN10", "count": 14}], "elite": false, "spawn_interval_s": 2.2},
+      {"enemies": [{"enemy_id": "EN04", "count": 5}, {"enemy_id": "EN03", "count": 8}, {"enemy_id": "EN10", "count": 12}], "elite": false, "spawn_interval_s": 2.0},
+      {"enemies": [{"enemy_id": "EN03", "count": 10}, {"enemy_id": "EN04", "count": 6}, {"enemy_id": "EN05", "count": 6}], "elite": true, "spawn_interval_s": 2.0},
+      {"enemies": [{"enemy_id": "EN04", "count": 8}, {"enemy_id": "EN10", "count": 20}, {"enemy_id": "EN05", "count": 6}], "elite": true, "spawn_interval_s": 1.8}
+    ],
+    "battles": 2, "has_event": true, "has_shop": true, "has_canonization": true
   },
   {
-    "id": "CH3",
-    "name_cn": "金面",
-    "team_avg_hp": 48,
-    "mob_hp_min": 30,
-    "mob_hp_max": 45,
-    "mob_dmg_min": 10,
-    "mob_dmg_max": 14,
-    "boss_id": "EN13",
-    "boss_hp": 300,
-    "boss_dmg": 20,
-    "battle_count": 2,
-    "event_count": 1,
-    "shop_count": 1
+    "id": "CH3", "name_cn": "金面",
+    "minion_hp": [30, 45], "minion_damage": [10, 14],
+    "boss_id": "EN06", "boss_hp": 300, "boss_damage": 20,
+    "shard_xp": 1,
+    "waves": [
+      {"enemies": [{"enemy_id": "EN12", "count": 10}, {"enemy_id": "EN13", "count": 8}], "elite": false, "spawn_interval_s": 2.0},
+      {"enemies": [{"enemy_id": "EN14", "count": 8}, {"enemy_id": "EN12", "count": 12}], "elite": false, "spawn_interval_s": 1.8},
+      {"enemies": [{"enemy_id": "EN13", "count": 10}, {"enemy_id": "EN14", "count": 8}, {"enemy_id": "EN12", "count": 12}], "elite": false, "spawn_interval_s": 1.6},
+      {"enemies": [{"enemy_id": "EN12", "count": 14}, {"enemy_id": "EN13", "count": 10}, {"enemy_id": "EN14", "count": 8}], "elite": true, "spawn_interval_s": 1.5},
+      {"enemies": [{"enemy_id": "EN13", "count": 12}, {"enemy_id": "EN14", "count": 10}, {"enemy_id": "EN12", "count": 14}], "elite": true, "spawn_interval_s": 1.5}
+    ],
+    "battles": 2, "has_event": true, "has_shop": true, "has_canonization": false
   }
 ]

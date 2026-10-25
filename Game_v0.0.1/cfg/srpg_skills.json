@@ -1,134 +1,62 @@
-{
-  "SK_PYRE": {
-    "id": "SK_PYRE",
-    "name_cn": "火刑柱",
-    "cd": 3,
-    "shape": "cross",
-    "range": 1,
-    "value": 0,
-    "params": {"burn_rounds": 2, "burn_dmg": 5},
-    "tags": ["terrain", "damage"],
-    "desc": "在目标格持续 2 回合生成火格，站在其上的单位每回合受 5 点伤害。"
+[
+  {
+    "id": "SK_PYRE", "chief_id": "CH_jin", "slot": "a", "name_cn": "火刑柱",
+    "cd": 6, "damage": 2, "shape": "self", "duration": 8,
+    "params": {"fire_dps": 2, "radius_px": 64}
   },
-  "SK_OFFER": {
-    "id": "SK_OFFER",
-    "name_cn": "献祭",
-    "cd": 2,
-    "shape": "single",
-    "range": 0,
-    "value": 2,
-    "params": {"self_loss_hp": 5, "team_atk_add": 2, "buff_rounds": 1},
-    "tags": ["buff"],
-    "desc": "自损 5 点 HP，全队攻击 +2，持续 1 回合。"
+  {
+    "id": "SK_OFFER", "chief_id": "CH_jin", "slot": "b", "name_cn": "献祭",
+    "cd": 10, "damage": 0, "shape": "self", "duration": 4,
+    "params": {"self_loss_hp": 5, "team_damage_bonus": 0.3}
   },
-  "SK_STARFALL": {
-    "id": "SK_STARFALL",
-    "name_cn": "星坠",
-    "cd": 4,
-    "shape": "cross",
-    "range": 3,
-    "value": 6,
-    "params": {},
-    "tags": ["damage"],
-    "desc": "以目标格为中心的十字 5 格内敌人各受 6 点伤害。"
+  {
+    "id": "SK_STARFALL", "chief_id": "CH_tong", "slot": "a", "name_cn": "星坠",
+    "cd": 8, "damage": 6, "shape": "cross", "duration": 0.5,
+    "params": {"telegraph_s": 0.5, "range_px": 256}
   },
-  "SK_REWIND": {
-    "id": "SK_REWIND",
-    "name_cn": "回溯",
-    "cd": 5,
-    "shape": "single",
-    "range": 3,
-    "value": 0,
-    "params": {"reset_action": true},
-    "tags": ["move", "buff"],
-    "desc": "一名友军回到本回合开始位置并重置其行动。"
+  {
+    "id": "SK_REWIND", "chief_id": "CH_tong", "slot": "b", "name_cn": "回溯",
+    "cd": 10, "damage": 0, "shape": "self", "duration": 0,
+    "params": {"target": "ally", "rewind_s": 2, "reset_self_cd": true}
   },
-  "SK_COFFIN_WALL": {
-    "id": "SK_COFFIN_WALL",
-    "name_cn": "棺墙",
-    "cd": 4,
-    "shape": "single",
-    "range": 2,
-    "value": 0,
-    "params": {"cover_hp": 20, "cover_count": 2},
-    "tags": ["terrain"],
-    "desc": "在目标区域生成 2 格可破坏掩体，每格 HP 20。"
+  {
+    "id": "SK_COFFIN_WALL", "chief_id": "CH_pan", "slot": "a", "name_cn": "棺墙",
+    "cd": 8, "damage": 0, "shape": "line", "duration": 0,
+    "params": {"cover_count": 2, "cover_hp": 20}
   },
-  "SK_COFFIN_CHARGE": {
-    "id": "SK_COFFIN_CHARGE",
-    "name_cn": "扛棺冲锋",
-    "cd": 3,
-    "shape": "line",
-    "range": 1,
-    "value": 6,
-    "params": {"push": 1, "wall_bonus_dmg": 6},
-    "tags": ["damage", "move"],
-    "desc": "撞飞面前敌人 1 格，若撞到墙或单位额外受 6 点伤害。"
+  {
+    "id": "SK_COFFIN_CHARGE", "chief_id": "CH_pan", "slot": "b", "name_cn": "扛棺冲锋",
+    "cd": 6, "damage": 6, "shape": "dash", "duration": 0,
+    "params": {"dash_px": 192, "knockback": true, "wall_bonus_damage": 6}
   },
-  "SK_TIDE": {
-    "id": "SK_TIDE",
-    "name_cn": "潮涌",
-    "cd": 3,
-    "shape": "line",
-    "range": 3,
-    "value": 0,
-    "params": {"push": 2},
-    "tags": ["move", "damage"],
-    "desc": "将直线上敌人推离 2 格，撞墙受碰撞伤害。"
+  {
+    "id": "SK_TIDE", "chief_id": "CH_xi", "slot": "a", "name_cn": "潮涌",
+    "cd": 6, "damage": 0, "shape": "line", "duration": 0,
+    "params": {"push_px": 128, "range_px": 320}
   },
-  "SK_HOLY_RAIN": {
-    "id": "SK_HOLY_RAIN",
-    "name_cn": "圣雨",
-    "cd": 4,
-    "shape": "3x3",
-    "range": 3,
-    "value": 0,
-    "params": {"wet_bonus": 3, "wet_hits": 2},
-    "tags": ["debuff", "terrain"],
-    "desc": "3×3 内敌人获得 wet 标记，其下两次受击额外 +3 点伤害。"
+  {
+    "id": "SK_HOLY_RAIN", "chief_id": "CH_xi", "slot": "b", "name_cn": "圣雨",
+    "cd": 8, "damage": 0, "shape": "circle3", "duration": 6,
+    "params": {"wet_mark_s": 6, "bonus_per_hit": 3}
   },
-  "SK_CUT_TONGUE": {
-    "id": "SK_CUT_TONGUE",
-    "name_cn": "割舌",
-    "cd": 4,
-    "shape": "single",
-    "range": 3,
-    "value": 0,
-    "params": {"silence_rounds": 2},
-    "tags": ["silence", "debuff"],
-    "desc": "沉默一名敌人 2 回合，无法施放技能。"
+  {
+    "id": "SK_CUT_TONGUE", "chief_id": "CH_mo", "slot": "a", "name_cn": "割舌",
+    "cd": 8, "damage": 0, "shape": "projectile", "duration": 5,
+    "params": {"silence_s": 5, "range_px": 320}
   },
-  "SK_SHADOW_SWAP": {
-    "id": "SK_SHADOW_SWAP",
-    "name_cn": "影替",
-    "cd": 5,
-    "shape": "single",
-    "range": 3,
-    "value": 5,
-    "params": {"swap_shield": 5},
-    "tags": ["move", "shield"],
-    "desc": "与一名友军交换位置，双方各获得 5 点护盾。"
+  {
+    "id": "SK_SHADOW_SWAP", "chief_id": "CH_mo", "slot": "b", "name_cn": "影替",
+    "cd": 10, "damage": 0, "shape": "swap", "duration": 0,
+    "params": {"target": "ally", "shield_each": 5}
   },
-  "SK_BONE_SPEAR": {
-    "id": "SK_BONE_SPEAR",
-    "name_cn": "骨矛",
-    "cd": 2,
-    "shape": "pierce",
-    "range": 2,
-    "value": 6,
-    "params": {},
-    "tags": ["damage"],
-    "desc": "造成 6 点伤害并穿透 2 格内的所有敌人。"
+  {
+    "id": "SK_BONE_SPEAR", "chief_id": "CH_man", "slot": "a", "name_cn": "骨矛",
+    "cd": 4, "damage": 6, "shape": "projectile", "duration": 0,
+    "params": {"pierce_px": 128}
   },
-  "SK_BONE_MAUSOLEUM": {
-    "id": "SK_BONE_MAUSOLEUM",
-    "name_cn": "万骨冢",
-    "cd": 6,
-    "shape": "single",
-    "range": 1,
-    "value": 0,
-    "params": {"bone_hp": 3},
-    "tags": ["summon"],
-    "desc": "场上每具尸体变为 1 个 3 HP 的骨仆为你作战。"
+  {
+    "id": "SK_BONE_MAUSOLEUM", "chief_id": "CH_man", "slot": "b", "name_cn": "万骨冢",
+    "cd": 15, "damage": 0, "shape": "self", "duration": 10,
+    "params": {"bone_servant_hp": 3, "per_corpse": 1}
   }
-}
+]

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" font-family="sans-serif">
+  <desc>封圣抉择（3选1圣物）720x1280，z序：1天光底 2标题 3三卡 4组合词条 5确认；一键截图布局</desc>
+  <rect x="0" y="0" width="720" height="1280" fill="#EFE4CE" stroke="#4A3B2A" stroke-width="4"/>
+  <!-- z1 天光底 -->
+  <path d="M360 0 L420 220 L300 220 Z" fill="#F5E6C0" stroke="#E8B33C" stroke-width="3"/>
+  <text x="360" y="60" text-anchor="middle" font-size="16" fill="#B8860B">z1 天光裂隙底景（金光柱）</text>
+  <!-- z2 标题 -->
+  <rect x="60" y="100" width="600" height="90" fill="#F7EEDB" stroke="#4A3B2A" stroke-width="3"/>
+  <text x="360" y="140" text-anchor="middle" font-size="26" fill="#4A3B2A">z2 封圣抉择 · 三选一</text>
+  <text x="360" y="172" text-anchor="middle" font-size="16" fill="#6B5B45">章末掉落 · 白70%/蓝25%/金5%</text>
+  <!-- z3 三卡 竖排 544x300 each -->
+  <g stroke="#4A3B2A" stroke-width="4" fill="#F7EEDB">
+    <rect x="88" y="230" width="544" height="280"/>
+    <rect x="88" y="540" width="544" height="280"/>
+    <rect x="88" y="850" width="544" height="280"/>
+  </g>
+  <rect x="88" y="540" width="544" height="280" fill="none" stroke="#E8B33C" stroke-width="6"/>
+  <g font-size="17" fill="#4A3B2A">
+    <text x="120" y="280">z3 圣物卡A（白）：断角</text>
+    <text x="120" y="320">图标 128x128 + 效果：近战伤害 +3</text>
+    <text x="120" y="470">稀有度框色：骨白</text>
+    <text x="120" y="590">z3 圣物卡B（金）：巴别残砖</text>
+    <text x="120" y="630">图标 + 效果：换人 CD→0，换人瞬间闪避</text>
+    <text x="120" y="780">稀有度框色：圣物金 #E8B33C（金光描边）</text>
+    <text x="120" y="900">z3 圣物卡C（蓝）：双子神像</text>
+    <text x="120" y="940">图标 + 效果：相邻友军分摊 30% 伤害</text>
+    <text x="120" y="1090">稀有度框色：松石绿</text>
+  </g>
+  <!-- z4 组合词条 -->
+  <rect x="88" y="1150" width="544" height="56" fill="#F7EEDB" stroke="#E8B33C" stroke-width="4"/>
+  <text x="360" y="1186" text-anchor="middle" font-size="17" fill="#4A3B2A">z4 当前组合词条（同屏截图区）</text>
+  <!-- z5 确认 -->
+  <text x="360" y="1240" text-anchor="middle" font-size="15" fill="#6B5B45">z5 点卡即选，选后立即进入下一章</text>
+</svg>

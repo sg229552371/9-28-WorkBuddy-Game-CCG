@@ -1,53 +1,44 @@
 [
   {
-    "chapter": 1,
-    "options": [
-      {
-        "track": "devotion",
-        "name_cn": "为泥胎开光（推荐默认）",
-        "effects": [{"type": "team_shield", "value": 8}],
-        "boss_mutation": {"type": "holy_repay", "params": {"interval_rounds": 5, "heal_ratio": 0.05}}
-      },
-      {
-        "track": "blasphemy",
-        "name_cn": "凿碎泥胎之面（推荐默认）",
-        "effects": [{"type": "relic_slot_add", "value": 1}, {"type": "battle_start_stun", "value": 2, "targets": 1}],
-        "boss_mutation": {"type": "divine_wrath", "params": {"threshold": 0.5, "aoe_dmg": 12}}
-      }
-    ]
+    "id": "EV_CH1", "chapter": 1, "name_cn": "泥胎的抉择",
+    "devotion": {
+      "desc_cn": "为泥胎开光：全队立刻获得 8 点护盾，Boss 获得「圣偿」——每 15 秒回复 5% HP。",
+      "reward": {"type": "team_shield", "params": {"shield": 8}},
+      "boss_mod": {"type": "heal_pct", "params": {"interval_s": 15, "pct": 0.05}}
+    },
+    "blasphemy": {
+      "desc_cn": "凿碎泥胎之面：本局圣物栏 +1，但每次战斗开打随机 1 名角色技能 CD 翻倍 10 秒；Boss 获得「神怒」——首次进入半血时全体 AoE 12 点。",
+      "reward": {"type": "relic_slot_add", "params": {"slot_add": 1}},
+      "cost": {"type": "cd_double", "params": {"s": 10}},
+      "boss_mod": {"type": "half_hp_aoe", "params": {"damage": 12}}
+    }
   },
   {
-    "chapter": 2,
-    "options": [
-      {
-        "track": "devotion",
-        "name_cn": "向铜喉献上颂歌（推荐默认）",
-        "effects": [{"type": "team_max_hp_add", "value": 4}],
-        "boss_mutation": {"type": "holy_repay", "params": {"interval_rounds": 4, "heal_ratio": 0.05}}
-      },
-      {
-        "track": "blasphemy",
-        "name_cn": "熔毁铜喉之钟（推荐默认）",
-        "effects": [{"type": "team_atk_add", "value": 2}, {"type": "shop_price_add", "value": 0.2}],
-        "boss_mutation": {"type": "divine_wrath", "params": {"threshold": 0.4, "aoe_dmg": 14}}
-      }
-    ]
+    "id": "EV_CH2", "chapter": 2, "name_cn": "铜喉的抉择",
+    "devotion": {
+      "desc_cn": "向铜喉献上颂歌：全队最大 HP +4，Boss 获得「圣偿」——每 15 秒回复 5% HP。",
+      "reward": {"type": "team_max_hp_add", "params": {"hp_add": 4}},
+      "boss_mod": {"type": "heal_pct", "params": {"interval_s": 15, "pct": 0.05}}
+    },
+    "blasphemy": {
+      "desc_cn": "熔毁铜喉之钟：全队伤害 +2，但每次战斗开打随机 1 名角色技能 CD 翻倍 10 秒；Boss 获得「神怒」——首次进入半血时全体 AoE 12 点。",
+      "reward": {"type": "team_damage_add", "params": {"damage_add": 2}},
+      "cost": {"type": "cd_double", "params": {"s": 10}},
+      "boss_mod": {"type": "half_hp_aoe", "params": {"damage": 12}}
+    }
   },
   {
-    "chapter": 3,
-    "options": [
-      {
-        "track": "devotion",
-        "name_cn": "封圣：以全队之名加冕（推荐默认）",
-        "effects": [{"type": "team_shield", "value": 12}, {"type": "team_max_hp_add", "value": 6}],
-        "boss_mutation": {"type": "holy_repay", "params": {"interval_rounds": 3, "heal_ratio": 0.08}}
-      },
-      {
-        "track": "blasphemy",
-        "name_cn": "封圣：窃取神格本身（推荐默认）",
-        "effects": [{"type": "team_atk_add", "value": 4}, {"type": "battle_start_stun", "value": 2, "targets": 1}],
-        "boss_mutation": {"type": "divine_wrath", "params": {"threshold": 0.6, "aoe_dmg": 18}}
-      }
-    ]
+    "id": "EV_CH3", "chapter": 3, "name_cn": "金面的抉择",
+    "devotion": {
+      "desc_cn": "封圣：以全队之名加冕——全队获得 12 点护盾且最大 HP +6，Boss 获得「圣偿」——每 15 秒回复 5% HP。",
+      "reward": {"type": "team_shield_and_hp", "params": {"shield": 12, "hp_add": 6}},
+      "boss_mod": {"type": "heal_pct", "params": {"interval_s": 15, "pct": 0.05}}
+    },
+    "blasphemy": {
+      "desc_cn": "封圣：窃取神格本身——全队伤害 +4，但每次战斗开打随机 1 名角色技能 CD 翻倍 10 秒；Boss 获得「神怒」——首次进入半血时全体 AoE 12 点。",
+      "reward": {"type": "team_damage_add", "params": {"damage_add": 4}},
+      "cost": {"type": "cd_double", "params": {"s": 10}},
+      "boss_mod": {"type": "half_hp_aoe", "params": {"damage": 12}}
+    }
   }
 ]
