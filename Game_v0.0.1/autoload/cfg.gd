@@ -44,3 +44,58 @@ func get_dict(key: String) -> Dictionary:
 ## 导入校验：cfg/ 目录为空或全空表时给出醒目警告（P2 数据迁移前属预期状态）
 func assert_not_empty() -> bool:
 	return not tables.is_empty()
+
+
+## ---------- 只读辅助方法（场景流 UI 用；不修改任何表内容）----------
+
+## 关卡表（cfg/levels.json，数组）；缺失返回空数组
+func get_levels() -> Array:
+	var v: Variant = tables.get("levels")
+	return v if v is Array else []
+
+
+## 英雄表（cfg/heroes.json，数组）；缺失返回空数组
+func get_heroes() -> Array:
+	var v: Variant = tables.get("heroes")
+	return v if v is Array else []
+
+
+## 怪物表（cfg/monsters.json，字典）；缺失返回空字典
+func get_monsters() -> Dictionary:
+	var v: Variant = tables.get("monsters")
+	return v if v is Dictionary else {}
+
+
+## 组队上限（cfg/team.json maxSize；缺省 3）
+func get_team_max_size() -> int:
+	var team: Variant = tables.get("team")
+	if team is Dictionary:
+		return int((team as Dictionary).get("maxSize", 3))
+	return 3
+
+
+## 主线关卡总数（cfg/mainLevelCount.json 或 levels.json 长度兜底）
+func get_main_level_count() -> int:
+	var v: Variant = tables.get("mainLevelCount")
+	if v is int:
+		return int(v)
+	return get_levels().size()
+
+
+## 设置项规格（cfg/settings.json 中某键的范围/默认值字典）；缺失返回空字典
+func get_setting_spec(key: String) -> Dictionary:
+	var settings: Variant = tables.get("settings")
+	if settings is Dictionary:
+		var spec: Variant = (settings as Dictionary).get(key)
+		return spec if spec is Dictionary else {}
+	return {}
+
+
+## 武器名（cfg/weapons.json[weaponId].name）；缺失回退武器 ID
+func get_weapon_name(weapon_id: String) -> String:
+	var weapons: Variant = tables.get("weapons")
+	if weapons is Dictionary and (weapons as Dictionary).has(weapon_id):
+		var w: Variant = (weapons as Dictionary)[weapon_id]
+		if w is Dictionary:
+			return str((w as Dictionary).get("name", weapon_id))
+	return weapon_id

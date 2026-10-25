@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Game_v0.0.1"
-run/main_scene="res://mods/jes-babel/scenes/babel_main.tscn"
+run/main_scene="res://mods/jes-engine-core/scenes/flow.tscn"
 config/features=PackedStringArray("4.7")
 config/icon="res://icon.svg"
 

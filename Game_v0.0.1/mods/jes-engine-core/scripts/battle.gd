@@ -46,13 +46,27 @@ func _ready() -> void:
 				hero = h
 				break
 	var level: Dictionary = {}
-	if levels is Array and (levels as Array).size() > 0:
-		level = (levels as Array)[0]       # LEVEL_001
+	if levels is Array:
+		# 场景串联流：GameState.level_id 选关（缺省 LEVEL_001）
+		var want_lv := str(GameState.level_id) if str(GameState.level_id) != "" else "LEVEL_001"
+		for lv in (levels as Array):
+			if str(lv.get("id", "")) == want_lv:
+				level = lv
+				break
+		if level.is_empty() and (levels as Array).size() > 0:
+			level = (levels as Array)[0]
 	combat.setup(hero, monsters if monsters is Dictionary else {}, level, {
 		"spawnCircles": Cfg.get_table("spawnCircles"),
 		"levelCurve": Cfg.get_table("levelCurve"),
 		"elites": Cfg.get_table("elites"),
 		"chestDrop": Cfg.get_table("chestDrop"),
+		"extract": Cfg.get_table("extract"),
+		"weight": Cfg.get_table("weight"),
+		"levelFreeze": Cfg.get_table("levelFreeze"),
+		"autoFight": Cfg.get_table("autoFight"),
+		"levelUp": Cfg.get_table("levelUp"),
+		"warBuffs": Cfg.get_table("warBuffs"),
+		"monsterScale": Cfg.get_table("monsterScale"),
 	})
 	GameState.set_state("playing")
 	print("[Battle] 开局：英雄=", hero.get("id", "?"), " 关卡=", level.get("id", "?"),
@@ -103,6 +117,78 @@ func _ready() -> void:
 	_restore_season()
 	# --- 击杀事件总线：裂隙计数 + 赛季经验 ---
 	combat.monster_killed.connect(_on_monster_killed)
+	# --- 流程补齐接线：结算信号 / 升级暂停闸门 ---
+	EventBus.run_settled.connect(_on_run_settled)
+
+## 结算信号（combat 发一次）：撤离胜利或阵亡，统一弹结算面板
+func _on_run_settled(result: Dictionary) -> void:
+	_settle_result = result
+	if str(result.get("winner", "")) == "extract":
+		GameState.last_settlement = {
+			"kills": combat.kills, "wave": combat.wave_index,
+			"coins": combat.coin_gained, "exp": combat.exp_gained,
+		}
+		_save_on_death()   # 撤离同样落档（存档口径不变）
+		_show_death_settlement()
+
+var _settle_result: Dictionary = {}
+var _levelup_offers: Array = []
+var _levelup_layer: CanvasLayer = null
+
+## 升级 4 选 1 面板（19.10 暂停闸门：state="levelup"，主循环跳过世界更新、渲染照常）
+func _show_levelup_panel() -> void:
+	if _levelup_layer != null:
+		return
+	_levelup_offers = combat.make_levelup_offers()
+	GameState.set_state("levelup")
+	_levelup_layer = CanvasLayer.new()
+	add_child(_levelup_layer)
+	var panel := Panel.new()
+	panel.offset_left = 560.0
+	panel.offset_top = 300.0
+	panel.offset_right = 1360.0
+	panel.offset_bottom = 700.0
+	_levelup_layer.add_child(panel)
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.add_theme_constant_override("separation", 12)
+	panel.add_child(vbox)
+	var title := Label.new()
+	title.text = "升级！选择一项强化（Lv%d）" % combat.player_lv
+	title.add_theme_font_size_override("font_size", 28)
+	vbox.add_child(title)
+	for i in range(_levelup_offers.size()):
+		var offer: Dictionary = _levelup_offers[i]
+		var txt := "[%d] %s" % [i + 1, str(offer.get("name", "?"))]
+		if str(offer.get("type", "stat")) == "warbuff":
+			txt += "（%s）" % str(offer.get("label", ""))
+		else:
+			txt += "（%s +%d）" % [str(offer.get("stat", "")), int(offer.get("value", 0.0))]
+		var btn := Button.new()
+		btn.text = txt
+		btn.add_theme_font_size_override("font_size", 22)
+		var idx := i
+		btn.pressed.connect(func() -> void: _choose_levelup(idx))
+		vbox.add_child(btn)
+
+func _choose_levelup(index: int) -> void:
+	if index < 0 or index >= _levelup_offers.size():
+		return
+	combat.apply_levelup_choice(_levelup_offers[index])
+	_levelup_offers.clear()
+	if _levelup_layer != null:
+		_levelup_layer.queue_free()
+		_levelup_layer = null
+	# 还有未处理的升级 → 立即弹下一轮；否则恢复
+	if combat.pending_levelups > 0:
+		_show_levelup_panel()
+	else:
+		GameState.set_state("playing")
+
+## 自动战斗开关（G 键；EventBus 通知 HUD 侧）
+func _toggle_auto_fight() -> void:
+	combat.auto_fight = not combat.auto_fight
+	EventBus.auto_fight_toggled.emit(combat.auto_fight)
 
 ## 水晶面板装卸回写：面板发来的水晶数组覆盖本地，重编译生效
 func _on_panel_crystals(crystals: Array) -> void:
@@ -237,6 +323,8 @@ func _on_chest_picked(chest: Dictionary) -> void:
 			var item := gg.make_gear(def, q, combat.rng)
 			bag_ui.inv_temp.auto_add(item, bag_ui.chest_stack_map)
 			bag_ui.refresh()
+			# 负重：装备入包计重（cfg/weight.json 惩罚；gearDefs.weight 缺省 5）
+			combat.add_weight(float(def.get("weight", 5.0)))
 	# ② 水晶：从 crystalDefs 随机一颗，重编译后战斗数值立即变化
 	var cdefs: Dictionary = _skill_table.get("crystalDefs", {})
 	if not cdefs.is_empty():
@@ -289,10 +377,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		_start_endless()
 	elif key == KEY_R:
 		_start_rift()
-	elif key in [KEY_1, KEY_2, KEY_3]:
-		_choose_endless_reward(int(key - KEY_1))
+	elif key in [KEY_1, KEY_2, KEY_3, KEY_4]:
+		# 升级 4 选 1 优先（暂停闸门期间数字键选词条）
+		if combat.pending_levelups > 0:
+			_choose_levelup(int(key - KEY_1))
+		else:
+			_choose_endless_reward(int(key - KEY_1))
+	elif key == KEY_G:
+		_toggle_auto_fight()
 
 func _process(delta: float) -> void:
+	# 升级 4 选 1 暂停闸门（19.10）：弹窗期间跳过世界更新、渲染照常
+	if combat.pending_levelups > 0 and combat.player.alive:
+		_show_levelup_panel()
+		queue_redraw()
+		_update_hud()
+		return
 	if paused or not combat.player.alive or not _endless_rewards.is_empty():
 		if not combat.player.alive:
 			_save_on_death()
@@ -327,12 +427,24 @@ func _update_hud() -> void:
 		return
 	var p := combat.player
 	var st := "暂停" if paused else ("阵亡" if not bool(p.alive) else "战斗中")
-	hud.text = "状态:%s  HP:%d/%d  击杀:%d  波次:%d  怪:%d  经验:%d  金币:%d  暴击:%d  宝箱:%d\n技能:%s  水晶:%d  伤害倍率:%.2f  冷却:%.2fs\n操作：WASD 移动 · 鼠标瞄准 · 左键/J 射击 · Tab 背包 · Esc 暂停" % [
-		st, int(p.hp), int(p.hp_max), combat.kills, combat.wave_index,
+	if combat.freeze_time > 0.0:
+		st = "全场冻结中·%s %.1fs" % [combat.freeze_hint, combat.freeze_time]
+	hud.text = "状态:%s  HP:%d/%d  击杀:%d/%d  波次:%d  怪:%d  经验:%d  金币:%d  暴击:%d  宝箱:%d  负重:%d  Lv%d\n技能:%s  水晶:%d  伤害倍率:%.2f  冷却:%.2fs  自动战斗:%s\n操作：WASD 移动 · 鼠标瞄准 · 左键/J 射击 · Tab 背包 · Esc 暂停 · G 自动战斗" % [
+		st, int(p.hp), int(p.hp_max), combat.kills, combat.progress_goal, combat.wave_index,
 		combat.monsters.size(), combat.exp_gained, combat.coin_gained,
-		combat.crit_count, combat.chests.size(),
+		combat.crit_count, combat.chests.size(), int(combat.weight), combat.player_lv,
 		_skill_id if _skill_id != "" else "无", _crystals.size(),
-		combat.bullet_dmg_mul, combat.shoot_interval]
+		combat.bullet_dmg_mul, combat.shoot_interval,
+		"开" if combat.auto_fight else "关"]
+	# 撤离状态提示（BOSS 死 → 雕像出现 → 进圈读条）
+	var ep: ExtractPoint = combat.extract_point
+	if ep != null and ep.active and bool(p.alive):
+		var need := maxf(0.1, ep.channel_seconds(combat.weight))
+		var inside := ep.contains(Vector2(p.pos))
+		var base := maxf(0.1, float(ep.cfg.get("channel", 1.0)))
+		var pct := ep.progress / base * 100.0   # 进度按基准秒数计（extract_point.update 口径）
+		hud.text += "\n撤离点已出现（读条 %.0fs）：进圈读条撤离%s" % [need,
+			"（读条中 %.0f%%）" % pct if inside else ""]
 	if combat.endless_mode == null:
 		hud.text += " · F 开启无尽 · R 裂隙任务"
 		if rift_mode != null and rift_mode.active:
@@ -412,6 +524,18 @@ func _draw() -> void:
 	for b in combat.bullets:
 		var col := Color(1.0, 0.9, 0.3) if bool(b.from_player) else Color(1.0, 0.5, 0.2)
 		draw_circle(Vector2(b.pos), float(b.radius), col)
+	# 撤离点雕像（金色圈 + 读条弧）：进圈自动读条撤离
+	var ep: ExtractPoint = combat.extract_point
+	if ep != null and ep.active:
+		var sp := ep.position
+		var radius := float(ep.cfg.get("radius", 100.0)) * ep.judge_mul
+		draw_arc(sp, radius, 0.0, TAU, 48, Color(1.0, 0.85, 0.3), 4.0)
+		draw_circle(sp, 12.0, Color(1.0, 0.85, 0.3))
+		var base := maxf(0.1, float(ep.cfg.get("channel", 1.0)))
+		var frac := clampf(float(ep.progress) / base, 0.0, 1.0)
+		if frac > 0.0:
+			draw_arc(sp, radius + 10.0, -TAU / 4.0, -TAU / 4.0 + TAU * frac, 48,
+				Color(0.4, 1.0, 0.5), 6.0)
 	# 玩家（白圈 + 瞄准线）
 	if bool(combat.player.alive):
 		var pp := Vector2(combat.player.pos)

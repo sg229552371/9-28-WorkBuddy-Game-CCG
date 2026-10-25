@@ -1,0 +1,33 @@
+{
+  "crit": {
+    "chance": 0.08,
+    "dmgMul": 1.5,
+    "minDmg": 3
+  },
+  "hitstop": {
+    "dur": 0.04,
+    "timeScale": 0.15,
+    "cooldown": 0.5,
+    "hpRatio": 0.06,
+    "bossExempt": true
+  },
+  "float": {
+    "jitter": 6,
+    "critScale": 1.5,
+    "dur": 1.2
+  },
+  "extractPulse": {
+    "color": "229,72,77",
+    "baseAlpha": 0.22,
+    "ampAlpha": 0.18,
+    "speed": 6,
+    "edge": 150
+  },
+  "audio": {
+    "sampleRate": 22050,
+    "shootPitch": { "min": 0.8, "max": 1.4, "refCd": 0.4, "slope": 0.8 },
+    "hitTiers": { "mid": 0.06, "big": 0.15 },
+    "heartbeat": { "bpmStart": 60, "bpmEnd": 120, "gain": 0.16, "fadeOut": 0.25 },
+    "master": 0.45
+  }
+}

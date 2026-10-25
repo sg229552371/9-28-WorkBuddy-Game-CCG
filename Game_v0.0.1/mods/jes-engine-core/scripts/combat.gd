@@ -15,6 +15,11 @@ signal boss_spawned(m: Dictionary)
 signal chest_spawned(chest: Dictionary)
 signal chest_picked(chest: Dictionary)
 signal floor_advanced(floor_no: int, rewards: Array)
+## 表现层挂点（fx_feedback）：伤害事件，只发不渲染
+signal damage_dealt(info: Dictionary)
+## 撤离点开/关（fx_feedback 表现钩子）
+signal extract_started(pos: Vector2)
+signal extract_ended(pos: Vector2)
 
 ## null 保持普通关卡原行为；无尽由调用方 begin 后注入。
 var endless_mode = null
@@ -109,6 +114,46 @@ var _default_affixes := {
 var field := FlowField.new()
 var hash_mon: SpatialHash = SpatialHash.new(96)
 var rng := RandomNumberGenerator.new()
+
+## ============================================================
+## 流程补齐（对齐 html combat.js / modes.js / config.js 口径）
+## ============================================================
+## 关卡推进（combat.js 731：击杀达 progressGoal 或超时 timeLimit → 刷 BOSS）
+var run_time := 0.0
+var progress_goal := 0
+var time_limit := 0.0
+var boss_triggered := false
+## 结算只发一次（run_settled：extract / dead）
+var settled := false
+## 开场冻结（cfg/levelFreeze.json：冻结期不刷怪不可动，battle.gd 画大字倒计时）
+var freeze_time := 0.0
+var freeze_hint := ""
+var freeze_cfg: Dictionary = {}
+## 负重（cfg/weight.json：threshold/minFactor/slope/divisor；>threshold 线性减速）
+var weight := 0.0
+var weight_cfg: Dictionary = {}
+## 自动战斗（cfg/autoFight.json：英雄技能按 CD 自动施放，默认开）
+var auto_fight := true
+var auto_fight_cfg: Dictionary = {}
+var auto_skill_cd := 3.0          # PLACEHOLDER：autoFight 表无技能 CD 键，缺省 3s
+var auto_skill_timer := 3.0
+## 升级 4 选 1（cfg/levelUp.json + warBuffs.json；19.10 暂停闸门）
+var player_lv := 1
+var pending_levelups := 0
+var levelup_cfg: Dictionary = {}
+var warbuff_cfg: Array = []
+var war_buffs: Dictionary = {}    # 已选战buff：stat -> mul 累乘
+var lifesteal := 0.0
+## 撤离流（BOSS 死 → 撤离点 → 读条 + 压力波，modes.js 471~585）
+var extract_point: ExtractPoint = null
+var extract_cfg: Dictionary = {}
+var _ext_wave := 0
+var _ext_wave_timer := 0.0
+## 难度分档（cfg/monsterScale.json：邪神雕像倍率，combat.js monsterScaleMul）
+var scale_muls: Dictionary = {}   # key -> mul（缺省 1，只影响后续生成）
+var monster_scale_cfg: Dictionary = {}
+
+const ExtractPointScript := preload("res://mods/jes-rift/scripts/extract_point.gd")
 ## 流场重算节流（每 0.15s 一次，玩家移动中足够跟手）
 var _field_timer := 0.0
 var _field_interval := 0.15
@@ -135,6 +180,34 @@ func setup(hero: Dictionary, monsters_table: Dictionary, level: Dictionary, extr
 	elite_cfg = ec if ec is Dictionary else {}
 	var cc: Variant = extras.get("chestDrop")
 	chest_cfg = cc if cc is Dictionary else {}
+	# --- 流程补齐表注入（缺表用空表 + 代码缺省，push_warning 提示） ---
+	for key in ["extract", "weight", "levelFreeze", "autoFight", "levelUp", "monsterScale"]:
+		var tv: Variant = extras.get(key)
+		if tv is Dictionary and not (tv as Dictionary).is_empty():
+			match key:
+				"extract": extract_cfg = tv
+				"weight": weight_cfg = tv
+				"levelFreeze": freeze_cfg = tv
+				"autoFight": auto_fight_cfg = tv
+				"levelUp": levelup_cfg = tv
+				"monsterScale": monster_scale_cfg = tv
+		else:
+			push_warning("[Combat] 配置表缺失或为空: " + key)
+	var wb: Variant = extras.get("warBuffs")
+	warbuff_cfg = wb if wb is Array else []
+	# --- 开场冻结（levelFreeze.freezeTime，冻结期不刷怪不可动） ---
+	freeze_time = maxf(0.0, float(freeze_cfg.get("freezeTime", 0.0)))
+	freeze_hint = str(freeze_cfg.get("hint", "准备战斗"))
+	if freeze_time > 0.0:
+		EventBus.freeze_started.emit(freeze_time, freeze_hint)
+	# --- 自动战斗开关（html 口径默认开） ---
+	auto_fight = bool(auto_fight_cfg.get("enabled", true)) if auto_fight_cfg.has("enabled") else true
+	auto_skill_timer = auto_skill_cd
+	# --- BOSS 触发口径（combat.js 731：progressGoal / timeLimit 先到者；波次 Boss 让位） ---
+	progress_goal = int(level_cfg.get("progressGoal", 0))
+	time_limit = float(level_cfg.get("timeLimit", 0.0))
+	if progress_goal > 0 or time_limit > 0.0:
+		boss_every_waves = 0
 	if level.has("mapW"):
 		world_size = Vector2(float(level.mapW), float(level.mapH))
 	player.hp_max = float(hero.get("hp", 94))
@@ -173,9 +246,19 @@ func _default_walls() -> void:
 func step(dt: float, move_dir: Vector2, aim_dir: Vector2, want_shoot: bool) -> void:
 	if not player.alive:
 		return
-	# --- 玩家移动（撞墙钳制：逐轴推回） ---
+	# --- 开场冻结（levelFreeze）：全场不可动、不刷怪，只倒计时 ---
+	if freeze_time > 0.0:
+		freeze_time = maxf(0.0, freeze_time - dt)
+		return
+	run_time += dt
+	# --- BOSS 触发（combat.js 731：击杀达 progressGoal 或超时 timeLimit，先到者） ---
+	if not boss_triggered and (progress_goal > 0 or time_limit > 0.0) \
+			and (kills >= progress_goal or (time_limit > 0.0 and run_time >= time_limit)):
+		boss_triggered = true
+		spawn_boss(str(level_cfg.get("boss", "")))
+	# --- 玩家移动（负重减速 + 撞墙钳制：逐轴推回） ---
 	if move_dir.length_squared() > 0.0:
-		var np: Vector2 = player.pos + move_dir.normalized() * player.spd * dt
+		var np: Vector2 = player.pos + move_dir.normalized() * player.spd * weight_factor() * dt
 		np.x = clampf(np.x, player.radius, world_size.x - player.radius)
 		np.y = clampf(np.y, player.radius, world_size.y - player.radius)
 		for r in walls:
@@ -185,6 +268,11 @@ func step(dt: float, move_dir: Vector2, aim_dir: Vector2, want_shoot: bool) -> v
 	shoot_cd = maxf(shoot_cd - dt, 0.0)
 	if want_shoot and shoot_cd <= 0.0 and aim_dir.length_squared() > 0.0:
 		_player_shoot(aim_dir.normalized())
+	# --- 自动战斗：英雄技能按 CD 自动施放（autoFight 口径默认开） ---
+	auto_skill_timer -= dt
+	if auto_fight and auto_skill_timer <= 0.0:
+		auto_skill_timer = auto_skill_cd
+		_cast_auto_skill(aim_dir.normalized() if aim_dir.length_squared() > 0.0 else Vector2.RIGHT)
 	# --- 怪刷波 ---
 	if endless_mode == null:
 		wave_timer += dt
@@ -203,8 +291,211 @@ func step(dt: float, move_dir: Vector2, aim_dir: Vector2, want_shoot: bool) -> v
 	_monster_attack(dt)
 	# --- Boss 弹幕（多阶段：血量阈值换弹幕模式）---
 	_update_bosses(dt)
+	# --- 撤离流：压力波 + 读条（modes.js extractWaveTick） ---
+	_step_extract(dt)
 	# --- 宝箱拾取（数据体；背包接口走 chest_picked 信号钩子）---
 	_pickup_chests()
+
+## ============================================================
+## 撤离流（modes.js 471~585）：BOSS 死 → 撤离点 → 玩家进圈读条
+## 期间压力波：waveInterval 间隔，每波 waveSizeBase+waveSizeGrowth*(n-1) 只，精英 waveEliteChance
+## ============================================================
+func _begin_extract(boss_pos: Vector2) -> void:
+	extract_point = ExtractPointScript.new(extract_cfg)
+	if not extract_point.activate(boss_pos):
+		push_warning("[Combat] 撤离点激活失败（extract 表缺 enabled？）")
+		return
+	_ext_wave = 0
+	_ext_wave_timer = maxf(0.0, float(extract_cfg.get("waveFirstDelay", 0.0)))
+	EventBus.extract_ready.emit(boss_pos)
+	extract_started.emit(boss_pos)
+
+## 压力波 + 读条推进（真实秒推进，不随负重缩放——负重只改读条时长）
+func _step_extract(dt: float) -> void:
+	if extract_point == null or extract_point.done or settled:
+		return
+	# 压力波：仅在玩家正在读条时刷（modes.js：extractChanneling 守卫）
+	if extract_point.active and extract_point.contains(Vector2(player.pos)):
+		_ext_wave_timer -= dt
+		if _ext_wave_timer <= 0.0:
+			_ext_wave += 1
+			_ext_wave_timer = maxf(0.1, float(extract_cfg.get("waveInterval", 2.5)))
+			_spawn_extract_wave()
+	# 读条推进（权重=当前负重；冻结已在 step 顶部拦截）
+	var heroes: Array = [{"id": "P", "position": Vector2(player.pos), "dead": not bool(player.alive)}]
+	if extract_point.update(dt, heroes, false, weight):
+		extract_ended.emit(extract_point.position)
+		_settle("extract")
+
+## 撤离压力波单波：围绕雕像 waveSpawnRadius 随机取点，8% 精英
+func _spawn_extract_wave() -> void:
+	if extract_point == null:
+		return
+	var slots := monster_cap - monsters.size()
+	var size := extract_point.wave_size(_ext_wave, slots)
+	var radius := float(extract_cfg.get("waveSpawnRadius", 420.0))
+	var elite_chance := float(extract_cfg.get("waveEliteChance", 0.08))
+	var st := extract_point.position
+	for i in range(size):
+		var ang := rng.randf_range(0.0, TAU)
+		var rr := rng.randf_range(radius * 0.6, radius)
+		var pos := st + Vector2(cos(ang), sin(ang)) * rr
+		pos.x = clampf(pos.x, 40.0, world_size.x - 40.0)
+		pos.y = clampf(pos.y, 40.0, world_size.y - 40.0)
+		var tpl_id := _pick_tpl()
+		if tpl_id == "":
+			continue
+		var m := spawn_monster_at(tpl_id, pos)
+		if not m.is_empty() and rng.randf() < elite_chance and not elite_pool_w.is_empty():
+			m.is_elite = true
+			_apply_elite(m)
+
+## 定点生成（撤离波/波次怪通用；沿用 spawn_monster 的表驱动数值）
+func spawn_monster_at(tpl_id: String, pos: Vector2) -> Dictionary:
+	var m := spawn_monster(tpl_id)
+	if not m.is_empty():
+		m.pos = pos
+	return m
+
+## 结算（只发一次）：winner = "extract" / "dead"
+func _settle(winner: String) -> void:
+	if settled:
+		return
+	settled = true
+	EventBus.run_settled.emit({
+		"winner": winner,
+		"shards": coin_gained,   # PLACEHOLDER：结晶折算口径待 settleConvert 接入，暂用金币
+		"kills": kills,
+		"time": run_time,
+		"level_id": str(level_cfg.get("id", "")),
+	})
+
+## ============================================================
+## 负重（cfg/weight.json；html items.js weightFactor 口径）
+## ============================================================
+## 拾取物品入负重；变化即发 weight_changed（HUD 侧）
+func add_weight(amount: float) -> void:
+	weight = maxf(0.0, weight + amount)
+	EventBus.weight_changed.emit(weight)
+
+## 超重减速因子：>threshold 后 f = max(minFactor, 1 - slope*(w-threshold)/divisor)
+func weight_factor() -> float:
+	var th := float(weight_cfg.get("threshold", 100.0))
+	var min_f := float(weight_cfg.get("minFactor", 0.2))
+	var slope := float(weight_cfg.get("slope", 0.8))
+	var divisor := maxf(1.0, float(weight_cfg.get("divisor", 100.0)))
+	if weight <= th:
+		return 1.0
+	return maxf(min_f, 1.0 - slope * (weight - th) / divisor)
+
+## ============================================================
+## 自动技能（autoFight 默认开；html 英雄技能 CD 施放的逻辑层简化）
+## ============================================================
+func _cast_auto_skill(aim: Vector2) -> void:
+	# 技能爆发：朝瞄准方向 3 连发（伤害 1.5×）  # PLACEHOLDER：技能表技能效果待 skillSystem 接入
+	var dmg: float = float(player.atk) * 1.5 * bullet_dmg_mul
+	for i in range(3):
+		var spread := (float(i) - 1.0) * 0.18
+		var d := aim.rotated(spread)
+		_spawn_bullet(player.pos + d * (player.radius + 6.0), d * bullet_spd * 1.1,
+			dmg, 7.0, 1.6, 1, true)
+	EventBus.emit_event("skill_autocast", {"pos": Vector2(player.pos)})
+
+## ============================================================
+## 升级 4 选 1（cfg/levelUp.json + warBuffs.json；19.10 暂停闸门）
+## ============================================================
+## 升级所需经验（levelUp.curve：base * growth^(lv-1)，软帽后乘 softCapMul）
+func exp_to_next() -> int:
+	var curve: Dictionary = levelup_cfg.get("curve", {})
+	var base := float(curve.get("base", 8.0))
+	var growth := float(curve.get("growth", 1.32))
+	var need := base * pow(growth, float(player_lv - 1))
+	if player_lv >= int(curve.get("softCapLv", 12)):
+		need *= float(curve.get("softCapMul", 0.7))
+	return maxi(1, int(round(need)))
+
+## 经验入账 + 升级判定：命中升级 → pending_levelups+1（battle 侧暂停世界弹 4 选 1）
+## exp_gained 为总经验展示口径；exp_pool 为升级扣费口径（两者分离，互不侵蚀）。
+func gain_exp(amount: int) -> void:
+	exp_pool += amount
+	# 简化口径：本局经验全额转化升级进度（html 经验宝石拾取即升级的直译）
+	while exp_pool >= _exp_cost_total():
+		exp_pool -= _exp_cost_total()
+		player_lv += 1
+		pending_levelups += 1
+		EventBus.levelup_started.emit(player_lv)
+
+## 升级经验池（与 exp_gained 总量分离：升级扣费不减总经验显示）
+var exp_pool := 0
+
+## 累计到当前等级的总经验需求（升级判定用简化口径）  # PLACEHOLDER：逐级扣费待细化
+func _exp_cost_total() -> int:
+	return exp_to_next()
+
+## 生成 4 选 1 候选（levelUp.statPack + warBuffs 词条池；choiceCount 个，不重复）
+func make_levelup_offers() -> Array:
+	var pool: Array = []
+	for sp in levelup_cfg.get("statPack", []):
+		pool.append({"id": str(sp.get("id", "")), "name": str(sp.get("name", "")),
+			"type": "stat", "stat": str(sp.get("stat", "atk")), "value": float(sp.get("value", 0.0))})
+	for wb in warbuff_cfg:
+		pool.append({"id": str(wb.get("skillId", "")), "name": str(wb.get("id", "")),
+			"type": "warbuff", "stat": str(wb.get("stat", "atk")), "value": float(wb.get("mul", 1.0)),
+			"label": str(wb.get("label", ""))})
+	var count := maxi(1, int(levelup_cfg.get("choiceCount", 4)))
+	var offers: Array = []
+	var pool_copy := pool.duplicate(true)
+	pool_copy.shuffle()
+	for i in range(mini(count, pool_copy.size())):
+		offers.append(pool_copy[i])
+	return offers
+
+## 选完恢复：应用词条 → pending_levelups-1 → levelup_finished（battle 恢复世界更新）
+func apply_levelup_choice(offer: Dictionary) -> void:
+	var stat := str(offer.get("stat", "atk"))
+	if str(offer.get("type", "stat")) == "warbuff":
+		# 战buff：倍率累乘存表 + 立即生效（atk/spd 直乘，cdMul 乘冷却，lifesteal 累加）
+		var mul := float(offer.get("value", 1.0))
+		war_buffs[stat] = float(war_buffs.get(stat, 1.0)) * mul
+		match stat:
+			"atk": player.atk = float(player.atk) * mul
+			"spd": player.spd = float(player.spd) * mul
+			"cdMul": shoot_interval = maxf(0.08, shoot_interval * mul)
+			"lifesteal": lifesteal += mul   # PLACEHOLDER：吸血结算待伤害管线接入
+	else:
+		# 属性小包：直接加值（hp 同时回满上限增量）
+		var v := float(offer.get("value", 0.0))
+		match stat:
+			"atk": player.atk = float(player.atk) + v
+			"def": player.def = float(player.def) + v
+			"spd": player.spd = float(player.spd) + v
+			"hp":
+				player.hp_max = float(player.hp_max) + v
+				player.hp = float(player.hp) + v
+	pending_levelups = maxi(0, pending_levelups - 1)
+	EventBus.levelup_finished.emit(player_lv)
+
+## ============================================================
+## 难度分档（cfg/monsterScale.json；combat.js monsterScaleMul / applyMonsterScale）
+## ============================================================
+## 邪神雕像倍率：只影响后续生成，不回溯已生成怪
+func monster_scale_mul(key: String) -> float:
+	return float(scale_muls.get(key, 1.0))
+
+## 按目标名套倍率（targets[key].applyHp/applyAtk 开关；生成方逐类调用）
+func apply_monster_scale(m: Dictionary, target_name: String) -> void:
+	var targets: Dictionary = monster_scale_cfg.get("targets", {})
+	var tcfg: Dictionary = targets.get(target_name, {})
+	if tcfg.is_empty():
+		return
+	var mul := monster_scale_mul(str(tcfg.get("key", "")))
+	if is_equal_approx(mul, 1.0):
+		return
+	if bool(tcfg.get("applyHp", false)):
+		m.hp = float(m.hp) * mul
+		m.hp_max = float(m.hp_max) * mul
+	if bool(tcfg.get("applyAtk", false)):
+		m.atk = float(m.atk) * mul
 
 ## 无尽按层限制刷怪波数，最后一波清场后才推进；满屏不消耗波数。
 func _step_endless_waves(dt: float) -> void:
@@ -322,6 +613,10 @@ func _spawn_wave() -> void:
 			and not elite_pool_w.is_empty():
 		spawn_elite()
 	var count := mini(3 + wave_index, 12)
+	# 难度分档：小怪数量倍率（monsterScale.targets["小怪数量"].applyWaveSize）
+	var cnt_targets: Dictionary = monster_scale_cfg.get("targets", {}).get("小怪数量", {})
+	if bool(cnt_targets.get("applyWaveSize", false)):
+		count = maxi(1, int(ceil(float(count) * monster_scale_mul(str(cnt_targets.get("key", "smallCount"))))))
 	for i in range(count):
 		if monsters.size() >= monster_cap:
 			break
@@ -367,6 +662,7 @@ func spawn_monster(tpl_id: String, as_elite := false) -> Dictionary:
 	if as_elite:
 		m.is_elite = true
 		_apply_elite(m)
+	apply_monster_scale(m, "精英属性" if as_elite else "小怪属性")
 	monsters.append(m)
 	return m
 
@@ -424,6 +720,7 @@ func spawn_boss(boss_id: String) -> Dictionary:
 		"phases": tpl.get("phases", []), "phase": 0,
 		"pattern_cd": float(tpl.get("patternCd", 3.2)), "pattern_toggle": 0,
 	}
+	apply_monster_scale(m, "BOSS属性")
 	monsters.append(m)
 	boss_spawned.emit(m)
 	return m
@@ -627,7 +924,7 @@ func _monster_attack(dt: float) -> void:
 ## ============================================================
 ## 伤害结算（逐份：先减免后扣血；死亡只触发一次信号）
 ## ============================================================
-func _damage_monster(m: Dictionary, raw: float) -> void:
+func _damage_monster(m: Dictionary, raw: float, is_crit := false) -> void:
 	if bool(m.dead):
 		return
 	var real := maxf(raw - float(m.def), 1.0)   # 保底 1，防高防完全免疫
@@ -653,13 +950,23 @@ func _damage_monster(m: Dictionary, raw: float) -> void:
 		if endless_mode != null:
 			endless_mode.record_kill()
 		exp_gained += int(m.get("exp", 3))
+		gain_exp(int(m.get("exp", 3)))
 		coin_gained += int(m.get("coin", 2))
 		# 宝箱掉落：精英/Boss 必掉（真源 chestDrop 品质权重；pickUp 走信号钩子）
 		if bool(m.get("boss", false)):
 			_drop_chest(Vector2(m.pos), "boss")
 		elif bool(m.get("is_elite", false)):
 			_drop_chest(Vector2(m.pos), "elite")
+		# BOSS 被击败 → 撤离点在原地生成（combat.js onBossDefeated / modes.js 撤离流）
+		if bool(m.get("boss", false)) and endless_mode == null:
+			EventBus.boss_defeated.emit(Vector2(m.pos))
+			_begin_extract(Vector2(m.pos))
 		monster_killed.emit(m)
+	# 伤害事件（表现层挂点，只发不渲染；combat 信号 + EventBus 双通道）
+	var dmg_info := {"pos": Vector2(m.pos), "amount": real,
+		"is_crit": is_crit, "killed": bool(m.dead)}
+	damage_dealt.emit(dmg_info)
+	EventBus.damage_dealt.emit(dmg_info)
 
 func _damage_player(raw: float) -> void:
 	if not player.alive:
@@ -667,9 +974,12 @@ func _damage_player(raw: float) -> void:
 	var real := maxf(raw - float(player.def), 1.0)
 	player.hp = float(player.hp) - real
 	player_damaged.emit(real)
+	EventBus.damage_dealt.emit({"pos": Vector2(player.pos), "amount": real,
+		"is_crit": false, "killed": false})
 	if float(player.hp) <= 0.0:
 		player.hp = 0.0
 		player.alive = false
+		_settle("dead")   # 死亡结算（与撤离同一信号口径）
 
 ## 清理死亡怪（波间调用，渲染层与逻辑共享同一数组引用）
 func compact_monsters() -> void:

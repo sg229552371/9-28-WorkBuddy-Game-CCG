@@ -1,6 +1,9 @@
-[gd_scene format=3 uid="uid://dwkmokn0ie0xw"]
+[gd_scene load_steps=3 format=3 uid="uid://dwkmokn0ie0xw"]
 
 [ext_resource type="Script" path="res://mods/jes-engine-core/scripts/battle.gd" id="1_battle"]
+[ext_resource type="PackedScene" path="res://mods/jes-engine-core/scenes/fx_feedback.tscn" id="2_fx"]
 
 [node name="Battle" type="Node2D"]
 script = ExtResource("1_battle")
+
+[node name="FxFeedback" parent="." instance=ExtResource("2_fx")]

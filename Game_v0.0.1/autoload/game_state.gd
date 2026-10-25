@@ -5,6 +5,12 @@ extends Node
 
 signal state_changed(old_state: String, new_state: String)
 
+## 战斗结算信号（新增）：战斗侧可直接 emit 本信号，或统一走
+## EventBus.emit_event("run_settled", payload)。FlowRoot 两条通道都监听。
+## TODO(event_bus.gd)：该文件归战斗线代理所有、禁止本侧改动；若后续在
+## EventBus 中补 "run_settled" 专用信号，请迁移到该信号并保持 payload 字段一致。
+signal run_settled(payload: Dictionary)
+
 ## 状态取值（真源注释列出 boot|menu|charSel|playing|settled|dead；
 ## main.js loop 分支另识别 "city"（主城），证明其也是合法值，故一并列入）
 const STATES: Array[String] = ["boot", "menu", "charSel", "playing", "settled", "dead", "city"]
@@ -30,6 +36,37 @@ var hero_id: String = "H001"
 var level_id: String = "LEVEL_001"
 ## 最近一次战斗结算（死亡回城后主城展示）
 var last_settlement: Dictionary = {}
+
+## 组队出征英雄（第 1 位为队长，玩家操控；上限读 cfg/team.json maxSize）
+var team_ids: Array[String] = []
+
+## Meta 账号级存档（结晶/英雄解锁/关卡星级/图鉴/设置/本周深渊结晶）
+## 与单英雄技能槽存档（SaveCore）各自独立文件、互不覆盖。
+var meta: MetaSave = MetaSave.new()
+
+
+## ---------- Meta 只读访问辅助（写操作请经 FlowRoot / MetaSave 接口）----------
+
+func meta_crystals() -> int:
+	return meta.crystals()
+
+
+func meta_unlocked_levels() -> int:
+	return meta.unlocked_levels()
+
+
+func meta_level_stars(level_id: String) -> int:
+	return meta.level_stars(level_id)
+
+
+func is_hero_unlocked(hero_id: String) -> bool:
+	return meta.is_hero_unlocked(hero_id)
+
+
+## 战斗侧结算入口：payload 建议字段 won/reason/kills/elapsed/pickups/stars/loot
+func emit_run_settled(payload: Dictionary) -> void:
+	last_settlement = payload.duplicate(true)
+	run_settled.emit(payload)
 
 ## 切换状态：非法值拒绝并报错（保守口径，不静默吞）
 func set_state(new_state: String) -> void:
