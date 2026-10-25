@@ -1,0 +1,217 @@
+[
+  {
+    "id": "EN01",
+    "name_cn": "泥塑俑",
+    "chapter": 1,
+    "hp": 10,
+    "dmg": 3,
+    "move": 2,
+    "traits": [
+      "straight"
+    ],
+    "params": {},
+    "desc": "只会直线走的基础敌人，教学基础站位。"
+  },
+  {
+    "id": "EN02",
+    "name_cn": "环祭司",
+    "chapter": 1,
+    "hp": 14,
+    "dmg": 0,
+    "move": 2,
+    "traits": [
+      "aura_shield"
+    ],
+    "params": {
+      "aura_shield": 2
+    },
+    "desc": "每回合给相邻敌人 +2 盾，优先刺杀教学。"
+  },
+  {
+    "id": "EN03",
+    "name_cn": "双面像",
+    "chapter": 1,
+    "hp": 20,
+    "dmg": 5,
+    "move": 2,
+    "traits": [
+      "front_block"
+    ],
+    "params": {
+      "front_block": 0.5
+    },
+    "desc": "正面受击 -50% 伤害，绕背教学。"
+  },
+  {
+    "id": "EN04",
+    "name_cn": "香炉傀儡",
+    "chapter": 2,
+    "hp": 26,
+    "dmg": 6,
+    "move": 2,
+    "traits": [
+      "post_move_aoe"
+    ],
+    "params": {
+      "aoe_shape": "3x3",
+      "aoe_center_dmg": 6,
+      "aoe_edge_dmg": 3
+    },
+    "desc": "移动后必放 3×3 AoE，中心 6 点外圈 3 点，分散站位教学。"
+  },
+  {
+    "id": "EN05",
+    "name_cn": "缚链者",
+    "chapter": 2,
+    "hp": 12,
+    "dmg": 4,
+    "move": 3,
+    "traits": [
+      "pull"
+    ],
+    "params": {
+      "pull_range": 3
+    },
+    "desc": "把最近的角色拉到身前，位置保护教学。"
+  },
+  {
+    "id": "EN06",
+    "name_cn": "铜哨侍从（推荐默认）",
+    "chapter": 2,
+    "hp": 16,
+    "dmg": 6,
+    "move": 3,
+    "traits": [
+      "flank"
+    ],
+    "params": {
+      "flank_bonus_dmg": 3
+    },
+    "desc": "攻击背对它的目标时额外 +3 点伤害，强化朝向意识。"
+  },
+  {
+    "id": "EN07",
+    "name_cn": "熏烟缠尸（推荐默认）",
+    "chapter": 2,
+    "hp": 20,
+    "dmg": 5,
+    "move": 2,
+    "traits": [
+      "smoke_terrain"
+    ],
+    "params": {
+      "smoke_rounds": 2,
+      "smoke_dmg": 2
+    },
+    "desc": "死亡后留下一片持续 2 回合的熏烟格，站上每回合受 2 点伤害。"
+  },
+  {
+    "id": "EN08",
+    "name_cn": "祭坛守卫（推荐默认）",
+    "chapter": 2,
+    "hp": 24,
+    "dmg": 7,
+    "move": 2,
+    "traits": [
+      "guard_aura"
+    ],
+    "params": {
+      "guard_damage_taken_mul": 0.8
+    },
+    "desc": "站在祭坛格上时受伤 -20%，逼迫玩家把敌人引离祭坛。"
+  },
+  {
+    "id": "EN09",
+    "name_cn": "金灰游魂（推荐默认）",
+    "chapter": 3,
+    "hp": 30,
+    "dmg": 10,
+    "move": 3,
+    "traits": [
+      "phase_move"
+    ],
+    "params": {},
+    "desc": "移动可以穿过敌人但不穿墙，考验掩体与围堵。"
+  },
+  {
+    "id": "EN10",
+    "name_cn": "诵棺修士（推荐默认）",
+    "chapter": 3,
+    "hp": 34,
+    "dmg": 8,
+    "move": 2,
+    "traits": [
+      "heal_aura"
+    ],
+    "params": {
+      "heal_per_round": 3,
+      "heal_radius": 2
+    },
+    "desc": "每回合为 2 格内其他敌人回复 3 点 HP，优先击杀目标。"
+  },
+  {
+    "id": "EN11",
+    "name_cn": "熔金塑像（推荐默认）",
+    "chapter": 3,
+    "hp": 40,
+    "dmg": 12,
+    "move": 2,
+    "traits": [
+      "front_block",
+      "melt_retaliate"
+    ],
+    "params": {
+      "front_block": 0.4,
+      "retaliate_dmg": 5
+    },
+    "desc": "正面受击 -40%，且近战受击时反弹 5 点熔金伤害。"
+  },
+  {
+    "id": "EN12",
+    "name_cn": "巴别司钟（推荐默认）",
+    "chapter": 3,
+    "hp": 45,
+    "dmg": 14,
+    "move": 2,
+    "traits": [
+      "bell_knockback"
+    ],
+    "params": {
+      "knockback": 1,
+      "bell_cooldown": 2
+    },
+    "desc": "每 2 回合鸣钟一次，把 2 格内所有单位震退 1 格。"
+  },
+  {
+    "id": "EN13",
+    "name_cn": "神孽·终章",
+    "chapter": 3,
+    "hp": 300,
+    "dmg": 20,
+    "move": 3,
+    "traits": [
+      "boss_dread"
+    ],
+    "params": {
+      "dread_dmg_mul_per_stack": 0.1
+    },
+    "desc": "终章 Boss，每章积攒的渎神层数每层使其伤害 +10%。"
+  },
+  {
+    "id": "EN14",
+    "name_cn": "金面侍祭",
+    "chapter": 3,
+    "hp": 38,
+    "dmg": 11,
+    "move": 2,
+    "traits": [
+      "summoner"
+    ],
+    "params": {
+      "summon_id": "EN01",
+      "summon_hp": 6,
+      "summon_interval_rounds": 3
+    },
+    "desc": "每3回合召唤一只6点HP的泥塑俑（推荐默认：召唤系敌人，反制教学=优先击杀施法者）"
+  }
+]

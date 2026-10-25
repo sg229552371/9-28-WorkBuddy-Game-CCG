@@ -1,0 +1,50 @@
+[
+  {
+    "id": "CH_jin",
+    "name_cn": "焚香者·烬",
+    "hp": 30,
+    "move": 3,
+    "passive": {"type": "reflect_adjacent", "value": 2, "tags": ["aura"]},
+    "skills": ["SK_PYRE", "SK_OFFER"]
+  },
+  {
+    "id": "CH_tong",
+    "name_cn": "观星者·瞳",
+    "hp": 30,
+    "move": 3,
+    "passive": {"type": "far_damage_bonus", "value": 0.4, "range": 3, "tags": ["aura"]},
+    "skills": ["SK_STARFALL", "SK_REWIND"]
+  },
+  {
+    "id": "CH_pan",
+    "name_cn": "承棺者·磐",
+    "hp": 30,
+    "move": 3,
+    "passive": {"type": "side_guard", "value": 0.25, "tags": ["aura"]},
+    "skills": ["SK_COFFIN_WALL", "SK_COFFIN_CHARGE"]
+  },
+  {
+    "id": "CH_xi",
+    "name_cn": "唤雨者·汐",
+    "hp": 30,
+    "move": 3,
+    "passive": {"type": "water_free_move", "tags": ["aura"]},
+    "skills": ["SK_TIDE", "SK_HOLY_RAIN"]
+  },
+  {
+    "id": "CH_mo",
+    "name_cn": "缄默者·默",
+    "hp": 30,
+    "move": 3,
+    "passive": {"type": "silence_aura", "value": 2, "tags": ["aura"]},
+    "skills": ["SK_CUT_TONGUE", "SK_SHADOW_SWAP"]
+  },
+  {
+    "id": "CH_man",
+    "name_cn": "拾骨者·蔓",
+    "hp": 30,
+    "move": 3,
+    "passive": {"type": "death_shield", "value": 1, "cap": 6, "tags": ["aura"]},
+    "skills": ["SK_BONE_SPEAR", "SK_BONE_MAUSOLEUM"]
+  }
+]

@@ -1,0 +1,53 @@
+[
+  {
+    "chapter": 1,
+    "options": [
+      {
+        "track": "devotion",
+        "name_cn": "为泥胎开光（推荐默认）",
+        "effects": [{"type": "team_shield", "value": 8}],
+        "boss_mutation": {"type": "holy_repay", "params": {"interval_rounds": 5, "heal_ratio": 0.05}}
+      },
+      {
+        "track": "blasphemy",
+        "name_cn": "凿碎泥胎之面（推荐默认）",
+        "effects": [{"type": "relic_slot_add", "value": 1}, {"type": "battle_start_stun", "value": 2, "targets": 1}],
+        "boss_mutation": {"type": "divine_wrath", "params": {"threshold": 0.5, "aoe_dmg": 12}}
+      }
+    ]
+  },
+  {
+    "chapter": 2,
+    "options": [
+      {
+        "track": "devotion",
+        "name_cn": "向铜喉献上颂歌（推荐默认）",
+        "effects": [{"type": "team_max_hp_add", "value": 4}],
+        "boss_mutation": {"type": "holy_repay", "params": {"interval_rounds": 4, "heal_ratio": 0.05}}
+      },
+      {
+        "track": "blasphemy",
+        "name_cn": "熔毁铜喉之钟（推荐默认）",
+        "effects": [{"type": "team_atk_add", "value": 2}, {"type": "shop_price_add", "value": 0.2}],
+        "boss_mutation": {"type": "divine_wrath", "params": {"threshold": 0.4, "aoe_dmg": 14}}
+      }
+    ]
+  },
+  {
+    "chapter": 3,
+    "options": [
+      {
+        "track": "devotion",
+        "name_cn": "封圣：以全队之名加冕（推荐默认）",
+        "effects": [{"type": "team_shield", "value": 12}, {"type": "team_max_hp_add", "value": 6}],
+        "boss_mutation": {"type": "holy_repay", "params": {"interval_rounds": 3, "heal_ratio": 0.08}}
+      },
+      {
+        "track": "blasphemy",
+        "name_cn": "封圣：窃取神格本身（推荐默认）",
+        "effects": [{"type": "team_atk_add", "value": 4}, {"type": "battle_start_stun", "value": 2, "targets": 1}],
+        "boss_mutation": {"type": "divine_wrath", "params": {"threshold": 0.6, "aoe_dmg": 18}}
+      }
+    ]
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "CH1",
+    "name_cn": "泥胎",
+    "team_avg_hp": 30,
+    "mob_hp_min": 8,
+    "mob_hp_max": 12,
+    "mob_dmg_min": 3,
+    "mob_dmg_max": 4,
+    "boss_id": "EN13",
+    "boss_hp": 90,
+    "boss_dmg": 8,
+    "battle_count": 1,
+    "event_count": 1,
+    "shop_count": 1
+  },
+  {
+    "id": "CH2",
+    "name_cn": "铜喉",
+    "team_avg_hp": 38,
+    "mob_hp_min": 16,
+    "mob_hp_max": 24,
+    "mob_dmg_min": 6,
+    "mob_dmg_max": 8,
+    "boss_id": "EN13",
+    "boss_hp": 170,
+    "boss_dmg": 13,
+    "battle_count": 2,
+    "event_count": 1,
+    "shop_count": 1
+  },
+  {
+    "id": "CH3",
+    "name_cn": "金面",
+    "team_avg_hp": 48,
+    "mob_hp_min": 30,
+    "mob_hp_max": 45,
+    "mob_dmg_min": 10,
+    "mob_dmg_max": 14,
+    "boss_id": "EN13",
+    "boss_hp": 300,
+    "boss_dmg": 20,
+    "battle_count": 2,
+    "event_count": 1,
+    "shop_count": 1
+  }
+]
