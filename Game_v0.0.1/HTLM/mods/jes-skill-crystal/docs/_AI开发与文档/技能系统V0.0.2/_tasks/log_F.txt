@@ -1,0 +1,11 @@
+"gpt-6-astra" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"}
+已写入指定文件：`ch13-20_组织校验保存验收.md`。
+
+- 共 8 章，正文 **21,955 字**（按汉字统计，表格中文计入）。
+- 包含 84 条校验规则、42 条报错文案、37 项可勾选验收清单。
+- 每章末尾均有运行时契约引用关系；末尾登记了载体枚举、Schema 子字段等待收口问题。
+- 静态校验通过：章节完整、编号连续、文案引用无缺失、禁用术语扫描无命中。
+- 只写入指定文件，未修改共享地基或主书稿。运行时验收尚未执行，未宣称 Schema 合并已完成。
+
+DONE::CH13-20::21955

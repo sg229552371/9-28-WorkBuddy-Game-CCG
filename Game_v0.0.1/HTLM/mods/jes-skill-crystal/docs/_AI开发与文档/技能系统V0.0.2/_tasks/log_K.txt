@@ -1,0 +1,11 @@
+"gpt-6-astra" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"}
+已新建 `ch22_L5表达式逃逸口规格.md`，未修改其他文件。
+
+正文覆盖全部要求，包含 JSON AST 文法与节点白名单、上下文访问规则、17 条静态校验规则及对应文案、确定性资源限制、审批与版本化流程，以及 16 条后续实现验收例子。
+
+已完成一次文档自检：JSON 示例、编号对应、章节结构、旧词扫描通过。现有 Schema 接线缺口和主书稿版本差异已列入未决问题，未冒称运行时已经实现。
+
+正文汉字数：8877（排除围栏代码块及完成信号）。
+
+DONE::PKG_K::8877

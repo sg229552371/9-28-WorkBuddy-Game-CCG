@@ -1,0 +1,259 @@
+﻿### js/core.js
+77: const Assets = {
+95:    * - 加载失败的键（Assets.images 无该项）置 null，渲染侧对 null 已有色块兜底（game.js 渲染 if(img) 分支）；
+128:    * 触发后按「素材缺失」结算：该键不进 Assets.images，渲染侧既有 if(img) 分支自动走色块兜底。 */
+145:        * → main.js 的 `await Assets.load(...)` 永久挂起 → 12 秒后 BootGuard 弹诊断面板。
+278:   hero:    { src: "assets/hero/hero_00.png", tbg: { mode: "blue" } },
+279:   hero01:  { src: "assets/hero/hero_01.png", tbg: { mode: "black" } },
+280:   hero02:  { src: "assets/hero/hero_02.png", tbg: { mode: "black" } },
+281:   hero03:  { src: "assets/hero/hero_03.png", tbg: { mode: "black" } },
+282:   hero04:  { src: "assets/hero/hero_04.png", tbg: { mode: "black" } },
+283:   hero05:  { src: "assets/hero/hero_05.png", tbg: { mode: "black" } },
+284:   hero06:  { src: "assets/hero/hero_06.png", tbg: { mode: "black" } },
+285:   hero07:  { src: "assets/hero/hero_07.png", tbg: { mode: "black" } },
+286:   hero08:  { src: "assets/hero/hero_08.png", tbg: { mode: "black" } },
+287:   hero09:  { src: "assets/hero/hero_09.png", tbg: { mode: "black" } },
+288:   hero10:  { src: "assets/hero/hero_10.png", tbg: { mode: "black" } },
+289:   hero11:  { src: "assets/hero/hero_11.png", tbg: { mode: "black" } },
+290:   hero12:  { src: "assets/hero/hero_12.png", tbg: { mode: "black" } },
+291:   enemy00: { src: "assets/enemies/enemy_00.png", tbg: { mode: "black" } },
+292:   enemy01: { src: "assets/enemies/enemy_01.png", tbg: { mode: "black" } },
+293:   enemy02: { src: "assets/enemies/enemy_02.png", tbg: { mode: "black" } },
+294:   enemy03: { src: "assets/enemies/enemy_03.png", tbg: { mode: "black" } },
+295:   enemy04: { src: "assets/enemies/enemy_04.png", tbg: { mode: "black" } },
+296:   enemy05: { src: "assets/enemies/enemy_05.png", tbg: { mode: "black" } },
+297:   enemy06: { src: "assets/enemies/enemy_06.png", tbg: { mode: "black" } },
+298:   enemy07: { src: "assets/enemies/enemy_07.png", tbg: { mode: "black" } },
+299:   enemy08: { src: "assets/enemies/enemy_08.png", tbg: { mode: "black" } },
+300:   enemy09: { src: "assets/enemies/enemy_09.png", tbg: { mode: "black" } },
+301:   enemy10: { src: "assets/enemies/enemy_10.png", tbg: { mode: "black" } },
+### push.sh
+18: if ! bash run_tests.sh; then
+27: git add -A
+28: if git diff --cached --quiet; then
+32: git status --short
+36: if ! git commit -q -m "$MSG"; then
+40: git log --oneline -1
+44: if ! git push origin main; then
+47:   echo "     git pull --rebase origin main"
+48:   echo "     bash run_tests.sh"
+49:   echo "     git push origin main"
+55: git log --oneline -1 origin/main
+### verify_clone.sh
+8: #  原理：比对的是 **git 对象哈希**（git rev-parse HEAD:<file>），
+10: #        Windows(Git Bash) / macOS / Linux 结果完全一致。
+13: #      git fetch origin && git reset --hard origin/main
+14: #  （本仓库历史上被 force push 重写过，直接 git pull 可能分叉）
+20: # 项目拆分后脚本可能位于 old_Game/ 或 Game_v0.0.1/，此时 git 对象路径需要带前缀。
+21: REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+22: # Git Bash 下 --show-toplevel 返回 "F:/..." 而 pwd 返回 "/f/..."，需归一化为同一路径形式
+27: PREFIX=""
+30:     "$REPO_ROOT"/*) PREFIX="${SELF_DIR#"$REPO_ROOT"/}/" ;;
+34: EXPECT_VERSION="20261046"
+36: # 核心文件 → 期望的 git blob 哈希（该快照的权威指纹；23 个）
+37: EXPECT_FILES="
+66: echo " commit      : $(git rev-parse HEAD 2>/dev/null || echo '??')"
+67: echo " commit(短)  : $(git rev-parse --short HEAD 2>/dev/null || echo '??')"
+68: echo " tree        : $(git rev-parse HEAD^{tree} 2>/dev/null || echo '??')"
+69: echo " 提交日期    : $(git log -1 --format=%ci 2>/dev/null || echo '??')"
+70: echo " 路径前缀    : ${PREFIX:-（仓库根）}"
+71: echo " 跟踪文件数  : $(git ls-files -- . | wc -l | tr -d ' ')"
+72: echo " 测试文件数  : $(git ls-files -- . | grep -c '_test[.]js$')"
+77: if [ "$LOCAL_VERSION" = "$EXPECT_VERSION" ]; then
+78:   echo " ✅ APP_VERSION = $LOCAL_VERSION（期望 $EXPECT_VERSION）"
+81:   echo " ❌ APP_VERSION = ${LOCAL_VERSION:-缺失}（期望 $EXPECT_VERSION）"
+87: echo " 核心文件（git blob 哈希）"
+90:   a=$(git rev-parse "HEAD:${PREFIX}$f" 2>/dev/null)
+98: $EXPECT_FILES
+103: DIRTY=$(git status --porcelain -- . | wc -l | tr -d ' ')
+113:   echo " ✅ 一致：本工作区 == 2026-10-12 改名 + 技能等级接线 + W2 界面接入 + 22.8 扩容 + 22.9 热修快照（APP_VERSION $EXPECT_VERSION）"
+118:   echo "     git fetch origin && git reset --hard origin/main"
+### js/quality.js
+2:  * quality.js — 画质三档 / 自动降档 / 性能护栏 / 素材加载遮罩
+6:  *   · 20.5 性能护栏（perfFrameStats / PerfGuard / _perfNow）：帧率监测、卡死告警、诊断数据源
+8:  *   · 23.x 画质三档 + 自动降档（QUALITY_NAMES / _clampQuality / _defaultQuality /
+9:  *     _qualityFromDevice / _migrateQuality / _autoDowngrade* / renderQualitySeg）
+11:  *   Game.qualityLevel / Game.setQualityLevel（定义在 main.js，运行时调用，本文件不写 Game）。
+13:  *   _defaultQuality() / _migrateQuality()（本文件提供）。
+41: const PerfGuard = {
+152:  * 背景：原有只有一个粗粒度开关 lowQuality（布尔），无法表达「中档」。
+153:  * 本区块提供统一入口 Game.qualityLevel / Game.setQualityLevel(n)，并维护向后兼容：
+154:  *   设置 quality=0 时同步 G.settings.lowQuality = true，否则 false ——
+155:  *   这样 game.js 的 isLowQuality()（读 G.settings.lowQuality / window.__lowQuality）**一行都不用改**。
+157:  * 回归红线：defaultQuality 只在「无任何画质存档」时被判为「高」（=2）；quality=2 时 lowQuality=false，
+158:  *   渲染行为与改造前逐位一致（渲染层所有降级都包在 isLowQuality() 分支里）。
+166: var QUALITY_NAMES = { 0: "低", 1: "中", 2: "高" };
+169: function _clampQuality(n) {
+179: function _defaultQuality() {
+185:     return _qualityFromDevice(dm, isTouchDevice(), vw, vh);
+190:  * 与 _defaultQuality() 的判定规则严格一致——后者只是从环境读取参数后转调本函数。
+196: function _qualityFromDevice(dm, touch, vw, vh) {
+207: /* ④ 老存档迁移：localStorage 里只有旧布尔 lowQuality（无 quality 字段）→ quality = lowQuality ? 0 : 2。
+208:  * 注意必须判 hasOwnProperty：loadSettings 的默认模板里已带 quality 字段，若用 typeof 判断会把
+209:  * 「老存档未覆盖默认模板」误判为已有设置，从而读不到旧 lowQuality 的意图。 */
+210: function _migrateQuality() {
+213:   // 老存档 v1 不含 quality → Object.assign 后 quality 仍是默认模板值；用 `quality===undefined` 无法区分。
+216:     if (Object.prototype.hasOwnProperty.call(s, "lowQuality") && s.lowQuality === true) s.quality = 0;
+217:     // lowQuality=false / 缺失 → 保持设备初判默认档（前面 _defaultQuality 的语义）
+220:   s.quality = _clampQuality(s.quality);
+221:   s.lowQuality = (s.quality === 0);   // 立即同步布尔镜像（loadSettings 用，不依赖 applySettings）
+### js/items.js
+4:  *       （makeGear/makeModule/makeChip/ZERO_GEAR 等）；属性汇总 tagCalc/recomputeWeapon/computeStats；
+12: class Inventory {
+462:  * 武器模块改技能（见 recomputeWeapon），装备改属性（队长 computeStats + 队友 companionStats）。 */
+523:   /* 三大基础属性折算（26.x）：与队长 computeStats 同源同表（CFG.baseStats），全队一致生效。 */
+545: function computeStats() {
+581: /** 取某成员在该类型技能上的实际上限（队长走 computeStats、队友走 companionStats，同源）。 */
+583:   const st = (caster && caster.isCompanion) ? companionStats(caster) : computeStats();
+1406:  *   在 computeStats() 这一**单一属性出口**末尾乘上深渊倍率 → 主线/裂缝/工匠世界
+1408:  *   选 computeStats 而非改 hp 初值的原因：它是全项目唯一的玩家属性出口，
+1419: /** 深渊玩家属性倍率应用（由 computeStats 末尾单行调用）。
+### js/modes.js
+7:  *       （setupAbyssPortal/enterEndless/exitEndlessToCity…）。
+16: function updateExtractJudge(dt) {
+28: function clearExtractChannel() {
+35: function onPlayerDeath() {
+42: function calcDeathPenalty(run) {
+77: function calcSettleConvert(run) {
+111: function levelMechCfg(kind, lv) {
+121: function initLevelMechanics(w) {
+152: function updateLevelMechanics(w, dt) {
+161: function updateHazard(w, dt) {
+191: function hazardDamage(w, h, cfg) {
+202: function hazardOutside(w, x, y) {
+211: function updateSupply(w, dt) {
+227: function applySupplyEffect(w, sp) {
+269: function outLevelCost(heroId) {
+280: function outLevelStageMul(lv) {
+288: function outLevelGrowthOf(def) {
+296: function outLevelStats(def, lv) {
+311: function isHeroUnlocked(id, data) {
+346: function extractWeightMul(r, st) {
+355: function extractWeightDt(r, st, dt) {
+364: function extractChannelSeconds(runLike) {
+374: function extractWavePool(w) {
+388: function spawnExtractWave(w, st, n) {
+414: function extractShieldTick(r, st, dt) {
+434: function extractSiegersNear(r, st, dist) {
+446: function extractWaveTick(r, st, dt) {
+469: function extractWaveSiegeTick(m, w, dt) {
+### js/endless.js
+26:     wave: 0,             // 当前波次（未开始时为 0）；时间驱动，每 spawnInterval 秒 +1
+30:     waveTimer: 0,        // 本波剩余时间（<=0 = 该刷新下一波；时间驱动替代旧「波间等待」）
+31:     firstWavePending: false,  // 是否处于「进入世界 → 第 1 波」的延迟窗口
+32:     firstWaveTimer: 0,   // 首波专用倒计时（与 waveTimer 分离，避免语义混用）
+54:    *   锚点 = CFG.endless.waveCapAnchors（[波次, 只数] 递增对，用户拍板）：
+57:    *   ⚠️ 本函数是「每波配额」，与「同屏上限 capMax(3000) 闸门」是两个概念（见 _spawnWave）。 */
+58:   waveCap(wave) {
+59:     var a = CFG.endless.waveCapAnchors;
+60:     var w = Math.max(0, wave);
+73:   /* 同屏上限（「海量敌人」闸门）：_spawnWave / _drainQueue 用它判断场满时停止生成，
+74:    * 与每波配额 waveCap 解耦——配额小、闸门大，才能既控节奏又允许海量堆叠。 */
+75:   fieldCap() {
+76:     return CFG.endless.capMax;
+78:   /* 血量倍率：1 + (wave - 1) * hpMulPerWave（波 1 = 1.00 基准） */
+79:   hpMul(wave) {
+80:     return 1 + Math.max(0, wave - 1) * CFG.endless.hpMulPerWave;
+84:   dmgMul(wave) {
+87:     return 1 + Math.max(0, wave - 1) * c.dmgMulPerWave;
+89:   /* 每波结晶：round(reward.base * wave ^ reward.exp) */
+90:   waveReward(wave) {
+92:     var w = Math.max(1, wave);
+96:   dropsChest(wave) {
+98:     return n > 0 && wave > 0 && (wave % n === 0);
+101:   monsterLv(wave) {
+103:     return Math.max(1, Math.round(c.monsterLevelBase + Math.max(0, wave - 1) * c.monsterLevelPerWave));
+108:    *   interval(wave) = spawnIntervalStart + t * (spawnIntervalEnd - spawnIntervalStart)
+109:    *   t = clamp((wave - 1) / (spawnIntervalWaves - 1), 0, 1)
+111:   spawnIntervalFor(wave) {
+### js/skill-save.js
+11:  *   - migrationMaps 由入参提供（逐项审核，禁止按名称相似自动匹配）
+22:     if (v == null) return v;
+23:     try { return JSON.parse(JSON.stringify(v)); } catch (e) { return v; }
+25:   _tables() { return (typeof CFG !== "undefined" && CFG.skillSystem) ? CFG.skillSystem : null; },
+29:       if (v) return v;
+32:     return (t && t.configVersion) || null;
+36:     if (!state) return [];
+38:       return Object.keys(state.heroes).map(id => Object.assign({}, state.heroes[id], { heroId: state.heroes[id].heroId || id }));
+40:     if (state.heroId) return [state];
+41:     return [];
+76:     return out;
+81:    * definitions = CFG.skillSystem 或 { crystalDefs, skillDefs, migrationMaps, configVersion, ... }
+104:       return { state: null, report: report, preservedOriginal: preservedOriginal };
+112:       return { state: this._deep(saved), report: report, preservedOriginal: preservedOriginal };
+120:           "）：标记旧实体快照，不做直接套表；按 migrationMaps 逐项翻译并保留原值" });
+124:     const maps = defs.migrationMaps || {};
+187:     return { state: outState, report: report, preservedOriginal: preservedOriginal };
+195:     if (typeof Meta === "undefined" || !meta || !meta.data) return false;
+197:     if (!payload) return false;
+199:     return true;
+202:     if (typeof Meta === "undefined" || !meta || !meta.data) return null;
+204:     return s != null ? this._deep(s) : null;
+210: function serializeHeroSkills(state) { return SkillSave.serialize(state); }
+212: function migrateHeroSkills(saved, definitions) { return SkillSave.migrate(saved, definitions); }
+### js/skill-scheduler.js
+10:  *   - 无目标不消耗普通技能冷却；环绕类允许无目标（castPolicy.requiresTarget=false）
+50:    *  字段名：配置真源（CFG.skillSystem.skillDefs[*].levels[]）用 `cooldown`；
+52:   cooldownFor(def, level, stats, policy) {
+56:       if (o.cooldown != null) return o.cooldown;
+75:    * `castPolicies[].requiresTarget` —— 两边永不相等 → 索敌范围退化为 Infinity（全图锁敌）、
+85:   /** 无目标是否可施放：真源 requiresTarget（false = 允许无目标）；兼容旧短名 allowNoTarget。 */
+88:     if (typeof cp.requiresTarget === "boolean") return !cp.requiresTarget;
+97:     let cd = SkillScheduler.cooldownFor(def, level, stats, cp);
+186:       const allowNoTarget = SkillScheduler.allowNoTargetOf(cp);          // 真源 requiresTarget
+### js/skill-playtest.js
+6:  *     · CFG.skillSystem.enabled = false      → 9 个模块静默待命
+7:  *     · CFG.skillSystem.migratedHeroIds = [] → 无英雄走新路径
+18:  * 【正式启用（22.8 起）】配表 `CFG.skillSystem.enabled = true` + `migratedHeroIds = ["H001"]`
+29:  *      CFG.skillSystem.initialSkillBindings）+ 4 颗共享水晶，交给 SupportCompiler 编出 builds。
+65:    *   技能：**只有 1 个** —— 由 CFG.skillSystem.initialSkillBindings[heroId] 决定
+73:     const sid = this.initialSkillFor(heroId);
+88:    *  优先读 CFG.skillSystem.initialSkillBindings[heroId].skillId；
+90:   initialSkillFor(heroId) {
+93:     const b = t.initialSkillBindings && t.initialSkillBindings[heroId];
+103:    * 本文件是**整合层**，是唯一允许读局外存档（`Meta`）的地方；三个技能模块保持纯函数。
+105:    *   ① 等级取自 `Meta.weaponLv(heroId)`（局外武器等级，1~100；未登记英雄 → 1）；
+110:    *   ③ 无 `Meta`（无头沙箱）/ 无 def / 取值非法 → 1（等价于接入前行为，零影响）。 */
+115:       if (typeof Meta !== "undefined" && Meta && typeof Meta.weaponLv === "function") {
+116:         const w = Number(Meta.weaponLv(heroId));
+165:    *    ② 配表已启用（`enabled === true` 且 `migratedHeroIds` 非空）→ 正式启用
+167:    *  ⚠️ 22.8 血泪（必读）：把 config.js 的 `enabled` 直接翻成 true **不等于**启用。
+170:    *       `ownsHero` 返回 true（原始判定只查 enabled + 名单）
+179:     const cfgOn = this._configEnabled();
+190:       CFG.skillSystem.enabled = true;                                 // 只改内存，不动 config.js
+191:       CFG.skillSystem.migratedHeroIds = this.heroIds.slice();
+193:       this.heroIds = CFG.skillSystem.migratedHeroIds.slice();         // 配表已经是启用态，原样沿用
+202:   _configEnabled() {
+204:     return !!(t && t.enabled === true &&
+205:       Array.isArray(t.migratedHeroIds) && t.migratedHeroIds.length > 0);
+216:     SkillRuntime.ownsHero = function (hero) {
+217:       if (!orig.call(this, hero)) return false;                         // 尊重原判定（enabled + 名单）
+237:     World.prototype.triggerAltar = function (a) {
+552:         for (const hid of this.heroIds) parts.push(hid + "（初始技能：" + this._nameOf(this.initialSkillFor(hid)) + "）");
+### skill_enable_runtime_test.js
+6:  *   2026-10-12 事故：22.8 只把 `CFG.skillSystem.enabled` 翻成 true，**没接通整合层**
+7:  *   （`SkillPlaytest` 是唯一包装 `SkillRuntime.ownsHero` 并懒注入 `hero.skillState` 的地方）。
+19:  *   ③ 真实启动 → 该英雄被判走新路径 + skillState 已注入且已编译 builds
+22:  *   ⑤ 界面联动：首帧即可取到水晶态（`_crystalModeOf` 必须在查 skillState **之前**
+23:  *      先问 ownsHero，否则第一帧会误判旧路径）
+24:  *   ⑥ 反向护栏：关掉配表开关 → 英雄回落旧路径，且**旧路径仍能开火**（不能两头空）
+163: check("② 载入后总开关为启用（配表默认）", ev("CFG.skillSystem.enabled") === true);
+165:   ev("CFG.skillSystem.migratedHeroIds.length") === 1 && ev('CFG.skillSystem.migratedHeroIds[0]') === "H001");
+170:   ev("SkillPlaytest.heroIds.join()") === ev("CFG.skillSystem.migratedHeroIds.join()"));
+171: check("② 未迁移英雄不接线（H002 仍走旧路径）",
+174: /* ---------------- ③ 真实启动：英雄走新路径 + skillState 已注入 ---------------- */
+178:   + ' Game.startRun([CFG.heroes[0]]); Game.skipIntroFreeze(); G.run.hp = 100000;');
+181: check("③ 首次判定即懒注入 skillState", ev("!!G.player.skillState") === true);
+182: check("③ skillState 已编译出 builds（有技能可施放）",
+183:   ev("!!(G.player.skillState && G.player.skillState.builds)") === true);
+185:   ev("!!(G.player.skillState.builds && G.player.skillState.builds.SK_FIREBALL)") === true);
+202:     return { maxFx: maxFx, framesWithFx: framesWithFx, kills: G.run.kills, monsters: w.monsters.length };
+208: check("④ ★英雄真实开火并造成击杀（10 秒内 kills ≥ 1）—— 游戏可玩", probe.kills >= 1);
+215: /* 顺序缺陷专项：只给 id、不给 rt（无从预挂 skillState）→ 仍应靠 ownsHero 触发注入拿到数据 */
+216: check("⑤ 仅传 id 也能取到（证明「先问 ownsHero 再查 skillState」的顺序正确）",
+227: /* ---------------- ⑥ 反向护栏：关掉开关 → 回落旧路径且旧路径能开火 ---------------- */
+231:     CFG.skillSystem.enabled = false;             // 配表开关关掉
+232:     CFG.skillSystem.migratedHeroIds = [];
+235:     Game.startRun([CFG.heroes[0]]); Game.skipIntroFreeze(); G.run.hp = 100000;
+240:     return { ownsNow: ownsNow, crystal: UI._crystalModeOf({ id: "H001", rt: G.player }), kills: G.run.kills };
+246: check("⑥ ★旧路径仍能开火（10 秒内 kills ≥ 1）—— 反向也不能两头空", old.kills >= 1);

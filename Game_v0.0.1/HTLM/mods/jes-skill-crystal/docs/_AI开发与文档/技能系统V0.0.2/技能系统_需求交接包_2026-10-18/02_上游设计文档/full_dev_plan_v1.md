@@ -1,0 +1,237 @@
+# 全量开发总纲 v1（「没开发的内容都要开发」施工地图）
+
+> 建立 2026-10-12 ｜ 基线：`APP_VERSION 20261047` · `HEAD 1ab6f89` · 门禁 **4187 断言 / bad=0**
+> 依据：`game_design_proposal.md` §12 待细化方向 / §18 状态说明 + `X-GAMe/review-report.md` 差异登记
+> + `X-GAMe/task-cards.md` + `handoff-parallel.md` + 各管线实测
+> **本文件只做「清点 + 排序 + 所有权」，不改任何规则；规则真源仍是原批准文档。**
+
+---
+
+## 0. 一句话结论
+
+**能并行，但不能「全部同时开工」。** 「没开发的内容」实际是**三类性质完全不同的事**，
+混在一起并行会互相踩踏；正确做法 = **先冻接口 → 分三轨并行 → 主会话串行接线 → 串行验收发布**。
+
+---
+
+## 1. 三类性质（决定「能不能并行」）
+
+| 类 | 性质 | 谁做 | 能否并行 | 前置 |
+|---|---|---|---|---|
+| **A 工程闭环** | 代码缺口已定位，验收标准明确 | 主会话 + 独立文件代理 | ⚠️ **部分**（碰共享文件的不能） | 接口已存在 |
+| **B 数值填表** | 规则已定，缺具体数字（策划活） | AI 提案 → 用户审 | ✅ **可以**（互不相干） | 无 |
+| **C 玩法决策** | 规则本身还没定（玩法活） | **只能用户拍板** | ❌ **不能** | 用户决策 |
+
+> 🔴 **本轮最大误区**：把 B/C 当成 A 直接开写 → 等于 AI 自己发明玩法与数值，违反「变更前确认 + 仅动指定项」。
+
+---
+
+## 2. 全量清单（实测校准，非照抄文档）
+
+### A 类 · 工程闭环（可直接开工）
+
+| # | 项 | 实测现状 | 落点 | 并行性 |
+|---|---|---|---|---|
+| A1 | **`killer` 伤害归属** | ✅ **已修**：`skill-damage.js:252` 早已透传；本轮补 `skill-runtime.js` 两处（`_applyDamage` 主路径 + `_fallbackDamage` 兜底）→ 技能伤害不再恒 `null`（深渊逐角色统计/吸血/裂变读 owner 恢复） | `js/skill-runtime.js` | ❌ 共享文件 |
+| A2 | **资源清单接线** | ⚠️ **判定为「半个改动」，暂缓**：清单 15 条**磁盘存在 0**；且实测「清单侧 `AssetHooks` 真实消费点 = 0」→ 单个挂载 = 每局 15 个 404 + 零收益 + 打破 7 条现状断言。**必须连同渲染/音频消费接线一起做**（`Assets.images` / `SFX.play` 优先查 `AssetHooks`），且需素材就绪才有端到端验收条件 <br>✅ **订正（2026-10-13 本轮落库，见 D028）**：本轮已落**消费入口基建** —— `AssetHooks` 消费函数（`js/core.js` 末尾独立区块：`Assets.hookedSprite/hookedAudio/hookedHeroSprite`）+ `js/assets_manifest.js`（清单）+ 测试 `assets_hook_test.js`（19 断言）/ `asset_hooks_consume_test.js`（消费入口 null-safe 与回退专项，含 `SFX.play(name,key)`）；**清单仍「未挂载」、渲染侧未接线**、端到端验收**待素材就绪**。故上述「暂缓」仅指**挂载与渲染消费**，消费**入口**本身已可用 | `index.html` + `js/core.js` | ⚠️ 基建已落（挂载/渲染未接线） |
+| A3 | **`SkillSave` 宿主闭环** | ✅ **已收口（2026-10-13 本轮，见 D034，按 D013 无需持久化）**：D013 已定「技能构筑**每局重置**」→ **不需要跨局持久化**，因此 **SkillSave 不需要宿主调用**。模块本身完备（`serialize`/`migrate`/`saveTo`/`loadFrom`/`_persist`），**保留为工具**（仍可被测试与未来赛季存档复用）。原「❌ 仅缺宿主调用」判定**作废**（其前提「需跨局保存」已被 D013 否掉） | `js/game.js` / `js/main.js`（**无需接线**） | ✅ 已收口 |
+| A4 | **`castTime` 调度消费** | ✅ **已落库（2026-10-13，`D015`）**：用户拍板语义 = **不可打断 + 可移动**。实现 = `skill-scheduler.js` 新增 `castTimeFor(def, level)`（真源 `levels[lv-1].castTime` → 回落 `def.castTime` → 0）+ `tick()` 前摇段（**刻意不做任何打断判定**：不读 hp / 不读 mvx,mvy；目标丢失 → 进度**暂停**不归零；`castTime=0` 恒 no-op 零回归）。测试 = `skill_scheduler_test.js` 31 断言（新增 9.1~9.8 共 12 条前摇断言）+ `skill_rule_binding_test` ⑦ 口径同步 | `js/skill-scheduler.js` | ✅ 已完成 |
+| A5 | **全部 12 英雄技能** | ✅ **已全部交付（H001~H012 全走新路径）**：批 1（H001~H006，2026-10-12）+ 批 2（H007~H012，2026-10-12 · 决策 `D012`）——批 2 只需 1 个模板 kind（`summonUnit`）+ 1 个节点字段（`effect`），已拆 2A（H009~H012）/ 2B（H007/H008）全部实现 | `js/config.js` 的 `skillDefs`（表 → 归 config，非独立文件） | ✅ 已完成（测试 38+43 断言）|
+| A6 | **旧路红测根因** | ✅ **已确诊（2026-10-12，见 §6.3）**：= **测试桩喂钟非单调**（⑥ 段把时钟重置为 0，`Game.lastT` 已被 ④ 推到 ~10020 → `main.js` 的 `dt=(t-lastT)/1000` 得 **负步长 ≈ −10.02s**）→ 施放计时器被甩到窗口末尾 → 偶发假红；**非产品逻辑缺陷**。修复 = 同提交 `8b0e1a2` 双重加固（产品侧 dt 钳制 + 测试侧单调续帧）。**书中「根因未诊断」为过期表述，已回写** | 诊断报告 | ✅ 已完成 |
+| A7 | ~~X-GAMe 四张卡~~ | ✅ **实测已全部存在**（非未创建）：`xgame_assets_consumption` / `xgame_save_integration` / `xgame_redtest_clock` / `xgame_boss_crystal` / `xgame_chip_fold` / `xgame_skill_save_wire` —— 书中 task-cards 的「未来交付物」在公司侧那轮已落地 | — | 已完成 |
+
+### B 类 · 数值填表（规则已定，AI 可提案）
+
+| # | 项 | 依据 |
+|---|---|---|
+| B1 | 各技能整数锚点数值（弹道数/召唤数/穿透/弹射） | §12-42 |
+| B2 | 各 Buff 锚点等级与取值（BF001~BF004） | §12-50 |
+| B3 | 祭坛刷出数量/频率/品质概率 | §12-3 |
+| B4 | 宝箱掉落关联公式（与击杀数/怪物类型/进度条） | §12-4 |
+| B5 | 局内等级成长曲线 + 未开封货物占格/重量/堆叠 | §12-5 / §12-14（**等级成长口径已由 D017 落库**：`CFG.levelUp.growth`；货物占格进 `CFG.chestQualities[].shape` 见 D014/B5） |
+
+### C 类 · 玩法决策（**只能用户拍板**）
+
+| # | 项 | 冲突点 |
+|---|---|---|
+| C1 | **12 角色差异化定位与专属武器**（首版 6 角） | 直接决定 A5 的 11 套技能长什么样 ✅ **已落库（元数据，见 `decision_log_v1.md` D020）**：`playtag/difficulty/statBias/archetype/difficultyOrder`；✅ **本轮已落库（D024/D025）**：数值越界修正（H005/H006/H012）+ `CFG.starterHeroIds` 接线（首发名单数据驱动、与 `unlockOrder` 解耦、为 H002/H003 补解锁规则，保证 12 角全可解锁） |
+| C2 | **等级成长公式：加算 vs 乘算** | §12-38 未定 → ✅ **已由 D017 落库**（`CFG.levelUp.growth`） |
+| C3 | 局内保险来源重设计（原方案已废弃） | §12-13 ✅ **已落库（见 `decision_log_v1.md` D021）**：`ALTAR_007` 保险雕像 + 工匠世界购买；✅ **本轮接线（D026）**：`CFG.insuranceSource` 消费点接线（默认值下行为不变） |
+| C4 | 结晶获取速率 / 局间永久解锁内容 | §12-10 ✅ **已落库（数据，见 `decision_log_v1.md` D022）**：`CFG.outLevel.crystalRate / unlockMilestones`（接线待审）→ ✅ **本轮已接线（D026）**：`unlockMilestones` 用既有 `Meta.data.heroes` 派生接线（`insuranceSlot` 开局发保险 0 份 / `altarWeight` 权重查询）+ 新增 `CFG.endless.crystalCapPerRun`（默认 `0` = 不封顶） |
+| C5 | 难度曲线 + 赛季玩法规则 | §12-9 / §12-30 → ✅ **已实现（D035）：赛季对抗玩法循环（入口 / 计分 / 奖励 / 挑战）+ 21~99 关内容（D037）**。① 赛季规则真源 = `G_docs/season_design_v1.md`（**含 §2.5 玩法循环**：入口解锁 → 进赛季挑战（复用深渊 + `G.seasonRun`）→ 击杀/升级/撤离双端计分 → 升赛季等级 → 大厅领奖 → 再挑战）；② **`CFG.season` 已落库**（`expGain` 10/40/200/500、`rewards` `SR001~SR005`、`challenge`）；③ **入口 = 主城「赛季使者」NPC**（`NPC_SEASON`），`SeasonState.isUnlocked()` 判定（`afterLevels:20`）；④ **关卡由 20 → 99 关**（21~99 数据驱动外推，真源 `G_docs/main_levels_21_99_design_v1.md`；`CFG.levels` / `CFG.levelCurve.rows` 同步 99、`CFG.sectors` 章节表落库、`CFG._validateLevelCurve` 自适应） |
+| C6 | **卡牌系统去向** | §12-27 要卡池 vs §19.7 已退役 → **规则自相矛盾，需裁决** → ✅ **已由 D018 落库**（彻底退役 + 物理清理） |
+| C7 | 技能栏排布：字面 `A X X X X A` vs 已落地 `[名][A][X×4][A]` | W2 遗留偏差待确认 ✅ **已落库（见 `decision_log_v1.md` D019）**：承认现状为最终形态 + 回写 `game_design_proposal.md` §20.1.1 |
+| C8（内容生产） | **主线 21~99 关内容生产** | §12-9 → ✅ **已完成（D037）**：关卡 **20 → 99 关**，21~99 关（79 关）**数据驱动外推**（真源 `G_docs/main_levels_21_99_design_v1.md`）；`CFG.levels` / `CFG.levelCurve.rows` 同步 99 行、`CFG.sectors` 8 章节落库、`CFG._validateLevelCurve` 按 `CFG.levels.length` 自适应。数值为**原型档，待策划调优** |
+
+---
+
+## 3. 并行的三条硬边界（不可绕）
+
+1. **共享文件独占**：`js/config.js` · `js/core.js` · `index.html` · `css/style.css` · `js/game.js` · `js/main.js`
+   · `js/combat.js` · `js/items.js` · `js/modes.js` · `run_tests.sh` —— **任何并行路都不许碰，只有主会话串行改**。
+   （A1/A2/A3 恰好全在此列 → **这一批天然不能并行**，这是必须说清的事实。）
+2. **依赖顺序**：文档/规则 → **接口冻结** → 并行实现 → 主会话接线 → 串行验收。跳过冻结 = 必冲突。
+3. **设计先于实现**：B/C 类必须先有定稿数字/规则，代码才有东西可写。
+
+---
+
+## 4. 波次 DAG
+
+```
+P0 冻结（主会话串行，原子提交）
+   ├─ 冻结「每英雄技能定义文件」注册协议（A5 并行前提）
+   ├─ 冻结「SkillSave 保存时机」（A3 前提，见 C 类决策）
+   └─ 建立所有权地图 + 基线指纹
+        │
+        ▼
+P1 三轨并行
+   ├─ 轨1（主会话串行）：A1 killer ∥ A2 manifest ∥ A3 SkillSave ∥ A4 castTime
+   ├─ 轨2（独立文件×N 代理）：A5 其余 11 英雄技能（每英雄 1 文件 + 1 测试）
+   └─ 轨3（独立文件×4 代理）：A7 X-GAMe 四张卡测试
+        │
+        ▼
+P2 主会话串行接线（合并轨2/轨3 产出 → 共享文件只在此改）
+        │
+        ▼
+P3 串行验收：门禁全绿 → commit → push → 重新发布 → 真机验收
+```
+
+---
+
+## 5. 本轮实际完成
+
+### 5.1 P1 轨1 第一批（A1 killer）
+- [x] **A1 `killer` 伤害归属接线**：`js/skill-runtime.js` 主路径（`_applyDamage` → `SkillDamage.resolve` 补 `killer`）+ 兜底路径（`_fallbackDamage` 的 `null` → 施放英雄）→ `skill_runtime_test.js` 新增 4 条断言
+- [x] **A2 判定为「半个改动」并回退**：依据 = 清单侧消费点 0 + 素材磁盘存在 0 + 会打破 7 条现状断言；归入「资源层整批」批次，不单独挂载
+- [x] **A7 实测校正**：X-GAMe 六套测试**已存在**，非未开发（书中 task-cards 的「未来交付物」已落地）
+- [x] 版本 bump `20261047 → 20261048`
+
+### 5.2 全量迁移批 1（A5 第一批：H001~H006 全部走新路径 · 已完成）
+- [x] **接口冻结**：`G_docs/hero_skill_interface_v1.md`（承载位置裁定 + 字段/标签/能力白名单 + 三条结构契约）
+- [x] **承载位置裁定**：技能定义 = **表 → 写进 `js/config.js` 的 `skillDefs`**（不拆独立文件）——理由：① 项目惯例「表进 config、逻辑进独立文件」；② 80+ 测试的 `FILES` 列表都内联加载 config.js，写进去 = **全部测试自动覆盖**；拆文件要改 80+ 处加载清单，高风险零收益。
+- [x] **5 个新技能定义**：`SK_SCATTER`(H002←AT104) / `SK_RAILGUN`(H003←AT106) / `SK_RINGBARRAGE`(H004←AT108) / `SK_VOLLEY`(H005←AT110) / `SK_SIEGEBLAST`(H006←AT112) + 5 条 localization
+- [x] **绑定与名单**：`initialSkillBindings` 增 H002~H006；`migratedHeroIds` 扩至 `["H001".."H006"]`
+- [x] **新守卫测试** `hero_skill_migration_test.js`（17 断言）：漏搬守卫 / 分流串台守卫（未迁移英雄不得有绑定、旧技能不得被删）/ 结构铁律（`moreDamageMul===1`、`damageBasis` 三字段、派生节点由边可达、`nameKey` 可解析）/ 身份回归（H001/H006 命中爆炸）
+- [x] **现状记录型断言去硬编码**：`skill_integration` / `skill_rule_binding` / `skill_enable_runtime` / `skill_playtest` / `crystal_ui` / `crystal_expansion` 六处「= H001 / = 2 技能」改为**数据驱动**（比对 `initialSkillBindings` 键集）→ **以后每加一批英雄都不用再改测试**
+- [x] 版本 bump `20261048 → 20261049`；`verify_clone.sh` 期望表同步（24 文件指纹 + 版本 + 基线 99 套 / 4210）
+- [x] 门禁 **4210 / bad = 0 全绿**（原 4191，+19）
+
+### 5.3 全量迁移批 2（A5 第二批：H007~H012 全部走新路径 · 已完成 · 决策 D012）
+
+**并行编排**（用户指令「多线程并行，直接开工」）：
+- 主会话串行做全部**共享文件**（schema 先冻结再放行下游）：`skill-config.js` → `config.js` → `skill-compiler.js` → `skill-runtime.js`
+- 3 个并行代理做**独立产出**：旧系统效果落点调研（只读）· 数值平衡表 · 结构守卫测试 · 运行时行为测试
+
+- [x] **schema 冻结（`skill-config.js`）**：`_FIELDS.node` += `effect`；新增 `_FIELDS.effect` / `_EFFECT_KINDS` / `_EFFECT_STATS` / `_NON_DAMAGE_KINDS`；`_TEMPLATE_KINDS` += `summonUnit`；`_PARAM_RULES` += 16 个字段名；新增 `_validateEffect`；**`_validateNode` 改 damageBasis 条件必填**（白名单，fail-closed）
+- [x] **表（`config.js`）**：新增 `TP_SUMMON_UNIT`（唯一非伤害模板）+ `defaults.summonUnit`；6 技能
+  `SK_TAUNTROAR`(H009←AT120) / `SK_LIFEPULSE`(H010←AT122) / `SK_WARSONG`(H011←AT123) / `SK_PSYSHIELD`(H012←AT124) / `SK_MINEFIELD`(H008←AT114) / `SK_DRONESWARM`(H007←AT113)
+  + 6 条 localization + `template.summonUnit`；`initialSkillBindings` 增 H007~H012；`migratedHeroIds` → **12/12**
+- [x] **编译（`skill-compiler.js`）**：`_NON_DAMAGE_KINDS` 副本 + bref 校验按模板 kind 放宽 + `_cloneNode` 补 `effect` 透传
+- [x] **执行（`skill-runtime.js`）**：`_SR_CAT_DEFAULT_KEY` += `summonUnit`；`eff.effect` 透传；**文件末尾独立区块**新增 `_applySpawnEffects` / `_applyEffect` / 6 个 `_effectXxx` / `_statOf` / `_effectAmount` / `_effectRadius` / `_pushRunBuff`
+- [x] 🔴 **实现期纠正**：接线点由「`_applyDamage` 命中级」改为「`spawnEffect` 施放级」—— AOE 命中 N 目标会把全队效果触发 N 次；施放级 = 每实例恰一次，与旧实现同源（详见 `hero_skill_interface_v2.md` §9.2）
+- [x] 🔴 **实现期揪出的真实缺陷**：`heal`/`barrier` 把「缩放值」与「生属性」重复相加 → 由 `skill_effect_runtime_test.js` 复算断言揪出并修正（§9.3）
+- [x] **测试（并行代理产出，主会话登记）**：`hero_nondamage_skill_test.js`（**38 断言**）+ `skill_effect_runtime_test.js`（**43 断言**）
+- [x] **现状记录型断言随批更新**：`hero_skill_migration_test.js` ②（未迁移 → 全量，含绑定键集双向一致性）+ ④（非伤害节点豁免/双向断言）；`skill_integration_test.js` ①（模板 4 → ≥4 且含 `TP_SUMMON_UNIT`）
+- [x] **平衡表**：`G_docs/skill_effect_balance_v0.1.md`（数值策划代理提案，未批准）
+- [x] 门禁 **4239 → 4320 / bad = 0 全绿**（+81）
+
+---
+
+## 6. 下一批的阻塞点与决策项
+
+### 6.1 ~~🔴 硬阻塞（架构变更，必须拍板）~~ → ✅ **已由决策 `D012` 解决（2026-10-12）**
+
+> ~~**H007~H012 六人无法迁移**：新系统 `_TEMPLATE_KINDS` 只有 4 种，且**每个节点强制要求 `damageBasis`**（伤害必需），而召唤/陷阱/嘲讽/治疗/光环/护罩**大部分是非伤害效果**。~~
+>
+> 🔴 **已被取代（2026-10-12）**：上述判断是**未读旧技能表的推断，实测后不成立**。读 `CFG.skills`（`js/config.js:1340~1422`）确认——AT120 / AT122 / AT123 / AT124 **全部是「范围伤害 + 附加效果」**（旧注释原文：「…同时造成一次小额 AOE 伤害（**全局口径：所有主动技能都必须有伤害**）」），AT114 陷阱也是延迟触发的伤害；**只有 AT113 召唤**是真正无伤害。
+>
+> **实测后的真实工作量 = 1 个新模板 kind（`summonUnit`）+ 1 个可选节点字段（`effect`）**，而不是 6 种模板。
+> 完整设计与施工拆分见 **`G_docs/hero_skill_interface_v2.md`**：
+> - **批 2A（低风险）**：H009 嘲讽 / H010 治疗 / H011 光环 / H012 护罩 —— 只需 `effect` 字段，**不触碰 `damageBasis` 必填规则** → 零回归风险。
+> - **批 2B（高风险）**：H008 陷阱 / H007 召唤 —— 新模板 + `damageBasis` 条件必填（**唯一放宽的硬约束**，须补回归测试）。
+
+### 6.2 决策项状态
+
+| 项 | 状态 |
+|---|---|
+| **③ 技能是否跨局保存** | ✅ **已拍板（`D013`）：每局重置**（不跨局）。见 `decision_log_v1.md` D013 / `game_design_proposal.md` §20.10 |
+| **H007~H012 表达口径** | ✅ **已拍板（`D012`）：AI 直接设计**，设计已落库 → `hero_skill_interface_v2.md` |
+| **A4 `castTime` 语义** | ✅ **已拍板（`D015`）：不可打断 + 可移动**（前摇进度只随时间推进，不读 hp / 不读位移；目标丢失则暂停不归零） |
+| **A4 实现** | ✅ **已落库**（`js/skill-scheduler.js` + 31 条断言） |
+| **B 类数值填表（5 组）** | ✅ **已拍板（`D014`）：全部落库**。B1 技能整数锚点 / B2 Buff 锚点 / B3 祭坛刷出 / B5 宝箱货物（含硬编码收口）**已进 `CFG`**；B5 的「等级成长曲线形态」仍阻塞于 C2 |
+| **宝箱主来源（冲突 7.2-1）** | ✅ **已拍板（`D016`）：精英几率掉低级箱 / BOSS 几率掉中高级箱 / 掉落在地面 / 拾取参考雕像 / 宝箱=雕像形态 / 同名可叠加** —— 已落库（`CFG.chestDrop` + `eliteDropChest` + `spawnGroundChest` + `chest_drop_source_test.js` 30 断言） |
+| **C2 / C6** | ⏳ 待拍板（方案已产出 → `G_docs/decision_options_c2_c6_v0.1.md`；C2 解 B5 阻塞，C6 解卡牌规则矛盾） |
+
+### 6.3 A6 诊断报告：旧路红测（`skill_enable_runtime_test` ⑥ `kills ≥ 1`）根因
+
+**结论**：**测试桩喂钟非单调**，**非产品逻辑缺陷**。已于 `8b0e1a2` 双重修复，当前 25 条全绿。
+
+**现象**：`skill_enable_runtime_test` ⑥「关掉开关 → 回落旧路径 → 10 秒内 `kills ≥ 1`」，历史上偶发红（`evidence/sh-12-failure.log`：`exit=1 / PASS 4110 / bad=1`），**约 12% 概率**。
+
+**机理（三段链）**：
+1. ④ 段跑 600 帧（`t` 从 0 起，`t += 16.7`）→ `Game.lastT` 被推到 **≈10020ms**。
+2. ⑥ 段**重新开局**却把时钟**重置为 `let t = 0`** → `js/main.js:869` 的
+   `dt = (t - this.lastT) / 1000 = (0 - 10020)/1000 = **−10.02s**`（**负步长**）。
+3. 负 `dt` 把玩家「施放计时器」**一次性甩到窗口末尾**（+10 秒）→ 后续 10 秒内不再施放 →
+   断言依赖的那次击杀丢失 → 假红。
+
+> 之所以是**概率**红：首帧的初始施放仍会打出 1 发，是否造成击杀取决于命中/散布，故只在部分运行中丢断言。
+
+**修复（同一提交 `8b0e1a2`，提交标题即「门禁去随机化」）**：
+- **产品侧加固**（`js/main.js:867~869`）：步长**双钳制** `dt = Math.min(0.05, Math.max(0, (t-lastT)/1000) || 0.016)` —— 下界 0 挡负步长、上界 0.05 挡大步长、`|| 0.016` 兜 0 值。线上 rAF 时间戳本单调，此钳制只针对「注入或回拨」。
+- **测试侧修复**（`skill_enable_runtime_test.js:239~245`）：⑥ 段**改为从 `Game.lastT` 续帧**（`let t = (typeof Game.lastT === "number" && isFinite(Game.lastT)) ? Game.lastT : 0`），与线上单调 rAF 一致。
+- 同提交两处 diff：`js/main.js`（+16/−3）、`skill_enable_runtime_test.js`（+8/−1）。
+
+**为何书中一直写「根因未诊断」（流程教训）**：
+- X-GAMe 书（`X-GAMe-v1.md` / `07-verification-roadmap.md`）是**与修复同批并行产出**的，**未回读修复提交的代码注释** → 状态滞留为「尚未诊断」。
+- 🔴 这是本项目**同源第 3 次「凭文档不读代码」**（前两次：v1 接口文档判「需扩 6 种模板」被推翻；本条）。**凡「未诊断/未实现/不可行」类文档结论，开工前必须回查代码与提交记录。**
+
+**可复用守卫（防复发）**：
+- 测试内跨段推进主循环时，**禁止重置时钟**；一律 `t = Game.lastT` 续帧（或单调递增喂 `__raf`）。
+- 断言「10 秒内击杀」这类**窗口型行为**前，先断言前提（效果已生成 / 施放已发生），避免把喂钟缺陷伪装成玩法缺陷。
+
+---
+
+## 7. B 类数值填表：提案已产出（**未批准**，等用户审）
+
+> 依据：`full_dev_plan_v1.md` §1 表「B 类 = 规则已定、缺具体数字（策划活）｜AI 提案 → 用户审」。
+> 本轮由 **3 个并行子代理**各自产出（用户指令「多线程并行，直接开工」），**只提案、不落库**，`js/` 零改动。
+
+| 提案文件 | 覆盖 | 「需确认」项 |
+|---|---|---|
+| `G_docs/balance_proposal_b1_b2_v0.1.md` | **B1**（§12-42 技能整数锚点：8 技能 · 8 个整数离散项 · 32 个锚点取值）+ **B2**（§12-50 BF001~BF004 各 4 锚点 + `stackable`/`maxLv`） | 12 条 |
+| `G_docs/balance_proposal_b3_b4_v0.1.md` | **B3**（§12-3 祭坛刷出：6 类祭坛 · 4 张规则表）+ **B4**（§12-4 宝箱掉落：逐次击杀概率公式 + 6 行典型局面示例） | 12 条 |
+| `G_docs/balance_proposal_b5_v0.1.md` | **B5**（§12-5 局内等级成长曲线：8 个等级点 · **加算版 / 乘算版并列**）+ §12-14（未开封货物 5 阶 × 占格/重量/堆叠） | 10 条 |
+
+**共同口径**：LV1 一律锁死现有迁移基准（A 类成果不动）；B5 复用 `skill_effect_balance_v0.1.md` 的等级系数（g(1)=1.00 / g(25)=2.44 / g(50)=3.94 / g(100)=6.94）；三份均与 `skill_balance_table_v0.1.md` 显式交叉引用，未重复冲突。
+
+### 7.1 🔴 回查代码后对代理结论的校正（**3 条，其中 1 条需修正**）
+
+代理报告了 3 处「与任务书假设不符」的代码现状，**已逐条回查代码复核**（本页结论以复核为准）：
+
+| # | 代理结论 | 复核结果 | 证据 |
+|---|---|---|---|
+| 1 | 任务书写的 `CFG.chests` 不存在，真源是 `CFG.chestQualities` | ✅ **成立**。任务书（含我给的提示）用错了键名 | `js/items.js:227`、`js/config.js:2468` |
+| 2 | 宝箱占格现为**硬编码 `[1,1]`**，未进 CFG | ✅ **成立**。`makeChestItem` 里写死 `shape: [1, 1]` → **违反项目契约 1（数值一律进 CFG）** | `js/items.js:225~228` |
+| 3 | `CFG.altars[].weight` **现闲置**（`js/game.js:1662` 用等概率 `U.pick`） | ⚠️ **需修正**：**只对了一半**。主关卡时间轴池确实等概率（`spawnAltarFromSpec` → `U.pick(allowed)`），但**无尽侧已按 weight 加权**（`U.weightedPick(pool)`）→ 真正的结论是「**主关卡与无尽两套口径不一致**」，而非「字段闲置」 | 主关卡 `js/game.js:1655~1664`；无尽 `js/endless.js:586~594`；体重定义 `js/config.js:1606~1628` |
+
+> 教训补充：**代理的「字段闲置」类结论同样必须回查全部消费点**——本例若只看主关卡就会误判为「死字段」，实际无尽侧在用。
+
+### 7.2 🔴 新发现的规则冲突（**需用户裁决**，非 AI 可自决）
+
+1. **B4 与现状口径冲突**：§12-4 要求「宝箱掉落关联**击杀数量 / 怪物类型 / 进度条**」，
+   但**现实现状**是「**宝箱不由普通怪掉落**」——宝箱作为雕像（`ALTAR_003`）在祭坛池刷出
+   （`js/config.js:94~95` 注释 + `js/game.js:1399` 的 `giveChest`），且**精英怪必掉宝箱**
+   （`CFG.elites.dropChest` = `js/config.js:1917`，消费点 `js/combat.js:746`）、Boss 转阶段掉宝箱。
+   → 按 §12-4 字面实现 = **行为变更**，需先确认「宝箱主来源到底是祭坛雕像还是怪物掉落」。
+2. **`CFG.altars[].weight` 的主关卡未消费**（见 7.1 第 3 条）→ 若要让主关卡也用权重，属**行为变更**，需单独立项。
+3. **`§12-38 等级成长公式（加算 vs 乘算）` 仍未拍板** → **B5 第 1 条「需确认」即此**，B5 已同时给出两套曲线备选。
+4. **宝箱占格硬编码**（7.1 第 2 条）→ 属**契约违规**，B5 提案已把它列为需确认项（建议进 `CFG`）。
+
+### 7.3 待用户拍板清单（合并汇总）
+
+| 组 | 待定内容 | 影响面 |
+|---|---|---|
+| **C2** | 等级成长口径：**加算 `1+0.06×(lv−1)`** vs 乘算 vs 混合（解 B5「货物/属性数值随等级成长」阻塞） | `js/config.js` + `js/items.js` |
+| **C6** | 卡牌系统去向（**规则自相矛盾**：入口已断但函数/配置/读取通道仍在） | `index.html` + `js/config.js` + `js/items.js` |
+| **C1/C3/C4/C5/C7** | 角色差异化与专属武器 / 局内保险来源 / 结晶获取速率 / 难度与赛季曲线 / 技能栏排布偏差 | 多系统 |

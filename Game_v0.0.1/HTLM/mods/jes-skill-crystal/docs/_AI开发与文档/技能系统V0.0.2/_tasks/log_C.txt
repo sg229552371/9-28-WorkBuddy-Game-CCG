@@ -1,0 +1,11 @@
+"gpt-6-astra" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"}
+已完成并写入唯一指定文件：`ch05_积木参数表.md`。
+
+- 正文中文字符数：**17,131**（不计代码块及表格标记）。
+- 共 **14 张参数登记表、112 条参数**，均为规定九列。
+- 校验通过：字段命名、Schema 路径、路径唯一性、分级理由、禁用词扫描。
+- 已附运行时契约引用关系表；载体枚举、附着原因码、瞬时派生时序等冲突列入「未决问题」，未修改共享文件或主书稿。
+- 当前为待 WorkBuddy 评审的章节草案，不代表运行时已实现。
+
+DONE::CH05::17131

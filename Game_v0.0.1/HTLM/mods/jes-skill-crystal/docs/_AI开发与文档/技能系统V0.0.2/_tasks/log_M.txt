@@ -1,0 +1,12 @@
+"gpt-6-astra" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"}
+已完成唯一产出：[_tasks/out_M_R6回放格式.md](_tasks/out_M_R6回放格式.md)。
+
+- 已核实建议章节号 **14.11** 可用，提供原文插入锚点及建议决策号 **D-116—D-118**。
+- 补齐开局条件、输入格式、逻辑校验和、重放流程及版本兼容边界。
+- 明确稀疏检查点只能定位偏离区间，精确定位需要可信参考重算。
+- 已完成一轮自检；未修改主书稿、共享文件或其他文件，未新增或修改 AC。
+
+字数为估算值。
+
+DONE::PKG_M::约9000

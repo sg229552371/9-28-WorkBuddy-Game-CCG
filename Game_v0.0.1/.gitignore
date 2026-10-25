@@ -1,0 +1,10 @@
+exports/
+
+# Godot 编辑器缓存（本机生成）
+.godot/
+
+# 导出产物（无人工确认不导出 exe/html，不入库）
+exports/
+*.exe
+*.pck
+*.zip

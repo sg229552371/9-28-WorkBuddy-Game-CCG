@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-10-12T17:21:12.408515+08:00",
+  "results": [
+    {
+      "baseline": "runtime-before.json",
+      "count": 34,
+      "changed": [],
+      "missing": [],
+      "passed": true
+    },
+    {
+      "baseline": "runtime-continuation-before.json",
+      "count": 36,
+      "changed": [],
+      "missing": [],
+      "passed": true
+    }
+  ],
+  "note": "原基线仅34个JS；续轮基线含HTML/CSS，共36文件。十六进制摘要统一大小写比较。"
+}

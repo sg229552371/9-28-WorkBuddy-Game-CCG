@@ -1,0 +1,12 @@
+"gpt-6-astra" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"}
+已写入 `ch04_积木清单.md`，仅修改这一份文件。
+
+- 已逐项评估第8章典型建模、七类非伤害模板、九个完整案例及十二角色线索。
+- 已包含积木登记卡、T1映射草稿、扩展登记流程、验收例子和运行时契约引用表。
+- 静态校验通过：YAML可解析、十二字段一致、ID唯一、表现键合法、每卡三句文案、T1对应完整，禁用旧词零命中。
+- 正文 **22,959 汉字**，统计排除代码块，不计标点及英文标识符。
+
+**仍待评审：**`instant/self` 枚举冲突、瞬时派生时序、目标排序及其他契约差异已登记在末尾。位移、墙面反射、嘲讽保留候选；默认CFG属于待下游冻结的配置草案，未声称运行时已支持。
+
+DONE::CH04::22959

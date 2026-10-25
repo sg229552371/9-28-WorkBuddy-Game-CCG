@@ -1,0 +1,1778 @@
+/* ===== 全局 ===== */
+* { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+/* 21.3：禁止浏览器手势接管游戏区触摸。
+ * ⚠️ touch-action 不继承、且只在「手势起始目标」上生效，所以必须打在**画布与浮层**上，
+ *    只写 html,body 是无效的（#app/canvas 仍是 auto）。缺了这条，在画布上拖动会被判为页面
+ *    滚动，浏览器随即发 pointercancel 把摇杆打断——表现就是「按住一拖就松手，摇杆没法用」。
+ * 需要原生滚动的面板正文单独放行（见下方 .scrollable 等）。 */
+#app, #game-canvas, #touch-controls { touch-action:none; }
+html, body { overscroll-behavior:none; }   /* 抑制下拉刷新/橡皮筋，避免打断战斗 */
+html,body { width:100%; height:100%; overflow:hidden; background:#0b0e14; }
+body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e8ecf2; }
+#app { position:relative; width:100vw; height:100vh; }
+.hidden { display:none !important; }
+/* 需要纵向滚动的容器（面板正文/列表）：放行原生滚动，其余区域一律禁止手势 */
+.scrollable, .panel, .screen, .help-cols, .codex-grid, .art-side { touch-action:pan-y; }
+
+/* ===== 22.1 手机端毛刺：键盘快捷键标注（(B)/(E)）=====
+ * 默认隐藏；仅在「支持悬停 + 精确指针」设备（桌面鼠标）显示。
+ * 触屏（粗指针/无悬停）不显示 → 手机按钮只剩中文动作名，去噪。 */
+.kbd-hint { display:none; }
+@media (hover:hover) and (pointer:fine) {
+  .kbd-hint { display:inline; }
+}
+
+#game-canvas {
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  background:#141a24;
+  box-shadow:0 0 60px rgba(0,0,0,.8);
+}
+
+/* ===== 屏幕层 ===== */
+.screen {
+  position:absolute; inset:0; z-index:20;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:radial-gradient(ellipse at center, #16202e 0%, #0b0e14 75%);
+}
+.title { font-size:42px; letter-spacing:4px; color:#ffd76a; text-shadow:0 2px 12px rgba(0,0,0,.6); margin-bottom:6px; }
+.subtitle { color:#7d8aa0; margin-bottom:26px; font-size:14px; }
+.panel {
+  background:rgba(22,30,44,.92); border:1px solid #2e3d55; border-radius:14px;
+  padding:24px 28px; box-shadow:0 8px 32px rgba(0,0,0,.5);
+}
+.panel h2 { margin-bottom:14px; font-size:20px; color:#fff; }
+.panel h3 { margin:12px 0 8px; font-size:14px; color:#9fb2cc; }
+.tip { margin-top:12px; font-size:12px; color:#6d7c94; line-height:1.7; }
+
+/* ===== 关卡 / 角色选择 ===== */
+/* 选关面板：flex 纵向三段（头部固定 / 列表滚动 / 底部返回固定）。
+ * 高度锁定 calc(100dvh - 16px)（20.10 苹果风单屏锁定：dvh 动态视口，避开手机地址栏）。
+ * 底部 padding 加 safe-area-inset-bottom，返回按钮永不贴手势条。 */
+.level-panel {
+  width:min(560px, 94vw);
+  max-height:calc(100dvh - 16px);
+  padding-bottom:max(10px, env(safe-area-inset-bottom));
+  display:flex; flex-direction:column;
+}
+.level-head { flex-shrink:0; }
+.level-head h2 { margin-bottom:3px; font-size:15px; }
+.level-head .tip { margin-top:0; margin-bottom:7px; font-size:10px; }
+/* 关卡列表：3 列紧凑网格（20.10 苹果风小而美：卡片 15px 大字 → 10px 小字，一屏看更多）。
+ * flex:1 占满中间，超高时才自身滚动（头顶/底部按钮不动）。 */
+#level-list {
+  flex:1; min-height:0; overflow-y:auto;
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;
+  align-content:start; padding:2px;
+}
+.level-foot { flex-shrink:0; margin-top:8px; }
+.level-card {
+  background:#1d2a3d; border:1px solid #33486b; border-radius:8px;
+  padding:5px 8px; cursor:pointer; transition:.15s; line-height:1.25;
+  display:flex; flex-direction:column; justify-content:center;
+}
+.level-card:hover { border-color:#ffd76a; background:#25344c; }
+.level-card.locked { opacity:.4; cursor:not-allowed; }
+.level-card .lv-no { font-size:9px; color:#8ba0bd; letter-spacing:.5px; }
+.level-card .lv-name { font-size:10px; font-weight:bold; color:#eaf1fb; margin:0 0 1px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.level-card .lv-meta { font-size:9px; color:#9fb4cc; }
+.level-card .lv-meta.lock { color:#e0a24c; }
+.level-card .lv-boss { font-size:9px; color:#e79aa0; margin-top:0;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.level-card b { font-size:12px; }
+.level-card small { color:#8ba0bd; }
+.btn {
+  background:#2b3c58; color:#e8ecf2; border:1px solid #44608c; border-radius:8px;
+  padding:9px 20px; font-size:14px; cursor:pointer; transition:.15s; font-family:inherit;
+}
+.btn:hover { background:#365180; border-color:#6d8fc4; }
+.btn.primary { background:#b8860b; border-color:#ffd76a; color:#fff; font-weight:bold; }
+.btn.primary:hover { background:#d09a10; }
+.btn.primary:disabled { opacity:.4; cursor:not-allowed; }
+.btn.ghost { background:transparent; }
+.btn.small { padding:5px 12px; font-size:12px; }
+.btn-row { display:flex; gap:12px; justify-content:flex-end; margin-top:16px; flex-shrink:0; }
+.char-panel {
+  width:min(560px, 94vw);
+  max-height:calc(100dvh - 16px);   /* 单屏锁定：不滚出视口 */
+  padding-bottom:max(10px, env(safe-area-inset-bottom));   /* 20.9：底部安全区，按钮永不贴边 */
+  display:flex; flex-direction:column;
+}
+.char-head { flex-shrink:0; position:relative; }
+.char-head h2 { margin-bottom:4px; font-size:18px; }
+
+/* ===== 26.x：角色选择右上角「属性说明」图标 + tips 弹窗 ===== */
+/* 圆形图标按钮（ico）：深色主题，悬停轻光晕；与面板右上角对齐 */
+.ico-btn {
+  position:absolute; right:0; top:-2px;
+  width:30px; height:30px; line-height:28px;
+  border-radius:50%;
+  border:1px solid #4a5a78; background:#1b2434; color:#c79bff;
+  font-size:16px; font-weight:bold; text-align:center; padding:0;
+  cursor:pointer; user-select:none;
+}
+.ico-btn:hover { border-color:#c79bff; box-shadow:0 0 8px rgba(199,155,255,.35); }
+/* tips 弹窗：贴按钮下方右对齐，可滚动（15 条属性说明在小屏也放得下），不挤占面板布局。
+ * 26.x 排版优化：属性说明统一收进本弹窗（角色详情面板不再内嵌），行式布局——
+ * 属性名金色高亮、量纲弱化小字、说明正文独立成行浅灰，虚线分隔逐条，层级一目了然。 */
+.stat-help-tip {
+  position:absolute; right:0; top:34px; z-index:30;
+  width:min(360px, 88vw); max-height:52vh; overflow-y:auto;
+  background:#141b28; border:1px solid #4a5a78; border-radius:10px;
+  padding:10px 14px 8px; box-shadow:0 8px 24px rgba(0,0,0,.55);
+}
+.stat-help-tip.hidden { display:none; }
+.stat-help-tip .sht-head {
+  font-size:13px; font-weight:bold; color:#ffe08a; letter-spacing:2px;
+  padding-bottom:6px; margin-bottom:2px;
+  border-bottom:1px solid rgba(255,255,255,.14);
+}
+.stat-help-tip .sht-row {
+  padding:6px 0 5px; border-bottom:1px dashed rgba(255,255,255,.10);
+  font-size:11px; line-height:1.55;
+}
+.stat-help-tip .sht-row:last-child { border-bottom:none; }
+.stat-help-tip .sht-name { color:#ffe08a; font-weight:bold; font-size:12px; margin-right:2px; }
+.stat-help-tip .sht-unit { color:#7e93ad; font-size:10px; margin-right:6px; }
+.stat-help-tip .sht-desc { display:block; color:#b3c4da; }
+/* 12 宫格头像：6 列 × 2 行（20.9 缩小 50%：99px→52px，小而美的苹果风），一屏看完 12 角。 */
+#char-list {
+  flex-shrink:0;
+  display:grid; grid-template-columns:repeat(6, 1fr); gap:6px;
+  padding:2px;
+}
+/* 头像格：立绘方形铺满，下方 9px 小字名字；细边框 + 选中轻光晕（克制不喧宾）。 */
+.char-card {
+  position:relative; display:flex; flex-direction:column; align-items:center;
+  background:linear-gradient(180deg,#1d2a3d 0%,#16202e 100%);
+  border:1px solid #33486b; border-radius:10px;
+  padding:3px; cursor:pointer; transition:.15s; overflow:hidden;
+}
+.char-card:hover { border-color:#6d8fc4; }
+.char-card.selected { border-color:#ffd76a; box-shadow:0 0 0 1px rgba(255,215,106,.45), 0 0 10px rgba(255,215,106,.30); background:linear-gradient(180deg,#2b3a52 0%,#1d2a3d 100%); }
+.char-card.selected::after {   /* 选中勾角标（右上角） */
+  content:"✓"; position:absolute; top:1px; right:3px; font-size:10px; font-weight:bold;
+  color:#ffd76a; text-shadow:0 1px 3px rgba(0,0,0,.9);
+}
+.char-card.locked { opacity:.5; cursor:not-allowed; border-style:dashed; border-color:#2e3d55; }
+.char-card.locked:hover { border-color:#2e3d55; }
+/* 立绘舞台：方形，canvas 等比铺满，深底衬托。 */
+.char-card .char-stage {
+  position:relative; width:100%; aspect-ratio:1 / 1; border-radius:8px;
+  background:radial-gradient(circle at 50% 65%, #2a3b57 0%, #131c2a 75%);
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.char-card .char-face { width:100%; height:100%; display:block; }
+.char-card .char-name {
+  margin-top:2px; font-size:9px; color:#c9d6e8; font-weight:bold; max-width:100%;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.char-card .char-lock {   /* 未解锁小锁标（浮在立绘上） */
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  font-size:13px; filter:drop-shadow(0 1px 3px rgba(0,0,0,.9));
+}
+/* 兼容旧断言：卡片内仍保留定位徽章（隐藏在名字行末端，随选人详情展示）。 */
+.char-card .char-badges { display:none; }
+.char-card .info { display:none; }   /* 旧 info 容器退场（改由固定详情区承载说明） */
+
+/* 固定高度详情区：切换选中只换内容不改高度 → 布局不跳动。
+ * 显示当前选中英雄的角色说明 + 技能说明；文本超长时区域内部滚动。 */
+.char-detail {
+  flex:1; min-height:104px; max-height:240px; margin-top:8px;   /* 21.9：170→240，未解锁信息公开化后内容变长，裁切改滚动 */
+  overflow-y:auto;
+  background:rgba(13,20,32,.72); border:1px solid #2a3a55; border-radius:10px;
+  padding:8px 10px;
+}
+.char-detail .cd-empty { color:#6d7c94; font-size:12px; text-align:center; padding-top:28px; }
+.char-detail .cd-title { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
+.char-detail .cd-name { font-size:14px; font-weight:bold; color:#fff; }
+.char-detail .cd-id { font-size:10px; color:#8ba0bd; }
+.char-detail .cd-desc { font-size:11px; color:#a9bad2; margin-bottom:4px; line-height:1.45; }
+/* 21.6：未解锁英雄详情区解锁条件行（金色高亮持续可见，替代一闪而过的 toast） */
+.char-detail .cd-unlock { font-size:12px; font-weight:bold; color:#ffd76a; background:rgba(255,215,106,.08); border:1px dashed rgba(255,215,106,.45); border-radius:8px; padding:7px 10px; margin-bottom:5px; }
+/* 21.8：crystal 型解锁按钮（选人详情区）——此前解锁逻辑无 UI 入口（_unlockCost 零调用）；
+ * 结晶足够金色可点，不足置灰（JS disabled + 显示缺口） */
+.char-detail .cd-unlock-btn {
+  display:block; width:100%; margin:6px 0 2px; padding:10px 14px;
+  border:none; border-radius:10px; cursor:pointer;
+  background:linear-gradient(180deg,#f0b429,#d9902a); color:#fff;
+  font-size:14px; font-weight:bold; text-align:center;
+  box-shadow:0 3px 10px rgba(217,144,42,.35);
+  transition:transform .12s, filter .12s;
+}
+.char-detail .cd-unlock-btn:hover { transform:translateY(-2px); filter:brightness(1.08); }
+.char-detail .cd-unlock-btn:disabled { filter:grayscale(1) brightness(.72); cursor:not-allowed; transform:none; box-shadow:none; }
+.char-detail .cd-stats { font-size:11px; color:#9fb4cc; margin-bottom:4px; line-height:1.45; }
+.char-detail .cd-skill { font-size:11px; color:#ffd76a; line-height:1.45; word-break:break-word; }
+.char-detail .cd-skill b { color:#ffe08a; }
+.char-detail .cd-lock { font-size:11px; color:#e0a24c; margin-top:3px; }
+/* 定位徽章（19.2）：输出红 / 防御蓝 / 恢复绿，颜色由 CFG.heroRoles[name].color 内联注入 */
+.role-badge {
+  display:inline-block; margin-left:6px; padding:1px 8px; border-radius:10px;
+  border:1px solid currentColor; font-size:11px; font-weight:bold; vertical-align:middle;
+  background:rgba(0,0,0,.25);
+}
+.char-card .info p { font-size:12px; color:#8ba0bd; margin-top:4px; }
+
+/* ===== C1-Q7：选人卡元数据（玩法标签 playtag + 难度星级 difficulty）=====
+ * 卡片很窄（390px / 6 列网格，单格 ≈60px），两行小字必须裁切，绝不撑破卡片。 */
+.char-card .hero-playtag {
+  display:block; max-width:100%; margin-top:1px;
+  font-size:8px; line-height:1.2; color:#8fd0ff;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.char-card .hero-diff {
+  display:block; max-width:100%; margin-top:1px;
+  font-size:8px; line-height:1.2; color:#ffd76a; letter-spacing:.5px;
+  white-space:nowrap; overflow:hidden;
+}
+/* 详情区「属性倾向」区块（优势 / 短板）——深色底、与 cd-stats 同风格。
+ * 窄屏换行（flex-wrap）+ max-width + overflow 兜底，390px 竖屏不溢出。 */
+.char-detail .cd-bias { margin:2px 0 4px; font-size:11px; line-height:1.5; }
+.char-detail .cd-bias-row {
+  display:flex; flex-wrap:wrap; align-items:center; gap:4px;
+  max-width:100%; overflow:hidden;
+}
+.char-detail .cd-bias-label { color:#8ba0bd; flex:none; }
+.char-detail .cd-bias-high,
+.char-detail .cd-bias-low {
+  display:inline-block; padding:0 6px; border-radius:8px;
+  font-size:10px; border:1px solid currentColor; background:rgba(0,0,0,.25);
+}
+.char-detail .cd-bias-high { color:#7de08a; }
+.char-detail .cd-bias-low  { color:#e08080; }
+
+/* ===== HUD ===== */
+#hud { position:absolute; inset:0; z-index:10; pointer-events:none; }
+#hud button, #hud .btn { pointer-events:auto; }
+#hud-tl { position:absolute; left:20px; top:16px; display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
+
+/* ===== 技能冷却环（19.3：原左上能量条退役，改为冷却制可视化） ===== */
+/* 冷却中就绪比例（1 - 剩余/总长）填充；就绪时常亮 + READY。配色沿用现有蓝色系。 */
+#hud-skill-cd {
+  position:relative; width:64px; height:64px; pointer-events:auto;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));
+}
+#hud-skill-cd svg { width:64px; height:64px; transform:rotate(-90deg); }
+#hud-skill-cd .cd-track { fill:rgba(0,0,0,.5); stroke:#3a4a66; stroke-width:5; }
+#hud-skill-cd .cd-arc {
+  fill:none; stroke:#6cb2ff; stroke-width:5; stroke-linecap:round;
+  stroke-dasharray:213.6; stroke-dashoffset:213.6; transition:stroke-dashoffset .1s linear;
+}
+#hud-skill-cd.ready .cd-arc { stroke:#7de08a; }
+#hud-skill-cd.ready { filter:drop-shadow(0 0 8px rgba(125,224,138,.75)); }
+#skill-cd-txt {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:15px; font-weight:bold; color:#fff; text-shadow:0 1px 3px #000;
+}
+#hud-skill-cd.ready #skill-cd-txt { color:#7de08a; font-size:12px; letter-spacing:1px; }
+#skill-cd-name {
+  position:absolute; left:50%; bottom:-14px; transform:translateX(-50%);
+  font-size:10px; color:#9fb2cc; white-space:nowrap; text-shadow:0 1px 2px #000;
+}
+.bar {
+  position:relative; width:260px; height:22px; background:rgba(0,0,0,.55);
+  border:1px solid #3a4a66; border-radius:11px; overflow:hidden; margin-bottom:6px;
+}
+.bar .fill { height:100%; width:100%; border-radius:10px; transition:width .12s; }
+.bar.hp .fill { background:linear-gradient(90deg,#e5484d,#ff7b7f); }
+.bar.en .fill { background:linear-gradient(90deg,#2f81f7,#6cb2ff); }
+.bar.exp { width:180px; height:10px; border-radius:5px; }
+.bar.exp .fill { background:linear-gradient(90deg,#9a5cf5,#c79bff); }
+.bar span {
+  position:absolute; inset:0; text-align:center; line-height:22px;
+  font-size:12px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000;
+}
+#buff-area { display:flex; gap:6px; flex-wrap:wrap; max-width:420px; }
+.buff-icon {
+  width:40px; height:40px; border-radius:8px; background:rgba(20,30,50,.85);
+  border:1px solid #5a7ab0; position:relative; font-size:10px; text-align:center; padding-top:4px; color:#cfe0ff;
+}
+.buff-icon small { display:block; margin-top:2px; color:#ffd76a; font-weight:bold; }
+/* 邪神雕像倍率图标：增益偏紫 / 减益偏红紫（底色加深保证浅色文字可读） */
+.buff-icon.god-buff   { border-color:#9a5cf5; background:rgba(74,42,132,.88); color:#e9dbff; }
+.buff-icon.god-debuff { border-color:#c2496e; background:rgba(112,32,64,.88);  color:#ffd9e8; }
+
+#hud-top { position:absolute; left:50%; top:14px; transform:translateX(-50%); text-align:center; }
+#progress-wrap {
+  position:relative; width:420px; height:16px; background:rgba(0,0,0,.55);
+  border:1px solid #3a4a66; border-radius:8px; overflow:hidden;
+}
+#progress-fill { height:100%; width:0%; background:linear-gradient(90deg,#d29a3a,#ffd76a); transition:width .2s; }
+#progress-txt { position:absolute; inset:0; font-size:11px; line-height:16px; color:#fff; text-shadow:0 1px 2px #000; }
+#boss-name { margin-top:6px; color:#ff5b5b; font-weight:bold; font-size:15px; animation:blink 1s infinite; }
+@keyframes blink { 50% { opacity:.45; } }
+
+#hud-tr { position:absolute; right:20px; top:16px; text-align:right; }
+#lv-line { font-size:16px; color:#c79bff; margin-bottom:4px; }
+#coin-line { font-size:12px; color:#ffd76a; margin-top:4px; }
+
+/* ===== 深渊（无尽）战斗 HUD —— 26.x 已统一 =====
+ * 深渊复用与主线**完全相同**的战斗布局（#hud-top 进度条 + #hud-tr 等级·货币·经验 +
+ * 底部 #party-skillbar），数据同源 G.run。唯一差异 = #hud.abyss-mode 隐藏自动战斗按钮
+ *（用户口径：深渊没有自动战斗）。原 21.21 独立 #abyss-hud 经验条已删除（与 #hud-tr 重复）。 */
+/* 深渊模式（#hud.abyss-mode）：不显示自动战斗按钮 / 风格选择器（用户口径：深渊没有自动战斗） */
+#hud.abyss-mode #btn-autofight,
+#hud.abyss-mode #autofight-styles { display:none; }
+
+#hud-bl { position:absolute; left:20px; bottom:18px; font-size:14px; }
+#weight-line { color:#cfe0ff; }
+#weight-line.over { color:#ff5b5b; font-weight:bold; }
+#weight-pen { font-size:12px; color:#ff9a5b; }
+
+/* 右下角 HUD：21.1 起 autofight/风格选择器 + 背包按钮垂直堆叠于此（右对齐，不遮挡左下浮动摇杆） */
+#hud-br { position:absolute; right:20px; bottom:18px; display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+#hud-br #autofight-styles { margin-top:0; justify-content:flex-end; }
+
+/* ===== 全队技能栏（19.12：底部居中；每人一条 [技能图标+冷却环][模块槽 ×4]） ===== */
+.party-skillbar {
+  position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+  display:flex; gap:12px; align-items:flex-end; pointer-events:none;
+}
+.party-skillbar:empty { display:none; }
+.ps-row {
+  display:flex; align-items:center; gap:10px;
+  background:rgba(16,24,38,.82); border:1px solid #2e3d55; border-radius:12px;
+  padding:8px 12px; box-shadow:0 4px 16px rgba(0,0,0,.5);
+}
+/* 技能图标 + 冷却环（复用 #hud-skill-cd 同款 213.6 弧长口径） */
+.ps-icon { position:relative; width:44px; height:44px; flex:none; }
+.ps-icon svg { width:44px; height:44px; transform:rotate(-90deg); }
+.ps-icon .ps-track { fill:rgba(0,0,0,.5); stroke:#3a4a66; stroke-width:6; }
+.ps-icon .ps-arc {
+  fill:none; stroke:#6cb2ff; stroke-width:6; stroke-linecap:round;
+  stroke-dasharray:213.6; stroke-dashoffset:213.6; transition:stroke-dashoffset .1s linear;
+}
+.ps-icon.ready .ps-arc { stroke:#7de08a; }
+.ps-icon.ready { filter:drop-shadow(0 0 6px rgba(125,224,138,.7)); }
+.ps-glyph {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:16px; font-weight:bold; color:#fff; text-shadow:0 1px 3px #000;
+}
+.ps-cd {
+  position:absolute; left:50%; bottom:-2px; transform:translateX(-50%);
+  font-size:9px; font-weight:bold; color:#ffd76a; text-shadow:0 1px 2px #000;
+}
+/* 英雄标识（名字 + 定位色） */
+.ps-info { display:flex; flex-direction:column; justify-content:center; min-width:52px; }
+.ps-name { font-size:13px; line-height:1.2; }
+.ps-role { font-size:10px; opacity:.9; }
+/* 21.21 技能名小字（逐英雄技能栏显示主动技能名，原仅有首字图标）：窄屏截断不撑破行 */
+.ps-skill { font-size:10px; color:#9fb2cc; max-width:76px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* 模块槽 ×4：空槽虚线 / 已选品质色边框 */
+.ps-slots { display:flex; gap:6px; }
+.ps-slot {
+  width:52px; height:44px; border-radius:8px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:2px; overflow:hidden;
+  background:#131b29; border:2px solid #2e3d55;
+}
+.ps-slot.ps-slot-empty { border-style:dashed; border-color:#3a4a66; }
+.ps-slot.ps-slot-empty .ps-slot-no { font-size:13px; color:#46536a; font-weight:bold; }
+.ps-slot.ps-slot-filled { background:#1a2638; cursor:pointer; }
+.ps-slot { cursor:pointer; min-width:32px; min-height:32px; }   /* 触屏可点：命中区 ≥32px（20.3 任务二） */
+.ps-slot .ps-slot-nm { font-size:10px; line-height:1.15; text-align:center; padding:0 2px; overflow:hidden; }
+.ps-slot .ps-slot-lv { font-size:9px; color:#8ba0bd; }
+/* ===== W2 能量水晶（22.x 启用批次）：技能栏 A X X X X A =====
+ * 仅在英雄走新路径时挂 `.crystal-row` / `.crystal-slot`；未通电无此类名 → 视觉零变化。 */
+.ps-row.crystal-row { border-color:#3f5a86; }
+.ps-slots.crystal-slots { gap:5px; }
+.ps-slot.crystal-slot { border-color:#3f5a86; background:#101a2b; }
+.ps-slot.crystal-slot.ps-slot-empty { border-style:dashed; border-color:#33486b; background:#0d1420; }
+.ps-slot.crystal-slot .ps-slot-lv { color:#9fb6d6; }
+
+/* ===== 模块槽词条详情浮窗（20.3 任务二：点击时创建/更新，绝不每帧重建） ===== */
+.module-tip {
+  position:fixed; z-index:80; width:280px; max-width:92vw;
+  background:rgba(14,20,32,.97); border:1px solid #33486b; border-radius:10px;
+  padding:10px 12px; box-shadow:0 8px 28px rgba(0,0,0,.6); pointer-events:none;
+  font-size:12px; color:#cfe0ff; text-align:left;
+}
+.module-tip.hidden { display:none; }
+.module-tip .mt-head { display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+  border-bottom:1px solid #25344c; padding-bottom:6px; margin-bottom:6px; }
+.module-tip .mt-head b { font-size:14px; }
+.module-tip .mt-head span { font-size:11px; opacity:.9; }
+.module-tip .mt-rows { display:flex; flex-direction:column; gap:3px; }
+.module-tip .mt-row { font-size:11px; line-height:1.5; color:#dbe6f5; }
+.module-tip .mt-row.main { color:#ffd76a; font-weight:bold; }
+.module-tip .mt-row.dim { color:#5c6b82; }
+.module-tip .mt-foot { margin-top:6px; padding-top:5px; border-top:1px solid #25344c; font-size:10px; color:#8ba0bd; }
+
+/* 小屏：技能栏整体缩放，避免遮挡 */
+@media (max-width: 900px) {
+  .party-skillbar { transform:translateX(-50%) scale(.82); transform-origin:bottom center; }
+}
+
+#channel-wrap { position:absolute; left:50%; bottom:120px; transform:translateX(-50%); text-align:center; }
+#channel-circle { position:relative; width:80px; height:80px; margin:0 auto; }
+#channel-circle svg { width:80px; height:80px; transform:rotate(-90deg); }
+#channel-arc {
+  fill:none; stroke:#ffd76a; stroke-width:6; stroke-linecap:round;
+  stroke-dasharray:213.6; stroke-dashoffset:213.6;
+}
+#channel-txt {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:11px; color:#fff; text-shadow:0 1px 2px #000; text-align:center; padding:0 6px;
+}
+#hint-center {
+  position:absolute; left:50%; bottom:70px; transform:translateX(-50%);
+  font-size:13px; color:#ffd76a; text-shadow:0 1px 3px #000; text-align:center;
+}
+
+#toast-area { position:absolute; left:50%; top:90px; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:6px; }
+.toast {
+  background:rgba(15,22,36,.9); border:1px solid #44608c; border-radius:8px;
+  padding:7px 16px; font-size:13px; color:#fff; animation:toastIn .25s, toastOut .4s 2.2s forwards;
+}
+.toast.gold { border-color:#ffd76a; color:#ffd76a; }
+.toast.bad { border-color:#ff5b5b; color:#ff9a9a; }
+@keyframes toastIn { from { opacity:0; transform:translateY(-8px);} }
+@keyframes toastOut { to { opacity:0; transform:translateY(-8px);} }
+
+/* ===== 背包 / 开箱面板 ===== */
+.overlay {
+  position:absolute; inset:0; z-index:30;
+  background:rgba(5,8,14,.72); display:flex; align-items:center; justify-content:center;
+}
+#panel-backpack { z-index:52; }
+.bp-panel { width:min(1100px,94vw); max-height:calc(100dvh - 16px); overflow:auto; padding-bottom:max(10px, env(safe-area-inset-bottom)); }
+.bp-head { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+.bp-head h2 { margin:0; flex:1; }
+.warn { color:#ff9a5b; font-size:12px; }
+.bp-body { display:flex; gap:22px; flex-wrap:wrap; }
+.grid-zone h3 { margin-top:0; }
+.grid { display:grid; gap:4px; background:#131b29; border:2px solid #2e3d55; border-radius:8px; padding:6px; width:max-content; position:relative; }
+.grid .cell {
+  width:46px; height:46px; background:#1b2536; border:1px solid #263349; border-radius:4px;
+  position:relative;
+}
+.grid .cell.hl-ok { background:#1e3a2a; border-color:#3fae6a; }
+.grid .cell.hl-bad { background:#3a1e1e; border-color:#ae3f3f; }
+.itm {
+  position:absolute; border-radius:6px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; cursor:grab; z-index:2;
+  border:1.5px solid rgba(255,255,255,.35); overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.45); text-align:center;
+}
+.itm:active { cursor:grabbing; }
+.itm .nm { font-size:10px; line-height:1.15; color:#fff; text-shadow:0 1px 2px #000; padding:2px; pointer-events:none; }
+.itm .ct { font-size:11px; color:#ffd76a; font-weight:bold; pointer-events:none; }
+.q0 { background:linear-gradient(145deg,#4a5568,#374151); border-color:#9aa7b8; }
+.q1 { background:linear-gradient(145deg,#2563a8,#1c4a80); border-color:#6cb2ff; }
+.q2 { background:linear-gradient(145deg,#7a3bb5,#5b2a8c); border-color:#c79bff; }
+.q3 { background:linear-gradient(145deg,#b8860b,#8a6508); border-color:#ffd76a; }
+
+/* ===== 局外成长 ===== */
+.meta-line { color:#cfe0ff; font-size:14px; margin-bottom:12px; }
+.meta-line b { color:#c79bff; font-size:17px; }
+.meta-line small { color:#8ba0bd; }
+.char-card .outlv { color:#c79bff; font-size:12px; margin:2px 0; }
+.char-card .outlv .crystal { color:#c79bff; }
+.char-card .outlv small { color:#8ba0bd; }
+.char-card .lvup { margin-top:8px; }
+.char-card .card-btns { display:flex; flex-direction:column; gap:8px; align-self:flex-start; }
+.tags { margin-top:8px; font-size:12px; color:#9fb2cc; line-height:1.8; }
+.tags b { color:#ffd76a; }
+#drop-zone {
+  margin-top:8px; width:296px; height:52px; border:2px dashed #5a3a3a; border-radius:8px;
+  display:flex; align-items:center; justify-content:center; color:#a06a6a; font-size:13px;
+}
+#drop-zone.over { border-color:#ff5b5b; background:rgba(120,30,30,.25); color:#ff9a9a; }
+.item-info { font-size:12px; color:#cfe0ff; line-height:1.8; min-width:180px; }
+.grid-zone.side { flex:1; min-width:200px; }
+/* ===== 武器模块槽（19.5：每英雄 4 格横条，纯展示；遗迹秘宝背包取代旧 4×3 武器栏） ===== */
+.slot-zone { min-width:180px; }
+.module-slots { display:flex; flex-direction:column; gap:8px; }
+.module-slot {
+  display:flex; align-items:center; gap:10px; min-width:150px;
+  background:#131b29; border:2px solid #2e3d55; border-radius:8px; padding:8px 10px;
+}
+.module-slot .ms-name { flex:1; font-size:12px; color:#cfe0ff; }
+.module-slot .ms-name.empty { color:#5a6a80; }
+.module-slot .ms-lv { font-size:11px; font-weight:bold; color:#ffd76a; }
+.module-slot.filled { border-color:#b06cff; }
+
+/* ===== 工匠世界（20.10 竖屏单屏化：两页签 + 上中下三段，锁一屏不滚动） =====
+ * 苹果风小而美：小字号（9~12px）、细边框（1px）、小圆角（8~10px）、克制选中高亮。
+ * overflow:auto 已消灭 —— 面板改为 flex 纵向 + 高度锁定（max-height calc(100dvh - 16px)）。 */
+.art-panel {
+  width:min(1220px,96vw);
+  max-height:calc(100dvh - 16px);
+  display:flex; flex-direction:column; min-height:0;
+  padding-bottom:max(10px, env(safe-area-inset-bottom));
+}
+.art-tabs { display:flex; gap:6px; margin-bottom:8px; flex:none; }
+.art-tab {
+  flex:1; padding:6px 0; font-size:11px; font-weight:bold; color:#9fb4d4; cursor:pointer;
+  background:#1d2a3d; border:1px solid #33486b; border-radius:9px; transition:background .12s, color .12s, border-color .12s;
+}
+.art-tab:hover { color:#cfe0ff; }
+/* 克制选中高亮：细边框 + 轻光晕（不要粗边框大色块） */
+.art-tab.active { color:#ffd76a; background:#25344c; border-color:#ffd76a; box-shadow:0 0 0 1px rgba(255,215,106,.25); }
+.art-layout { display:flex; gap:16px; align-items:flex-start; min-height:0; flex:1; }
+.art-side { width:280px; flex:none; min-height:0; }
+.art-side h3 { margin:0 0 6px; font-size:11px; color:#9fb4d4; }
+.art-side h3.art-sec-h { margin-top:10px; padding-top:8px; border-top:1px solid #24334a; }
+.art-grids { flex:1; min-width:0; min-height:0; }
+#chest-list { margin-bottom:8px; }
+#pending-area { margin-bottom:6px; }
+.chest-row {
+  display:flex; align-items:center; gap:10px; background:#1d2a3d;
+  border:1px solid #33486b; border-radius:9px; padding:6px 10px; margin-bottom:5px; cursor:pointer;
+}
+/* 克制选中：细边框 + 轻光晕 */
+.chest-row.selected { border-color:#ffd76a; background:#25344c; box-shadow:0 0 0 1px rgba(255,215,106,.22); }
+/* 只读行（如工匠世界的武器/技能等级展示）：不可点击 */
+.chest-row.readonly { cursor:default; }
+.chest-row .sw { width:20px; height:20px; border-radius:5px; flex:none; }
+.chest-row b { font-size:12px; font-weight:600; }
+.chest-row small { color:#8ba0bd; font-size:10px; margin-left:auto; }
+.art-right { flex:1; }
+#pending-area { display:flex; flex-wrap:wrap; gap:6px; min-height:60px; background:#131b29; border:1px dashed #2e3d55; border-radius:8px; padding:6px; }
+.pending-item { width:42px; height:42px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:grab; font-size:9px; color:#fff; text-align:center; text-shadow:0 1px 2px #000; position:relative; box-shadow:0 2px 8px rgba(0,0,0,.4); }
+.pending-item .giveup { position:absolute; top:-6px; right:-6px; width:15px; height:15px; border-radius:50%; background:#a03030; color:#fff; font-size:9px; line-height:15px; text-align:center; cursor:pointer; }
+
+/* ===== 计数徽标（图鉴 / 遗迹秘宝图鉴的计数） =====
+ * 原「属性卡牌（工匠面板内）」整块样式（.card-sec* / #card-candidates / .card-tile* / .card-applied*
+ * / .card-assets）已随 C6「彻底退役」全量物理删除（D018）；计数徽标改用中性类名 .codex-count。 */
+.codex-count { color:#ffd76a; font-size:15px; }
+
+/* ===== 移动端虚拟控件（触屏设备显示；CFG.mobile 配置） ===== */
+#touch-controls { position:absolute; inset:0; pointer-events:none; }
+#touch-controls.hidden { display:none; }
+/* 21.3：摇杆改为「浮动」——不再有固定的 #joy-zone 底盘区域，去掉 zone/hint 相关规则。
+ * 手指在左半屏按下即在触点生成底盘；#joy-base 用 position:fixed + JS 写入的屏幕坐标定位。 */
+#joy-base {
+  /* 圆心 = 手指按下点（JS 写 left/top）。待命时 opacity:0 隐形，按下加 .joy-on 才浮现。
+   * 默认 left/top 给屏外安全值，避免加载瞬间在左上角闪一下。 */
+  position:fixed; left:-9999px; top:-9999px; width:132px; height:132px; border-radius:50%;
+  background:rgba(20,30,50,.42); border:2px solid rgba(122,160,220,.55);
+  box-shadow:0 0 0 1px rgba(0,0,0,.25), 0 6px 18px rgba(0,0,0,.35);
+  pointer-events:none; touch-action:none; opacity:var(--joy-idle, 0); z-index:60;
+  transition:opacity .12s ease;   /* 21.3：按下浮现 / 松手隐形的过渡（JS 只切 .joy-on） */
+}
+/* 起杆时浮现：用 !important 以外的手段保证优先级——.joy-on 与基础规则同为 id 选择器，
+   靠「后出现 + 更高优先级」胜出（基础规则里的 opacity 用 var() 且无内联覆盖）。 */
+#joy-base.joy-on { opacity:1 !important; }
+#joy-stick {
+  position:absolute; left:38px; top:38px; width:56px; height:56px; border-radius:50%;
+  background:rgba(140,180,240,.55); border:2px solid rgba(200,220,255,.7);
+  pointer-events:none;
+}
+#touch-btns {
+  position:absolute; right:24px; bottom:56px;
+  display:flex; align-items:flex-end; gap:12px; pointer-events:none;
+}
+.tbtn {
+  pointer-events:auto; touch-action:none; user-select:none; -webkit-user-select:none;
+  border-radius:50%; border:2px solid rgba(122,160,220,.5); background:rgba(20,30,50,.5);
+  color:#cfe0ff; font-weight:bold; cursor:pointer;
+}
+.tbtn:active { background:rgba(210,154,58,.55); border-color:#ffd76a; color:#fff; }
+.tbtn-small { width:56px; height:56px; font-size:13px; }
+.tbtn-big { width:86px; height:86px; font-size:17px; color:#ffe9a8; }
+/* 小屏（手机横竖屏）：控件随视口缩放，HUD 边距收紧 */
+@media (max-width: 900px) {
+  #touch-btns { right:14px; bottom:44px; transform:scale(.88); transform-origin:right bottom; }
+  #hud-bl { bottom:8px; }
+  #hud-br { bottom:8px; }
+  .bar.exp { width:120px; }
+}
+/* ===== 升级 4 选 1 暂停弹窗（19.4 方案 7：全屏暗化 + 4 张大卡；手机端按钮 ≥64px 高） ===== */
+/* 20.10：dvh 单屏锁定 + 底部安全区（.overlay 宿主无顶部避让 → -16px 档） */
+.levelup-panel { width:min(1000px, 96vw); max-height:calc(100dvh - 16px); padding-bottom:max(10px, env(safe-area-inset-bottom)); overflow:auto; text-align:center; }
+/* W2 通用选择弹窗（稀有技能选择）：版式与升级弹窗一致，宽度收窄（选项通常 1~3 个） */
+.choice-panel { width:min(760px, 96vw); max-height:calc(100dvh - 16px); padding-bottom:max(10px, env(safe-area-inset-bottom)); overflow:auto; text-align:center; }
+.choice-panel .tip { margin-bottom:16px; }
+.choice-cards { justify-content:center; }
+.levelup-panel h2 { color:#ffd76a; }
+.levelup-panel .tip { margin-bottom:16px; }
+/* ===== 21.4 参考图改版：丝带横幅标题 + 竖版大卡（彩色标题栏/推荐角标/大图标/数值高亮）+ 进度胶囊 + 刷新按钮 ===== */
+/* 丝带横幅（参考图顶部「增益选择」蓝紫丝带）：两端切角 + 中央金字 */
+.lu-banner {
+  position:relative; display:inline-block; margin:2px auto 10px; padding:8px 34px;
+  background:linear-gradient(180deg,#5a6cff,#4353d8); color:#ffe9a8;
+  font-size:20px; font-weight:bold; letter-spacing:6px;
+  clip-path:polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%);
+  text-shadow:0 2px 4px rgba(0,0,0,.45);
+}
+/* 21.8：.levelup-hero 标题规则已随 #levelup-hero 节点移除（归属改由卡面 lu-owner 徽章表达） */
+/* 卡片网格（21.4）：横屏 4 张单行；竖屏媒体查询改 2×2（见下方三处同步） */
+.levelup-cards { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; }
+/* 竖版大卡（21.4 参考图）：顶部彩色标题栏 + 图标区 + 描述 + 底部胶囊 */
+.levelup-card.lu-v2 {
+  position:relative; flex:1 1 200px; min-width:158px; max-width:230px; min-height:238px;
+  padding:0 0 10px; overflow:hidden;
+  display:flex; flex-direction:column; align-items:stretch; gap:8px;
+  background:#f4efe4; border:2px solid #33486b; border-radius:12px; cursor:pointer;
+  transition:transform .12s, border-color .12s, background .12s;
+}
+.levelup-card.lu-v2:hover { transform:translateY(-4px); border-color:#ffd76a; background:#fff8ea; }
+/* 21.4：v2 卡标题栏已含卡名（c.name || kindLabel），旧 .lu-kind 行冗余且无样式可见性差 → 隐藏（旧结构保留兼容） */
+.levelup-card.lu-v2 .lu-kind { display:none; }
+/* 顶部彩色标题栏（参考图红底 + 白字）：底色 = 归属英雄定位色（JS 内联写入） */
+.levelup-card .lu-head {
+  display:block; padding:8px 10px; border-radius:10px 10px 0 0;
+  /* 21.5：统一白字（参考图红底白字）；原 #123 深字在红/绿底上对比不足且与推荐卡观感不一致 */
+  font-size:15px; font-weight:bold; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.35);
+  text-align:center;
+}
+/* 推荐角标（参考图右上绿标） */
+.levelup-card .lu-rec-badge {
+  position:absolute; top:34px; right:8px; z-index:2;
+  padding:2px 8px; border-radius:9px; background:#3ecf6e; color:#fff;
+  font-size:11px; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,.3);
+}
+/* 中央大图标（参考图立绘位）：品质色圆底 + 词条符号（JS 内联边框色） */
+.levelup-card .lu-icon { display:flex; align-items:center; justify-content:center; flex:1; min-height:86px; }
+.levelup-card .lu-ico {
+  display:flex; align-items:center; justify-content:center;
+  width:74px; height:74px; border-radius:50%; border:3px solid;
+  font-size:34px; background:rgba(255,255,255,.72);
+}
+/* 描述（参考图）：浅底深字，数值橙色加粗 */
+.levelup-card .lu-desc { font-size:13px; color:#3a4356; line-height:1.55; padding:0 10px; min-height:40px; }
+.levelup-card .lu-desc .lu-num { color:#ff7a3c; font-weight:bold; font-size:14px; }
+/* 21.21 属性小包补充说明（小字）：卡面 desc 已示「攻击 +3」，此行补「全队攻击提升 3 点」级别说明。
+ * 浅底深字，弱于主 desc，不与 lu-num 高亮冲突。 */
+.levelup-card .lu-sub { display:block; font-size:11px; color:#6b7488; line-height:1.4; padding:0 10px 2px; }
+/* 底部进度胶囊（参考图紫底白字「量子护盾 (0/3)」） */
+.levelup-card .lu-chip {
+  margin:0 10px; padding:5px 10px; border-radius:14px;
+  background:linear-gradient(180deg,#8a5cff,#6a3ce8); color:#fff;
+  font-size:12px; font-weight:bold; text-align:center;
+  box-shadow:0 2px 6px rgba(106,60,232,.35);
+}
+.levelup-card .lu-chip-in { pointer-events:none; }
+/* ===== W2 能量水晶（22.x 启用批次）卡面「辅助矩阵」 =====
+ * 逐技能一个小标签：生效（绿）/ 冲突（红）/ 不适用（灰）。浅底深字，与升级卡浅色卡面一致。 */
+.levelup-card .lu-matrix { display:flex; flex-wrap:wrap; gap:4px; padding:0 10px 4px; }
+.levelup-card .lu-mx {
+  font-size:10px; line-height:1.5; padding:1px 7px; border-radius:9px;
+  border:1px solid #c8d0dd; color:#5a6478; background:#f2f5fa; white-space:nowrap;
+}
+.levelup-card .lu-mx-ok { border-color:#3f9c62; color:#2b7245; background:#e9f7ef; }
+.levelup-card .lu-mx-bad { border-color:#c04a4a; color:#a13333; background:#fceeee; }
+.levelup-card .lu-mx-off { border-color:#c8d0dd; color:#7b8397; background:#f4f6fa; }
+/* 锁定卡（19.12 保留）：灰度 + 不可点 */
+.levelup-card.lu-locked { filter:grayscale(1) brightness(.6); opacity:.55; cursor:not-allowed; }
+.levelup-card.lu-locked:hover { transform:none; border-color:#33486b; background:#f4efe4; }
+.levelup-card .lu-lock { font-size:11px; color:#c0392b; font-weight:bold; padding:0 10px 4px; }
+/* 底部刷新按钮（21.4 参考图绿色大按钮「刷新 1/1」） */
+.lu-foot { display:flex; justify-content:center; margin-top:14px; }
+.lu-reroll {
+  display:flex; align-items:center; gap:10px; padding:10px 26px;
+  border:none; border-radius:14px; cursor:pointer;
+  background:linear-gradient(180deg,#3ecf6e,#28a852); color:#fff;
+  font-size:16px; font-weight:bold; box-shadow:0 4px 12px rgba(40,168,82,.4);
+  transition:transform .12s, filter .12s;
+}
+.lu-reroll:hover { transform:translateY(-2px); filter:brightness(1.08); }
+.lu-reroll:disabled { filter:grayscale(1) brightness(.7); cursor:not-allowed; transform:none; }
+.lu-reroll .lu-reroll-ico { font-size:20px; }
+.lu-reroll .lu-reroll-body b { color:#ffe9a8; margin-left:4px; }
+/* 手机端：单列大按钮，高度 ≥64px 方便点选 */
+@media (max-width: 640px) {
+  .levelup-card { flex:1 1 100%; min-height:80px; }
+}
+/* ===== 21.4 竖屏 2×2 网格（CSS 三处规则同步之一：主媒体查询） ===== */
+/* 21.8：竖屏整体压缩（与 body.portrait 钩子块数值严格同步）——
+ * 用户反馈 4 卡 + 横幅 + 提示 + 刷新按钮在 390×844 一屏放不下：卡 206→148、icon 60→44、
+ * gap/内边距/横幅/提示行全部收紧，目标整面板内容高 ≤ 828px（= 100dvh - 16px）。 */
+@media (max-width: 900px) and (orientation: portrait) {
+  .levelup-cards { display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; }
+  .levelup-card.lu-v2 { min-width:0; max-width:none; min-height:148px; gap:6px; }
+  .levelup-card .lu-icon { min-height:52px; }
+  .levelup-card .lu-ico { width:44px; height:44px; font-size:20px; }
+  .levelup-card .lu-head { padding:6px 8px; font-size:14px; }
+  .levelup-card .lu-desc { min-height:20px; font-size:12px; line-height:1.4; }
+  .levelup-card .lu-chip { padding:3px 8px; font-size:11px; }
+  .lu-banner { font-size:16px; padding:5px 24px; letter-spacing:4px; margin:0 auto 6px; }
+  .levelup-panel .tip { margin-bottom:6px; font-size:11px; }
+  .levelup-panel { width:96vw; padding:10px 12px; }
+  .lu-reroll { padding:12px 30px; font-size:17px; min-height:64px; }   /* 触屏 ≥64px */
+  /* 21.5：竖屏 2×2 卡太高 → 整面板滚动时刷新按钮被推出视口（实测 bottom 888 > vh 844）。
+   * sticky 贴底 + 深色底衬：无论滚到哪按钮都悬浮可见可点。 */
+  .levelup-panel .lu-foot { position:sticky; bottom:0; z-index:3; margin-top:10px; padding:8px 0 2px; background:linear-gradient(transparent, rgba(9,12,20,.94) 38%); }
+}
+
+/* ===== 结算 / 死亡 ===== */
+/* 20.10 苹果风单屏：面板锁 calc(100dvh - 16px)（dvh 避开地址栏），底部安全区防手势条遮挡确认按钮。 */
+.settle-panel, .death-panel {
+  width:min(760px,92vw);
+  max-height:calc(100dvh - 16px);
+  padding-bottom:max(10px, env(safe-area-inset-bottom));
+  display:flex; flex-direction:column;
+}
+.stats { display:flex; flex-wrap:wrap; gap:12px; font-size:12px; color:#cfe0ff; margin-bottom:4px; }
+.stats > span[style] { flex-basis:100%; color:#8ba0bd; font-size:11px; }
+.stats b { color:#ffd76a; font-size:14px; }
+.items-list, #settle-chests { display:flex; flex-wrap:wrap; gap:6px; }
+.items-list .chip, #settle-chests .chip {
+  background:#1d2a3d; border:1px solid #33486b; border-radius:6px;
+  padding:3px 9px; font-size:11px;
+}
+.items-list.lost .chip { border-color:#6b3030; background:#2a1d1d; color:#ff9a9a; text-decoration:line-through; }
+.death-panel h2 { color:#ff5b5b; }
+.settle-panel h2 { color:#7de08a; }
+/* 21.17 无尽结算面板三结局色调：撤离成功=绿（good）/ 超时·阵亡=红（bad）。
+ * 覆盖上一条 .settle-panel h2 的默认绿；三处同步（主规则 + portrait 媒体块 + body.portrait）。 */
+#endless-settle-title.good { color:#7de08a; }
+#endless-settle-title.bad { color:#ff5b5b; }
+
+/* ===== 拖拽幽灵 ===== */
+#drag-ghost {
+  position:fixed; z-index:99; pointer-events:none; opacity:.85;
+  border-radius:6px; border:1.5px solid rgba(255,255,255,.5);
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; color:#fff; text-shadow:0 1px 2px #000; text-align:center;
+}
+
+/* ===== 主菜单 ===== */
+.main-panel { display:flex; flex-direction:column; gap:8px; width:280px; max-height:calc(100dvh - 16px); padding-bottom:max(8px, env(safe-area-inset-bottom)); }
+.btn.big { padding:9px 18px; font-size:13px; letter-spacing:1px; }
+.btn:disabled { opacity:.4; cursor:not-allowed; }
+
+/* ===== 局外成长界面（主菜单入口） ===== */
+.meta-panel {
+  width:min(880px, 94vw); max-height:calc(100dvh - 16px);
+  padding-bottom:max(10px, env(safe-area-inset-bottom));
+  display:flex; flex-direction:column;
+}
+.meta-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.meta-head h2 { margin:0; }
+.meta-crystals { color:#cfe0ff; font-size:14px; }
+.meta-crystals b { color:#c79bff; font-size:19px; margin-left:4px; }
+.meta-card {
+  display:flex; align-items:center; gap:18px;
+  background:#1d2a3d; border:1px solid #33486b; border-radius:10px; padding:12px 16px;
+}
+.meta-card .meta-info { flex:1; min-width:0; }
+.meta-card .meta-info b { font-size:16px; color:#fff; }
+.meta-card .meta-desc { font-size:12px; color:#8ba0bd; margin-top:4px; }
+.meta-card .meta-lv { display:flex; flex-direction:column; align-items:center; gap:6px; width:190px; flex:none; }
+.meta-card .meta-lv span { font-size:12px; color:#cfe0ff; }
+.meta-card .meta-lv .lvnum { color:#c79bff; font-size:14px; }
+.meta-card .meta-lv .btn { width:100%; }
+/* 主城 NPC 面板（强化导师 / 武器匠）共用：结晶并入标题行 + 角色列表限高滚动 */
+.bp-head-right { display:flex; align-items:center; gap:10px; }
+.bp-head-right .meta-crystals { font-size:13px; }
+.bp-head-right .meta-crystals b { font-size:16px; }
+.npc-list {
+  flex:1; min-height:0; overflow-y:auto;
+  display:flex; flex-direction:column; gap:10px; padding:2px 6px 2px 2px;
+}
+
+/* ===== 游戏首页（流程：首页→主城→传送门） ===== */
+.main-panel { display:flex; flex-direction:column; gap:12px; width:300px; margin:0 auto; }
+.home-user-line { margin-top:18px; font-size:14px; color:#cfe0ff; display:flex; gap:14px; justify-content:center; }
+.home-user-line .hu-name { font-weight:bold; }
+.home-user-line .hu-title { color:#ffd76a; }
+.home-user-line .hu-crystal { color:#c79bff; }
+
+/* ===== 主城 HUD：左上角头像栏（city-mode 下显示；战斗时隐藏，避免与 #hud-tl 重叠） ===== */
+/* 注意：#city-avatar-bar 与 #hud-tl 都锚定左上角（left:16~20 / top:12~16），
+ * 若战斗时不隐藏头像栏，它会与「自动战斗按钮 + 状态 Buff 图标」三块叠在一起。 */
+#hud:not(.city-mode) .hidden-in-battle { display:none; }
+#city-avatar-bar {
+  position:absolute; left:16px; top:12px; display:flex; align-items:center; gap:10px;
+  background:rgba(20,30,50,.85); border:1px solid #3a4a66; border-radius:12px; padding:8px 14px 8px 8px;
+  cursor:pointer; pointer-events:auto;
+}
+#city-avatar-bar:hover { border-color:#ffd76a; }
+#city-avatar-bar canvas { width:44px; height:44px; border-radius:8px; background:#0d1420; }
+#city-avatar-bar .ab-info b { display:block; font-size:14px; color:#cfe0ff; }
+#city-avatar-bar .ab-info small { color:#ffd76a; font-size:11px; }
+#city-avatar-bar .ab-crystal { color:#c79bff; font-size:14px; font-weight:bold; margin-left:6px; }
+#hud.city-mode #hud-tl, #hud.city-mode #hud-top, #hud.city-mode #hud-tr,
+#hud.city-mode #hud-bl, #hud.city-mode #hud-br { display:none; }
+/* 20.2：主城不显示全队技能栏（战斗 HUD）。JS 侧 clearBattleHud 已清空结构，
+ * 此处为兜底双保险——即使结构残留也不会漏到主城。 */
+#hud.city-mode #party-skillbar { display:none; }
+#hud.city-mode #hint-center { bottom:110px; }
+
+/* ===== 物品 TIPS 浮窗 ===== */
+#tooltip {
+  position:fixed; z-index:200; max-width:320px; pointer-events:none;
+  background:rgba(13,19,30,.96); border:1.5px solid #3a4a66; border-radius:10px;
+  padding:10px 13px; font-size:12px; line-height:1.7; color:#cfe0ff;
+  box-shadow:0 6px 24px rgba(0,0,0,.55);
+}
+#tooltip.hidden { display:none; }
+#tooltip .tip-head { margin-bottom:4px; padding-bottom:5px; border-bottom:1px solid #2e3d55; }
+#tooltip .tip-head b { display:block; font-size:14px; }
+#tooltip .tip-head span { font-size:10px; opacity:.85; }
+#tooltip .tip-line { display:block; }
+#tooltip .tip-line.dim { color:#7d90ad; }
+#tooltip .tip-line.bad { color:#ff9a9a; }
+
+/* ===== 主城 NPC 面板（更名 / 皮肤 / 称号） ===== */
+.profile-rename { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.profile-rename input {
+  flex:1; background:#131b29; border:1px solid #33486b; border-radius:8px;
+  color:#cfe0ff; padding:8px 12px; font-size:14px;
+}
+.skin-grid { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.skin-tile {
+  padding:8px 14px; border-radius:8px; background:#1d2a3d; border:1px solid #33486b;
+  cursor:pointer; text-align:center; min-width:86px;
+}
+.skin-tile b { display:block; font-size:13px; color:#cfe0ff; }
+.skin-tile small { font-size:10px; color:#8ba0bd; }
+.skin-tile.selected { border-color:#ffd76a; background:#25344c; }
+.skin-tile.locked { opacity:.5; cursor:default; }
+.title-row {
+  display:flex; align-items:center; gap:12px; padding:8px 12px; border-radius:8px;
+  background:#1d2a3d; border:1px solid #33486b; margin-bottom:6px; cursor:pointer;
+}
+.title-row b { color:#ffd76a; font-size:13px; }
+.title-row small { color:#8ba0bd; }
+.title-row.selected { border-color:#ffd76a; background:#25344c; }
+.title-row.locked { opacity:.5; cursor:default; }
+
+/* ===== 帮助 / 设置 / 图鉴 / 告别 ===== */
+.help-panel { width:min(880px,94vw); max-height:calc(100dvh - 16px); padding-bottom:max(10px, env(safe-area-inset-bottom)); display:flex; flex-direction:column; }
+.help-cols { display:flex; gap:20px; text-align:left; overflow-y:auto; min-height:0; }
+.help-cols > div { flex:1; }
+.help-cols h3 { color:#ffd76a; font-size:12px; margin:8px 0 4px; }
+.help-cols p { font-size:11px; color:#9fb4d4; margin:4px 0; line-height:1.5; }
+.help-cols b { color:#cfe0ff; }
+.settings-panel { width:min(520px,94vw); max-height:calc(100dvh - 16px); padding-bottom:max(10px, env(safe-area-inset-bottom)); display:flex; flex-direction:column; text-align:left; }
+.set-row { display:flex; align-items:center; gap:12px; margin:10px 0; font-size:12px; color:#cfe0ff; }
+.set-row > span { width:140px; }
+.set-row input[type=range] { flex:1; accent-color:#ffd76a; }
+#set-touch.on { border-color:#7de08a; color:#7de08a; }
+
+/* ===== 23.x 画质三档分段控件（设置页内；低/中/高） =====
+ * 竖屏下与 .set-row 一起换行（见下方媒体查询 + body.portrait 三处同步），宽度自适应不溢出。 */
+.quality-seg { display:flex; gap:0; border:1px solid #33486b; border-radius:8px; overflow:hidden; }
+.quality-seg .seg-btn {
+  flex:1; min-width:44px; padding:6px 10px; font-size:12px; cursor:pointer;
+  background:#1d2a3d; border:0; border-right:1px solid #33486b; color:#9fb4d4;
+}
+.quality-seg .seg-btn:last-child { border-right:0; }
+.quality-seg .seg-btn:hover { color:#cfe0ff; }
+.quality-seg .seg-btn.selected { background:#25344c; color:#ffd76a; font-weight:bold; }
+.set-hint { font-size:11px; color:#8ba0bd; margin:2px 0 8px; min-height:14px; line-height:1.4; }
+
+/* ===== 自动战斗风格选择器（开启后在左上按钮下方展开；左对齐贴合 HUD 左上角） ===== */
+#autofight-styles { display:flex; gap:6px; justify-content:flex-start; margin-top:6px; }
+#autofight-styles.hidden { display:none; }
+/* 22.1 手机端无 tooltip：风格说明改为可见小字提示（不依赖 title 悬停） */
+.af-hint { font-size:10px; color:#7d8aa0; line-height:1.5; margin-bottom:2px; }
+.af-style {
+  padding:4px 12px; border-radius:14px; font-size:11px; cursor:pointer;
+  background:#1d2a3d; border:1px solid #33486b; color:#9fb4d4;
+}
+.af-style:hover { border-color:#ffd76a; color:#cfe0ff; }
+.af-style.selected { background:#25344c; border-color:#ffd76a; color:#ffd76a; font-weight:bold; }
+#btn-autofight.on { border-color:#7de08a; color:#7de08a; }
+.codex-panel { width:min(880px,94vw); max-height:calc(100dvh - 16px); display:flex; flex-direction:column; padding-bottom:max(10px, env(safe-area-inset-bottom)); text-align:left; }
+.codex-panel h3 { color:#9fb4d4; font-size:12px; margin:8px 0 6px; }
+.codex-grid { display:flex; flex-wrap:wrap; gap:6px; overflow-y:auto; min-height:0; }
+.codex-card {
+  width:96px; padding:5px; border-radius:8px; background:#1d2a3d;
+  border:1px solid #33486b; text-align:center; font-size:10px; color:#cfe0ff;
+}
+.codex-card.small { width:84px; }
+.codex-card b { display:block; font-size:11px; margin-top:2px; }
+.codex-card small { color:#8ba0bd; font-size:9px; line-height:1.35; display:block; }
+.codex-card .codex-face { width:48px; height:48px; }
+.codex-card.small .codex-face { width:38px; height:38px; }
+.codex-card.locked { border-style:dashed; border-color:#2e3d55; }
+.codex-card.locked b { color:#6d7c94; }
+.goodbye-panel { width:min(460px,94vw); max-height:calc(100dvh - 16px); padding-bottom:max(10px, env(safe-area-inset-bottom)); }
+
+/* ============================================================
+ * 竖屏优先布局（20.x）——用户拍板：默认按竖屏设计，横屏为兼容分支
+ * ------------------------------------------------------------
+ * 主钩子：JS 由 UI.applyOrientation() 在 body / #app 上挂 .portrait / .landscape
+ *   （判定 innerHeight > innerWidth，与 fitCanvas 的 aspect<1 一致）。
+ * 同时保留 @media (orientation: portrait) 作纯 CSS 兜底（JS 未跑时也不崩）。
+ *
+ * 约定：
+ *   - 竖屏（portrait）：HUD 顶部铺满窄屏宽度；底部技能栏在虚拟摇杆「上方」分区，互不遮挡；
+ *     #hud-tl 下移到顶栏之下，避开 #city-avatar-bar / 状态区；面板类一律上下堆叠 / 单列滚动。
+ *   - 横屏（landscape）：全部沿用改造前布局（本段不生效）。
+ *   - 安全区：env(safe-area-inset-*) 处理刘海屏与底部横条（viewport-fit=cover）。
+ * ============================================================ */
+
+/* ---- 安全区变量：统一注入内边距，刘海屏 / 底部横条不吃内容 ---- */
+:root {
+  --sa-top: env(safe-area-inset-top, 0px);
+  --sa-bottom: env(safe-area-inset-bottom, 0px);
+  --sa-left: env(safe-area-inset-left, 0px);
+  --sa-right: env(safe-area-inset-right, 0px);
+  --art-cell: 46px;   /* 背包/遗迹秘宝网格格子边长；竖屏工匠面板内由媒体查询缩到 30px */
+}
+/* 全屏界面层避让安全区（首页 / 选关 / 结算 等） */
+.screen { padding: var(--sa-top) var(--sa-right) var(--sa-bottom) var(--sa-left); }
+.overlay { padding: var(--sa-top) var(--sa-right) var(--sa-bottom) var(--sa-left); }
+
+/* ---- 竖屏公共规则（body.portrait 与媒体查询双写，保证 JS / 纯 CSS 两条路径一致） ---- */
+@media (orientation: portrait) {
+  /* 顶部第一行：击杀进度条铺满窄屏宽度（顶栏） */
+  #hud-top {
+    left: calc(var(--sa-left) + 12px); right: calc(var(--sa-right) + 12px);
+    top: calc(var(--sa-top) + 8px); transform: none; text-align: left;
+  }
+  #progress-wrap { width: 100%; }
+
+  /* 顶部第二行：等级 / 经验 / 货币，铺满并在进度条之下、右对齐 */
+  #hud-tr {
+    left: calc(var(--sa-left) + 12px); right: calc(var(--sa-right) + 12px);
+    top: calc(var(--sa-top) + 40px);
+    text-align: right; display: flex; flex-direction: column; align-items: flex-end;
+  }
+  .bar.exp { width: 100%; max-width: 100%; }
+
+  /* #hud-tl：顶栏两行之下、左对齐，避开顶部状态与头像栏（不再压左上角） */
+  #hud-tl {
+    left: calc(var(--sa-left) + 12px);
+    top: calc(var(--sa-top) + 82px);
+    flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; max-width: 92vw;
+  }
+  #buff-area { max-width: 92vw; }
+
+  /* 底部留给技能栏 + 虚拟摇杆；负重 / 背包按钮并入顶部信息区（避开底部控件） */
+  .party-skillbar {
+    bottom: calc(var(--sa-bottom) + 170px);
+    max-width: 96vw; flex-direction: column; flex-wrap: nowrap;
+    align-items: center; gap: 8px;
+    transform: translateX(-50%);
+  }
+  .ps-row { flex-wrap: nowrap; }             /* 单行排布：窄屏下 [图标][名字][4 槽] ≈ 330px，390px 宽可容纳 */
+  .ps-slot { width: 46px; height: 42px; }
+
+  /* 负重：左上信息列（#hud-tl 之下）；背包 / 自动战斗按钮：右上（#hud-tr 之下） */
+  #hud-bl { left: calc(var(--sa-left) + 12px); top: calc(var(--sa-top) + 204px); bottom: auto; font-size: 12px; }
+  #hud-br { right: calc(var(--sa-right) + 12px); top: calc(var(--sa-top) + 122px); bottom: auto; }
+
+  /* 虚拟摇杆浮动（无固定锚点），按钮右下，与技能栏错层 */
+  #touch-btns { right: calc(var(--sa-right) + 16px); bottom: calc(var(--sa-bottom) + 40px); transform: scale(.92); transform-origin: right bottom; }
+
+  /* 中央提示 / 读条圈 / Toast：顶部信息区之下居中，避开底部控件带 */
+  #hint-center { top: calc(var(--sa-top) + 328px); bottom: auto; width: 92vw; }
+  #channel-wrap { top: calc(var(--sa-top) + 236px); bottom: auto; }
+  #toast-area { top: calc(var(--sa-top) + 244px); }
+
+  /* ---- 背包面板：三段并排 → 上下堆叠（20.10：单屏锁定 + 底部安全区，不再 88vh 旧锁高） ---- */
+  .bp-panel { width: 96vw; max-height: calc(100dvh - 16px); padding: 16px 14px max(10px, env(safe-area-inset-bottom)); }
+  body.portrait .bp-body,
+  .bp-body { flex-direction: column; flex-wrap: nowrap; gap: 16px; align-items: stretch; }
+  .bp-body .grid-zone { width: 100%; }
+  .bp-body .grid { width: max-content; max-width: 100%; overflow-x: auto; }
+  .grid-zone.side { min-width: 0; }
+  #drop-zone { width: 100%; }
+
+  /* ---- 升级 4 选 1：21.4 参考图竖版大卡（与上方 @media 块数值严格同步，铁律三处一致） ----
+   * 21.8：竖屏整体压缩（数值与上方 @media (max-width:900px)+portrait 块严格一致）：
+   * 卡 206→148、icon 60→44、gap 10→8、横幅/提示/内边距收紧，整面板一屏（≤828px）放下。 */
+  .levelup-cards.grid-portrait,
+  body.portrait .levelup-cards {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch;
+  }
+  body.portrait .levelup-card.lu-v2,
+  .levelup-cards.grid-portrait .levelup-card.lu-v2 {
+    min-width: 0; max-width: none; min-height: 148px; gap: 6px;
+  }
+  body.portrait .levelup-card .lu-icon,
+  .levelup-cards.grid-portrait .levelup-card .lu-icon {
+    min-height: 52px;
+  }
+  body.portrait .levelup-card .lu-ico,
+  .levelup-cards.grid-portrait .levelup-card .lu-ico {
+    width: 44px; height: 44px; font-size: 20px;
+  }
+  body.portrait .levelup-card .lu-head,
+  .levelup-cards.grid-portrait .levelup-card .lu-head {
+    padding: 6px 8px; font-size: 14px;
+  }
+  body.portrait .levelup-card .lu-desc,
+  .levelup-cards.grid-portrait .levelup-card .lu-desc {
+    min-height: 20px; font-size: 12px; line-height: 1.4;
+  }
+  body.portrait .levelup-card .lu-chip,
+  .levelup-cards.grid-portrait .levelup-card .lu-chip {
+    padding: 3px 8px; font-size: 11px;
+  }
+  body.portrait .lu-banner {
+    font-size: 16px; padding: 5px 24px; letter-spacing: 4px; margin: 0 auto 6px;
+  }
+  body.portrait .levelup-panel .tip {
+    margin-bottom: 6px; font-size: 11px;
+  }
+  body.portrait .lu-reroll,
+  .levelup-cards.grid-portrait ~ .lu-foot .lu-reroll {
+    padding: 12px 30px; font-size: 17px; min-height: 64px;   /* 触屏 ≥64px 不动 */
+  }
+  /* 21.5：与上方 @media 块同步——刷新按钮 sticky 贴底（三处规则铁律） */
+  body.portrait .levelup-panel .lu-foot,
+  .levelup-cards.grid-portrait ~ .lu-foot {
+    position: sticky; bottom: 0; z-index: 3; margin-top: 10px; padding: 8px 0 2px;
+    background: linear-gradient(transparent, rgba(9,12,20,.94) 38%);
+  }
+  .levelup-panel { width: 96vw; padding: 10px 12px; }
+
+  /* ---- 工匠工坊（20.10 竖屏单屏三段）：页签在顶、搜刮背包居中、武器栏+遗迹秘宝背包在下 ----
+   * 注意：本块会覆盖上方主规则，改主规则必须同步此处（旧版曾因 3 列旧规则盖 6 列主规则踩坑）。
+   * 三段锁进一屏：.art-panel 最大高度 calc(100dvh - 16px)、内部 flex 纵向、溢出隐藏（无整面板滚动条）。
+   * --art-cell 把网格格子从 46 缩到 40（21.5 方案 B，原 30 触屏点不准），JS _renderGrid/_dropTarget 读同一变量，缩格不断拖拽。 */
+  /* 21.5 方案 B：格子 30→40px（触屏 44px 推荐值的 91%，30px 只有 68% 点不准）；配套 .art-grids 放开纵向滚动 */
+  .art-panel { --art-cell: 40px; width:96vw; max-height:calc(100dvh - 16px); padding:8px 8px max(10px, env(safe-area-inset-bottom)); }
+  .art-panel .bp-head { margin-bottom:6px; gap:8px; }
+  .art-panel .bp-head h2 { font-size:15px; }
+  .art-layout { flex-direction:column; gap:6px; overflow:hidden; min-height:0; }
+  /* 上段：页签内容区（开宝箱 / 商品售卖 / 遗迹工坊信息）——限高 + 内部可滚动 */
+  .art-side { width:100%; flex:none; max-height:200px; overflow-y:auto; overscroll-behavior:contain; }
+  .art-side .tip { font-size:10px; margin-top:4px; }
+  /* 中下段：背包单元（搜刮背包居中 / 武器槽 + 遗迹秘宝背包在下 / 物品信息最底） */
+  .art-grids { width:100%; flex:1; min-height:0; display:flex; flex-direction:column; overflow-y:auto; }   /* 21.5 方案 B：格子放大后允许纵向滚动（单屏锁保留在面板外壳） */
+  .art-grids .bp-body { display:flex; flex-direction:column; flex-wrap:nowrap; gap:5px; align-items:stretch; flex:1; min-height:0; overflow:hidden; }
+  .art-grids .grid-zone { width:100%; min-width:0; }
+  .art-grids .grid-zone h3 { font-size:10px; margin:0 0 3px; color:#9fb4d4; font-weight:600; }
+  /* 中段：搜刮背包（占据剩余空间，靠上对齐；min-height 防被挤成 0） */
+  .art-grids .zone-backpack { flex:1 1 auto; min-height:120px; }
+  /* 下段：武器槽 + 遗迹秘宝背包同排（左右两列） */
+  .art-grids .zone-slots { flex:none; }
+  .art-grids .zone-chip { flex:none; }
+  .art-grids .zone-info { flex:none; }
+  .art-grids .zone-slots .module-slots { flex-direction:row; flex-wrap:wrap; gap:4px; }
+  .art-grids .module-slot { min-width:0; flex:1 1 46%; padding:4px 7px; border-radius:8px; border-width:1px; }
+  .art-grids .module-slot .ms-name { font-size:10px; }
+  .art-grids .module-slot .ms-lv { font-size:9px; }
+  .art-grids .module-slot .ms-name.empty { font-size:10px; }
+  /* 网格缩格：--art-cell 30 + gap 4 + padding 6（步长 34 = 30+4；JS _renderGrid/_dropTarget 同口径，
+   * gap/padding 不改、只缩格与边框，避免物品定位与拖拽命中坐标失配） */
+  .art-grids .grid { gap:4px; padding:6px; border-width:1px; }
+  .art-grids .grid .cell { width:var(--art-cell); height:var(--art-cell); }
+  .art-grids .grid .itm { border-width:1px; }
+  .art-grids .grid .itm .nm { font-size:8px; }
+  .art-grids .grid .itm .ct { font-size:9px; }
+  #drop-zone { height:24px; font-size:10px; margin-top:3px; }
+  .art-grids .tags { font-size:10px; line-height:1.4; margin-top:3px; }
+  .art-grids .item-info { font-size:10px; line-height:1.4; min-width:0; max-height:40px; overflow:hidden; }
+  /* 开箱结果（pending 方块）同步缩小 */
+  .art-panel .pending-item { width:38px; height:38px; font-size:8px; }
+  .art-panel .pending-item .giveup { top:-5px; right:-5px; width:13px; height:13px; font-size:8px; line-height:13px; }
+
+  /* ---- 图鉴（21.11 统一布局）：怪物/遗迹秘宝 3 列小卡网格；英雄立绘大卡 2 列（见文件末尾 portrait 区块） ---- */
+  .codex-panel { width: 96vw; max-height: calc(100dvh - 16px); }
+  .codex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .codex-card, .codex-card.small { width: auto; max-width: none; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .codex-card b { margin-top: 2px; }
+
+  /* ---- 主菜单 / 关卡选择 / 角色选择：按钮铺满宽度、不横向溢出 ---- */
+  .main-panel { width: 100%; max-width: 480px; max-height: calc(100dvh - 16px); }
+  .btn.big { width: 100%; padding: 10px 18px; }
+  /* 20.10：选关面板统一 dvh 单屏锁定（旧 94vh 会被地址栏吃掉 → 改为 calc(100dvh - 16px)） */
+  .level-panel { width: 96vw; max-height: calc(100dvh - 16px); }
+  .level-card { gap: 4px; }
+  /* 竖屏：12 宫格头像用 6 列（每格 ≈52px 宽，20.9 苹果风小而美），12 角一屏看完不滚动。 */
+  #char-list { grid-template-columns: repeat(6, 1fr); }
+  .char-panel { width: 96vw; max-height: calc(100dvh - 16px); }
+  .panel { width: 96vw; max-width: 96vw; }
+  /* 20.10：各界面面板统一 dvh 单屏锁定 + 底部安全区（覆盖旧 94vh/96vw 硬编码） */
+  .settings-panel, .help-panel, .goodbye-panel, .settle-panel, .death-panel, .meta-panel {
+    width: 96vw; max-width: 96vw; max-height: calc(100dvh - 16px);
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .btn-row { flex-wrap: wrap; }
+  .btn-row .btn { flex: 1 1 auto; }
+  .help-cols { flex-direction: column; gap: 12px; }
+  .set-row > span { width: 96px; }
+  .set-row { flex-wrap: wrap; }
+  /* 23.x 画质分段控件：竖屏铺满整行（与 .set-row 换行后独占），不溢出设置页 */
+  .set-row .quality-seg { flex: 1 1 100%; }
+
+  /* 自动战斗风格选择器：竖屏下按钮换行不致溢出 */
+  #autofight-styles { flex-wrap: wrap; }
+}
+
+/* body.portrait 同步（JS 钩子；与上面媒体查询等效，作双保险） */
+body.portrait .party-skillbar { bottom: calc(var(--sa-bottom) + 170px); }
+body.portrait #hud-tl { top: calc(var(--sa-top) + 82px); }
+/* 21.3：浮动摇杆无固定锚点（触点即盘心），故不再需要 #joy-zone 定位规则；右下按钮区 / 顶栏信息区保留 */
+body.portrait #hud-br { right: calc(var(--sa-right) + 12px); top: calc(var(--sa-top) + 122px); bottom: auto; }
+body.portrait .bp-body { flex-direction: column; flex-wrap: nowrap; }
+body.portrait .art-layout { flex-direction: column; }
+/* 20.10 竖屏工匠单屏三段（与媒体查询双写；JS 钩子路径同样锁死高度、消灭滚动条） */
+body.portrait .art-panel { --art-cell: 40px; max-height: calc(100dvh - 16px); padding-bottom: max(10px, env(safe-area-inset-bottom)); }   /* 21.5 方案 B：30→40px，与媒体查询块同步 */
+body.portrait .art-side { width: 100%; flex: none; max-height: 200px; overflow-y: auto; }
+body.portrait .art-grids { width: 100%; flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+body.portrait .art-grids .bp-body { display: flex; flex-direction: column; flex-wrap: nowrap; gap: 5px; flex: 1; min-height: 0; overflow: hidden; }
+body.portrait .art-grids .zone-slots .module-slots { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+body.portrait .art-grids .module-slot { min-width: 0; flex: 1 1 46%; }
+body.portrait .art-grids .grid .cell { width: var(--art-cell); height: var(--art-cell); }
+body.portrait .codex-grid { flex-direction: column; align-items: stretch; }
+body.portrait #char-list { grid-template-columns: repeat(6, 1fr); }
+/* 23.x 画质分段控件：竖屏铺满整行（与媒体查询块数值严格同步，避免 JS/纯 CSS 两条路径不一致） */
+body.portrait .set-row { flex-wrap: wrap; }
+body.portrait .set-row .quality-seg { flex: 1 1 100%; }
+/* 20.10 全局苹果风单屏：JS 钩子路径同样锁死各界面面板高度（消灭旧 94vh/88vh 覆盖）
+ * 两档：.screen 宿主 -44（含 28px 顶部避让）；.overlay 宿主 -16 */
+body.portrait .main-panel,
+body.portrait .level-panel,
+body.portrait .codex-panel,
+body.portrait .settings-panel,
+body.portrait .help-panel,
+body.portrait .goodbye-panel,
+body.portrait .settle-panel,
+body.portrait .death-panel { max-height: calc(100dvh - 44px); }
+body.portrait .bp-panel,
+body.portrait .meta-panel { max-height: calc(100dvh - 16px); }
+body.portrait .settings-panel,
+body.portrait .help-panel,
+body.portrait .goodbye-panel,
+body.portrait .settle-panel,
+body.portrait .death-panel,
+body.portrait .meta-panel,
+body.portrait .level-panel,
+body.portrait .bp-panel,
+body.portrait .codex-panel,
+body.portrait .main-panel { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+
+/* 横屏：显式确认沿用原布局（不改动任何既有规则，仅作可读性声明） */
+body.landscape #hud-tl { flex-direction: column; }
+@media (orientation: landscape) {
+  /* 横屏兼容分支：布局与改造前一致 —— 本媒体查询内不覆写任何几何，仅保留锚点声明。 */
+  body.landscape .party-skillbar { flex-wrap: nowrap; }
+}
+
+
+/* ---------- 20.1b 竖屏主菜单标题微调（截图实测：42px 标题换行顶格且被切） ---------- */
+@media (orientation: portrait) {
+  .title { font-size: 30px; letter-spacing: 2px; }
+  .screen { padding-top: max(28px, env(safe-area-inset-top)); }
+}
+
+
+/* ============================================================
+ * 20.4 线C：竖屏满队（4~5 人）技能栏自适应压缩
+ * ------------------------------------------------------------
+ * 目标：390×844 竖屏下，#party-skillbar 纵向堆叠 5 行 [图标][名字][4槽]。
+ *   压缩前单行 ≈ 63px（44 图标 / 8+8 内边距 + 2 边框），5 行 + 4×8 间隙 ≈ 345px，
+ *   会顶到 right 摇杆（bottom ≤ 145px）。
+ * 手法（纯 CSS，不依赖 :has() / 不改 ui.js 挂类）：竖屏下统一收紧行高与槽尺寸，
+ *   行高 px = max(图标44, 槽40) + 内边距12 + 边框2 = 58px，行间隙收窄到 6px：
+ *     3 行 = 58×3 + 12 = 186 → 视觉封顶在 ~170px 带内（较原 202px 更矮）
+ *     4 行 = 58×4 + 18 = 250
+ *     5 行 = 58×5 + 24 = 314 → 栏底锚点 bottom +170px，栏顶 ≈ 484px，摇杆顶 ≈ 503px，不重叠
+ *   栏底锚点 bottom 由 170 微调到 164，给 5 行留 6px 呼吸位。
+ * 横屏：本段全部限定在 @media (orientation: portrait) 内，横屏不受任何影响。
+ * ============================================================ */
+@media (orientation: portrait) {
+  html body .party-skillbar {
+    bottom: calc(var(--sa-bottom) + 164px);   /* 5 行压缩后栏顶 ≈484px，仍高于摇杆顶 ≈503px */
+    gap: 6px;                                 /* 行间距 8 → 6，为 5 行再省出 8px */
+  }
+  html body .ps-row {
+    padding: 5px 10px;                        /* 8px 12px → 5px 10px，行高 63 → 58 */
+    gap: 8px;
+  }
+  html body .ps-icon,
+  html body .ps-icon svg { width: 40px; height: 40px; }   /* 图标 44 → 40 */
+  html body .ps-glyph { font-size: 15px; }
+  /* 竖屏单行封顶：.ps-skill 默认 max-width:76px 会把「名字块」撑到 76px，
+   * 能量水晶双技能行（A X X X X A）最坏 ≈383px > 96vw(374px) → 用 max-width 封顶，
+   * 使整行 ≈371px 稳落在 96vw 内（.ps-skill 自带 ellipsis，截断不破行）。 */
+  html body .ps-info { min-width: 46px; max-width: 64px; }
+  html body .ps-skill { max-width: 64px; }
+  html body .ps-name { font-size: 12px; }
+  html body .ps-role { font-size: 9px; }
+  html body .ps-slot { width: 42px; height: 40px; }        /* 槽 46×42 → 42×40，命中区仍 ≥32px */
+  html body .ps-slot .ps-slot-nm { font-size: 9px; }
+}
+
+/* ---------- 20.4 线C 结束 ---------- */
+
+/* ============================================================
+ * 方向 3 · 英雄解锁 UI（选人置灰 / 导师·武器匠未解锁分组 / 结晶解锁按钮）
+ * 追加区块：不改动上方既有规则；对齐深色主题 + 竖屏优先（390×844 不溢出）。
+ * ============================================================ */
+/* 选人卡：未解锁置灰 + 锁形条件行（.locked 与 .selected 互斥，选人拦截在 JS 侧） */
+.char-card.locked { opacity:.55; cursor:not-allowed; border-style:dashed; border-color:#2e3d55; }
+.char-card.locked:hover { border-color:#2e3d55; }
+.char-card .lock-line {
+  margin-top:6px; font-size:12px; color:#e0a24c; line-height:1.4; word-break:break-word;
+}
+
+/* 强化导师 / 武器匠：未解锁分组小标题（列表尾部） */
+.npc-group-title {
+  margin:10px 2px 2px; padding-top:10px; font-size:12px; color:#8ba0bd;
+  letter-spacing:1px; border-top:1px dashed #33486b;
+}
+/* 未解锁升级卡：置灰；其操作区不占固定宽（结晶按钮/锁标自适应） */
+.meta-card.locked { opacity:.6; }
+.meta-card.locked .meta-info b { color:#a8b6c8; }
+.meta-card.locked .meta-lv { width:auto; min-width:112px; }
+.meta-card.locked .lock-badge { font-size:12px; color:#8ba0bd; }
+/* 下级增益预览（导师卡内，同源 outLevelStats 计算） */
+.meta-card .gain-preview {
+  margin-top:6px; font-size:12px; color:#7fd08c; word-break:break-word;
+}
+
+/* 竖屏（390×844）：未解锁分组/结晶按钮不横向溢出，按钮不撑破卡片 */
+@media (orientation: portrait) {
+  .meta-card { flex-wrap:wrap; gap:10px; }
+  .meta-card .meta-lv { width:100%; align-items:stretch; }
+  .meta-card.locked .meta-lv { min-width:0; }
+  .meta-card .meta-lv .btn { width:100%; }
+  .meta-card .gain-preview { width:100%; }
+  .char-card { flex-wrap:wrap; }
+  .char-card .lock-line { width:100%; }
+}
+body.portrait .meta-card { flex-wrap:wrap; }
+body.portrait .meta-card .meta-lv { width:100%; align-items:stretch; }
+
+/* ============================================================
+ * 20.5 性能护栏（诊断面板 / 加载遮罩 / 低画质开关）
+ * 追加区块：不改动上方既有规则；深色主题 + 竖屏优先（390×844 可滚动查看）。
+ * ============================================================ */
+/* 素材加载遮罩：纯 DOM/CSS，居中卡片 + 进度条（接口缺失立即隐藏 → 不会白屏卡死） */
+.loading-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: #0b1220; opacity: 1;
+  transition: opacity .32s ease;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.loading-overlay.hidden { display: none; }
+.loading-overlay.loading-fade { opacity: 0; pointer-events: none; }
+.loading-box { width: min(320px, 78vw); text-align: center; }
+.loading-title { color: #cfe1ff; font-size: 16px; letter-spacing: 2px; margin-bottom: 16px; }
+.loading-track {
+  height: 10px; border-radius: 6px; background: #1b2740;
+  overflow: hidden; box-shadow: inset 0 0 0 1px #2e405e;
+}
+.loading-bar {
+  height: 100%; width: 0%; border-radius: 6px;
+  background: linear-gradient(90deg, #3a7bd5, #5fd0ff);
+  transition: width .18s ease;
+}
+.loading-text { margin-top: 12px; color: #8ba0bd; font-size: 13px; }
+
+/* 性能诊断区块（设置页追加）：深色卡片 + 两列信息行；窄屏纵向滚动不溢出 */
+.perf-diag {
+  margin-top: 18px; padding: 14px 16px; border-radius: 10px;
+  background: #101a2b; border: 1px solid #24344d;
+}
+.perf-diag-title {
+  margin: 0 0 10px; font-size: 14px; color: #7fd08c; letter-spacing: 1px;
+}
+.perf-diag-grid { display: flex; flex-direction: column; gap: 4px; }
+.perf-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 12px; font-size: 13px; line-height: 1.6;
+}
+.perf-k { color: #8ba0bd; flex: 0 0 auto; }
+.perf-v { color: #cfe1ff; text-align: right; word-break: break-all; }
+
+/* 竖屏（390×844）：诊断信息行改上下堆叠，值左对齐，不横向溢出；卡片可随页面滚动 */
+@media (orientation: portrait) {
+  .perf-row { flex-direction: column; align-items: flex-start; gap: 0; }
+  .perf-v { text-align: left; }
+  .loading-box { width: 82vw; }
+}
+body.portrait .perf-row { flex-direction: column; align-items: flex-start; gap: 0; }
+body.portrait .perf-v { text-align: left; }
+/* ---------- 20.5 性能护栏 结束 ---------- */
+
+/* ============================================================
+ * 主城 12 角立绘升级（图鉴放大立绘 + 英雄详情层）
+ * ------------------------------------------------------------
+ * 图鉴英雄卡改为「放大立绘」卡片：竖屏 2~3 列自适应，立绘高 150px，
+ * 未解锁沿用剪影置灰语义；点击卡片弹出 #hero-detail 大图详情层（立绘近满屏宽）。
+ * ============================================================ */
+/* 图鉴网格：窄屏（竖屏）2 列，宽屏 3 列（对齐卡片 ~140px 宽 + 放大的立绘） */
+#codex-heroes.codex-grid { gap: 10px; }
+.codex-card.portrait-card {
+  width: 140px; padding: 8px 8px 10px; text-align: center;
+  /* 20.7 修复：竖屏媒体查询（L712）把 .codex-card 改成 flex 横排（为旧小头像卡设计），
+     立绘卡的 wrap/名称/简介被挤成一行导致文字竖排——此处以更高优先级恢复纵向堆叠 */
+  display: block;
+}
+/* 立绘容器：深色舞台底，圆角 + 内阴影提升质感；立绘等比居中 */
+.portrait-card .portrait-wrap {
+  position: relative; width: 100%; height: 150px; overflow: hidden;
+  border-radius: 8px; border: 1px solid #2b3d59;
+  background: radial-gradient(120% 90% at 50% 15%, #223149 0%, #16202f 70%, #101823 100%);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.portrait-card .codex-portrait { display: block; width: 120px; height: 150px; }
+.portrait-card .portrait-lock {
+  position: absolute; right: 6px; top: 6px; font-size: 14px; opacity: .85;
+}
+.portrait-card b { display: block; font-size: 13px; margin-top: 6px; color: #cfe0ff; }
+.portrait-card .portrait-role { height: 18px; margin-top: 2px; }
+/* 21.11：简介裁切修复——卡高参差与文字溢出的根因是描述行数不定，clamp 2 行省略对齐 */
+.portrait-card small {
+  color: #8ba0bd; font-size: 10px; line-height: 1.4; margin-top: 2px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; min-height: 28px;
+}
+/* 未解锁：整体降饱和 + 立绘剪影已由 canvas 染黑，边框虚线提示 */
+.codex-card.portrait-card.locked { opacity: .72; border-style: dashed; }
+.codex-card.portrait-card.locked b { color: #6d7c94; }
+
+/* ---------- 英雄详情层（惰性创建 #hero-detail） ---------- */
+.hero-detail-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(6, 10, 18, .78); padding: 16px;
+}
+.hero-detail-overlay.hidden { display: none; }
+.hero-detail-panel {
+  position: relative; width: min(520px, 94vw); max-height: calc(100dvh - 16px);
+  padding-bottom: max(16px, env(safe-area-inset-bottom)); overflow-y: auto;
+  background: linear-gradient(180deg, #1e2c42 0%, #141d2c 100%);
+  border: 1px solid #33486b; border-radius: 14px; padding: 16px; text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .6);
+}
+.hero-detail-portrait {
+  width: 100%; border-radius: 10px; overflow: hidden; margin-bottom: 10px;
+  background: radial-gradient(120% 90% at 50% 12%, #223149 0%, #16202f 70%, #101823 100%);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.hero-detail-portrait .codex-portrait { display: block; width: 300px; height: 360px; }
+.hero-detail-panel h3 { margin: 6px 0; font-size: 18px; color: #e6f0ff; }
+.hero-detail-panel h3 small { color: #6d7c94; font-size: 12px; margin-right: 6px; }
+.hero-detail-desc { color: #9fb4d4; font-size: 13px; margin: 4px 0 10px; }
+.hero-detail-stats { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 10px; }
+.hero-detail-stats span {
+  background: #1d2a3d; border: 1px solid #33486b; border-radius: 8px;
+  padding: 3px 10px; font-size: 12px; color: #cfe0ff;
+}
+.hero-detail-line { font-size: 12px; color: #8ba0bd; margin: 4px 0; line-height: 1.5; text-align: left; }
+.hero-detail-close {
+  position: absolute; right: 10px; top: 10px; width: 30px; height: 30px;
+  border-radius: 50%; border: 1px solid #33486b; background: #1d2a3d; color: #cfe0ff;
+  font-size: 14px; cursor: pointer;
+}
+.hero-detail-back { margin-top: 10px; }
+
+/* 竖屏（390×844）：图鉴统一网格（21.11）——英雄 2 列大卡 / 怪物·遗迹秘宝 3 列小卡（主规则在竖屏主块）
+ * 20.10 注意：portrait-card 用 display:block 保住「立绘在上、文字在下」的纵向堆叠（不要改成 flex）。 */
+@media (orientation: portrait) {
+  #codex-heroes.codex-grid { grid-template-columns: repeat(2, 1fr); }
+  .codex-card.portrait-card { width: auto; display: block; }
+  .hero-detail-portrait .codex-portrait { width: 78vw; height: 44vh; max-height: 380px; }
+}
+body.portrait #codex-heroes.codex-grid { grid-template-columns: repeat(2, 1fr); }
+body.portrait .codex-card.portrait-card { width: auto; display: block; }
+body.portrait .hero-detail-portrait .codex-portrait { width: 78vw; height: 44vh; max-height: 380px; }
+/* ---------- 主城 12 角立绘升级 结束 ---------- */
+
+/* ============================================================
+ * 20.10 全局苹果风 · 小而美 + 单屏化（各界面统一）
+ * ------------------------------------------------------------
+ * 用户诉求（手机 390×844 竖屏为主）：
+ *   ① 所有 UI 尽量一屏内展示完，不做上下滑动；
+ *   ② 向苹果学习「小而优美」：小字号、细边框、小圆角、紧凑内边距。
+ * 对齐已完成改造的「角色选择」标准：名字 9px / 次要 11px；border 1px；radius 8~10px；
+ *   padding 收紧；面板 max-height: calc(100dvh - 16px)；底部 max(10px, safe-area-inset-bottom)。
+ *
+ * 本区块为「末尾追加 + 覆盖」：只覆盖与上面段落冲突/需微调的最终值，
+ *   不改动 .char-* / #char-list（20.9 锁）与 .art-* / #panel-artisan（20.10 锁）。
+ * 面板高度统一走 dvh（动态视口），避免旧 94vh/92vh/88vh/90vh/82vh 被手机地址栏吃掉。
+ * ============================================================ */
+
+/* ---- ① 单屏锁定（dvh）+ 底部安全区：所有关键面板统一 ----
+ * 两档高度：.screen 宿主页带 28px 顶部刘海避让（20.1b）→ 面板锁 calc(100dvh - 44px)；
+ *           .overlay 宿主无顶部避让 → 锁 calc(100dvh - 16px)。
+ * 统一 dvh 动态视口，避免旧 94vh/92vh/88vh/90vh/82vh 被手机地址栏吃掉。 */
+.main-panel,
+.level-panel,
+.codex-panel,
+.settings-panel,
+.help-panel,
+.goodbye-panel,
+.settle-panel,
+.death-panel { max-height: calc(100dvh - 44px); }
+
+.bp-panel,
+.meta-panel { max-height: calc(100dvh - 16px); }
+
+.level-panel,
+.codex-panel,
+.bp-panel,
+.settings-panel,
+.help-panel,
+.goodbye-panel,
+.settle-panel,
+.death-panel,
+.meta-panel { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+
+/* 面板内部纵向 flex：头/脚固定，中段滚动 → 整面板不滚（消灭面板级滚动条） */
+.codex-panel { display: flex; flex-direction: column; min-height: 0; }
+.settle-panel, .death-panel { display: flex; flex-direction: column; min-height: 0; }
+.settings-panel { display: flex; flex-direction: column; min-height: 0; }
+.help-panel { display: flex; flex-direction: column; min-height: 0; }
+.codex-panel .bp-head,
+.codex-panel h3,
+.settle-panel h2, .settle-panel h3,
+.death-panel h2, .death-panel h3,
+.settings-panel h2, .help-panel h2 { flex: none; }
+
+/* ---- ② 全局字阶收敛（小而美；不影响 .char-* / .art-* 已锁规则） ---- */
+.panel h2 { font-size: 15px; margin-bottom: 8px; }
+.panel h3 { font-size: 12px; margin: 8px 0 5px; }
+.panel .tip { font-size: 10px; margin-top: 6px; line-height: 1.5; }
+.btn { padding: 7px 16px; font-size: 12px; border-radius: 8px; }
+.btn.small { padding: 4px 10px; font-size: 11px; }
+.btn-row { gap: 8px; margin-top: 10px; }
+
+/* ---- ③ 关卡选择：3 列小而美网格（逐界面显式声明，防止竖屏块旧 2/1 列覆盖） ---- */
+.level-head h2 { font-size: 15px; margin-bottom: 3px; }
+.level-head .tip { font-size: 10px; margin-bottom: 7px; }
+#level-list { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.level-card { padding: 5px 8px; border-radius: 8px; line-height: 1.25; font-size: 11px; }
+.level-card .lv-name { font-size: 10px; }
+.level-card .lv-no, .level-card .lv-meta, .level-card .lv-boss { font-size: 9px; }
+
+/* ---- ④ 图鉴：小卡片（.portrait-card 立绘卡单独保留，勿动） ---- */
+.codex-panel h3 { font-size: 12px; margin: 8px 0 6px; }
+.codex-grid { gap: 6px; }
+.codex-card { width: 96px; padding: 5px; font-size: 10px; border-radius: 8px; }
+.codex-card.small { width: 84px; }
+.codex-card b { font-size: 11px; }
+.codex-card small { font-size: 9px; }
+.codex-card .codex-face { width: 48px; height: 48px; }
+.codex-card.small .codex-face { width: 38px; height: 38px; }
+
+/* ---- ⑤ 主菜单：按钮紧凑，一屏看完（窄屏 100% 宽） ---- */
+.main-panel { gap: 8px; }
+.btn.big { padding: 9px 18px; font-size: 13px; letter-spacing: 1px; }
+
+/* ---- ⑥ 结算 / 死亡：数字与列表收紧，确认按钮屏内 ---- */
+.stats { gap: 12px; font-size: 12px; margin-bottom: 4px; }
+.stats b { font-size: 14px; }
+.items-list, #settle-chests { gap: 6px; }
+.items-list .chip, #settle-chests .chip { padding: 3px 9px; font-size: 11px; }
+
+/* ---- ⑦ 设置 / 帮助 / 告别 / 资料：行距与字号收敛 ---- */
+.set-row { margin: 10px 0; font-size: 12px; gap: 12px; }
+.set-row > span { width: 140px; }
+.help-cols { gap: 20px; }
+.help-cols h3 { font-size: 12px; margin: 8px 0 4px; }
+.help-cols p { font-size: 11px; margin: 4px 0; line-height: 1.5; }
+.profile-rename { margin-bottom: 10px; }
+.skin-tile { padding: 6px 12px; min-width: 78px; }
+.skin-tile b { font-size: 12px; }
+.title-row { padding: 6px 10px; margin-bottom: 5px; }
+.title-row b { font-size: 12px; }
+
+/* ---- ⑧ 背包面板：格子/槽位/物品信息紧凑（保持拖拽步长数学：cell+gap 不变） ---- */
+.grid .cell { width: 42px; height: 42px; }
+.grid .itm .nm { font-size: 9px; }
+.grid .itm .ct { font-size: 10px; }
+.module-slot { padding: 6px 9px; border-width: 1px; border-radius: 8px; min-width: 130px; }
+.module-slot .ms-name { font-size: 11px; }
+.module-slot .ms-lv { font-size: 10px; }
+#item-info.item-info { min-width: 160px; font-size: 11px; line-height: 1.6; }
+.bp-head { margin-bottom: 10px; gap: 10px; }
+.bp-body { gap: 14px; }
+
+/* ---- ⑨ 竖屏（媒体查询块）同步：显式终值，杜绝旧硬编码（94vh/88vh/2列 等）覆盖 ---- */
+@media (orientation: portrait) {
+  /* 单屏锁定：dvh 两档（.screen 宿主 -44 含 28px 顶部避让；.overlay 宿主 -16）
+   * 覆盖本块上方 .level-panel 94vh / .codex-panel 88vh 等旧值 */
+  .main-panel,
+  .level-panel,
+  .codex-panel,
+  .settings-panel,
+  .help-panel,
+  .goodbye-panel,
+  .settle-panel,
+  .death-panel { width: 96vw; max-height: calc(100dvh - 44px); }
+  .bp-panel,
+  .meta-panel { width: 96vw; max-height: calc(100dvh - 16px); }
+  .level-panel,
+  .codex-panel,
+  .bp-panel,
+  .settings-panel,
+  .help-panel,
+  .goodbye-panel,
+  .settle-panel,
+  .death-panel,
+  .meta-panel { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+
+  /* 关卡：3 列小而美 */
+  #level-list { grid-template-columns: repeat(3, 1fr); }
+  .level-card { padding: 5px 8px; }
+
+  /* 图鉴小卡片：横向滚动条数（显式 96px，防止竖屏 flex 竖排覆盖） */
+  .codex-card { width: 96px; padding: 5px; }
+  .codex-card.small { width: 84px; }
+
+  /* 主菜单示例按钮 */
+  .btn.big { padding: 10px 18px; }
+
+  /* 帮助三栏：超高时中段滚动而非整面板滚 */
+  .help-cols { overflow-y: auto; min-height: 0; }
+
+  /* 设置：诊断区与按钮行不被裁切 */
+  .settings-panel .set-row { margin: 9px 0; }
+  .settings-panel .set-row > span { width: 120px; }
+  .perf-row { font-size: 11px; }
+
+  /* 背包：格子缩到 40，保持 cell+gap 步长一致（拖拽坐标不错位） */
+  .grid .cell { width: 40px; height: 40px; }
+}
+
+/* body.portrait 钩子同步（JS 路径双保险） */
+body.portrait .codex-card { width: 96px; padding: 5px; }
+body.portrait .codex-card.small { width: 84px; }
+body.portrait #level-list { grid-template-columns: repeat(3, 1fr); }
+body.portrait .grid .cell { width: 40px; height: 40px; }
+
+/* ---------- 20.10 全局苹果风 结束 ---------- */
+
+/* ============================================================
+ * 21.15 🅒 无尽模式 HUD 信息区 + 帮助页文案触屏化
+ * ------------------------------------------------------------
+ * 追加区块，不改动上方既有规则（§5.45 文件末尾独立区块）。
+ * 本区块包含三处必须同步的规则（坑 1）：
+ *   ① 主规则（桌面默认）
+ *   ② @media (orientation: portrait) 竖屏块（纯 CSS 兜底）
+ *   ③ body.portrait 钩子（JS 由 UI.applyOrientation 挂类，双保险）
+ * ============================================================ */
+
+/* ---- 无尽模式 HUD 信息区（#hud-endless-info）----
+ * 实际内容由 canvas 绘制（js/hud_endless.js，屏幕左上角）；本容器作语义锚点。
+ * 默认隐藏：#hud 非无尽时由 JS 保持，无尽时不占位（canvas 已在画布上画好）。 */
+#hud-endless-info {
+  display: none;                 /* canvas 负责可见内容，DOM 容器仅作锚点/测试 id 与无障碍朗读 */
+  position: absolute;
+  left: calc(var(--sa-left) + 12px);
+  top: calc(var(--sa-top) + 12px);
+  pointer-events: none;
+  color: #e8c574; font-size: 12px; line-height: 1.5; white-space: pre-line;
+}
+
+/* ---- 帮助页文案：桌面 / 触屏 双段切换 ----
+ * 默认（桌面）：显示 .kbd-desktop，隐藏 .kbd-touch。 */
+.kbd-desktop { display: inline; }
+.kbd-touch { display: none; }
+
+/* ② 竖屏媒体查询块（纯 CSS 兜底）：竖屏多为触屏 → 换触屏话术 */
+@media (orientation: portrait) {
+  .kbd-desktop { display: none; }
+  .kbd-touch { display: inline; }
+  /* HUD 信息区在竖屏同锚点（安全区已由变量覆盖），仅字号略收 */
+  #hud-endless-info { font-size: 11px; }
+  /* 21.17 无尽结算标题：竖屏字号略收（三处同步，与主规则/钩子等效） */
+  #endless-settle-title { font-size: 19px; }
+}
+
+/* ③ body.portrait 钩子（JS 路径双保险，与 ② 等效） */
+body.portrait .kbd-desktop { display: none; }
+body.portrait .kbd-touch { display: inline; }
+body.portrait #hud-endless-info { font-size: 11px; }
+body.portrait #endless-settle-title { font-size: 19px; }
+
+/* ① 主规则（桌面默认）对应补充：结算标题常态字号（三处之一） */
+#endless-settle-title { font-size: 20px; }
+
+/* ============================================================================
+ * 21.19 深渊「入口 / 选层」界面 + 「暂停菜单」样式（W0 契约冻结）
+ * --------------------------------------------------------------------------
+ * 结构复用 .level-panel 范式（flex 三段：头部 / 列表滚动 / 底部按钮），
+ * 层级卡片沿用 .level-card 视觉，仅补深渊专属配色与信息区。
+ * ========================================================================== */
+.abyss-panel {
+  width: min(560px, 94vw);
+  max-height: calc(100dvh - 16px);
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column;
+}
+.abyss-head { flex-shrink: 0; }
+.abyss-head h2 { margin-bottom: 3px; font-size: 15px; color: #ff9a5c; }
+.abyss-head .tip { margin-top: 0; margin-bottom: 7px; font-size: 10px; }
+/* 层级网格：4 列（层数多），卡片紧凑；超高时自身滚动 */
+#abyss-tier-list {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  align-content: start; padding: 2px;
+}
+.abyss-tier-card {
+  background: #2a1c22; border: 1px solid #6b3a3a; border-radius: 8px;
+  padding: 5px 6px; cursor: pointer; transition: .15s; line-height: 1.25;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.abyss-tier-card:hover { border-color: #ffd76a; background: #3a2530; }
+.abyss-tier-card.selected { border-color: #ff9a5c; background: #4a2a24; box-shadow: 0 0 0 1px #ff9a5c inset; }
+.abyss-tier-card.locked { opacity: .38; cursor: not-allowed; }
+.abyss-tier-card .tier-no { font-size: 11px; font-weight: bold; color: #ffd7a0; }
+.abyss-tier-card .tier-mul { font-size: 9px; color: #e79aa0; }
+/* 所选层信息 / 最高记录 */
+.abyss-tier-info {
+  flex-shrink: 0; margin-top: 8px; padding: 7px 10px; font-size: 11px; line-height: 1.6;
+  background: #1d2433; border: 1px solid #33486b; border-radius: 8px; color: #cfe0ff;
+}
+.abyss-tier-info .affix-chip {
+  display: inline-block; margin: 2px 4px 0 0; padding: 1px 7px; border-radius: 10px;
+  background: #3a2530; border: 1px solid #6b3a3a; color: #ffb894; font-size: 10px;
+}
+.abyss-best {
+  flex-shrink: 0; margin-top: 6px; font-size: 10px; color: #9fb4cc;
+}
+/* 暂停菜单信息区 */
+#abyss-pause-info { margin-bottom: 10px; }
+
+/* ====== 21.20 战绩榜（#screen-abyss 复用）====== */
+/* 战绩列表改单列行式（层级的 4 列网格不再适用）；卡片样式类保留兼容旧测试 */
+#abyss-tier-list { grid-template-columns: 1fr; }
+.abyss-rec-row {
+  display: flex; align-items: center; gap: 10px;
+  background: #2a1c22; border: 1px solid #6b3a3a; border-radius: 8px;
+  padding: 6px 10px; cursor: pointer; transition: .15s; font-size: 12px;
+}
+.abyss-rec-row:hover { border-color: #ffd76a; background: #3a2530; }
+.abyss-rec-row.selected { border-color: #ff9a5c; background: #4a2a24; box-shadow: 0 0 0 1px #ff9a5c inset; }
+.abyss-rec-row .arr-rank { width: 22px; font-weight: bold; color: #ffd7a0; text-align: center; }
+.abyss-rec-row .arr-wave { flex: 1.2; font-weight: bold; color: #ffe4b8; }
+.abyss-rec-row .arr-time { flex: 1; color: #9fd0ff; }
+.abyss-rec-row .arr-kills { flex: 1; color: #ff8f6a; }
+.abyss-rec-row .arr-out { flex: 0 0 auto; padding: 1px 8px; border-radius: 10px; font-size: 10px; background: #33486b; color: #cfe0ff; }
+.abyss-rec-row .arr-out.ok { background: #1d3a2a; color: #7de08a; }
+.abyss-rec-row .arr-out.bad { background: #4a2222; color: #ff8a8a; }
+.abyss-rec-row .arr-date { flex: 0 0 auto; font-size: 10px; color: #8fa0b8; }
+.abyss-rec-empty { grid-column: 1 / -1; text-align: center; color: #8fa0b8; font-size: 12px; padding: 18px 0; }
+/* 逐角色明细表 */
+.abyss-rec-detail { width: 100%; border-collapse: collapse; margin-top: 3px; font-size: 11px; }
+.abyss-rec-detail th, .abyss-rec-detail td { padding: 2px 8px; text-align: right; }
+.abyss-rec-detail th:first-child, .abyss-rec-detail td:first-child { text-align: left; }
+.abyss-rec-detail thead th { color: #8fa0b8; font-weight: normal; border-bottom: 1px solid #33486b; }
+.abyss-rec-detail .ard-name { color: #ffe4b8; }
+.abyss-rec-detail .ard-num { color: #ffd76a; font-variant-numeric: tabular-nums; }
+.abyss-rec-detail .ard-num.taken { color: #ff9a7f; }
+.abyss-rec-detail .ard-pct { color: #9fb4cc; }
+.abyss-rec-detail tfoot td { border-top: 1px solid #33486b; color: #cfe0ff; font-weight: bold; }
+/* 结算面板队伍明细容器（21.20） */
+#endless-settle-team { margin-top: 8px; padding: 7px 10px; background: #1d2433; border: 1px solid #33486b; border-radius: 8px; }
+#endless-settle-team .es-team-title { font-size: 11px; color: #8fa0b8; margin-bottom: 2px; }
+
+/* 移动端（竖屏）适配：层级改 3 列，面板收窄 */
+@media (orientation: portrait) {
+  .abyss-panel { width: 96vw; max-height: calc(100dvh - 16px); }
+  #abyss-tier-list { grid-template-columns: 1fr; }
+}
+body.portrait #abyss-tier-list { grid-template-columns: 1fr; }
+
+
+
+/* ===== 技能面板（阶段 F · 主动可打开的总览） =====
+ * 深色主题；新前缀 `crystal-panel*`（**不复用** .mod-slot / .crystal-slot，避免误伤旧测试）。
+ * 品质双通道：颜色（读 CFG.skillSystem.qualityDefs[].color）+ 星标 / 品质名 —— 不只靠颜色辨识。
+ * 品质四档参考色（配置缺失时的兜底）：普通 #b8c4d0 / 稀有 #4aa3ff / 史诗 #a05cff / 传说 #ffb545。 */
+.crystal-panel {
+  width:min(880px, 96vw);
+  max-height:calc(100dvh - 16px);
+  overflow:auto;
+  padding-bottom:max(10px, env(safe-area-inset-bottom));
+  text-align:left;
+}
+.crystal-panel-head { display:flex; align-items:center; gap:12px; margin-bottom:12px;
+  padding-bottom:10px; border-bottom:1px solid #2e3d55; }
+.crystal-panel-title { flex:1; margin:0; font-size:18px; color:#ffd76a; }
+.crystal-panel-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+.crystal-panel-tab {
+  background:#1b2536; color:#9fb4cc; border:1px solid #33486b; border-radius:8px;
+  padding:5px 12px; font-size:12px; cursor:pointer;
+}
+.crystal-panel-tab.active { background:#264066; color:#fff; border-color:#5aa2ff; }
+.crystal-panel-body { display:flex; flex-direction:column; gap:14px; }
+.crystal-panel-col { display:flex; flex-direction:column; gap:6px; }
+.crystal-panel-h3 { margin:0; font-size:12px; color:#8fa0b8; font-weight:normal; letter-spacing:1px; }
+
+/* 两技能区 */
+.crystal-panel-skills { display:flex; flex-direction:column; gap:6px; }
+.crystal-skill-row {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:#131b29; border-left:3px solid #5aa2ff; border-radius:6px; padding:7px 12px;
+}
+.crystal-skill-name { font-size:14px; color:#dbe6f5; font-weight:bold; }
+.crystal-skill-meta { font-size:11px; color:#8ba0bd; }
+
+/* 4 共享水晶槽区 */
+.crystal-panel-slots { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; }
+.crystal-panel-slot {
+  min-height:56px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:2px; padding:5px 4px; border-radius:8px; background:#101a2b; border:2px solid #3f5a86;
+  cursor:pointer; overflow:hidden;
+}
+.crystal-panel-slot.crystal-slot-empty { border-style:dashed; border-color:#33486b; background:#0d1420; }
+.crystal-panel-slot-no { font-size:15px; color:#46536a; font-weight:bold; }
+.crystal-panel-slot-name { font-size:11px; line-height:1.15; text-align:center; word-break:break-all; }
+.crystal-panel-slot-lv { font-size:10px; color:#9fb6d6; }
+.crystal-panel-slot-q { font-size:10px; line-height:1.1; text-align:center; }
+
+/* 辅助矩阵区（技能 × 水晶） */
+.crystal-panel-matrix { display:flex; flex-direction:column; gap:5px; }
+.crystal-matrix-head, .crystal-matrix-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.crystal-matrix-head { padding-bottom:4px; border-bottom:1px solid #25344c; }
+.crystal-matrix-head .crystal-matrix-colh { font-size:10px; color:#7d8aa0; }
+.crystal-matrix-skill { flex:0 0 68px; font-size:12px; color:#cfe0ff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.crystal-matrix-cell {
+  flex:1 1 0; min-width:52px; text-align:center; font-size:11px; border-radius:6px;
+  padding:4px 2px; border:1px solid #2e3d55; background:#131b29;
+}
+.crystal-mx-ok { color:#7de08a; border-color:#3fae6a; background:rgba(63,174,106,.14); }
+.crystal-mx-bad { color:#ff9a7f; border-color:#ae3f3f; background:rgba(174,63,63,.16); }
+.crystal-mx-off { color:#5c6b82; }
+
+/* 详情区（点槽后填充：正文来自 detail().text，脚注 chip 来自 detail().sections） */
+.crystal-panel-detail {
+  background:#0f1826; border:1px solid #2e3d55; border-radius:8px;
+  padding:10px 12px; max-height:240px; overflow:auto; min-height:56px;
+}
+.crystal-detail-head { display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+  border-bottom:1px solid #25344c; padding-bottom:6px; margin-bottom:6px; }
+.crystal-detail-head b { font-size:14px; }
+.crystal-detail-head span { font-size:11px; }
+.crystal-detail-rows { display:flex; flex-direction:column; gap:3px; }
+.crystal-detail-row { font-size:11px; line-height:1.55; color:#dbe6f5; }
+.crystal-detail-chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; padding-top:6px; border-top:1px solid #25344c; }
+.crystal-detail-chip { font-size:10px; color:#9fb4cc; background:#1b2536; border:1px solid #33486b;
+  border-radius:5px; padding:1px 6px; }
+.crystal-panel-hint { font-size:11px; color:#7d8aa0; }
+.crystal-panel-degrade { font-size:12px; color:#c79bff; }
+
+/* 汇总标签 / 诊断（来自 panel.notices[]） */
+.crystal-panel-notices { display:flex; flex-wrap:wrap; gap:6px; }
+.crystal-notice { font-size:11px; border-radius:6px; padding:2px 8px; border:1px solid #33486b; color:#9fb4cc; background:#131b29; }
+.crystal-notice-tag { color:#ffd76a; border-color:#7a5c22; background:rgba(122,92,34,.18); }
+.crystal-notice-diag { color:#ff9a7f; border-color:#ae3f3f; background:rgba(174,63,63,.16); }
+.crystal-notice-hidden { color:#5c6b82; }
+
+/* 竖屏（390×844 优先）：单列堆叠，槽位 2 列，面板不溢出 */
+@media (orientation: portrait) {
+  .crystal-panel { width:94vw; max-height:calc(100dvh - 16px); }
+  .crystal-panel-slots { grid-template-columns:repeat(2, 1fr); }
+  .crystal-matrix-skill { flex-basis:56px; }
+  .crystal-matrix-cell { min-width:44px; }
+  .crystal-panel-detail { max-height:180px; }
+}
+body.portrait .crystal-panel { width:94vw; }
+body.portrait .crystal-panel-slots { grid-template-columns:repeat(2, 1fr); }
+
+/* 技能面板入口按钮（右上 #hud-tr 内，位于等级·货币行之下，右对齐） */
+#btn-skill-panel { margin-top:6px; }
+
+/* ===== 21.6 赛季大厅：赛季奖励区块（C5 界面层）=====
+ * 深色主题，与 .chip / .items-list 同调（底色 #1d2a3d / 边框 #33486b）。
+ * 每行 desc 自适应换行、状态右对齐；竖屏 390px 宽不横向溢出。 */
+#season-rewards { display:flex; flex-direction:column; gap:6px; width:100%; }
+.season-reward { display:flex; align-items:center; gap:8px; width:100%;
+  background:#1d2a3d; border:1px solid #33486b; border-radius:6px; padding:4px 9px;
+  font-size:11px; line-height:1.5; box-sizing:border-box; }
+.season-reward-desc { flex:1 1 auto; min-width:0; color:#cfe0ff; word-break:break-word; overflow-wrap:anywhere; }
+.season-reward-state { flex:0 0 auto; font-size:11px; white-space:nowrap; }
+.season-reward-state.locked { color:#8ba0bd; }
+.season-reward-state.done { color:#7de08a; }
+.season-reward-claim { flex:0 0 auto; margin:0; }
+.season-reward-empty { color:#8ba0bd; font-size:11px; }
+/* 未解锁：进入赛季挑战按钮置灰（点击仍给提示，故不设 disabled，避免吞掉提示） */
+#btn-season-challenge.season-locked { opacity:.5; filter:grayscale(.6); }

@@ -1,0 +1,10 @@
+"gpt-6-astra" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"}
+已完成 `00-reading-map.md`，仅写入指定文件。
+
+- 包含全书地图、三条阅读路径、16 项任务索引、8 条铁律摘要及5组易混术语。
+- 已完成一轮自检：文件链接、清单覆盖和必含项检查通过。
+- 已明确标注卷五至卷七尚未交付，以及运行时基线 v0.2.9 与卷二页首 v0.2.8 的差异，未修改其他文件。
+- 字数口径：正文汉字数，包含表格，排除围栏代码块。
+
+DONE::PKG_N::3200

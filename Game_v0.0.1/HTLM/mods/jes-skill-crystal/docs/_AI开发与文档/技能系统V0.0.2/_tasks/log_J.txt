@@ -1,0 +1,14 @@
+"gpt-6-astra" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"}
+已完成修改，仅改动 `ch04_积木清单.md`：
+
+- 新增 4.1.5 首发范围与已知缺口
+- 登记首发 18 块及候选延期原因
+- 登记 G-01…G-05，明确首发不追齐
+- 明确 `self` 当前无可用积木，位移类技能走 L5 表达式逃逸口
+- 更新 4.3 self 载体组及位移候选状态
+- 文末追加 C04-12
+- 保留原有积木卡正文与未决问题结构
+- 完成一次自检：无 `carrier: instant`，4.2/4.3 标题与完成信号存在
+
+DONE::PKG_J::57691
