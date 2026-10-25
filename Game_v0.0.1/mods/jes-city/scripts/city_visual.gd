@@ -96,11 +96,9 @@ func _on_channel_done(id: String, kind: String) -> void:
 		# 深渊之门：读条完发进入深渊意图（不改 event_bus.gd，只发既有信号）
 		EventBus.emit_event("enter_abyss", {"portal": id})
 		return
-	# 出征传送门：读条完跳选关屏。TODO: GameState 暂无 set_flow/level_select 流接口，
-	# 先广播意图，再尝试直接切三合一导航屏（由 screens 代理接管选关）。
+	# 出征传送门：读条完广播 cityPortalEnter —— FlowRoot 监听后弹出选关屏（叠加层，不切场景）
 	EventBus.emit_event("portal_ready", {"portal": id})
-	print("[CityVisual] TODO: 接入选关流（GameState.set_flow），先 change_scene 尝试")
-	get_tree().change_scene_to_file(ScreensScene)
+	EventBus.emit_event("cityPortalEnter", {"portal": id})
 
 # ---------------------------------------------------------------- 绘制
 
