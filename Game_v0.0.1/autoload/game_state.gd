@@ -55,12 +55,12 @@ func meta_unlocked_levels() -> int:
 	return meta.unlocked_levels()
 
 
-func meta_level_stars(level_id: String) -> int:
-	return meta.level_stars(level_id)
+func meta_level_stars(query_level_id: String) -> int:
+	return meta.level_stars(query_level_id)
 
 
-func is_hero_unlocked(hero_id: String) -> bool:
-	return meta.is_hero_unlocked(hero_id)
+func is_hero_unlocked(query_hero_id: String) -> bool:
+	return meta.is_hero_unlocked(query_hero_id)
 
 
 ## 战斗侧结算入口：payload 建议字段 won/reason/kills/elapsed/pickups/stars/loot

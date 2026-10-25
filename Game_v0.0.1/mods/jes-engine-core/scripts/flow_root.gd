@@ -63,6 +63,7 @@ func _ready() -> void:
 
 
 ## 把自己从 current_scene 摘出来挂到 root：后续 change_scene 不会销毁本 UI
+## 并套一层高层 CanvasLayer：主城/战斗场景自带 CanvasLayer 时，叠加层不被压在下面
 func _detach_from_scene_flow() -> void:
 	var tree := get_tree()
 	if tree == null or tree.current_scene != self:
@@ -71,6 +72,12 @@ func _detach_from_scene_flow() -> void:
 	placeholder.name = "FlowScenePlaceholder"
 	tree.root.add_child(placeholder)
 	tree.current_scene = placeholder
+	var layer := CanvasLayer.new()
+	layer.name = "FlowLayer"
+	layer.layer = 100
+	tree.root.add_child(layer)
+	tree.root.remove_child(self)
+	layer.add_child(self)
 
 
 ## ---------- EventBus 通道（不修改 event_bus.gd）----------
@@ -275,10 +282,10 @@ func _make_card_label(lines: Array[String], locked: bool, small: bool) -> PanelC
 	return card
 
 
-func _make_color_swatch(color_hex: String, size: Vector2) -> ColorRect:
+func _make_color_swatch(color_hex: String, sw_size: Vector2) -> ColorRect:
 	var swatch := ColorRect.new()
 	swatch.color = Color(color_hex)
-	swatch.custom_minimum_size = size
+	swatch.custom_minimum_size = sw_size
 	swatch.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	return swatch
 
