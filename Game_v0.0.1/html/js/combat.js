@@ -597,14 +597,16 @@ function damageMonster(w, m, dmg, killer) {
   // Boss 阶段转换无敌（17.3）：转换窗口内不吃伤害（子弹照常被消耗，但 Boss 不掉血）
   if (m.phaseInvulnT > 0) { spawnBurst(m.x + U.rand(-m.r, m.r), m.y + U.rand(-m.r, m.r), "#ffffff", 2); return; }
   const cuDef = (G.run && G.run.curse) ? G.run.curse.defMul : 1;   // 诅咒附加的"防御 ×N"被动
-  const real = Math.max(1, Math.round(dmg - m.d.def * cuDef - (m.eliteDef || 0)));
+  const crit = rollCrit(killer, dmg);                              // 2026-10-25 暴击判定（仅玩家侧来源；返回 true=本次暴击）
+  const real = Math.max(1, Math.round((dmg - m.d.def * cuDef - (m.eliteDef || 0)) * (crit ? CFG.feedback.crit.dmgMul : 1)));
   const hero = abyssDamageHeroOf(killer);                          // 21.20 逐角色伤害归属（非深渊恒 null）
   // 精英「护盾」词缀：先扣盾，盾破前本体不受损
   if (m.shield > 0) {
     m.shield -= real; m.flashT = 0.1;
     if (G.run && G.run.stats && m.d.type !== "boss") G.run.stats.dmgDealt += real;
     if (hero) hero.dmgDealt = (hero.dmgDealt || 0) + real;         // 打盾也计入该角色输出
-    spawnBurst(m.x, m.y, "#6cb2ff", 4); SFX.play("hit");
+    spawnBurst(m.x, m.y, "#6cb2ff", 4); SFX.play("hit", null, { dmg: real, hpMax: m.hpMax });
+    spawnDmgFloat(m, real, crit);                                  // 2026-10-25 打盾也出伤害飘字（S1）
     if (m.shield <= 0) { m.shield = 0; spawnBurst(m.x, m.y, "#6cb2ff", 14); }
     return;
   }
@@ -612,7 +614,9 @@ function damageMonster(w, m, dmg, killer) {
   if (G.run && G.run.stats && m.d.type !== "boss") G.run.stats.dmgDealt += real;
   if (hero) hero.dmgDealt = (hero.dmgDealt || 0) + real;           // 21.20 逐角色伤害统计
   spawnBurst(m.x, m.y, "#ffd76a", 4);
-  SFX.play("hit");
+  spawnDmgFloat(m, real, crit);                                    // 2026-10-25 命中数字常显 + 微随机偏移（S1）
+  hitFeedbackApply(m, real, crit);                                 // 2026-10-25 暴击音效 + 顿帧（S1/S2）
+  if (crit) SFX.play("crit"); else SFX.play("hit", null, { dmg: real, hpMax: m.hpMax });
   if (m.hp <= 0 && !m.dead) {
     m.dead = true;
     onMonsterKilled(w, m, killer);   // killer = 击杀弹（供 split 裂变读 behavior / owner；普通调用为 undefined）
@@ -712,6 +716,7 @@ function onMonsterKilled(w, m, killer) {
   const r = G.run, lv = G.levelCfg;
   const rm = r.curse ? r.curse.rewardMul : 1;   // 诅咒风险回报：掉落倍率（待细化36）
   r.kills++;
+  runComboKill(r);   // 2026-10-25 连击统计（结算「本局高光」数据源，S3）
   Meta.recordMonster(m.defId);   // 图鉴收录：击杀过的怪物永久激活
   SFX.play("kill");
   if (w.isMain) {
@@ -1398,4 +1403,63 @@ function dropEndlessExp(w, m) {
   for (let i = 0; i < n; i++) spawnPickup(w, m.x, m.y, "coin", coinPer);
   r.endlessCoinDrops = (r.endlessCoinDrops || 0) + n; // 统计字段（HUD/测试可读）
   return n;
+}
+
+/* ============================================================================
+ * 2026-10-25 批次：S1~S3 命中反馈区块（铁律 §5.45：文件末尾独立区块）
+ * 内容：暴击判定 / 伤害飘字常显（微随机偏移防重叠）/ 暴击金色放大 /
+ *       顿帧（大伤害微 hitstop，带冷却防连刷）/ 击杀连击统计（本局高光用）
+ * ============================================================================ */
+
+/* 玩家侧伤害来源判定（深度 2：英雄 → 召唤物/子弹 → 子弹的 owner）：
+ * 只有玩家侧来源参与暴击（怪物/环境伤害不暴击，也不破坏门禁的确定性伤害断言）。 */
+function isPlayerSideKiller(killer) {
+  if (!killer) return false;
+  if (typeof G === "undefined" || !G) return false;
+  if (killer === G.player) return true;
+  const comps = (G.run && G.run.companions) || [];
+  if (comps.indexOf(killer) >= 0) return true;
+  if (killer.owner) return isPlayerSideKiller(killer.owner);   // 子弹/召唤物沿 owner 链上溯
+  return false;
+}
+/* 暴击判定（S1）：玩家侧来源 + 伤害 ≥ minDmg 才参与掷骰；概率/倍率收口 CFG.feedback.crit。 */
+function rollCrit(killer, dmg) {
+  const fb = CFG.feedback && CFG.feedback.crit;
+  if (!fb || !fb.chance) return false;
+  if ((dmg || 0) < (fb.minDmg || 0)) return false;
+  if (!isPlayerSideKiller(killer)) return false;
+  return Math.random() < fb.chance;
+}
+/* 伤害飘字（S1）：所有伤害常显；数字带 ±jitter 微随机偏移防重叠；
+ * 暴击 → 金色 + 放大（渲染侧按 f.big 取大字号）。 */
+function spawnDmgFloat(m, real, crit) {
+  const fcfg = (CFG.feedback && CFG.feedback.float) || { jitter: 6, critScale: 1.5 };
+  const jx = U.rand(-fcfg.jitter, fcfg.jitter), jy = U.rand(-fcfg.jitter, fcfg.jitter);
+  if (crit) {
+    spawnFloat(m.x + jx, m.y - m.r - 14 + jy, `${Math.round(real * fcfg.critScale)}!`, "#ffd700");
+    const arr = FX.floats, f = arr[arr.length - 1];
+    if (f) f.big = true;   // 标记暴击飘字（渲染侧放大字号）
+  } else {
+    spawnFloat(m.x + jx, m.y - m.r - 10 + jy, `${real}`, "#ffffff");
+  }
+}
+/* 命中反馈落地（S2）：暴击音效在 damageMonster 内播；此处只管顿帧——
+ * 单次大伤害（≥ hpRatio × 怪物最大生命）且非 BOSS 才触发，带全局冷却防高频连刷。 */
+function hitFeedbackApply(m, real, crit) {
+  const hs = CFG.feedback && CFG.feedback.hitstop;
+  if (!hs) return;
+  if (hs.bossExempt && m.d && m.d.type === "boss") return;
+  if ((G.hitstopCool || 0) > 0) return;
+  if (!crit && real < (m.hpMax || 0) * (hs.hpRatio || 0.06)) return;
+  G.hitstopT = hs.dur;            // 主循环读到后按 timeScale 缩放当帧 dt（微 hitstop）
+  G.hitstopCool = hs.cooldown;
+}
+/* 击杀连击统计（S3 结算高光用）：2.5s 内连续击杀算同一段连击，记录本局最高连击。 */
+function runComboKill(r) {
+  if (!r) return;
+  const now = (typeof G !== "undefined" && G) ? G.time : 0;
+  if (now - (r._comboLastT || -99) <= 2.5) r._combo = (r._combo || 0) + 1;
+  else r._combo = 1;
+  r._comboLastT = now;
+  if (r.stats) r.stats.maxCombo = Math.max(r.stats.maxCombo || 0, r._combo);
 }

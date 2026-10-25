@@ -876,8 +876,14 @@ const Game = {
     _autoDowngradeTick(t);            // ② 自动降档：连续高帧耗时 → 逐档下调画质（见文件末尾独立区块）
     // 步长双钳制（下界 0 / 上界 0.05）：线上 rAF 时间戳单调，但注入或回拨会得到负步长，
     // 负 dt 会把施放计时器（game.js skillTimer / 冷却等）一次性甩飞 → 这里防御性钳到 0。
-    const dt = Math.min(0.05, Math.max(0, (t - this.lastT) / 1000) || 0.016);
+    let dt = Math.min(0.05, Math.max(0, (t - this.lastT) / 1000) || 0.016);   // let：顿帧帧需按 timeScale 缩放（2026-10-25 S2）
     this.lastT = t;
+    // 顿帧（2026-10-25 S2）：大伤害命中的微 hitstop——当帧时间流速压到 timeScale，冷却期外不触发
+    if ((G.hitstopT || 0) > 0) {
+      G.hitstopT = Math.max(0, G.hitstopT - dt);
+      G.hitstopCool = Math.max(0, (G.hitstopCool || 0) - dt);
+      if (G.hitstopT > 0) dt = dt * ((CFG.feedback && CFG.feedback.hitstop.timeScale) || 0.15);
+    } else G.hitstopCool = Math.max(0, (G.hitstopCool || 0) - dt);
     G.time += dt;
     /* 21.12 性能压测场景（?stress=N）：接管更新+渲染，正式玩法零影响（无参数时 isActive 恒 false） */
     if (typeof StressHarness !== "undefined" && StressHarness.isActive()) {
@@ -1310,3 +1316,16 @@ function isTouchDevice() {
   return false;
 }
 
+
+/* ============================================================================
+ * 2026-10-25 批次：UI 点击音效（S1，第 12 条合成音效）
+ * 全局捕获阶段监听：点击任意 <button> → SFX.play("uiclick")（节流在 SFX 内部）。
+ * 捕获阶段 + document 级 = 对既有 bindTouch/on() 零侵入；无 AudioContext 时 SFX 内部静默跳过。
+ * ============================================================================ */
+(function () {
+  if (typeof document === "undefined" || !document.addEventListener) return;
+  document.addEventListener("click", function (e) {
+    const t = e && e.target;
+    if (t && t.closest && t.closest("button")) SFX.play("uiclick");
+  }, true);
+})();

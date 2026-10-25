@@ -31,6 +31,7 @@ team_trigger_test content_test level_content_test level_tuning_test meta_growth_
 out_level_flow_test settle_crystal_test boot_guard_test cache_version_test perf_asset_test \
 asset_timeout_test asset_hooks_consume_test \
 battle_rules_test \
+feedback_systems_test \
 xgame_chip_fold_test xgame_boss_crystal_test xgame_assets_consumption_test xgame_save_integration_test \
 xgame_insurance_source_test xgame_milestone_test xgame_q7_d1_season_test"
 

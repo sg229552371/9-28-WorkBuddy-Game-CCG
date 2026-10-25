@@ -511,7 +511,13 @@ UI.showEndlessSettle = function (settle) {
       '<span>坚持时长 <b>' + this._endlessFormatElapsed(elapsed) + '</b></span>' +
       '<span>BOSS 击杀 <b>' + bossKills + '</b></span>' +
       '<span>◆ 获得结晶 <b>+' + crystals + '</b></span>' +
-      this._crystalReportLine();
+      this._crystalReportLine() +
+      /* 本局高光 + 本周深渊结晶累计（2026-10-25 S3 / 风险缓解①展示） */
+      (typeof UI !== "undefined" && UI._highlightLine ? UI._highlightLine() : "") +
+      '<span style="flex-basis:100%;opacity:.85">本周深渊结晶累计 ◆' +
+      ((typeof abyssWeeklyTotal === "function") ? abyssWeeklyTotal() : 0) +
+      ((typeof CFG !== "undefined" && CFG.crystalSoftCap) ? '（单局软上限 ◆' + CFG.crystalSoftCap.perRun + '，超出部分保留 ' + Math.round(CFG.crystalSoftCap.keepRatio * 100) + '%）' : "") +
+      '</span>';
   }
   /* 21.20 逐角色伤害/承伤明细（与战绩榜同口径；读当前运行时实体，失败静默跳过） */
   var teamBox = (typeof document !== "undefined" && document.getElementById) ? document.getElementById("endless-settle-team") : null;

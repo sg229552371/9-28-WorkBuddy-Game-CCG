@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1080" font-family="'Microsoft YaHei','PingFang SC',sans-serif">
+  <rect width="1500" height="1080" fill="#16181d"/>
+  <text x="40" y="50" fill="#ffffff" font-size="28" font-weight="bold">UI 层级图 v1 — 弹幕射击 Roguelike × 背包肉鸽（html/index.html DOM 结构）</text>
+  <text x="40" y="78" fill="#8a93a5" font-size="14">三段式：全局层（常驻）→ 屏幕层（screen-*，互斥显示）→ 面板层（panel-*，叠开）。英文名为节点 id，括号内为中文含义。</text>
+
+  <!-- 根 -->
+  <rect x="40" y="100" width="180" height="44" rx="8" fill="#2b6cb0"/>
+  <text x="130" y="128" fill="#fff" font-size="17" text-anchor="middle" font-weight="bold">#app（根容器）</text>
+
+  <!-- 全局层 -->
+  <rect x="40" y="170" width="1400" height="300" rx="10" fill="#1d2027" stroke="#3a4050"/>
+  <text x="60" y="200" fill="#7ec8ff" font-size="16" font-weight="bold">全局层（常驻 / 叠加在一切之上）</text>
+
+  <g font-size="13" fill="#e2e6ee">
+    <rect x="60" y="220" width="300" height="40" rx="6" fill="#252a34"/><text x="72" y="245">#game-canvas 战斗画布 1920×1080</text>
+    <rect x="60" y="270" width="300" height="40" rx="6" fill="#252a34"/><text x="72" y="295">#loading-overlay 素材加载遮罩+进度条</text>
+
+    <!-- HUD -->
+    <rect x="390" y="220" width="480" height="240" rx="6" fill="#252a34" stroke="#3a4050"/>
+    <text x="404" y="245" fill="#ffd479" font-weight="bold">#hud 战斗 HUD（Canvas 战斗时显示）</text>
+    <rect x="404" y="258" width="140" height="30" fill="#2f3644"/><text x="410" y="278">#hud-tl 波次/进度信息</text>
+    <rect x="552" y="258" width="140" height="30" fill="#2f3644"/><text x="558" y="278">#hud-top 血量/状态条</text>
+    <rect x="700" y="258" width="150" height="30" fill="#2f3644"/><text x="706" y="278">#hud-tr 结晶/金币 · 技能面板钮</text>
+    <rect x="404" y="294" width="140" height="30" fill="#2f3644"/><text x="410" y="314">#hud-bl 技能 CD 图标</text>
+    <rect x="552" y="294" width="150" height="30" fill="#2f3644"/><text x="558" y="314">#hud-br 自动战斗 · 背包按钮</text>
+    <rect x="404" y="330" width="300" height="30" fill="#2f3644"/><text x="410" y="350">#hud-endless-info 深渊波次专显</text>
+    <rect x="404" y="366" width="300" height="30" fill="#2f3644"/><text x="410" y="386">#hud-skill-cd 水晶技能冷却</text>
+
+    <!-- 触屏 -->
+    <rect x="900" y="220" width="240" height="240" rx="6" fill="#252a34" stroke="#3a4050"/>
+    <text x="914" y="245" fill="#ffd479" font-weight="bold">触屏控件（可开关）</text>
+    <rect x="914" y="258" width="210" height="30" fill="#2f3644"/><text x="920" y="278">#joy-base / #joy-stick 左下摇杆</text>
+    <rect x="914" y="294" width="210" height="30" fill="#2f3644"/><text x="920" y="314">#btn-touch-bag 背包</text>
+    <rect x="914" y="330" width="210" height="30" fill="#2f3644"/><text x="920" y="350">#btn-touch-act 交互</text>
+    <rect x="914" y="366" width="210" height="30" fill="#2f3644"/><text x="920" y="386">#btn-touch-skill 技能</text>
+
+    <!-- 主城面板 -->
+    <rect x="1170" y="220" width="250" height="240" rx="6" fill="#252a34" stroke="#3a4050"/>
+    <text x="1184" y="245" fill="#ffd479" font-weight="bold">主城叠层面板</text>
+    <rect x="1184" y="258" width="220" height="30" fill="#2f3644"/><text x="1190" y="278">#panel-npc-outlevel 英雄升级 NPC</text>
+    <rect x="1184" y="294" width="220" height="30" fill="#2f3644"/><text x="1190" y="314">#panel-npc-weapon 武器升级 NPC</text>
+    <rect x="1184" y="330" width="220" height="30" fill="#2f3644"/><text x="1190" y="350">#panel-profile 玩家资料</text>
+    <rect x="1184" y="366" width="220" height="30" fill="#2f3644"/><text x="1190" y="386">#panel-artisan 工匠世界(商店/抽卡)</text>
+  </g>
+
+  <!-- 屏幕层 -->
+  <rect x="40" y="490" width="1400" height="540" rx="10" fill="#1d2027" stroke="#3a4050"/>
+  <text x="60" y="520" fill="#7ec8ff" font-size="16" font-weight="bold">屏幕层（screen-*，同一时刻仅显示一张；hidden 类切换）</text>
+
+  <g font-size="13" fill="#e2e6ee">
+    <!-- 流程主线 -->
+    <rect x="60" y="540" width="300" height="40" rx="6" fill="#2b4a3a"/><text x="72" y="565">screen-main 首页（开始/说明/设置/图鉴）</text>
+    <rect x="60" y="590" width="300" height="40" rx="6" fill="#252a34"/><text x="72" y="615">screen-level 选关 · screen-character 选人</text>
+    <rect x="60" y="640" width="300" height="40" rx="6" fill="#252a34"/><text x="72" y="665">screen-abyss 深渊入口 · screen-season 赛季</text>
+    <rect x="60" y="690" width="300" height="40" rx="6" fill="#4a2b2b"/><text x="72" y="715">screen-endless-intro 深渊开局说明</text>
+
+    <!-- 结算组 -->
+    <rect x="390" y="540" width="300" height="40" rx="6" fill="#2b4a3a"/><text x="402" y="565">screen-settle 撤离结算（战利品列表）</text>
+    <rect x="390" y="590" width="300" height="40" rx="6" fill="#4a2b2b"/><text x="402" y="615">screen-death 死亡（保留 30% 结晶）</text>
+    <rect x="390" y="640" width="300" height="40" rx="6" fill="#252a34"/><text x="402" y="665">screen-endless-settle 深渊结算（重试/回城）</text>
+    <rect x="390" y="690" width="300" height="40" rx="6" fill="#252a34"/><text x="402" y="715">screen-abyss-pause 深渊暂停（继续/退出）</text>
+
+    <!-- 功能页 -->
+    <rect x="720" y="540" width="300" height="40" rx="6" fill="#252a34"/><text x="732" y="565">screen-help 操作说明（三栏：触屏/桌面/循环）</text>
+    <rect x="720" y="590" width="300" height="40" rx="6" fill="#252a34"/><text x="732" y="615">screen-settings 设置 + 性能诊断区</text>
+    <rect x="720" y="640" width="300" height="40" rx="6" fill="#252a34"/><text x="732" y="665">screen-codex 图鉴（英雄/怪物/秘宝三区）</text>
+    <rect x="720" y="690" width="300" height="40" rx="6" fill="#252a34"/><text x="732" y="715">screen-chip-codex 秘宝图鉴（只读）</text>
+
+    <!-- 战斗内面板 -->
+    <rect x="1050" y="540" width="360" height="120" rx="6" fill="#3a2f55" stroke="#5a4a80"/>
+    <text x="1064" y="565" fill="#d0c4ff" font-weight="bold">战斗内叠层面板（panel-backpack 等）</text>
+    <rect x="1064" y="578" width="330" height="30" fill="#2f3644"/><text x="1070" y="598">#panel-backpack 背包+武器栏（B 键，6×4+6×5）</text>
+    <rect x="1064" y="614" width="330" height="30" fill="#2f3644"/><text x="1070" y="634">升级 4 选 1 / 技能面板 #btn-skill-panel</text>
+
+    <rect x="1050" y="680" width="360" height="80" rx="6" fill="#252a34"/>
+    <text x="1064" y="705" fill="#ffd479">屏级辅助</text>
+    <rect x="1064" y="716" width="330" height="30" fill="#2f3644"/><text x="1070" y="736">screen-goodbye 退出页 · bp-lock-hint 背包锁定提示</text>
+
+    <!-- 流程箭头 -->
+    <g stroke="#7ec8ff" stroke-width="2" fill="none" marker-end="url(#arr)">
+      <line x1="360" y1="560" x2="384" y2="560" transform="translate(0,-4)"/>
+    </g>
+  </g>
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="#7ec8ff"/></marker>
+  </defs>
+  <text x="40" y="1062" fill="#8a93a5" font-size="12">口径依据：html/index.html（v0.6 / 20261024）。绿色=推进流程，红=失败/终止，紫=战斗内叠层，蓝灰=普通页。</text>
+</svg>

@@ -487,8 +487,22 @@ function render() {
     ctx.beginPath();
     ctx.arc(G.player.x, G.player.y, G.player.r + 16, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = "#7de08a"; ctx.font = "bold 13px sans-serif"; ctx.textAlign = "center";
+    // 撤离演出（2026-10-25 S3）：计时数字放大 + 呼吸脉动，录屏一眼可读
+    const remain = Math.max(0, Math.ceil(CFG.extract.channel - rr.extractProgress));
+    const pulse = 1 + 0.12 * Math.sin(G.time * 8);
+    ctx.fillStyle = "#7de08a"; ctx.textAlign = "center";
+    ctx.font = `bold ${Math.round(30 * pulse)}px sans-serif`;
+    ctx.fillText(`${remain}s`, G.player.x, G.player.y - G.player.r - 44);
+    ctx.font = "bold 13px sans-serif";
     ctx.fillText(`撤离 ${Math.floor(frac * 100)}%`, G.player.x, G.player.y - G.player.r - 26);
+    // 波次压力提示（S3）：读条期间显示围攻波数 + 场上波次怪数量
+    const waveSt = rr._extWave;
+    if (waveSt && typeof extractSiegersNear !== "undefined") {
+      const st = rr.exitStatue;
+      const siegers = st ? countExtractSiegers(st) : 0;
+      ctx.fillStyle = "#ff8a8a";
+      ctx.fillText(`⚔ 围攻第 ${waveSt.wave} 波 · 场上 ${siegers} 只`, G.player.x, G.player.y - G.player.r - 60);
+    }
   }
   // 特效
   for (let pi = 0; pi < FX.parts.length; pi++) {
@@ -501,7 +515,8 @@ function render() {
   ctx.globalAlpha = 1;
   for (const f of FX.floats) {
     ctx.globalAlpha = Math.min(1, f.life);
-    ctx.font = "bold 17px sans-serif"; ctx.textAlign = "center";
+    ctx.font = f.big ? "bold 26px sans-serif" : "bold 17px sans-serif";   // 暴击飘字放大 1.5 倍级（S1）
+    ctx.textAlign = "center";
     ctx.fillStyle = f.color; ctx.fillText(f.txt, f.x, f.y);
   }
   ctx.globalAlpha = 1;
@@ -510,6 +525,7 @@ function render() {
    * 位置在 ctx.restore() 之前 = 仍在摄像机变换作用域内（世界坐标）。 */
   if (typeof SkillPlaytest !== "undefined" && SkillPlaytest) SkillPlaytest.draw(ctx, w);
   ctx.restore();   // 收束屏幕震动 translate
+  renderExtractPulse(ctx);   // 2026-10-25 撤离红脉冲 vignette（S3，屏幕空间、读条时呼吸闪烁）
   // 屏幕空间 HUD：裂缝任务 / 诅咒状态（不受摄像机影响）
   if (G.run) {
     const t = G.run.riftTask;
@@ -859,3 +875,51 @@ function renderAbyssTapHint(ctx, p, c) {
   ctx.restore();
 }
 
+
+/* ============================================================================
+ * 2026-10-25 批次：S3 撤离演出区块（铁律 §5.45：文件末尾独立区块）
+ * 内容：撤离读条红脉冲 vignette（屏幕边缘呼吸闪烁）+ 围攻怪计数辅助
+ * ============================================================================ */
+
+/* 撤离红脉冲（屏幕空间，render 单行调用点在 ctx.restore() 之后）：
+ * 读条进行中 → 屏幕四周红色渐变 vignette，透明度按 CFG.feedback.extractPulse 呼吸闪烁；
+ * 未在读条 → 立即返回（零绘制开销）。纯绘制、不碰游戏状态，桩环境 ctx 为 Proxy 也安全。 */
+function renderExtractPulse(ctx) {
+  const r = G.run;
+  if (!r || !r.extractChanneling || !r.extractHolder) return;
+  const p = (CFG.feedback && CFG.feedback.extractPulse) ||
+    { color: "229,72,77", baseAlpha: 0.22, ampAlpha: 0.18, speed: 6, edge: 150 };
+  const a = p.baseAlpha + p.ampAlpha * (0.5 + 0.5 * Math.sin(G.time * p.speed));   // 呼吸 0.22~0.40
+  const W = G.W || (typeof window !== "undefined" ? window.innerWidth : 1920);
+  const H = G.H || (typeof window !== "undefined" ? window.innerHeight : 1080);
+  // 四边各画一条向内的红色渐变（上/下/左/右），总透明度 = 呼吸值
+  ctx.save();
+  ctx.globalAlpha = a;
+  const e = p.edge;
+  try {   // 渐变对象缺失（桩环境/低配 ctx）→ 静默跳过本帧脉冲，不影响游戏
+    const edges = [
+      [0, 0, W, e, 0, 0, 0, e],                       // 上：上往下淡出 → 用渐变
+      [0, H - e, W, e, 0, H, 0, H - e],               // 下
+      [0, 0, e, H, 0, 0, e, 0],                       // 左
+      [W - e, 0, e, H, W, 0, W - e, 0],               // 右
+    ];
+    for (let i = 0; i < edges.length; i++) {
+      const [x, y, w, h, gx0, gy0, gx1, gy1] = edges[i];
+      const lg = ctx.createLinearGradient(gx0, gy0, gx1, gy1);
+      if (!lg || typeof lg.addColorStop !== "function") continue;
+      lg.addColorStop(0, `rgba(${p.color},0.9)`);
+      lg.addColorStop(1, `rgba(${p.color},0)`);
+      ctx.fillStyle = lg;
+      ctx.fillRect(x, y, w, h);
+    }
+  } catch (err) { /* 绘制异常不影响游戏 */ }
+  ctx.restore();
+}
+/* 围攻怪计数（波次压力提示用）：统计场上存活的 _extWave 波次怪数量 */
+function countExtractSiegers(st) {
+  const w = G.activeWorld || G.mainWorld;
+  if (!w || !w.monsters || !st) return 0;
+  let n = 0;
+  for (const m of w.monsters) if (!m.dead && m._extWave) n++;
+  return n;
+}

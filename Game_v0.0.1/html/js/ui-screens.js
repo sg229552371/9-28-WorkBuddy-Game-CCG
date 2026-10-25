@@ -1085,6 +1085,7 @@ Object.assign(UI, {
     document.getElementById("settle-stats").innerHTML =
       `<span>击杀 <b>${r.kills}</b></span><span>达到等级 <b>LV ${r.lv}</b></span><span>货币 <b>${r.coin}</b></span><span>◆ 结晶 <b>+${crystals}</b></span>` +
       this._crystalReportLine() +
+      this._highlightLine() +
       `<span style="flex-basis:100%;opacity:.85">资源折算（统一口径 价值×${CFG.settleConvert.valueRate}）：宝箱→◆${cv.chest} · 装备/武器模块→◆${cv.gear} · 道具→◆${cv.item}（合计 ◆${cv.total}）</span>`;
     document.getElementById("settle-chests").innerHTML =
       `<div class="chip">${this._statsLine(r)}</div><div class="chip">背包内物品不作为物品带出，按各自固定价值统一折算为结晶（双层等级体系闭环）；局内经验与金币归零、不折算</div>`;
@@ -1093,6 +1094,7 @@ Object.assign(UI, {
       ? items.map(it => `<span class="chip">${it.name}${it.kind === "chest" ? " ×" + it.count : ""}（${it.kind === "chest" ? "宝箱" : CFG.itemQualities[it.itemQ].name}）</span>`).join("")
       : `<span class="chip">（无装备/武器模块保留）</span>`;
     document.getElementById("screen-settle").classList.remove("hidden");
+    if (typeof SFX !== "undefined" && SFX.play) SFX.play("settleWin");   // 2026-10-25 结算成功音（S1）
     if (typeof SeasonState !== "undefined" && SeasonState && typeof SeasonState.onExtract === "function") SeasonState.onExtract();   // 赛季钩子：撤离成功 → onExtract（经验 + 周任务双端）
   },
   /* 结晶获取明细行（20.10 产出可见化）：读 G.lastSettleReport（game.js publishCrystalReport 写入），
@@ -1103,6 +1105,26 @@ Object.assign(UI, {
     const body = rep.lines.slice(0, -1).join(" · ");
     const total = rep.lines[rep.lines.length - 1];
     return `<span style="flex-basis:100%;color:#ffd76a">结晶获取：${body}　<b>${total}</b></span>`;
+  },
+  /* 本局高光行（2026-10-25 S3 / §6.1 录屏友好）：击杀数 / 最高连击 / 稀有掉落一句话。
+   * 数据源：r.kills · r.stats.maxCombo（combat.js runComboKill 记录）· 背包内最高品质物品。
+   * 无 run（极端桩环境）返回空串，不占位、不抛错。 */
+  _highlightLine() {
+    const r = G.run;
+    if (!r) return "";
+    let rare = "无";
+    try {
+      const items = [...(r.weaponInv ? r.weaponInv.items : []), ...(r.backpack ? r.backpack.items : [])];
+      let bestQ = -1, best = null;
+      for (const it of items) {
+        if (it.kind === "chest") continue;               // 未开封宝箱不计入稀有掉落
+        const q = (typeof it.itemQ === "number") ? it.itemQ : -1;
+        if (q > bestQ) { bestQ = q; best = it; }
+      }
+      if (best && bestQ >= 0) rare = `${CFG.itemQualities[bestQ].name}·${best.name}`;
+    } catch (e) { rare = "无"; }
+    const combo = (r.stats && r.stats.maxCombo) || 0;
+    return `<span style="flex-basis:100%;color:#ffd700">★ 本局高光：击杀 <b>${r.kills || 0}</b> · 最高连击 <b>${combo}</b> 连 · 最佳掉落 <b>${rare}</b></span>`;
   },
   _statsLine(r) {
     const s = r.stats || {};

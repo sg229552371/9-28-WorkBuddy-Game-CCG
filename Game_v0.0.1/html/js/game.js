@@ -97,6 +97,7 @@ function createRun(heroDef) {
       dmgDealt: 0, dmgTaken: 0,
       chestsOpened: 0, altarsUsed: 0,
       timeToBoss: 0, bossFightTime: 0,
+      maxCombo: 0,                  // 2026-10-25 本局最高连击（2.5s 窗口，结算「本局高光」用，S3）
     },
     // 多角色组队（人数上限 = CFG.team.maxSize，当前 3）：队长由玩家操控，其余为 AI 队友
     companions: (G.team || []).slice(1).map((hd, i) => ({
@@ -312,7 +313,7 @@ class Player {
     // 19.3：冷却制不再扣能量（能量池退役）
     // 释放形态由技能表 type 决定（bullet / summon / trap），统一走 SkillSystem
     const res = SkillSystem.cast(w, this, s, target, { side: "player", isSkill: true, atk: st.atk, statSrc: st });
-    SFX.play("skill");
+    SFX.play("shoot", null, { cd: s.cd });   // 2026-10-25 射击音效（按武器 CD 变调，S1）
     // 召唤 / 陷阱返回 { n: 现存量, cap: 实际上限 }（上限 = min(技能锚点数量, 英雄该类型上限)）
     if (res.kind === "summon") UI.toast(`${s.name}！我的无人机编队 ${res.n}/${res.cap}（上限＝英雄召唤物上限）`, "gold");
     else if (res.kind === "trap") UI.toast(`${s.name}！已布设（本人地雷 ${res.n}/${res.cap}，留原地待敌）`, "gold");
@@ -762,6 +763,7 @@ class Monster {
     this.boomTimer = Math.max(this.boomTimer, 2.2);      // 阶段衔接期先不接爆炸/召唤，避免"无敌期间被罚站"
     this.minionTimer = Math.max(this.minionTimer, 3.0);
     UI.toast(`${this.d.name} 进入第 ${this.phaseIdx + 1} 阶段！`, "bad");
+    SFX.play("bossPhase");   // 2026-10-25 BOSS 转阶段：低频震（S1，替代原 boom 的泛用爆炸音）
     SFX.play("boom");
     bossPhaseChest(this);      // 17.9-⑤ / B4：转阶段**有几率**掉**中高级宝箱**，掉在地面（走近读条拾取）
   }
@@ -1617,7 +1619,7 @@ function grantPickup(pk) {
   if (pk.type === "coin") {
     r.coin += pk.value; spawnFloat(pk.x, pk.y - 18, `+${pk.value}`, "#ffd76a"); SFX.play("coin");
   } else {
-    gainExp(pk.value); spawnFloat(pk.x, pk.y - 18, `+${pk.value} 经验`, "#c79bff"); SFX.play("coin");
+    gainExp(pk.value); spawnFloat(pk.x, pk.y - 18, `+${pk.value} 经验`, "#c79bff"); SFX.play("gem");
   }
 }
 

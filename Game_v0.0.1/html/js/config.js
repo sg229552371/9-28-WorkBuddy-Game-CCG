@@ -4053,3 +4053,80 @@ CFG.sectors = [
 })();
 
 /* D037 主线 21~99 关外推生成器结束 */
+
+/* ============================================================================
+ * 2026-10-25 批次：S1~S3 表现层反馈 + 风险缓解配置（全部数值收口本区块）
+ * ----------------------------------------------------------------------------
+ * CFG.feedback      —— 暴击 / 顿帧 / 伤害飘字 / 撤离红脉冲（S1~S3 表现层）
+ * CFG.audio 扩展    —— 12 条合成音效参数（射击变调 / 命中三档 / 心跳 BPM 等）
+ * CFG.crystalSoftCap —— 深渊/无尽结晶单次运行软上限（风险缓解①）
+ * CFG._curveLerp    —— 关卡难度曲线锚点插值（风险缓解②：lv5~lv9 中间锚点校验）
+ * ============================================================================ */
+CFG.feedback = {
+  crit: {
+    chance: 0.08,        // 暴击概率（仅玩家侧来源伤害参与判定，怪物/环境伤害不暴击）
+    dmgMul: 1.5,         // 暴击伤害倍率（同时决定飘字放大倍率）
+    minDmg: 3,           // 低于该伤害的小刮痧不参与暴击（防飘字噪声）
+  },
+  hitstop: {
+    dur: 0.04,           // 顿帧时长（秒，30~50ms 区间取 40ms）
+    timeScale: 0.15,     // 顿帧期间的时间流速（0~1，越小越"黏"）
+    cooldown: 0.5,       // 两次顿帧最小间隔（秒，防高频连刷）
+    hpRatio: 0.06,       // 单次伤害 ≥ 怪物最大生命 6% 才触发（仅大伤害）
+    bossExempt: true,    // BOSS 不触发顿帧（转阶段/多段弹幕易连刷）
+  },
+  float: {
+    jitter: 6,           // 命中数字随机偏移半径（px，防重叠）
+    critScale: 1.5,      // 暴击飘字放大倍率
+  },
+  extractPulse: {
+    color: "229,72,77",  // 红脉冲 RGB（vignette 基色）
+    baseAlpha: 0.22,     // 呼吸下限透明度
+    ampAlpha: 0.18,      // 呼吸振幅（上限 = base + amp）
+    speed: 6,            // 呼吸角频率（rad/s）
+    edge: 150,           // 边缘渐变宽度（px）
+  },
+};
+
+/* ---- 音效合成参数（挂在既有 CFG.audio 之下，不改动上方原有区块） ---- */
+CFG.audio.shootPitch = { min: 0.8, max: 1.4, refCd: 0.4, slope: 0.8 };  // 射击变调：CD 越长音越低
+CFG.audio.hitTiers = { mid: 0.06, big: 0.15 };                          // 命中三档阈值（伤害 / 怪物最大生命比）
+CFG.audio.heartbeat = { bpmStart: 60, bpmEnd: 120, gain: 0.16, fadeOut: 0.25 };  // 撤离读条心跳
+
+/* ---- 风险缓解①：深渊/无尽结晶单次运行软上限 ----
+ * 单次运行产出超过 perRun 的部分按 keepRatio 衰减（超出 800 → 只保留 10%），
+ * 抑制深渊后期结晶通胀；衰减只作用于「深渊/无尽结算入账」，主线撤离不受影响。 */
+CFG.crystalSoftCap = { perRun: 800, keepRatio: 0.1 };
+
+/* ---- 风险缓解②：难度曲线锚点插值（lv1/5/10/20 中间锚点） ----
+ * rows 表是逐关手调真值；anchors 是同曲线的紧凑表达（策划改表后用 _curveLerp 对拍，
+ * 偏差超过容差 → feedback_systems_test 报红，防止 6~9 关陡变/断崖回归）。
+ * 锚点取自 rows 原值（lv5/lv10/lv20 行），区间内线性插值、保留 2 位小数。 */
+CFG.levelCurve.anchors = {
+  countMul: { 1: 1.0, 5: 1.5, 10: 2.25, 20: 3.75 },
+  hpMul: { 1: 1.0, 5: 1.48, 10: 2.08, 20: 3.28 },
+};
+/** 锚点线性插值（与 items.js anchorLerp 同口径：区间内线性，超界取端点）。
+ *  返回保留 2 位小数的插值结果；spec 为空/无锚点时返回 null（调用方自行兜底）。 */
+CFG._curveLerp = function (spec, lv) {
+  if (!spec || typeof lv !== "number" || !isFinite(lv)) return null;
+  const keys = Object.keys(spec).map(Number).sort(function (a, b) { return a - b; });
+  if (!keys.length) return null;
+  if (lv <= keys[0]) return spec[keys[0]];
+  if (lv >= keys[keys.length - 1]) return spec[keys[keys.length - 1]];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const a = keys[i], b = keys[i + 1];
+    if (lv >= a && lv <= b) {
+      const t = (lv - a) / (b - a);
+      return Math.round((spec[a] + (spec[b] - spec[a]) * t) * 100) / 100;
+    }
+  }
+  return null;
+};
+/** 风险缓解①纯函数：单次运行结晶软上限折算。返回实际入账值（超过上限部分按 keepRatio 衰减）。 */
+CFG._crystalSoftCap = function (amount) {
+  const c = CFG.crystalSoftCap;
+  const n = Number(amount) || 0;
+  if (n <= c.perRun) return n;
+  return Math.round(c.perRun + (n - c.perRun) * c.keepRatio);
+};

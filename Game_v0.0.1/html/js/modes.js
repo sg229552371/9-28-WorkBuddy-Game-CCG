@@ -23,12 +23,24 @@ function updateExtractJudge(dt) {
     "extractProgress", "extractHolder");
   if (done) { r.extractChanneling = false; EventBus.emit("extractSuccess"); }
   else r.extractChanneling = !!r.extractHolder;   // 兼容字段：供 HUD / 提示显示「是否正在读条」
+  extractHeartbeatSync(r);   // 2026-10-25 撤离读条心跳音（60→120BPM 呼吸加速，S1；结束自动停）
 }
 /** 离开主地图（进工匠世界 / 裂缝）时清空撤离读条状态：雕像保留在原地，回来站进圈内可继续读 */
 function clearExtractChannel() {
   const r = G.run;
   if (!r) return;
   r.extractChanneling = false; r.extractProgress = 0; r.extractHolder = null;
+  if (typeof SFX !== "undefined" && SFX.stopHeartbeat) SFX.stopHeartbeat();   // 2026-10-25 读条清空 → 停心跳
+}
+
+/* 撤离读条心跳同步（2026-10-25 S1）：开始读条 → 启动（剩余秒数决定 60→120BPM 的加速曲线）；
+ * 读条结束/打断 → 停止。幂等：重复调用无副作用。 */
+function extractHeartbeatSync(r) {
+  if (typeof SFX === "undefined" || !SFX || !SFX.startHeartbeat) return;
+  if (r && r.extractChanneling) {
+    const remain = Math.max(1, (CFG.extract.channel || 8) - (r.extractProgress || 0));
+    if (!SFX._hbOn) SFX.startHeartbeat(remain);
+  } else if (SFX._hbOn) SFX.stopHeartbeat();
 }
 
 /* ---------- 玩家死亡（16.6） ---------- */
@@ -1248,9 +1260,13 @@ function showEndlessSettle() {
   s.wave = Number(s.wave) || 0;
   s.kills = Number(s.kills) || 0;
   s.crystals = Number(s.crystals) || 0;
+  // 风险缓解①（2026-10-25）：深渊/无尽结晶单次运行软上限——超出 perRun 部分按 keepRatio 衰减
+  s.crystalsRaw = s.crystals;
+  s.crystals = (typeof CFG !== "undefined" && CFG._crystalSoftCap) ? CFG._crystalSoftCap(s.crystals) : s.crystals;
   // 结晶入局外存档（与撤离/死亡同一货币：进化结晶）
   if (s.crystals > 0 && typeof Meta !== "undefined" && Meta && Meta.data) {
     Meta.data.crystals = (Meta.data.crystals || 0) + s.crystals;
+    recordAbyssWeekly(s.crystals);   // 2026-10-25 本周深渊结晶累计（风险缓解①展示数据）
     if (Meta.commit) Meta.commit();
   }
   if (typeof SFX !== "undefined" && SFX.play) SFX.play("death");
@@ -1462,8 +1478,13 @@ function abyssExtractSettle(reason) {
   if (!extracted && typeof CFG !== "undefined" && CFG.outLevel && typeof CFG.outLevel.deathRatio === "number") {
     boss = Math.floor(boss * CFG.outLevel.deathRatio);   // 失败结算（保留 30%）
   }
+  // 风险缓解①（2026-10-25）：深渊结晶单次运行软上限 + 本周累计入账
+  s.crystalsRaw = boss;
+  boss = (typeof CFG !== "undefined" && CFG._crystalSoftCap) ? CFG._crystalSoftCap(boss) : boss;
+  s.crystals = boss;
   if (boss > 0 && typeof Meta !== "undefined" && Meta && Meta.data) {
     Meta.data.crystals = (Meta.data.crystals || 0) + boss;
+    recordAbyssWeekly(boss);   // 2026-10-25 本周深渊结晶累计（风险缓解①展示数据）
     if (Meta.commit) Meta.commit();
   }
   // 复用既有结算报告（中文文案；撤离 = 全收益，死亡/超时 = 阵亡口径）
@@ -1538,3 +1559,41 @@ function rollAbyssAltars(world, count) {
 }
 
 /* 21.17 深渊撤离点 + 屏蔽 RIFT 区块结束 */
+
+/* ============================================================================
+ * 2026-10-25 批次：风险缓解①——本周深渊结晶累计（数据持久化进 Meta 存档）
+ * 结构：Meta.data.abyssWeekly = { weekKey: "2026-W43", amount: 1234 }
+ * 周键切换（跨自然周）自动清零重计；weekKey 采用 ISO 周编号（周四属周规则）。
+ * ============================================================================ */
+
+/* ISO 周键（纯函数，供单测锚定）：date 为 Date/时间戳/可空（可空 = 取当前时间）。
+ * 返回形如 "2026-W43" 的字符串。算法：ISO 8601（周一为首日、含 1 月 4 日的那周为第 1 周）。 */
+function isoWeekKey(date) {
+  const d = date ? new Date(date) : new Date();
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = (t.getUTCDay() + 6) % 7;                 // 周一=0 … 周日=6
+  t.setUTCDate(t.getUTCDate() - dayNum + 3);              // 移到本周周四（ISO 周锚点）
+  const firstThursday = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+  const fDayNum = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - fDayNum + 3);
+  const week = 1 + Math.round((t - firstThursday) / (7 * 86400000));
+  return t.getUTCFullYear() + "-W" + week;
+}
+/* 本周深渊结晶入账（幂等安全：Meta 缺失时静默跳过）。跨周自动重置。 */
+function recordAbyssWeekly(amount) {
+  try {
+    if (typeof Meta === "undefined" || !Meta || !Meta.data) return;
+    const wk = isoWeekKey();
+    let rec = Meta.data.abyssWeekly;
+    if (!rec || rec.weekKey !== wk) rec = Meta.data.abyssWeekly = { weekKey: wk, amount: 0 };
+    rec.amount = (rec.amount || 0) + (Number(amount) || 0);
+  } catch (e) { /* 存档异常不阻断结算 */ }
+}
+/* 读取本周深渊结晶累计（UI 展示用；无记录返回 0）。 */
+function abyssWeeklyTotal() {
+  try {
+    if (typeof Meta === "undefined" || !Meta || !Meta.data) return 0;
+    const rec = Meta.data.abyssWeekly;
+    return (rec && rec.weekKey === isoWeekKey()) ? (rec.amount || 0) : 0;
+  } catch (e) { return 0; }
+}

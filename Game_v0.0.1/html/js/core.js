@@ -387,7 +387,7 @@ const SFX = {
     src.connect(f); f.connect(this._env(gainVal, dur));
     src.start();
   },
-  play(name, key) {
+  play(name, key, opts) {
     if (!CFG.audio.enabled) return;
     /* A2 资源消费（真实音频优先）：key 命中 AssetHooks 缓存音频时播真实音效；
      * 未命中 / AssetHooks 缺失 / 播放异常 → 静默回退下方既有 WebAudio 合成路径。
@@ -395,25 +395,50 @@ const SFX = {
     if (key && this._playHooked(key)) return;
     if (!this.ctx) return;
     const now = Date.now();
-    const th = { shoot: 70, hit: 55, coin: 100, pickup: 100 }[name] || 0;
+    const th = { shoot: 70, hit: 55, coin: 100, pickup: 100, gem: 100, uiclick: 60 }[name] || 0;
     if (th && this.last[name] && now - this.last[name] < th) return;   // 高频音效节流
     this.last[name] = now;
+    const o = opts || {};
     try {
       switch (name) {
-        case "shoot": this._tone("square", 880, 320, 0.07, 0.04); break;
-        case "hit": this._noise(0.05, 0.07, 900); break;
+        /* 射击（按武器 CD 变调：CD 越长音越低，短 CD 速射音高亢） */
+        case "shoot": {
+          const sp = CFG.audio.shootPitch || { min: 0.8, max: 1.4, refCd: 0.4, slope: 0.8 };
+          const p = U.clamp(sp.max - ((o.cd || sp.refCd) - sp.refCd) * sp.slope, sp.min, sp.max);
+          this._tone("square", 880 * p, 320 * p, 0.07, 0.04); break;
+        }
+        /* 命中（按伤害占怪物最大生命比分 3 档音高：大伤低沉、小伤清脆） */
+        case "hit": {
+          const t = this._hitTier(o.dmg, o.hpMax);
+          this._noise(0.05, 0.07, [900, 650, 420][t]); break;
+        }
+        /* 暴击：音调整体升高 + 金色高频点缀 */
+        case "crit": this._noise(0.06, 0.1, 1400); this._tone("square", 1320, 520, 0.1, 0.09); break;
         case "kill": this._tone("triangle", 440, 90, 0.22, 0.11); break;
         case "hurt": this._tone("sawtooth", 190, 70, 0.18, 0.15); this._noise(0.1, 0.05, 300); break;
         case "skill": this._tone("sawtooth", 140, 520, 0.25, 0.13); break;
-        case "levelup": this._tone("triangle", 523, 523, 0.12, 0.11);
-          setTimeout(() => this.ctx && this._tone("triangle", 784, 784, 0.18, 0.11), 110); break;
+        /* 升级：大三和弦（C-E-G）上行 */
+        case "levelup": [523, 659, 784].forEach((f, i) =>
+          setTimeout(() => this.ctx && this._tone("triangle", f, f, 0.2, 0.1), i * 100)); break;
         case "chest": [660, 880, 1180].forEach((f, i) =>
           setTimeout(() => this.ctx && this._tone("sine", f, f, 0.16, 0.09), i * 90)); break;
+        /* 经验宝石拾取：短促双音上行（与 coin 区分） */
+        case "gem": this._tone("sine", 1240, 1560, 0.07, 0.05);
+          setTimeout(() => this.ctx && this._tone("sine", 1560, 1860, 0.06, 0.04), 55); break;
         case "altar": this._tone("sine", 590, 880, 0.3, 0.09); break;
-        case "coin": this._tone("sine", 990, 1320, 0.08, 0.06); break;
+        /* coin 拾取：琶音上行（两连音） */
+        case "coin": this._tone("sine", 990, 1320, 0.08, 0.06);
+          setTimeout(() => this.ctx && this._tone("sine", 1320, 1650, 0.07, 0.05), 60); break;
         case "extract": [523, 659, 784, 1046].forEach((f, i) =>
           setTimeout(() => this.ctx && this._tone("sine", f, f, 0.22, 0.1), i * 120)); break;
+        /* 结算成功：胜利小号式三连上行 */
+        case "settleWin": [523, 659, 1046].forEach((f, i) =>
+          setTimeout(() => this.ctx && this._tone("triangle", f, f, 0.22, 0.11), i * 140)); break;
         case "death": this._tone("sawtooth", 220, 40, 0.9, 0.16); break;
+        /* BOSS 转阶段：低频震（sub 低音 + 噪声压迫感） */
+        case "bossPhase": this._tone("sine", 55, 38, 0.7, 0.22); this._noise(0.5, 0.08, 120); break;
+        /* UI 点击：极短中性嗒声 */
+        case "uiclick": this._tone("square", 1500, 1100, 0.03, 0.035); break;
         case "wave":   // 撤离波次来袭：低沉警报（两声下行锯齿）
           this._tone("sawtooth", 220, 110, 0.32, 0.12);
           setTimeout(() => this.ctx && this._tone("sawtooth", 196, 98, 0.4, 0.12), 360); break;
@@ -426,6 +451,38 @@ const SFX = {
           this._tone("triangle", 82, 62, 0.45, 0.13); break;
       }
     } catch (e) { /* 音频异常不影响游戏 */ }
+  },
+  /* 命中音高三档（纯函数，供单测锚定）：t = 伤害 / 怪物最大生命；
+   * ≥ big（默认 0.15）→ 2（低沉）/ ≥ mid（0.06）→ 1（中）/ 其余 0（清脆）。 */
+  _hitTier(dmg, hpMax) {
+    const th = CFG.audio.hitTiers || { mid: 0.06, big: 0.15 };
+    const ratio = (dmg > 0 && hpMax > 0) ? dmg / hpMax : 0;
+    return ratio >= th.big ? 2 : ratio >= th.mid ? 1 : 0;
+  },
+  /* 射击变调（纯函数，供单测锚定）：武器 CD 越长 → 音高倍率越低。 */
+  _shootPitch(cd) {
+    const sp = CFG.audio.shootPitch || { min: 0.8, max: 1.4, refCd: 0.4, slope: 0.8 };
+    return U.clamp(sp.max - ((cd || sp.refCd) - sp.refCd) * sp.slope, sp.min, sp.max);
+  },
+  /* ---------- 撤离读条心跳（60→120BPM 呼吸加速，纯合成；读条结束自动停） ---------- */
+  _hbOn: false, _hbTimer: null, _hbT0: 0, _hbDur: 1,
+  startHeartbeat(seconds) {
+    if (!CFG.audio.enabled || !this.ctx || this._hbOn) return;
+    const hb = CFG.audio.heartbeat || { bpmStart: 60, bpmEnd: 120, gain: 0.16 };
+    this._hbOn = true; this._hbT0 = Date.now(); this._hbDur = Math.max(1, seconds || 1);
+    const beat = () => {
+      if (!this._hbOn || !this.ctx) { this.stopHeartbeat(); return; }
+      const prog = Math.min(1, (Date.now() - this._hbT0) / 1000 / this._hbDur);
+      const bpm = hb.bpmStart + (hb.bpmEnd - hb.bpmStart) * prog;   // BPM 线性加速
+      this._tone("sine", 62, 48, 0.1, hb.gain);                     // 心室低频"咚"
+      setTimeout(() => this.ctx && this._hbOn && this._tone("sine", 55, 42, 0.09, hb.gain * 0.7), 120); // "跳"
+      this._hbTimer = setTimeout(beat, 60000 / bpm);
+    };
+    beat();
+  },
+  stopHeartbeat() {
+    this._hbOn = false;
+    if (this._hbTimer) { clearTimeout(this._hbTimer); this._hbTimer = null; }
   },
 };
 
@@ -533,7 +590,7 @@ const BGM = {
 /* ---------- 版本上报（缓存自愈诊断；供排查新旧混合缓存） ----------
  * 与 index.html 顶部 APP_VERSION / <meta name="app-version"> 保持一致（发版时三处同步改）。
  * 纯静态字段赋值，不依赖 document/window —— 测试沙箱可无 DOM 独立加载本文件。 */
-Assets.buildVersion = "20261024";
+Assets.buildVersion = "20261025";
 try { console.log("[build] " + Assets.buildVersion); } catch (e) { /* 无 console 环境静默跳过 */ }
 
 /* ============================================================
