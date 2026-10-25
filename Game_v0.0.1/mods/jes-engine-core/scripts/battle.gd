@@ -29,6 +29,13 @@ var _endless_rewards: Array = []
 var _endless_notice := ""
 var _endless_settlement: Dictionary = {}
 var _reward_warning_shown := false
+var hud_top_fill: ColorRect = null       # 顶部胶囊进度条金色填充
+var hud_lv: Label = null                 # 右上 Lv 大字
+var hud_ready: Panel = null              # 左上 READY 冻结徽章
+var hud_skill_bar: Panel = null          # 底部英雄技能栏组（半透明 Panel）
+var auto_btn: Button = null              # 右下自动战斗按钮
+var bag_btn: Button = null               # 右下背包按钮
+var weight_limit := 100                  # 负重上限（cfg/weight.json threshold）
 
 const EndlessModeScript = preload("res://mods/jes-endless/scripts/endless_mode.gd")
 const RiftModeScript = preload("res://mods/jes-rift/scripts/rift_mode.gd")
@@ -40,6 +47,11 @@ var _rift_rewarded_kills := false        # 里程碑击杀奖励只掉一次
 var _rift_task_rewarded := false         # 任务完成奖励只掉一次
 
 func _ready() -> void:
+	var wcfg: Variant = Cfg.get_table("weight")
+	if wcfg is Dictionary:
+		weight_limit = maxi(1, int((wcfg as Dictionary).get("threshold", 100)))
+	else:
+		push_warning("[Battle] weight 表缺失，负重上限回退 100")
 	var heroes: Variant = Cfg.get_table("heroes")
 	var monsters: Variant = Cfg.get_table("monsters")
 	var levels: Variant = Cfg.get_table("levels")
@@ -445,30 +457,80 @@ func _build_hud() -> void:
 	hud_layer = CanvasLayer.new()
 	hud_layer.layer = 10
 	add_child(hud_layer)
-	# 顶部居中：击杀进度胶囊（黑底金字）
-	hud_top = _make_label(26, Color(1.0, 0.88, 0.45))
+	# 顶部居中：击杀进度胶囊条（黑底圆条 420x14 + 金色填充）+ 条下文字
+	var bar_style := StyleBoxFlat.new()
+	bar_style.bg_color = Color(0.05, 0.05, 0.08, 0.9)
+	bar_style.set_corner_radius_all(7)
+	var bar := Panel.new()
+	bar.add_theme_stylebox_override("panel", bar_style)
+	bar.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	bar.anchor_left = 0.5
+	bar.anchor_right = 0.5
+	bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	bar.offset_left = -210.0
+	bar.offset_right = 210.0
+	bar.offset_top = 8.0
+	bar.offset_bottom = 22.0
+	hud_layer.add_child(bar)
+	hud_top_fill = ColorRect.new()
+	hud_top_fill.color = Color(1.0, 0.82, 0.25)
+	hud_top_fill.position = Vector2(2.0, 2.0)
+	hud_top_fill.size = Vector2(0.0, 10.0)
+	bar.add_child(hud_top_fill)
+	hud_top = _make_label(18, Color(1.0, 1.0, 1.0))
 	hud_top.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hud_top.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	hud_top.anchor_left = 0.5
 	hud_top.anchor_right = 0.5
 	hud_top.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	hud_top.offset_top = 10.0
+	hud_top.offset_top = 26.0
 	hud_layer.add_child(hud_top)
-	# 左上：HP / Lv / 经验
+	# 左上：READY 冻结徽章（绿描边圆形 + 绿字 + 小字说明，冻结期显示）
+	var ready_style := StyleBoxFlat.new()
+	ready_style.bg_color = Color(0.1, 0.2, 0.12, 0.85)
+	ready_style.border_color = Color(0.3, 0.9, 0.4)
+	ready_style.set_border_width_all(2)
+	ready_style.set_corner_radius_all(28)
+	hud_ready = Panel.new()
+	hud_ready.add_theme_stylebox_override("panel", ready_style)
+	hud_ready.position = Vector2(16, 42)
+	hud_ready.size = Vector2(56.0, 56.0)
+	hud_ready.visible = false
+	hud_layer.add_child(hud_ready)
+	var ready_lb := _make_label(14, Color(0.3, 0.9, 0.4))
+	ready_lb.text = "READY"
+	ready_lb.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ready_lb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ready_lb.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hud_ready.add_child(ready_lb)
+	var ready_sub := _make_label(12, Color(0.55, 0.85, 0.6))
+	ready_sub.text = "全场冻结"
+	ready_sub.position = Vector2(2, 58)
+	ready_sub.size = Vector2(52.0, 16.0)
+	ready_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hud_ready.add_child(ready_sub)
+	# 左上：HP / Lv / 经验（徽章在其下方错开，信息行下移避让）
 	hud_hp = _make_label(24, Color(0.95, 0.98, 1.0))
 	hud_hp.position = Vector2(16, 10)
 	hud_layer.add_child(hud_hp)
-	# 右上：金币 / 宝箱 / 波次
-	hud_res = _make_label(24, Color(1.0, 0.9, 0.55))
+	# 右上：Lv 大字 + 金币/经验小字（宝箱/波次次行）
+	hud_lv = _make_label(34, Color(0.95, 0.98, 1.0))
+	hud_lv.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	hud_lv.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	hud_lv.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	hud_lv.offset_right = -16.0
+	hud_lv.offset_top = 6.0
+	hud_layer.add_child(hud_lv)
+	hud_res = _make_label(18, Color(1.0, 0.88, 0.45))
 	hud_res.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hud_res.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	hud_res.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	hud_res.offset_right = -16.0
-	hud_res.offset_top = 10.0
+	hud_res.offset_top = 48.0
 	hud_layer.add_child(hud_res)
 	# 左中：信息行（冻结 / 裂隙 / 无尽 / 撤离提示）
 	hud_notice = _make_label(20, Color(0.75, 0.95, 1.0))
-	hud_notice.position = Vector2(16, 64)
+	hud_notice.position = Vector2(16, 120)
 	hud_layer.add_child(hud_notice)
 	# 左下：负重
 	hud_weight = _make_label(22, Color(0.9, 0.85, 0.7))
@@ -477,15 +539,38 @@ func _build_hud() -> void:
 	hud_weight.offset_left = 16.0
 	hud_weight.offset_top = -42.0
 	hud_layer.add_child(hud_weight)
-	# 底部居中：技能栏
-	hud_skill = _make_label(24, Color(1.0, 0.95, 0.8))
+	# 底部居中：英雄技能栏组（半透明 Panel；构建失败回退 hud_skill 文本）
+	_build_skill_bar()
+	hud_skill = _make_label(18, Color(1.0, 0.95, 0.8))
 	hud_skill.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hud_skill.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	hud_skill.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	hud_skill.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	hud_skill.offset_top = -46.0
+	hud_skill.offset_top = -22.0
 	hud_layer.add_child(hud_skill)
-	# 右下：操作提示
+	# 右下：按钮行（自动战斗 / 背包）+ 操作提示
+	auto_btn = Button.new()
+	auto_btn.text = "自动战斗 · 关"
+	auto_btn.custom_minimum_size = Vector2(150.0, 30.0)
+	auto_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	auto_btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	auto_btn.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	auto_btn.offset_right = -16.0
+	auto_btn.offset_top = -108.0
+	auto_btn.offset_bottom = -78.0
+	auto_btn.pressed.connect(_toggle_auto_fight)
+	hud_layer.add_child(auto_btn)
+	bag_btn = Button.new()
+	bag_btn.text = "背包 (Tab)"
+	bag_btn.custom_minimum_size = Vector2(150.0, 30.0)
+	bag_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	bag_btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	bag_btn.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	bag_btn.offset_right = -16.0
+	bag_btn.offset_top = -74.0
+	bag_btn.offset_bottom = -44.0
+	bag_btn.pressed.connect(_toggle_bag)
+	hud_layer.add_child(bag_btn)
 	hud_hint = _make_label(18, Color(0.8, 0.85, 0.9, 0.9))
 	hud_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hud_hint.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -496,12 +581,123 @@ func _build_hud() -> void:
 	hud_hint.text = "WASD移动 · 鼠标瞄准 · 左键/J射击 · Tab背包 · C水晶 · Esc暂停 · G自动战斗"
 	hud_layer.add_child(hud_hint)
 
+## 底部英雄技能栏组：从 GameState.team_ids 读队伍（缺省单人），每组英雄一个 HBox；
+## 队伍/英雄表读不到时隐藏栏组并回退显示 hud_skill 文本（不报错）
+func _build_skill_bar() -> void:
+	var team: Array[String] = []
+	var ids: Variant = GameState.get("team_ids")
+	if ids is Array:
+		for e in (ids as Array):
+			team.append(str(e))
+	if team.is_empty():
+		var hid := str(GameState.get("hero_id"))
+		team.append(hid if hid != "" else "H001")
+	var heroes: Variant = Cfg.get_table("heroes")
+	if not (heroes is Array):
+		push_warning("[Battle] heroes 表缺失，底部技能栏回退文本模式")
+		return
+	var hero_map := {}
+	for h in (heroes as Array):
+		if h is Dictionary:
+			hero_map[str((h as Dictionary).get("id", ""))] = h
+	var bar_style := StyleBoxFlat.new()
+	bar_style.bg_color = Color(0.05, 0.06, 0.1, 0.62)
+	bar_style.set_corner_radius_all(10)
+	hud_skill_bar = Panel.new()
+	hud_skill_bar.add_theme_stylebox_override("panel", bar_style)
+	hud_skill_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	hud_skill_bar.anchor_left = 0.5
+	hud_skill_bar.anchor_right = 0.5
+	hud_skill_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	hud_skill_bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	hud_skill_bar.offset_top = -190.0
+	hud_skill_bar.offset_bottom = -60.0
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 24)
+	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	hud_skill_bar.add_child(row)
+	var built := 0
+	for hid in team:
+		if not hero_map.has(hid):
+			continue
+		var hero: Dictionary = hero_map[hid]
+		var hname := str(hero.get("name", hid))
+		var role := str(hero.get("role", ""))
+		var lv := maxi(1, int(hero.get("hero_out_level", 1)))
+		var grp := HBoxContainer.new()
+		grp.add_theme_constant_override("separation", 6)
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", 4)
+		var name_lb := _make_label(14, Color(0.95, 0.98, 1.0))
+		name_lb.text = hname + (" · " + role if role != "" else "")
+		col.add_child(name_lb)
+		var slots := HBoxContainer.new()
+		slots.add_theme_constant_override("separation", 5)
+		var av := Button.new()
+		av.text = hname.substr(0, 1)
+		av.custom_minimum_size = Vector2(44.0, 44.0)
+		var av_style := StyleBoxFlat.new()
+		av_style.bg_color = _role_color(role)
+		av_style.set_corner_radius_all(22)
+		av.add_theme_stylebox_override("normal", av_style)
+		av.add_theme_font_size_override("font_size", 20)
+		slots.add_child(av)
+		for i in range(4):
+			var cell := VBoxContainer.new()
+			cell.add_theme_constant_override("separation", 2)
+			var slot_style := StyleBoxFlat.new()
+			slot_style.bg_color = Color(0.12, 0.13, 0.18, 0.9)
+			slot_style.set_corner_radius_all(4)
+			var slot := Panel.new()
+			slot.add_theme_stylebox_override("panel", slot_style)
+			slot.custom_minimum_size = Vector2(28.0, 28.0)
+			cell.add_child(slot)
+			var lv_lb := _make_label(10, Color(0.75, 0.8, 0.85))
+			lv_lb.text = "Lv%d" % lv
+			cell.add_child(lv_lb)
+			slots.add_child(cell)
+		col.add_child(slots)
+		grp.add_child(col)
+		row.add_child(grp)
+		built += 1
+	if built == 0:
+		push_warning("[Battle] 队伍英雄未匹配到 heroes 表，底部技能栏回退文本模式")
+		hud_skill_bar.queue_free()
+		hud_skill_bar = null
+		return
+	hud_layer.add_child(hud_skill_bar)
+
+## 职业配色（role 字段 → 色块；未知职业给灰蓝）
+func _role_color(role: String) -> Color:
+	if role == "output":
+		return Color(0.85, 0.45, 0.2)
+	if role == "tank":
+		return Color(0.25, 0.5, 0.85)
+	if role == "support":
+		return Color(0.3, 0.75, 0.45)
+	return Color(0.45, 0.5, 0.6)
+
+## 背包按钮：调 bag_ui.toggle()（BagUI 公开开关；找不到时仅提示不崩溃）
+func _toggle_bag() -> void:
+	if bag_ui != null and bag_ui.has_method("toggle"):
+		bag_ui.call("toggle")
+	else:
+		push_warning("[Battle] bag_ui 不可用，背包按钮无效果")
+
 func _update_hud() -> void:
 	if hud_top == null:
 		return
 	var p := combat.player
-	# 顶部胶囊：击杀进度（含冻结/撤离状态提示）
-	var top_txt := "击杀 %d / %d" % [combat.kills, combat.progress_goal]
+	# 顶部胶囊条：金色填充 = kills/progress_goal；条下文字（冻结/阵亡/暂停/击杀进度）
+	if hud_top_fill != null:
+		var ratio := 0.0
+		if combat.progress_goal > 0:
+			ratio = clampf(float(combat.kills) / float(combat.progress_goal), 0.0, 1.0)
+		hud_top_fill.size = Vector2(416.0 * ratio, 10.0)
+	var top_txt := "击败精英 %d / %d" % [combat.kills, combat.progress_goal]
+	if combat.time_limit > 0.0:
+		top_txt += " (剩余 %.0fs)" % maxf(0.0, combat.time_limit - combat.run_time)
 	if combat.freeze_time > 0.0:
 		top_txt = "全场冻结中 · %s %.1fs" % [combat.freeze_hint, combat.freeze_time]
 	elif not bool(p.alive):
@@ -509,21 +705,33 @@ func _update_hud() -> void:
 	elif paused:
 		top_txt = "已暂停"
 	hud_top.text = top_txt
+	# 左上：READY 冻结徽章（冻结期显示）
+	if hud_ready != null:
+		hud_ready.visible = combat.freeze_time > 0.0
 	# 左上：HP / Lv / 经验
 	hud_hp.text = "HP %d/%d   Lv%d   经验 %d" % [
 		int(p.hp), int(p.hp_max), combat.player_lv, combat.exp_gained]
-	# 右上：金币 / 宝箱 / 波次 / 怪数
-	hud_res.text = "金币 %d\n宝箱 %d\n波次 %d\n场上怪 %d" % [
-		combat.coin_gained, combat.chests.size(), combat.wave_index, combat.monsters.size()]
-	# 左下：负重
-	hud_weight.text = "负重 %d" % int(combat.weight)
-	# 底部：技能 + 自动战斗 + 赛季
-	var skill_txt := "技能 %s · 水晶 %d · 冷却 %.1fs" % [
-		_skill_id if _skill_id != "" else "无", _crystals.size(), combat.shoot_interval]
-	skill_txt += " · 自动战斗[%s]" % ("开" if combat.auto_fight else "关")
+	# 右上：Lv 大字 + 金币/经验（宝箱/波次次行）
+	hud_lv.text = "Lv %d" % combat.player_lv
+	hud_res.text = "✦金币 %d · ✦经验 %d\n宝箱 %d · 波次 %d · 场上怪 %d" % [
+		combat.coin_gained, combat.exp_gained,
+		combat.chests.size(), combat.wave_index, combat.monsters.size()]
+	# 左下：负重 X / 上限
+	hud_weight.text = "负重 %d / %d" % [int(combat.weight), weight_limit]
+	# 底部：技能回退文本 + 自动战斗 + 赛季（英雄栏组由 _build_skill_bar 承载，静态显示）
+	var skill_txt := ""
+	if hud_skill_bar == null:
+		skill_txt = "技能 %s · 水晶 %d · 冷却 %.1fs" % [
+			_skill_id if _skill_id != "" else "无", _crystals.size(), combat.shoot_interval]
+	if not skill_txt.is_empty():
+		skill_txt += " · 自动战斗[%s]" % ("开" if combat.auto_fight else "关")
+	else:
+		skill_txt = "自动战斗[%s]" % ("开" if combat.auto_fight else "关")
 	if season != null:
 		skill_txt += " · 赛季Lv%d" % season.season_lv
 	hud_skill.text = skill_txt
+	if auto_btn != null:
+		auto_btn.text = "自动战斗 · " + ("开" if combat.auto_fight else "关")
 	# 左中信息行：撤离 / 裂隙 / 无尽
 	var lines: Array[String] = []
 	var ep: ExtractPoint = combat.extract_point

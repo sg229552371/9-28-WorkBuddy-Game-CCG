@@ -31,6 +31,11 @@ const COL_GOLD := Color("e8b33c")
 const COL_TEXT := Color("e2e6ee")
 const COL_SUB := Color("8a93a5")
 const COL_LOCKED := Color("5a6572")
+const COL_GOOD_BG := Color("2e4a36")
+const COL_GOOD_TX := Color("9fe0af")
+const COL_BAD_BG := Color("4a2e2e")
+const COL_BAD_TX := Color("e0a3a3")
+const COL_AVATAR_BG := Color("2a3a5a")
 
 const QUALITY_NAMES: Array[String] = ["低", "中", "高"]
 const FLOW_SCENE_CITY := "res://mods/jes-engine-core/scenes/city.tscn"
@@ -293,16 +298,14 @@ func _make_color_swatch(color_hex: String, sw_size: Vector2) -> ColorRect:
 	return swatch
 
 
-## 主菜单（html screen-main）
+## 主菜单（html screen-main）：标题+副标题；底部 profile 行与版本行
 func _build_main() -> Control:
 	var holder := _make_panel("弹幕射击 × 背包肉鸽")
 	var vbox: VBoxContainer = holder["vbox"]
-	var user_line := Label.new()
-	user_line.name = "UserLine"
-	user_line.add_theme_color_override("font_color", COL_SUB)
-	user_line.text = "%s · ◆ %d · 已解锁 %d 关" % [
-		GameState.meta.profile_name(), GameState.meta.crystals(), GameState.meta.unlocked_levels()]
-	vbox.add_child(user_line)
+	var subtitle := Label.new()
+	subtitle.text = "组队下矿 · 撤离拿结晶 · 局外养成"
+	subtitle.add_theme_color_override("font_color", COL_SUB)
+	vbox.add_child(subtitle)
 	var start := _make_button("开始游戏", true)
 	start.pressed.connect(go_city)
 	vbox.add_child(start)
@@ -322,6 +325,21 @@ func _build_main() -> Control:
 	var quit := _make_button("退出游戏", false)
 	quit.pressed.connect(func() -> void: show_screen("screen-goodbye"))
 	vbox.add_child(quit)
+	# 底部 profile 行：名字读 MetaSave.profile_name；称号无字段，静态占位
+	var traveler := GameState.meta.profile_name()
+	if traveler.is_empty():
+		traveler = "无名旅者"
+	var profile_line := Label.new()
+	profile_line.name = "ProfileLine"
+	profile_line.text = "%s ·「初出茅庐」 · ✦%d" % [traveler, GameState.meta.crystals()]
+	profile_line.add_theme_color_override("font_color", COL_SUB)
+	vbox.add_child(profile_line)
+	# 最底版本行（静态文案）
+	var version_line := Label.new()
+	version_line.text = "v0.6 · 主城 → 串行关卡 → 边界"
+	version_line.add_theme_font_size_override("font_size", 13)
+	version_line.add_theme_color_override("font_color", COL_LOCKED)
+	vbox.add_child(version_line)
 	return holder["panel"]
 
 
@@ -544,13 +562,18 @@ func _build_goodbye() -> Control:
 	return holder["panel"]
 
 
-## 选关（html screen-level）：99 关三列卡片；锁定灰显；金色高亮可打
+## 选关（html screen-level）：居中面板 + 副标题 + 三列可滚动关卡卡片
 func _build_level_select() -> Control:
-	var holder := _make_panel("选择关卡")
+	var holder := _make_panel("选择出发关卡")
 	var vbox: VBoxContainer = holder["vbox"]
+	var sub := Label.new()
+	sub.text = "按顺序解锁 · 目标进度 → 时限 → 星级 → 奖励"
+	sub.add_theme_color_override("font_color", COL_SUB)
+	vbox.add_child(sub)
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0.0, 620.0)
+	scroll.custom_minimum_size = Vector2(0.0, 560.0)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(scroll)
 	var grid := GridContainer.new()
 	grid.name = "LevelGrid"
@@ -559,10 +582,24 @@ func _build_level_select() -> Control:
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
 	scroll.add_child(grid)
+	var back_row := HBoxContainer.new()
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	back_row.add_child(spacer)
 	var back := _make_button("返回主城", false)
+	back.custom_minimum_size = Vector2(180.0, 48.0)
 	back.pressed.connect(go_city)
-	vbox.add_child(back)
-	return holder["panel"]
+	back_row.add_child(back)
+	vbox.add_child(back_row)
+	# 居中面板式：外包 CenterContainer，面板限定 560~720 宽
+	var panel: PanelContainer = holder["panel"]
+	panel.custom_minimum_size = Vector2(680.0, 760.0)
+	var center := CenterContainer.new()
+	center.name = "LevelCenter"
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.add_child(panel)
+	return center
 
 
 func _rebuild_level_grid() -> void:
@@ -586,29 +623,46 @@ func _rebuild_level_grid() -> void:
 func _level_card(lv: Dictionary, index: int) -> Control:
 	var level_id := str(lv.get("id", ""))
 	var unlocked := is_level_index_unlocked(index, GameState.meta.unlocked_levels())
-	var stars := GameState.meta.level_stars(level_id)
-	var star_text := ""
-	for s: int in 3:
-		star_text += "★" if s < stars else "☆"
-	var lines: Array[String] = []
-	lines.append("第 %d 关 · %s" % [index + 1, str(lv.get("name", ""))])
-	lines.append("目标进度 %d · 时限 %d 秒" % [int(lv.get("progressGoal", 0)), int(lv.get("timeLimit", 0))])
-	lines.append(star_text)
-	var card := _make_card_label(lines, not unlocked, false)
-	card.custom_minimum_size = Vector2(220.0, 96.0)
-	card.tooltip_text = str(lv.get("name", ""))
-	if not unlocked:
-		return card
+	# 修复标题重复：levels.name 已带「第 X 关 · 」前缀时不再拼接序号
+	var level_name := str(lv.get("name", ""))
+	if not level_name.begins_with("第"):
+		level_name = "第 %d 关 · %s" % [index + 1, level_name]
+	# TODO: levels.json 暂无奖励字段（reward/coin 均缺失），先显示 0，表补充后自动接入
+	var reward := int(lv.get("reward", lv.get("coin", 0)))
+	var card := PanelContainer.new()
 	var style := StyleBoxFlat.new()
 	style.bg_color = COL_CARD
-	style.border_color = COL_GOLD
-	style.set_border_width_all(2)
 	style.set_corner_radius_all(8)
 	style.content_margin_left = 10.0
 	style.content_margin_right = 10.0
 	style.content_margin_top = 8.0
 	style.content_margin_bottom = 8.0
+	if unlocked:
+		style.border_color = COL_GOLD
+		style.set_border_width_all(2)
 	card.add_theme_stylebox_override("panel", style)
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 2)
+	card.add_child(vbox)
+	var name_label := Label.new()
+	name_label.text = level_name
+	name_label.add_theme_font_size_override("font_size", 20)
+	name_label.add_theme_color_override("font_color", COL_LOCKED if not unlocked else COL_GOLD)
+	vbox.add_child(name_label)
+	var stat_label := Label.new()
+	stat_label.text = "目标进度 %d · 时限 %ds" % [int(lv.get("progressGoal", 0)), int(lv.get("timeLimit", 0))]
+	stat_label.add_theme_font_size_override("font_size", 15)
+	stat_label.add_theme_color_override("font_color", COL_SUB)
+	vbox.add_child(stat_label)
+	var reward_label := Label.new()
+	reward_label.text = "✦奖励 %d" % reward
+	reward_label.add_theme_font_size_override("font_size", 14)
+	reward_label.add_theme_color_override("font_color", COL_LOCKED if not unlocked else COL_GOLD)
+	vbox.add_child(reward_label)
+	card.custom_minimum_size = Vector2(200.0, 96.0)
+	card.tooltip_text = level_name
+	if not unlocked:
+		return card
 	var click := Button.new()
 	click.flat = true
 	click.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -626,19 +680,26 @@ func _on_level_card_pressed(level_id: String) -> void:
 	show_screen("screen-character")
 
 
-## 选人（html screen-character）：12 英雄网格 + 详情面板 + 1~3 人组队
+## 选人（html screen-character）：顶部结晶行 + 12 英雄网格 + 详情面板 + 底部按钮行
 func _build_char_select() -> Control:
-	var holder := _make_panel("选择出征英雄")
+	var holder := _make_panel("角色选择")
 	var vbox: VBoxContainer = holder["vbox"]
+	var crystal_label := Label.new()
+	crystal_label.name = "CrystalLabel"
+	crystal_label.text = "✦结晶 0"
+	crystal_label.add_theme_color_override("font_color", COL_GOLD)
+	crystal_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	crystal_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_child(crystal_label)
 	var grid := GridContainer.new()
 	grid.name = "CharGrid"
-	grid.columns = 4
+	grid.columns = 6
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
 	vbox.add_child(grid)
 	var detail := PanelContainer.new()
 	detail.name = "CharDetail"
-	detail.custom_minimum_size = Vector2(0.0, 170.0)
+	detail.custom_minimum_size = Vector2(0.0, 190.0)
 	var style := StyleBoxFlat.new()
 	style.bg_color = COL_CARD
 	style.set_corner_radius_all(8)
@@ -648,21 +709,30 @@ func _build_char_select() -> Control:
 	style.content_margin_bottom = 8.0
 	detail.add_theme_stylebox_override("panel", style)
 	vbox.add_child(detail)
-	var start_row := HBoxContainer.new()
-	start_row.add_theme_constant_override("separation", 12)
-	var team_label := Label.new()
-	team_label.name = "TeamLabel"
-	team_label.add_theme_color_override("font_color", COL_SUB)
-	team_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	start_row.add_child(team_label)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0.0, 190.0)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	detail.add_child(scroll)
+	var detail_box := VBoxContainer.new()
+	detail_box.name = "CharDetailBox"
+	detail_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail_box.add_theme_constant_override("separation", 4)
+	scroll.add_child(detail_box)
+	var bottom_row := HBoxContainer.new()
+	bottom_row.add_theme_constant_override("separation", 12)
+	var back := _make_button("返回", false)
+	back.custom_minimum_size = Vector2(140.0, 48.0)
+	back.pressed.connect(func() -> void: show_screen("screen-level"))
+	bottom_row.add_child(back)
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_row.add_child(spacer)
 	var start := _make_button("开始出战 (0/3)", true)
 	start.name = "StartButton"
+	start.custom_minimum_size = Vector2(220.0, 48.0)
 	start.pressed.connect(_on_start_run_pressed)
-	start_row.add_child(start)
-	vbox.add_child(start_row)
-	var back := _make_button("返回选关", false)
-	back.pressed.connect(func() -> void: show_screen("screen-level"))
-	vbox.add_child(back)
+	bottom_row.add_child(start)
+	vbox.add_child(bottom_row)
 	return holder["panel"]
 
 
@@ -674,6 +744,9 @@ func _rebuild_char_grid() -> void:
 	for child: Node in grid.get_children():
 		child.queue_free()
 	selected_hero_ids.clear()
+	var crystal_label: Label = screen.find_child("CrystalLabel", true, false)
+	if crystal_label != null:
+		crystal_label.text = "✦结晶 %d" % GameState.meta.crystals()
 	var heroes: Variant = Cfg.get_table("heroes")
 	if not heroes is Array:
 		push_warning("[FlowRoot] heroes.json 缺失或格式错误")
@@ -685,17 +758,86 @@ func _rebuild_char_grid() -> void:
 	_sync_team_ui()
 
 
+## 职业信息：读 heroRoles 表（role -> {name,color}），缺失返回空 Dictionary
+func _role_info(role_key: String) -> Dictionary:
+	var roles: Variant = Cfg.get_table("heroRoles")
+	if not roles is Dictionary:
+		return {}
+	var info: Variant = (roles as Dictionary).get(role_key, {})
+	return info if info is Dictionary else {}
+
+
+## 英雄卡头像：48x48 职业色块 + 中央叠英雄名首字
+func _make_avatar(hero: Dictionary, unlocked: bool) -> Control:
+	var role_key := str(hero.get("role", ""))
+	var role_info := _role_info(role_key)
+	var avatar := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = COL_AVATAR_BG if not unlocked else Color(str(role_info.get("color", "#2a3a5a")))
+	style.set_corner_radius_all(6)
+	avatar.add_theme_stylebox_override("panel", style)
+	avatar.custom_minimum_size = Vector2(48.0, 48.0)
+	avatar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var hero_name := str(hero.get("name", "?"))
+	var initial := Label.new()
+	initial.text = hero_name.substr(0, 1)
+	initial.add_theme_font_size_override("font_size", 24)
+	initial.add_theme_color_override("font_color", COL_TEXT if unlocked else COL_LOCKED)
+	initial.set_anchors_preset(Control.PRESET_FULL_RECT)
+	initial.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	initial.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	initial.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	avatar.add_child(initial)
+	return avatar
+
+
+## 星级行：实心★金色 + 空心★灰色（总数取英雄表 difficulty 字段）
+func _make_star_row(stars: int, unlocked: bool) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 0)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	var total := maxi(1, stars)
+	for s: int in total:
+		var star := Label.new()
+		star.text = "★" if (s < stars and unlocked) else "☆"
+		star.add_theme_font_size_override("font_size", 14)
+		star.add_theme_color_override("font_color", COL_GOLD if unlocked else COL_LOCKED)
+		row.add_child(star)
+	return row
+
+
 func _char_card(hero: Dictionary) -> Control:
 	var hero_id := str(hero.get("id", ""))
 	var unlocked := GameState.meta.is_hero_unlocked(hero_id)
 	var out_level := GameState.meta.hero_out_level(hero_id)
-	var lines: Array[String] = []
-	lines.append(str(hero.get("name", hero_id)))
-	lines.append("★%d · 局外 LV%d" % [int(hero.get("difficulty", 1)), out_level])
-	var card := _make_card_label(lines, not unlocked, true)
-	card.custom_minimum_size = Vector2(150.0, 110.0)
-	var vbox: VBoxContainer = card.get_child(0)
-	vbox.add_child(_make_color_swatch("2a3a5a" if unlocked else "10131a", Vector2(64.0, 40.0)))
+	var card := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = COL_CARD
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 8.0
+	style.content_margin_right = 8.0
+	style.content_margin_top = 8.0
+	style.content_margin_bottom = 8.0
+	card.add_theme_stylebox_override("panel", style)
+	card.custom_minimum_size = Vector2(150.0, 150.0)
+	card.tooltip_text = str(hero.get("name", hero_id))
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	card.add_child(vbox)
+	vbox.add_child(_make_avatar(hero, unlocked))
+	var name_label := Label.new()
+	name_label.text = str(hero.get("name", hero_id))
+	name_label.add_theme_font_size_override("font_size", 17)
+	name_label.add_theme_color_override("font_color", COL_LOCKED if not unlocked else COL_TEXT)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(name_label)
+	vbox.add_child(_make_star_row(int(hero.get("difficulty", 1)), unlocked))
+	var lv_label := Label.new()
+	lv_label.text = "局外 LV%d" % out_level
+	lv_label.add_theme_font_size_override("font_size", 13)
+	lv_label.add_theme_color_override("font_color", COL_SUB)
+	lv_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(lv_label)
 	if unlocked:
 		var click := Button.new()
 		click.flat = true
@@ -730,37 +872,126 @@ func _on_char_card_pressed(hero: Dictionary, card: Control) -> void:
 	_sync_team_ui()
 
 
+## 小标签（优点绿底/缺点红底/中性灰底）
+func _make_chip(text: String, bg: Color, fg: Color) -> Control:
+	var chip := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg
+	style.set_corner_radius_all(4)
+	style.content_margin_left = 6.0
+	style.content_margin_right = 6.0
+	style.content_margin_top = 2.0
+	style.content_margin_bottom = 2.0
+	chip.add_theme_stylebox_override("panel", style)
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", fg)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	chip.add_child(label)
+	return chip
+
+
+## statBias 标签列表：stat 键经 statNames 表转中文；列表为空返回「待配置」占位
+func _bias_chips(hero: Dictionary, bias_key: String, stat_names: Dictionary, good: bool) -> Array[Control]:
+	var chips: Array[Control] = []
+	var bias_raw: Variant = hero.get("statBias", {})
+	var bias: Variant = bias_raw.get(bias_key, []) if bias_raw is Dictionary else []
+	if bias is Array:
+		for key: Variant in (bias as Array):
+			var stat_key := str(key)
+			chips.append(_make_chip(str(stat_names.get(stat_key, stat_key)),
+				COL_GOOD_BG if good else COL_BAD_BG, COL_GOOD_TX if good else COL_BAD_TX))
+	if chips.is_empty():
+		var placeholder := _make_chip("待配置", COL_CARD, COL_LOCKED)
+		chips.append(placeholder)
+	return chips
+
+
 func _show_char_detail(hero: Dictionary) -> void:
 	var screen: Control = _screens.get("screen-character")
 	if screen == null:
 		return
-	var detail: PanelContainer = screen.find_child("CharDetail", true, false)
-	for child: Node in detail.get_children():
+	var detail_box: VBoxContainer = screen.find_child("CharDetailBox", true, false)
+	if detail_box == null:
+		return
+	for child: Node in detail_box.get_children():
 		child.queue_free()
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 2)
-	detail.add_child(vbox)
-	var weapon_name := Cfg.get_weapon_name(str(hero.get("weapon", "")))
+	var hero_id := str(hero.get("id", ""))
+	var hero_name := str(hero.get("name", hero_id))
+	var stat_names: Variant = Cfg.get_table("statNames")
+	var stat_map: Dictionary = stat_names if stat_names is Dictionary else {}
+	var role_info := _role_info(str(hero.get("role", "")))
+	# 名字行：名字 + 职业标签 + HOPS + Lv
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 8)
+	var title := Label.new()
+	title.text = hero_name
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", COL_GOLD)
+	name_row.add_child(title)
+	name_row.add_child(_make_chip(str(role_info.get("name", hero.get("role", "?"))), COL_AVATAR_BG, COL_TEXT))
+	var hops := Label.new()
+	hops.text = "HOPS"
+	hops.add_theme_font_size_override("font_size", 15)
+	hops.add_theme_color_override("font_color", COL_SUB)
+	name_row.add_child(hops)
+	var lv := Label.new()
+	lv.text = "Lv%d" % GameState.meta.hero_out_level(hero_id)
+	lv.add_theme_font_size_override("font_size", 15)
+	lv.add_theme_color_override("font_color", COL_TEXT)
+	name_row.add_child(lv)
+	detail_box.add_child(name_row)
+	# 属性行：数值全部读英雄表（含 statNames 中文映射），缺字段的属性自动跳过
+	var stat_keys: Array[String] = ["hp", "atk", "spd", "dig", "def", "str", "agi", "int"]
+	var stat_parts: Array[String] = []
+	for key: String in stat_keys:
+		if not hero.has(key):
+			continue
+		stat_parts.append("%s %d" % [str(stat_map.get(key, key)), int(hero.get(key, 0))])
+	var stats := Label.new()
+	stats.text = " · ".join(stat_parts) if not stat_parts.is_empty() else "待配置"
+	stats.add_theme_font_size_override("font_size", 15)
+	stats.add_theme_color_override("font_color", COL_TEXT)
+	detail_box.add_child(stats)
+	# 优点 / 缺点 标签行
+	var pros_row := HBoxContainer.new()
+	pros_row.add_theme_constant_override("separation", 6)
+	pros_row.add_child(_make_chip("优点", COL_GOOD_BG, COL_GOOD_TX))
+	for chip: Control in _bias_chips(hero, "high", stat_map, true):
+		pros_row.add_child(chip)
+	detail_box.add_child(pros_row)
+	var cons_row := HBoxContainer.new()
+	cons_row.add_theme_constant_override("separation", 6)
+	cons_row.add_child(_make_chip("缺点", COL_BAD_BG, COL_BAD_TX))
+	for chip: Control in _bias_chips(hero, "low", stat_map, false):
+		cons_row.add_child(chip)
+	detail_box.add_child(cons_row)
+	# 羁绊行：英雄表暂无羁绊字段，显示待配置
+	var bond_tags: Variant = hero.get("bonds", hero.get("bondTags", []))
+	var bond_text := "待配置"
+	if bond_tags is Array and not (bond_tags as Array).is_empty():
+		var bond_parts: Array[String] = []
+		for tag: Variant in (bond_tags as Array):
+			bond_parts.append(str(tag))
+		bond_text = " · ".join(bond_parts)
+	var bond := Label.new()
+	bond.text = "羁绊：%s" % bond_text
+	bond.add_theme_font_size_override("font_size", 15)
+	bond.add_theme_color_override("font_color", COL_SUB)
+	detail_box.add_child(bond)
+	# 进化结晶行：数值读 outLevel 表
 	var out_level_cfg: Variant = Cfg.get_table("outLevel")
 	var crystal_kill := 1
 	var crystal_boss := 60
 	if out_level_cfg is Dictionary:
 		crystal_kill = int((out_level_cfg as Dictionary).get("crystalKill", 1))
 		crystal_boss = int((out_level_cfg as Dictionary).get("crystalBoss", 60))
-	var hero_id := str(hero.get("id", ""))
-	var lines: Array[String] = [
-		"%s · 局外 LV%d" % [str(hero.get("name", hero_id)), GameState.meta.hero_out_level(hero_id)],
-		"HP %d · 攻击 %d · 移速 %d" % [int(hero.get("hp", 0)), int(hero.get("atk", 0)), int(hero.get("spd", 0))],
-		"武器：%s · 优势标签：%s" % [weapon_name, str(hero.get("playtag", ""))],
-		str(hero.get("desc", "")),
-		"进化结晶：击败小怪 ◆%d / 首领 ◆%d，撤离后用于局外升级" % [crystal_kill, crystal_boss],
-	]
-	for line: String in lines:
-		var label := Label.new()
-		label.text = line
-		label.add_theme_font_size_override("font_size", 18)
-		label.add_theme_color_override("font_color", COL_TEXT if line == lines[0] else COL_SUB)
-		vbox.add_child(label)
+	var evolve := Label.new()
+	evolve.text = "进化结晶：击败小怪 ✦%d / 首领 ✦%d，撤离后用于局外升级" % [crystal_kill, crystal_boss]
+	evolve.add_theme_font_size_override("font_size", 15)
+	evolve.add_theme_color_override("font_color", COL_SUB)
+	detail_box.add_child(evolve)
 
 
 func _sync_team_ui() -> void:
@@ -768,9 +999,6 @@ func _sync_team_ui() -> void:
 	if screen == null:
 		return
 	var max_size := Cfg.get_team_max_size()
-	var team_label: Label = screen.find_child("TeamLabel", true, false)
-	if team_label != null:
-		team_label.text = "组队 %d/%d（第 1 位为队长，其余 AI 队友）" % [selected_hero_ids.size(), max_size]
 	var start: Button = screen.find_child("StartButton", true, false)
 	if start != null:
 		start.text = "开始出战 (%d/%d)" % [selected_hero_ids.size(), max_size]

@@ -18,9 +18,24 @@ const TEXT_COLOR := Color("e8e2c8")
 const PANEL_BG := Color("16233a")
 const PANEL_BORDER := Color("c9a84c")
 const GOLD := Color("ffd76a")
+const GRAY_SUB := Color(0.65, 0.7, 0.78)
+const PLAQUE_BG := Color(0.07, 0.11, 0.18, 0.92)
+
+## 表里 desc 缺失时的兜底副标题（键 = 点位名），优先级永远低于 cfg/city.json
+const SUBTITLE_FALLBACK := {
+	"武器匠": "武器 / 技能重铸",
+	"形象师": "局外等级升段",
+	"影象师": "头像 · 重名 · 称号 · 信物",
+	"图鉴学者": "头像 / 称号图鉴",
+	"神秘商人": "秘密商品",
+	"深渊之门": "深渊距按关卡 ≥ 时一人可次可深",
+	"出征传送门": "游荡图签 2×9 · 凯觎关卡进程",
+}
 
 var logic: RefCounted
-var hud: Label = null
+var name_label: Label = null
+var title_label: Label = null
+var crystal_label: Label = null
 var panel_layer: CanvasLayer = null
 var panel_root: PanelContainer = null
 var shop_rng := RandomNumberGenerator.new()
@@ -35,23 +50,65 @@ func _ready() -> void:
 	shop_rng.randomize()
 	print("[CityVisual] 主城就绪：点位 %d 个" % logic.entries.size())
 
+## HTML 档案卡：金色徽章 + 名字（白）+ 称号（灰）+ 右侧 ✦ 结晶数
 func _build_hud() -> void:
-	hud = Label.new()
-	hud.position = Vector2(16, 12)
-	hud.add_theme_font_size_override("font_size", 20)
-	hud.add_theme_color_override("font_color", GOLD)
-	add_child(hud)
+	var card := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = STAMP_BG
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 12.0
+	style.content_margin_right = 12.0
+	style.content_margin_top = 6.0
+	style.content_margin_bottom = 6.0
+	card.add_theme_stylebox_override("panel", style)
+	card.position = Vector2(16, 12)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var badge := Label.new()
+	badge.text = "✦"
+	badge.add_theme_font_size_override("font_size", 18)
+	badge.add_theme_color_override("font_color", GOLD)
+	row.add_child(badge)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 0)
+	name_label = Label.new()
+	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_color_override("font_color", Color.WHITE)
+	col.add_child(name_label)
+	title_label = Label.new()
+	title_label.add_theme_font_size_override("font_size", 12)
+	title_label.add_theme_color_override("font_color", GRAY_SUB)
+	col.add_child(title_label)
+	row.add_child(col)
+	crystal_label = Label.new()
+	crystal_label.add_theme_font_size_override("font_size", 16)
+	crystal_label.add_theme_color_override("font_color", GOLD)
+	crystal_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(crystal_label)
+	card.add_child(row)
+	add_child(card)
 	_refresh_hud()
 
+func _meta() -> Variant:
+	var m: Variant = GameState.get("meta")
+	return m
+
 func _refresh_hud() -> void:
-	if hud == null:
+	if name_label == null or title_label == null or crystal_label == null:
 		return
-	# TODO: GameState/save_core 暂无 Meta 存档接口，昵称/结晶先读本地快照（logic.meta）。
-	hud.text = "%s·%s  +  ◆%d" % [
-		str(logic.meta.get("nickname", "无名旅者")),
-		str(logic.meta.get("title", "初始守护")),
-		int(logic.meta.get("crystals", 0)),
-	]
+	var crystals := 0
+	var nickname := "无名旅者"
+	var title_s := "初出茅庐"
+	var m: Variant = _meta()
+	if m != null:
+		crystals = m.crystals()
+		nickname = m.profile_name()
+		# titleId -> 显示名映射尚未建表，先用默认段位标签
+	else:
+		push_warning("[CityVisual] GameState.meta 不可用，档案卡显示默认值")
+	name_label.text = nickname
+	title_label.text = title_s
+	crystal_label.text = "✦%d" % crystals
 
 func _process(dt: float) -> void:
 	if logic == null:
@@ -114,10 +171,24 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, logic.map_size), BG_COLOR)
 	_draw_grid()
 	_draw_spawn_totem()
+	_draw_plaque()
 	for e: Dictionary in logic.entries:
 		_draw_entry(e)
 	_draw_player()
 	_draw_channel_ring()
+
+## 地图中央横向牌匾：深色圆角矩形（尺寸读 cfg 的 plaque 段，缺省 100x30）
+func _draw_plaque() -> void:
+	var pc: Dictionary = logic.cfg.get("plaque", {})
+	if not pc is Dictionary:
+		pc = {}
+	var w := float(pc.get("w", 100.0))
+	var h := float(pc.get("h", 30.0))
+	var rect := Rect2(logic.map_size * 0.5 - Vector2(w * 0.5, h * 0.5), Vector2(w, h))
+	var style := StyleBoxFlat.new()
+	style.bg_color = PLAQUE_BG
+	style.set_corner_radius_all(6)
+	draw_style_box(style, rect)
 
 func _draw_grid() -> void:
 	var step := 64.0
@@ -169,6 +240,8 @@ func _draw_labels(pos: Vector2, radius: float, e: Dictionary) -> void:
 	var font := ThemeDB.fallback_font
 	var name_s: String = str(e.get("name", ""))
 	var desc: String = str(e.get("desc", ""))
+	if desc == "":
+		desc = str(SUBTITLE_FALLBACK.get(name_s, ""))
 	var top := pos.y - radius - 34.0
 	var ns := 16
 	var ds := 12
@@ -437,6 +510,10 @@ func _build_profile_panel(title: String) -> void:
 			push_warning("[CityVisual] 名号过短")
 			return
 		logic.meta["nickname"] = name_s
+		var m: Variant = _meta()
+		if m != null:
+			m.data["profile"]["name"] = name_s
+			m.commit()
 		_refresh_hud())
 	box.add_child(btn)
 
