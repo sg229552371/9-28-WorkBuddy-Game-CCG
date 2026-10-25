@@ -1,0 +1,38 @@
+{
+  "chance": 0.05,
+  "weight": 2,
+  "value": 40,
+  "duration": 45,
+  "list": [
+    {
+      "id": "DB001",
+      "name": "铁壁诅咒",
+      "desc": "敌人防御 ×3、生命 ×1.5",
+      "rewardMul": 2,
+      "defMul": 3,
+      "hpMul": 1.5,
+      "atkMul": 1,
+      "spdMul": 1
+    },
+    {
+      "id": "DB002",
+      "name": "狂暴诅咒",
+      "desc": "敌人攻击 ×1.6、移速 ×1.25",
+      "rewardMul": 2.5,
+      "defMul": 1,
+      "hpMul": 1.2,
+      "atkMul": 1.6,
+      "spdMul": 1.25
+    },
+    {
+      "id": "DB003",
+      "name": "巨影诅咒",
+      "desc": "敌人生命 ×2.5",
+      "rewardMul": 2,
+      "defMul": 1,
+      "hpMul": 2.5,
+      "atkMul": 1,
+      "spdMul": 1
+    }
+  ]
+}

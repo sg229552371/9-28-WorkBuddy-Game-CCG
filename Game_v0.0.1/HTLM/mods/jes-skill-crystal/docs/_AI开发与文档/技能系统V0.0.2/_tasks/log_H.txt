@@ -1,0 +1,11 @@
+"gpt-6-astra" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"}
+已生成唯一指定文件：`交界映射表_v0.1.md`。
+
+- **T1**：逐块复核28个积木；位移判定映射为 `self`，三个候选保持候选状态。
+- **T2**：覆盖五行硬性要求及治疗、护盾、控制、状态、暴击、格挡；缺少冻结载荷支持的表现明确标为接口阻塞，未虚构字段。
+- **T3**：覆盖第5章全部112条参数路径，以及24.2八栏全部关键字段；运行时生成字段明确禁止写入CFG。
+- **校验通过**：积木与参数路径无遗漏、禁用旧词零命中、必需末尾章节齐全。中文字符计数为9738。
+- 末尾登记15项冲突与缺口，交由WorkBuddy评审；未修改其他文件。
+
+DONE::T1T2T3::9738

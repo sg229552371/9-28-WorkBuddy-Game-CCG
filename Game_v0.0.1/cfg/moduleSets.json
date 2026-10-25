@@ -1,0 +1,42 @@
+{
+  "removed": true,
+  "SET_BALLISTIC": {
+    "name": "弹道套装",
+    "members": [
+      "M001",
+      "M005"
+    ],
+    "bonuses": {
+      "2": {
+        "tag": "弹道数量",
+        "value": 1
+      }
+    }
+  },
+  "SET_COOLING": {
+    "name": "冷却套装",
+    "members": [
+      "M002",
+      "M007"
+    ],
+    "bonuses": {
+      "2": {
+        "tag": "冷却",
+        "value": -0.06
+      }
+    }
+  },
+  "SET_POWER": {
+    "name": "增幅套装",
+    "members": [
+      "M009",
+      "M012"
+    ],
+    "bonuses": {
+      "2": {
+        "tag": "伤害",
+        "value": 0.08
+      }
+    }
+  }
+}

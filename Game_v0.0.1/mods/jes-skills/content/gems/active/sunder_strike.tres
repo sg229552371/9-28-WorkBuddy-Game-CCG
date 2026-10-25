@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_d1a"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_d1a"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_d1a"]
+
+[sub_resource type="Resource" id="Resource_scale"]
+script = ExtResource("1_d1a")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_part1"]
+script = ExtResource("2_d1a")
+damage_channel = 1
+base_damage = {
+&"physical": 170.0
+}
+behavior_id = &"bhv_melee_swing"
+behavior_params = {
+&"arc_deg": 70.0,
+&"range": 150.0
+}
+
+[resource]
+script = ExtResource("3_d1a")
+gem_id = &"sunder_strike"
+display_name = "裂石重击"
+parts = Array[ExtResource("2_d1a")]([SubResource("Resource_part1")])
+tags = Array[StringName]([&"attack", &"melee", &"physical"])
+cast_mode = 0
+base_cast_time = 0.85
+cost_type = 0
+base_cost = 16.0
+base_cooldown = 1.4
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_scale")

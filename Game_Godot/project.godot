@@ -1,0 +1,30 @@
+; Engine configuration file.
+; Godot 4.7 项目配置 —— 《弹幕射击 Roguelike × 背包肉鸽 × 轻度搜打撤》Godot 落地版
+; 口径：HTML 原型（Game_v0.0.1）为设计与数据真源；本项目按 mods 口径逐模块迁移。
+
+config_version=5
+
+[application]
+
+config/name="XGAMe-CCG"
+config/description="弹幕射击 Roguelike × 背包肉鸽 × 轻度搜打撤（Godot 4.7 落地版）"
+run/main_scene="res://mods/jes-engine-core/scenes/boot.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[autoload]
+
+EventBus="*res://autoload/event_bus.gd"
+Cfg="*res://autoload/cfg.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

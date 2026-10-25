@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "master": 0.45,
+  "shake": {
+    "hurt": 7,
+    "bossBoom": 11,
+    "dur": 0.32
+  },
+  "bgmEnabled": true,
+  "bgmVolume": 0.28
+}

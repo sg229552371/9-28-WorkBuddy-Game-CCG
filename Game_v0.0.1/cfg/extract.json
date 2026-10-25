@@ -1,0 +1,23 @@
+{
+  "channel": 8,
+  "radius": 100,
+  "note": "死亡时撤离点雕像消散",
+  "enabled": true,
+  "waveEnabled": true,
+  "waveFirstDelay": 0,
+  "waveInterval": 2.5,
+  "waveSizeBase": 2,
+  "waveSizeGrowth": 1,
+  "waveEliteChance": 0.08,
+  "waveSpawnRadius": 420,
+  "weightPenaltyEnabled": true,
+  "weightThreshold": 100,
+  "weightSlopePer100": 0.25,
+  "weightTimeScaleMax": 2,
+  "siegeRingRadius": 140,
+  "siegeDpsMul": 1.5,
+  "shieldMax": 2000,
+  "shieldRecoverPct": 0.5,
+  "shieldRegenPerSec": 120,
+  "shieldRegenDelay": 3
+}

@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_fnova"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_fnova"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_fnova"]
+
+[sub_resource type="Resource" id="Resource_fnova_scale"]
+script = ExtResource("1_fnova")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_fnova_part"]
+script = ExtResource("2_fnova")
+base_damage = {
+&"cold": 140.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"delay": 0.35,
+&"hit_count": 1,
+&"hit_interval": 0.0,
+&"radius": 130.0
+}
+
+[resource]
+script = ExtResource("3_fnova")
+gem_id = &"frost_nova"
+display_name = "霜爆新星"
+parts = Array[ExtResource("2_fnova")]([SubResource("Resource_fnova_part")])
+tags = Array[StringName]([&"spell", &"aoe", &"cold"])
+base_cost = 12.0
+base_cooldown = 2.5
+level_scaling = SubResource("Resource_fnova_scale")

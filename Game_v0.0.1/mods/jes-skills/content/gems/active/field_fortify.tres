@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_t3a"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_t3a"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_t3a"]
+
+[sub_resource type="Resource" id="Resource_scale"]
+script = ExtResource("1_t3a")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_part1"]
+script = ExtResource("2_t3a")
+damage_channel = 1
+base_damage = {
+&"chaos": 22.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"delay": 0.0,
+&"hit_count": 3,
+&"hit_interval": 0.7,
+&"radius": 120.0
+}
+
+[sub_resource type="Resource" id="Resource_part2"]
+script = ExtResource("2_t3a")
+damage_channel = 1
+behavior_id = &"bhv_buff_self"
+behavior_params = {
+&"buff_mods": [{
+&"op": 0,
+&"stat": &"armor",
+&"value": 180.0
+}],
+&"duration": 4.0
+}
+
+[resource]
+script = ExtResource("3_t3a")
+gem_id = &"field_fortify"
+display_name = "地刺壁垒"
+parts = Array[ExtResource("2_t3a")]([SubResource("Resource_part1"), SubResource("Resource_part2")])
+tags = Array[StringName]([&"spell", &"aoe", &"chaos", &"buff"])
+cast_mode = 0
+base_cast_time = 0.5
+cost_type = 0
+base_cost = 18.0
+base_cooldown = 5.0
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_scale")

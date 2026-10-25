@@ -1,0 +1,8 @@
+{
+  "maxLv": 100,
+  "basicMulPerLv": 0.04,
+  "skillMulPerLv": 0.06,
+  "costBase": 120,
+  "costGrowth": 1.05,
+  "costRound": 10
+}

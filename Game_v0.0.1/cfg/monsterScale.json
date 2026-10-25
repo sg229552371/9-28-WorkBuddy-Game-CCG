@@ -1,0 +1,34 @@
+{
+  "range": [
+    -100,
+    100
+  ],
+  "duration": 30,
+  "targets": {
+    "小怪数量": {
+      "key": "smallCount",
+      "applyWaveSize": true,
+      "applyInterval": true,
+      "applyCap": false
+    },
+    "小怪属性": {
+      "key": "smallStat",
+      "applyHp": true,
+      "applyAtk": true
+    },
+    "精英数量": {
+      "key": "eliteCount",
+      "applySpawnTarget": true
+    },
+    "精英属性": {
+      "key": "eliteStat",
+      "applyHp": true,
+      "applyAtk": true
+    },
+    "BOSS属性": {
+      "key": "bossStat",
+      "applyHp": true,
+      "applyAtk": true
+    }
+  }
+}

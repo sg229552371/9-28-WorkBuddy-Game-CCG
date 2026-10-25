@@ -1,0 +1,237 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e5]:
+      - button "Epic Ecosystem Dropdown" [ref=e9] [cursor=pointer]
+      - navigation "Unreal Engine Navigation" [ref=e10]:
+        - link [ref=e12] [cursor=pointer]:
+          - /url: https://www.unrealengine.com/
+          - img "Unreal Engine Logo" [ref=e13]
+        - generic [ref=e14]:
+          - list [ref=e17]:
+            - listitem [ref=e18]:
+              - link "Overview" [ref=e20] [cursor=pointer]:
+                - /url: https://www.unrealengine.com/
+            - listitem [ref=e21]:
+              - link "Uses" [ref=e23] [cursor=pointer]:
+                - /url: https://www.unrealengine.com/uses/switching-to-unreal-engine
+            - listitem [ref=e24]:
+              - button "More" [ref=e26] [cursor=pointer]
+          - generic [ref=e28]:
+            - search [ref=e30]:
+              - generic [ref=e31]:
+                - searchbox "Search the Unreal Engine website" [ref=e32]
+                - button "Search" [ref=e33] [cursor=pointer]
+            - button "Locale menu" [ref=e35] [cursor=pointer]
+            - link "登录" [ref=e37] [cursor=pointer]:
+              - /url: https://dev.epicgames.com/community/api/user_identity/login/start?destination=https%3A%2F%2Fdev.epicgames.com%2Fdocumentation%2F403
+          - link "Download" [ref=e40] [cursor=pointer]:
+            - /url: https://www.unrealengine.com/download?trackingId=873e6abcb514412db35d3b5b8d9008c5
+    - generic: 
+    - generic [ref=e43]:
+      - img "Epic Games Dev Community" [ref=e44]
+      - heading "403" [level=1] [ref=e45]
+      - heading "不允许访问" [level=3] [ref=e46]
+      - paragraph [ref=e47]: 不允许访问
+      - paragraph [ref=e48]:
+        - link "转到主页" [ref=e49] [cursor=pointer]:
+          - /url: https://dev.epicgames.com/community/
+    - contentinfo [ref=e52]:
+      - generic [ref=e53]:
+        - img "Unreal Engine Logo" [ref=e56]
+        - list [ref=e59]:
+          - listitem [ref=e60]:
+            - link "Twitter logo" [ref=e61] [cursor=pointer]:
+              - /url: https://twitter.com/unrealengine
+          - listitem [ref=e65]:
+            - link "Facebook logo" [ref=e66] [cursor=pointer]:
+              - /url: https://www.facebook.com/UnrealEngine
+          - listitem [ref=e70]:
+            - link "Twitch logo" [ref=e71] [cursor=pointer]:
+              - /url: http://www.twitch.tv/unrealengine
+          - listitem [ref=e75]:
+            - link "Instagram logo" [ref=e76] [cursor=pointer]:
+              - /url: http://instagram.com/UnrealEngine
+          - listitem [ref=e80]:
+            - link "YouTube logo" [ref=e81] [cursor=pointer]:
+              - /url: http://www.youtube.com/unrealengine
+          - listitem [ref=e85]:
+            - link "RSS logo" [ref=e86] [cursor=pointer]:
+              - /url: https://www.unrealengine.com/rss
+      - generic [ref=e90]:
+        - separator [ref=e91]
+        - generic [ref=e92]:
+          - generic [ref=e94]:
+            - heading "Games" [level=3] [ref=e95]
+            - list [ref=e96]:
+              - listitem [ref=e97]:
+                - link "Fortnite" [ref=e99] [cursor=pointer]:
+                  - /url: https://www.fortnite.com/
+              - listitem [ref=e100]:
+                - link "Fall Guys" [ref=e102] [cursor=pointer]:
+                  - /url: https://www.fallguys.com/
+              - listitem [ref=e103]:
+                - link "Rocket League" [ref=e105] [cursor=pointer]:
+                  - /url: https://www.rocketleague.com/
+              - listitem [ref=e106]:
+                - link "Unreal Tournament" [ref=e108] [cursor=pointer]:
+                  - /url: https://www.epicgames.com/unrealtournament/
+              - listitem [ref=e109]:
+                - link "Infinity Blade" [ref=e111] [cursor=pointer]:
+                  - /url: https://www.epicgames.com/infinityblade/home/
+              - listitem [ref=e112]:
+                - link "Shadow Complex" [ref=e114] [cursor=pointer]:
+                  - /url: https://store.epicgames.com/p/shadow-complex/
+              - listitem [ref=e115]:
+                - link "Robo Recall" [ref=e117] [cursor=pointer]:
+                  - /url: https://www.epicgames.com/roborecall
+          - generic [ref=e119]:
+            - heading "Marketplaces" [level=3] [ref=e120]
+            - list [ref=e121]:
+              - listitem [ref=e122]:
+                - link "Epic Games Store" [ref=e124] [cursor=pointer]:
+                  - /url: https://store.epicgames.com/
+              - listitem [ref=e125]:
+                - link "Fab" [ref=e127] [cursor=pointer]:
+                  - /url: https://www.fab.com/
+              - listitem [ref=e128]:
+                - link "Quixel Megascans on Fab" [ref=e130] [cursor=pointer]:
+                  - /url: https://www.fab.com/sellers/Quixel%20Megascans
+              - listitem [ref=e131]:
+                - link "Quixel Megaplants on Fab" [ref=e133] [cursor=pointer]:
+                  - /url: https://www.fab.com/sellers/Quixel%20Megaplants
+              - listitem [ref=e134]:
+                - link "Store Refund Policy" [ref=e136] [cursor=pointer]:
+                  - /url: https://legal.epicgames.com/store/refund-policy
+              - listitem [ref=e137]:
+                - link "Store EULA" [ref=e139] [cursor=pointer]:
+                  - /url: https://legal.epicgames.com/store/eula
+          - generic [ref=e141]:
+            - heading "Tools" [level=3] [ref=e142]
+            - list [ref=e143]:
+              - listitem [ref=e144]:
+                - link "Unreal Engine" [ref=e146] [cursor=pointer]:
+                  - /url: https://www.unrealengine.com/
+              - listitem [ref=e147]:
+                - link "UEFN" [ref=e149] [cursor=pointer]:
+                  - /url: https://store.epicgames.com/p/fortnite--uefn
+              - listitem [ref=e150]:
+                - link "MetaHuman" [ref=e152] [cursor=pointer]:
+                  - /url: https://www.metahuman.com/
+              - listitem [ref=e153]:
+                - link "Twinmotion" [ref=e155] [cursor=pointer]:
+                  - /url: https://www.twinmotion.com/
+              - listitem [ref=e156]:
+                - link "RealityScan" [ref=e158] [cursor=pointer]:
+                  - /url: https://www.realityscan.com/
+              - listitem [ref=e159]:
+                - link "RAD Game Tools" [ref=e161] [cursor=pointer]:
+                  - /url: https://www.radgametools.com/
+          - generic [ref=e163]:
+            - heading "Online Services" [level=3] [ref=e164]
+            - list [ref=e165]:
+              - listitem [ref=e166]:
+                - link "Epic Online Services" [ref=e168] [cursor=pointer]:
+                  - /url: https://onlineservices.epicgames.com/
+              - listitem [ref=e169]:
+                - link "Kids Web Services" [ref=e171] [cursor=pointer]:
+                  - /url: https://www.kidswebservices.com/
+              - listitem [ref=e172]:
+                - link "Services Agreement" [ref=e174] [cursor=pointer]:
+                  - /url: https://onlineservices.epicgames.com/services/terms/agreements
+              - listitem [ref=e175]:
+                - link "Acceptable Use Policy" [ref=e177] [cursor=pointer]:
+                  - /url: https://onlineservices.epicgames.com/services/terms/aup
+              - listitem [ref=e178]:
+                - link "Trust Statement" [ref=e180] [cursor=pointer]:
+                  - /url: https://onlineservices.epicgames.com/services/terms/trust-statement
+              - listitem [ref=e181]:
+                - link "Subprocessor List" [ref=e183] [cursor=pointer]:
+                  - /url: https://onlineservices.epicgames.com/services/terms/subprocessors
+          - generic [ref=e185]:
+            - heading "Company" [level=3] [ref=e186]
+            - list [ref=e187]:
+              - listitem [ref=e188]:
+                - link "About" [ref=e190] [cursor=pointer]:
+                  - /url: https://www.epicgames.com/site/about
+              - listitem [ref=e191]:
+                - link "Newsroom" [ref=e193] [cursor=pointer]:
+                  - /url: https://www.epicgames.com/site/news
+              - listitem [ref=e194]:
+                - link "Careers" [ref=e196] [cursor=pointer]:
+                  - /url: https://www.epicgames.com/site/careers/jobs
+              - listitem [ref=e197]:
+                - link "Students" [ref=e199] [cursor=pointer]:
+                  - /url: https://www.epicgames.com/site/earlycareers
+              - listitem [ref=e200]:
+                - link "UX Research" [ref=e202] [cursor=pointer]:
+                  - /url: https://www.epicgames.com/site/ux
+          - generic [ref=e204]:
+            - heading "Resources" [level=3] [ref=e205]
+            - list [ref=e206]:
+              - listitem [ref=e207]:
+                - link "Dev Community" [ref=e209] [cursor=pointer]:
+                  - /url: https://dev.epicgames.com/community/
+              - listitem [ref=e210]:
+                - link "MegaGrants" [ref=e212] [cursor=pointer]:
+                  - /url: https://www.unrealengine.com/megagrants
+              - listitem [ref=e213]:
+                - link "Support-A-Creator" [ref=e215] [cursor=pointer]:
+                  - /url: https://sac.epicgames.com/overview
+              - listitem [ref=e216]:
+                - link "Creator Agreement" [ref=e218] [cursor=pointer]:
+                  - /url: https://legal.epicgames.com/fortnite/eula/sac
+              - listitem [ref=e219]:
+                - link "Distribute on Epic Games" [ref=e221] [cursor=pointer]:
+                  - /url: https://store.epicgames.com/distribution
+              - listitem [ref=e222]:
+                - link "Unreal Engine Branding Guidelines" [ref=e224] [cursor=pointer]:
+                  - /url: https://www.unrealengine.com/branding
+              - listitem [ref=e225]:
+                - link "Fan Art Policy" [ref=e227] [cursor=pointer]:
+                  - /url: https://legal.epicgames.com/epicgames/fan-art-policy
+              - listitem [ref=e228]:
+                - link "Community Rules" [ref=e230] [cursor=pointer]:
+                  - /url: https://legal.epicgames.com/epicgames/community-rules
+              - listitem [ref=e231]:
+                - link "EU Digital Services Act Inquiries" [ref=e233] [cursor=pointer]:
+                  - /url: https://www.epicgames.com/help/contact-us?source=external
+              - listitem [ref=e234]:
+                - link "Epic Pro Support" [ref=e236] [cursor=pointer]:
+                  - /url: https://udn.unrealengine.com/
+        - separator [ref=e237]
+      - generic [ref=e238]:
+        - generic [ref=e239]:
+          - generic [ref=e240]: © 2026 Epic Games, Inc. All rights reserved. Unreal and its logo are Epic’s trademarks or registered trademarks in the US and elsewhere.
+          - list [ref=e242]:
+            - listitem [ref=e243]:
+              - link "Terms of service" [ref=e245] [cursor=pointer]:
+                - /url: https://legal.epicgames.com/epicgames/tos
+            - listitem [ref=e246]:
+              - link "Privacy policy" [ref=e248] [cursor=pointer]:
+                - /url: https://legal.epicgames.com/epicgames/privacy-policy
+            - listitem [ref=e249]:
+              - link "Safety & security" [ref=e251] [cursor=pointer]:
+                - /url: https://safety.epicgames.com/?lang=en-US
+        - button "Back to top" [ref=e252] [cursor=pointer]
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - status [ref=e253]:
+                  - generic [ref=e256]:
+                    - generic [ref=e257]: 
+                    - generic [ref=e258]: 加载时出错文档树
+                  - button "Close" [ref=e260] [cursor=pointer]: ×
+                - list
+          - generic:
+            - generic:
+              - generic:
+                - status [ref=e261]:
+                  - generic [ref=e264]:
+                    - generic [ref=e265]: 
+                    - generic [ref=e266]: 加载时出错文档
+                  - button "Close" [ref=e268] [cursor=pointer]: ×
+                - list

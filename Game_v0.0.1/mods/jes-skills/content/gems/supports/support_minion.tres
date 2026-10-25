@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="SupportGemData" format=3]
+
+; 夜间施工批次 D（D-45）：召唤强化——随从三属性一次补齐（手册 D1 白名单三项）。
+; minion_damage / minion_life 是平加值（挂在施法者身上，召唤时按白名单拷给召唤物）；
+; minion_attack_speed 是加算百分比。三项都不是倍率型属性，走伤害/随从管线，T3 无消费者要求。
+; 数值定稿（D-55，2026-10-22 制作人裁定按推算值转正，后续大 playtest 统一回调）：+40 伤害 / +60 生命 / +25% 攻速，对标一颗「大」辅助的强度。
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/support_gem_data.gd" id="1_mio"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/modifier_spec.gd" id="2_mio"]
+
+[sub_resource type="Resource" id="Resource_mio_dmg"]
+script = ExtResource("2_mio")
+stat = &"minion_damage"
+op = 0
+value = 40.0
+
+[sub_resource type="Resource" id="Resource_mio_life"]
+script = ExtResource("2_mio")
+stat = &"minion_life"
+op = 0
+value = 60.0
+
+[sub_resource type="Resource" id="Resource_mio_as"]
+script = ExtResource("2_mio")
+stat = &"minion_attack_speed"
+op = 1
+value = 25.0
+
+[resource]
+script = ExtResource("1_mio")
+support_id = &"support_minion"
+display_name = "召唤强化"
+require_tags = Array[StringName]([&"summon"])
+cost_multiplier = 1.35
+stat_modifiers = Array[ExtResource("2_mio")]([SubResource("Resource_mio_dmg"), SubResource("Resource_mio_life"), SubResource("Resource_mio_as")])

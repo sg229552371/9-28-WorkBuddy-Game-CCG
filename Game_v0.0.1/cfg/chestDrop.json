@@ -1,0 +1,23 @@
+{
+  "enabled": true,
+  "elite": {
+    "chance": 0.35,
+    "weights": {
+      "normal": 70,
+      "advanced": 30
+    }
+  },
+  "boss": {
+    "chance": 0.6,
+    "weights": {
+      "epic": 55,
+      "divine": 35,
+      "mythic": 10
+    }
+  },
+  "ground": {
+    "radius": 91,
+    "channel": 1.2
+  },
+  "gateByDropW": true
+}

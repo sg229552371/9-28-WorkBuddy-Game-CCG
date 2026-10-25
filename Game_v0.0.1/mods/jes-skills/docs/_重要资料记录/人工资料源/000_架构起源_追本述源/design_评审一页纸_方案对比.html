@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>评审一页纸｜技能系统开源方案对比 v1.0</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#1b1f24; --ink2:#5b6572; --line:#e3e7ec;
+    --a:#c2410c; --a-soft:#fdece4;
+    --b:#0f766e; --b-soft:#e3f5f2;
+    --warn:#b45309; --warn-soft:#fdf3e3;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    line-height:1.6;font-size:14px;}
+  .page{max-width:960px;margin:0 auto;padding:36px 32px 56px;}
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;
+    border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:24px;flex-wrap:wrap}
+  h1{font-size:23px;margin:0 0 6px;letter-spacing:.2px}
+  .meta{color:var(--ink2);font-size:12.5px}
+  .tag{display:inline-block;font-size:11.5px;padding:3px 9px;border-radius:999px;
+    background:var(--warn-soft);color:var(--warn);border:1px solid #f0d9ae;font-weight:600}
+  .verdict{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:20px 22px;margin-bottom:22px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .verdict h2{margin:0 0 12px;font-size:15px;letter-spacing:.3px;color:var(--ink2);font-weight:600}
+  .scores{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+  .score{flex:1 1 240px;border-radius:10px;padding:14px 16px;border:1px solid var(--line)}
+  .score.p1{background:var(--a-soft);border-color:#f6d5c5}
+  .score.p2{background:var(--b-soft);border-color:#c7e8e2}
+  .score .name{font-size:12.5px;color:var(--ink2)}
+  .score .num{font-size:34px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+  .score.p1 .num{color:var(--a)} .score.p2 .num{color:var(--b)}
+  .score .sub{font-size:12px;color:var(--ink2)}
+  .callout{font-size:13.5px;background:#fff;border-left:3px solid var(--ink);padding:8px 14px;color:var(--ink)}
+  h3{font-size:15px;margin:28px 0 12px;padding-left:10px;border-left:4px solid var(--ink)}
+  table{width:100%;border-collapse:collapse;background:var(--card);font-size:13px;
+    border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f0f2f5;font-weight:600;font-size:12.5px;color:#38414c}
+  tr:last-child td{border-bottom:none}
+  td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .bars{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 16px 14px}
+  .row{display:grid;grid-template-columns:150px 1fr 44px 44px;gap:10px;align-items:center;
+    padding:7px 0;border-bottom:1px dashed #eef0f3;font-size:12.5px}
+  .row:last-child{border-bottom:none}
+  .row .lbl{color:#3a434e}
+  .track{height:9px;background:#eef0f3;border-radius:99px;position:relative;overflow:hidden}
+  .track i{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
+  .track .v1{background:#e0794a} .track .v2{background:#159a8c}
+  .row .s1{color:var(--a);text-align:right;font-variant-numeric:tabular-nums}
+  .row .s2{color:var(--b);text-align:right;font-variant-numeric:tabular-nums}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .card .t{font-size:12px;color:var(--ink2);margin-bottom:4px}
+  .card .v{font-weight:600;font-size:13.5px}
+  .card code{background:#f4f5f7;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:12px}
+  .pipeline{display:flex;gap:0;align-items:stretch;margin:6px 0 0;flex-wrap:wrap}
+  .step{flex:1 1 150px;background:var(--card);border:1px solid var(--line);padding:11px 12px;
+    font-size:12.5px;position:relative}
+  .step:not(:last-child){border-right:none}
+  .step b{display:block;font-size:11px;color:var(--ink2);font-weight:600;margin-bottom:2px}
+  .step.done{background:#f2f7f6}
+  .foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--ink2);font-size:12px;
+    display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .stamp{font-weight:600;color:var(--ink)}
+  @media (max-width:720px){.grid2{grid-template-columns:1fr}.row{grid-template-columns:110px 1fr 36px 36px}}
+  @media print{body{background:#fff}.page{max-width:none;padding:0}.verdict,.card,table{box-shadow:none}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <div>
+    <h1>技能系统开源方案 · 评审一页纸</h1>
+    <div class="meta">EVAL-SKILL-001 ／ v1.0 ／ 2026-10-19 ／ 配套文件：评估书_技能系统开源方案_v1.0.md</div>
+  </div>
+  <div><span class="tag">待人工审核</span></div>
+</header>
+
+<div class="verdict">
+  <h2>加权结论（8 维 / 5 分制）</h2>
+  <div class="scores">
+    <div class="score p1">
+      <div class="name">方案一 · the-exile-engine-v2 整仓复用</div>
+      <div class="num">2.26</div>
+      <div class="sub">否决为基线：仓库无 <code>project.godot</code>，无法运行、无法导出、无许可证</div>
+    </div>
+    <div class="score p2">
+      <div class="name">方案二 · PoB 语义 + godot-arpg-kit 落地</div>
+      <div class="num">4.53</div>
+      <div class="sub">建议采纳：两端均 MIT，kit 可直接跑，PoB 提供乘区与结算顺序标准</div>
+    </div>
+  </div>
+  <div class="callout"><b>决策：</b>二为骨、一为镜 —— 语义取 PoB，骨架取 kit，方案一只读三处（确定性随机 / 空间分区 / socket-link 表达），不复制代码。插槽-链接与水晶系统自研。</div>
+</div>
+
+<h3>八维评分（橙色＝方案一，青色＝方案二）</h3>
+<div class="bars">
+  <div class="row"><span class="lbl">语义完整性 20%</span><span class="track"><i class="v1" style="width:70%"></i></span><span class="s1">3.5</span><span class="s2">4.8</span></div>
+  <div class="row"><span class="lbl">Godot 落地 20%</span><span class="track"><i class="v1" style="width:30%"></i></span><span class="s1">1.5</span><span class="s2">4.6</span></div>
+  <div class="row"><span class="lbl">可扩展性 15%</span><span class="track"><i class="v1" style="width:58%"></i></span><span class="s1">2.9</span><span class="s2">4.5</span></div>
+  <div class="row"><span class="lbl">性能上限 15%</span><span class="track"><i class="v1" style="width:40%"></i></span><span class="s1">2.0</span><span class="s2">4.0</span></div>
+  <div class="row"><span class="lbl">多平台 10%</span><span class="track"><i class="v1" style="width:40%"></i></span><span class="s1">2.0</span><span class="s2">4.5</span></div>
+  <div class="row"><span class="lbl">AI 协作适配 10%</span><span class="track"><i class="v1" style="width:40%"></i></span><span class="s1">2.0</span><span class="s2">4.7</span></div>
+  <div class="row"><span class="lbl">许可证 / IP 5%</span><span class="track"><i class="v1" style="width:20%"></i></span><span class="s1">1.0</span><span class="s2">4.7</span></div>
+  <div class="row"><span class="lbl">维护性 5%</span><span class="track"><i class="v1" style="width:30%"></i></span><span class="s1">1.5</span><span class="s2">4.45</span></div>
+</div>
+
+<h3>四条决定性证据（均为本机实测 · A 级）</h3>
+<div class="grid2">
+  <div class="card"><div class="t">方案一 · 可运行性</div><div class="v">无 <code>project.godot</code></div>
+    <div class="meta">241 个 .gd / 1340 个 .json / 15 个 .tscn，Godot 编辑器无法打开</div></div>
+  <div class="card"><div class="t">方案一 · 许可证</div><div class="v">无 LICENSE 文件</div>
+    <div class="meta">默认保留所有权利；代码可读，不可复制、不可衍生、不可商用</div></div>
+  <div class="card"><div class="t">方案二 · kit 可跑</div><div class="v">MIT ／ Godot 4.5 ／ Mobile</div>
+    <div class="meta">scripts/ 9189 行，38 个测试脚本，CI + CHANGELOG + 复盘文档</div></div>
+  <div class="card"><div class="t">方案二 · PoB 语义</div><div class="v">MIT（更正：非 GPL）</div>
+    <div class="meta">CalcOffence 6263 行、sup_int.lua 7007 行，more/increased 分桶 + tag 兼容判定</div></div>
+</div>
+
+<h3>五处分歧与裁决</h3>
+<table>
+  <thead><tr><th style="width:26%">分歧</th><th style="width:24%">正方</th><th style="width:24%">反方</th><th>裁决</th></tr></thead>
+  <tbody>
+    <tr><td>补个工程文件就能跑？</td><td>A：成本可控</td><td>B：无 CI、场景仅 15 个，补完仍是空壳</td><td><b>否决整仓复用</b>，只借字段名与三个技术点</td></tr>
+    <tr><td>PoB 能不能抄</td><td>旧判：GPL 禁抄</td><td>E：实测 MIT 可抄</td><td><b>法律可抄，工程不该抄</b>：6k 行 Lua 移植＝重写</td></tr>
+    <tr><td>100 弹性能够不够</td><td>B：Godot 上限远高于此</td><td>C：节点化到 300+ 会断崖</td><td><b>基线可过，天花板不行</b>：P3 必须投射物数组化</td></tr>
+    <tr><td>228 测试全绿＝质量背书？</td><td>D：有 CI 有红绿灯</td><td>C：kit 复盘自承"绿着漏 P0"</td><td><b>数量≠正确性</b>：补 6 条端到端数值断言</td></tr>
+    <tr><td>方案一是否一无是处</td><td>E：无证许可即不可用</td><td>A：枚举与命名有价值</td><td><b>降级为参考读物</b>：只取 RNG / 空间分区 / socket 结构</td></tr>
+  </tbody>
+</table>
+
+<h3>推荐落地路径（每阶段带硬门禁）</h3>
+<div class="pipeline">
+  <div class="step"><b>P0 语义冻结 · 1–2 天</b>4 张表 + 10 个黄金用例，全部可手算</div>
+  <div class="step"><b>P1 管线骨架 · 3–5 天</b>base→flat→increased→more→convert→trigger</div>
+  <div class="step done"><b>P2 数据接入 · 3–5 天</b>15 个技能迁移，禁止新增 if 分支</div>
+  <div class="step"><b>P3 性能多端 · 3 天</b>100 弹 / 80 特效 / 80 角色压测 + 移动端冒烟</div>
+</div>
+
+<h3>三个必须人工拍板的问题</h3>
+<table>
+  <thead><tr><th style="width:30%">问题</th><th>为什么不能由 AI 定</th></tr></thead>
+  <tbody>
+    <tr><td>是否接受"只学 PoB 语义、不搬技能名与数值"</td><td>涉及法务与 IP 边界，需法务口确认（PoE 数据版权属 GGG）</td></tr>
+    <tr><td>是否要求 Web 导出</td><td>Web 端会限制多线程物理与音频，直接反推架构取舍</td></tr>
+    <tr><td>性能验收的目标机型与帧率</td><td>当前草案为中端 Android 60fps@1080p，缺少你的真机基线</td></tr>
+  </tbody>
+</table>
+
+<div class="foot">
+  <span>六条门禁铁律：新增辅助石零代码 · 乘区分桶不可混 · 插槽层不认识技能 · 术语全面去 PoE 化 · 每次生成跑 headless 测试 · schema 变更走 ADR</span>
+  <span class="stamp">AI 评审组 · 待签</span>
+</div>
+
+</div>
+</body>
+</html>

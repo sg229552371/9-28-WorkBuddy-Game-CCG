@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 FLY·SEC·S1（展开表 v2 §1.1）· 夜间施工批次 C
+; 扇爆弹：命中处向前爆出扇形
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_fbb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_fbb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_fbb"]
+
+[sub_resource type="Resource" id="Resource_fbb_scale"]
+script = ExtResource("1_fbb")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_fbb_p1"]
+script = ExtResource("2_fbb")
+base_damage = {
+&"cold": 25.0
+}
+behavior_id = &"bhv_projectile"
+behavior_params = {
+&"count_base": 1.0,
+&"lifetime": 1.4,
+&"radius": 12.0,
+&"speed": 660.0,
+&"spread_deg": 4.0
+}
+
+[sub_resource type="Resource" id="Resource_fbb_p2"]
+script = ExtResource("2_fbb")
+base_damage = {
+&"cold": 95.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"sec",
+&"arc_deg": 100.0,
+&"range": 150.0,
+&"delay": 0.0,
+&"hit_count": 1,
+&"hit_interval": 0.0
+}
+
+[resource]
+script = ExtResource("3_fbb")
+gem_id = &"fan_blast_bomb"
+display_name = "扇爆弹"
+parts = Array[ExtResource("2_fbb")]([SubResource("Resource_fbb_p1"), SubResource("Resource_fbb_p2")])
+tags = Array[StringName]([&"attack", &"projectile", &"aoe", &"cold"])
+cast_mode = 0
+base_cast_time = 0.4
+cost_type = 0
+base_cost = 12.0
+base_cooldown = 3.5
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_fbb_scale")

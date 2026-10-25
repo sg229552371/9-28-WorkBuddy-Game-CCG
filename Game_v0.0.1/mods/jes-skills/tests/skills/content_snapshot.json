@@ -1,0 +1,2134 @@
+{
+  "beam_bolt": {
+    "base_cast_time": 0.35,
+    "base_cooldown": 3.0,
+    "base_cost": 11.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "lightning": 30.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 1.4,
+          "radius": 12.0,
+          "speed": 700.0,
+          "spread_deg": 3.0
+        }
+      },
+      {
+        "base_damage": {
+          "lightning": 80.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "length": 240.0,
+          "shape": "line",
+          "width": 44.0
+        }
+      }
+    ]
+  },
+  "beam_wall_bomb": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 4.0,
+    "base_cost": 13.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "lightning": 20.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 1.6,
+          "radius": 12.0,
+          "speed": 600.0,
+          "spread_deg": 3.0
+        }
+      },
+      {
+        "base_damage": {
+          "lightning": 15.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 6,
+          "hit_interval": 0.8,
+          "length": 220.0,
+          "shape": "line",
+          "width": 44.0
+        }
+      }
+    ]
+  },
+  "berserk": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 6.0,
+    "base_cost": 10.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_buff_self",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "buff_mods": [
+            {
+              "op": 1,
+              "stat": "physical_damage",
+              "value": 30.0
+            },
+            {
+              "op": 0,
+              "stat": "crit_chance",
+              "value": 25.0
+            }
+          ],
+          "duration": 5.0
+        }
+      }
+    ]
+  },
+  "breach_roll": {
+    "base_cast_time": 0.2,
+    "base_cooldown": 5.0,
+    "base_cost": 12.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_dash",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "distance": 240.0,
+          "speed": 1300.0
+        }
+      },
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_buff_self",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "buff_mods": [
+            {
+              "op": 0,
+              "stat": "armor",
+              "value": 260.0
+            }
+          ],
+          "duration": 3.5
+        }
+      }
+    ]
+  },
+  "channel_field": {
+    "base_cast_time": 0.45,
+    "base_cooldown": 3.9,
+    "base_cost": 13.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "cold": 14.0
+        },
+        "behavior_id": "bhv_channel",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "max_channel_time": 3.2,
+          "range": 130.0,
+          "shape": "circ",
+          "tick_interval": 0.4
+        }
+      }
+    ]
+  },
+  "chaos_beam": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 3.0,
+    "base_cost": 10.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "chaos": 40.0
+        },
+        "behavior_id": "bhv_channel",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "max_channel_time": 2.0,
+          "tick_interval": 0.5
+        }
+      }
+    ]
+  },
+  "charge_big_blast": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 4.5,
+    "base_cost": 15.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_channel",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "max_channel_time": 1.2,
+          "range": 120.0,
+          "shape": "circ",
+          "tick_interval": 0.3
+        }
+      },
+      {
+        "base_damage": {
+          "fire": 180.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.3,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "radius": 160.0,
+          "shape": "circ"
+        }
+      }
+    ]
+  },
+  "charge_fan_blast": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 4.4,
+    "base_cost": 15.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_channel",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "arc_deg": 90.0,
+          "max_channel_time": 1.2,
+          "range": 150.0,
+          "shape": "sec",
+          "tick_interval": 0.3
+        }
+      },
+      {
+        "base_damage": {
+          "fire": 170.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "arc_deg": 100.0,
+          "delay": 0.25,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "range": 160.0,
+          "shape": "sec"
+        }
+      }
+    ]
+  },
+  "charge_laser": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 4.4,
+    "base_cost": 15.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_channel",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "max_channel_time": 1.2,
+          "range": 240.0,
+          "shape": "line",
+          "tick_interval": 0.3
+        }
+      },
+      {
+        "base_damage": {
+          "chaos": 175.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.2,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "length": 240.0,
+          "shape": "line",
+          "width": 44.0
+        }
+      }
+    ]
+  },
+  "charge_snap": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 4.0,
+    "base_cost": 14.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_channel",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "max_channel_time": 1.0,
+          "shape": "pt",
+          "tick_interval": 0.25
+        }
+      },
+      {
+        "base_damage": {
+          "lightning": 165.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.25,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "shape": "pt"
+        }
+      }
+    ]
+  },
+  "cone_flame": {
+    "base_cast_time": 0.35,
+    "base_cooldown": 3.5,
+    "base_cost": 14.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "fire": 14.0
+        },
+        "behavior_id": "bhv_channel",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "arc_deg": 70.0,
+          "max_channel_time": 2.0,
+          "range": 160.0,
+          "shape": "sec",
+          "tick_interval": 0.25
+        }
+      }
+    ]
+  },
+  "core_detonate": {
+    "base_cast_time": 0.7,
+    "base_cooldown": 3.2,
+    "base_cost": 22.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "fire": 380.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 1.2,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "radius": 170.0
+        }
+      }
+    ]
+  },
+  "crash_land_burst": {
+    "base_cast_time": 0.2,
+    "base_cooldown": 4.2,
+    "base_cost": 13.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_dash",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "distance": 380.0,
+          "path_width": 50.0,
+          "speed": 1100.0
+        }
+      },
+      {
+        "base_damage": {
+          "fire": 125.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.5,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "radius": 130.0,
+          "shape": "circ"
+        }
+      }
+    ]
+  },
+  "delayed_blast_bomb": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 4.0,
+    "base_cost": 13.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "fire": 25.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 1.6,
+          "radius": 13.0,
+          "speed": 620.0,
+          "spread_deg": 4.0
+        }
+      },
+      {
+        "base_damage": {
+          "fire": 105.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.7,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "radius": 120.0,
+          "shape": "circ"
+        }
+      }
+    ]
+  },
+  "delayed_end_ring": {
+    "base_cast_time": 0.2,
+    "base_cooldown": 4.4,
+    "base_cost": 14.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_dash",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "distance": 360.0,
+          "path_width": 40.0,
+          "speed": 1100.0
+        }
+      },
+      {
+        "base_damage": {
+          "fire": 125.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.7,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "inner_radius": 80.0,
+          "radius": 140.0,
+          "shape": "ring"
+        }
+      }
+    ]
+  },
+  "delayed_fan_bomb": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 4.5,
+    "base_cost": 15.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "cold": 25.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 1.5,
+          "radius": 12.0,
+          "speed": 620.0,
+          "spread_deg": 4.0
+        }
+      },
+      {
+        "base_damage": {
+          "cold": 100.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "arc_deg": 110.0,
+          "delay": 0.7,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "range": 160.0,
+          "shape": "sec"
+        }
+      }
+    ]
+  },
+  "delayed_light_track": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 4.0,
+    "base_cost": 13.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "lightning": 120.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.8,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "length": 250.0,
+          "shape": "line",
+          "width": 44.0
+        }
+      }
+    ]
+  },
+  "delayed_ring_bomb": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 4.5,
+    "base_cost": 15.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "fire": 25.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 1.6,
+          "radius": 12.0,
+          "speed": 600.0,
+          "spread_deg": 4.0
+        }
+      },
+      {
+        "base_damage": {
+          "fire": 100.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.8,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "inner_radius": 85.0,
+          "radius": 150.0,
+          "shape": "ring"
+        }
+      }
+    ]
+  },
+  "delayed_shock_ring": {
+    "base_cast_time": 0.45,
+    "base_cooldown": 4.2,
+    "base_cost": 14.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "fire": 120.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.8,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "inner_radius": 85.0,
+          "radius": 150.0,
+          "shape": "ring"
+        }
+      }
+    ]
+  },
+  "elemental_ward": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 7.0,
+    "base_cost": 14.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_buff_self",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "buff_mods": [
+            {
+              "op": 0,
+              "stat": "fire_resistance",
+              "value": 30.0
+            },
+            {
+              "op": 0,
+              "stat": "cold_resistance",
+              "value": 30.0
+            },
+            {
+              "op": 0,
+              "stat": "lightning_resistance",
+              "value": 30.0
+            },
+            {
+              "op": 0,
+              "stat": "chaos_resistance",
+              "value": 15.0
+            }
+          ],
+          "duration": 5.0
+        }
+      }
+    ]
+  },
+  "end_ring_burst": {
+    "base_cast_time": 0.2,
+    "base_cooldown": 3.8,
+    "base_cost": 12.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_dash",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "distance": 360.0,
+          "path_width": 40.0,
+          "speed": 1100.0
+        }
+      },
+      {
+        "base_damage": {
+          "physical": 115.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "inner_radius": 80.0,
+          "radius": 150.0,
+          "shape": "ring"
+        }
+      }
+    ]
+  },
+  "everflame_warden": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 8.0,
+    "base_cost": 16.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_buff_self",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "buff_mods": [
+            {
+              "op": 0,
+              "stat": "minion_damage",
+              "value": 40.0
+            },
+            {
+              "op": 1,
+              "stat": "minion_attack_speed",
+              "value": 30.0
+            },
+            {
+              "op": 0,
+              "stat": "minion_life",
+              "value": 40.0
+            }
+          ],
+          "duration": 7.0
+        }
+      },
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_summon",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "lifetime": 20.0,
+          "max_count": 1
+        }
+      }
+    ]
+  },
+  "fan_blast_bomb": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 3.5,
+    "base_cost": 12.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "cold": 25.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 1.4,
+          "radius": 12.0,
+          "speed": 660.0,
+          "spread_deg": 4.0
+        }
+      },
+      {
+        "base_damage": {
+          "cold": 95.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "arc_deg": 100.0,
+          "delay": 0.0,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "range": 150.0,
+          "shape": "sec"
+        }
+      }
+    ]
+  },
+  "field_fortify": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 5.0,
+    "base_cost": 18.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "chaos": 22.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 3,
+          "hit_interval": 0.7,
+          "radius": 120.0
+        }
+      },
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_buff_self",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "buff_mods": [
+            {
+              "op": 0,
+              "stat": "armor",
+              "value": 180.0
+            }
+          ],
+          "duration": 4.0
+        }
+      }
+    ]
+  },
+  "fire_burst": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 2.0,
+    "base_cost": 10.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "fire": 150.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.5,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "radius": 100.0
+        }
+      }
+    ]
+  },
+  "fire_trail": {
+    "base_cast_time": 0.2,
+    "base_cooldown": 6.0,
+    "base_cost": 14.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "fire": 20.0
+        },
+        "behavior_id": "bhv_dash",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "distance": 350.0,
+          "path_damage": {
+            "fire": 20.0
+          },
+          "path_width": 56.0,
+          "path_zone_duration": 3.0,
+          "speed": 1000.0
+        }
+      }
+    ]
+  },
+  "focus_beam": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 3.0,
+    "base_cost": 11.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "cold": 15.0
+        },
+        "behavior_id": "bhv_channel",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "max_channel_time": 2.1,
+          "shape": "pt",
+          "tick_interval": 0.3
+        }
+      }
+    ]
+  },
+  "frost_nova": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 2.5,
+    "base_cost": 12.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "cold": 140.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.35,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "radius": 130.0
+        }
+      }
+    ]
+  },
+  "frost_shard": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 0.0,
+    "base_cost": 10.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "cold": 100.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 2.0,
+          "radius": 14.0,
+          "speed": 600.0,
+          "spread_deg": 6.0
+        }
+      }
+    ]
+  },
+  "hollow_shockwave": {
+    "base_cast_time": 0.45,
+    "base_cooldown": 3.5,
+    "base_cost": 14.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "fire": 88.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.35,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "inner_radius": 90.0,
+          "radius": 150.0,
+          "shape": "ring"
+        }
+      }
+    ]
+  },
+  "hunt_call": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 7.0,
+    "base_cost": 16.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_buff_self",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "buff_mods": [
+            {
+              "op": 0,
+              "stat": "crit_chance",
+              "value": 20.0
+            },
+            {
+              "op": 1,
+              "stat": "crit_multi",
+              "value": 40.0
+            }
+          ],
+          "duration": 5.0
+        }
+      }
+    ]
+  },
+  "instant_beam": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 3.0,
+    "base_cost": 13.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "lightning": 72.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "length": 260.0,
+          "shape": "line",
+          "width": 44.0
+        }
+      }
+    ]
+  },
+  "light_wall": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 4.2,
+    "base_cost": 14.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "cold": 19.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 6,
+          "hit_interval": 0.8,
+          "length": 230.0,
+          "shape": "line",
+          "width": 44.0
+        }
+      }
+    ]
+  },
+  "lightning_slash": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 0.0,
+    "base_cost": 10.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "lightning": 120.0,
+          "physical": 30.0
+        },
+        "behavior_id": "bhv_melee_swing",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "arc_deg": 90.0,
+          "range": 130.0
+        }
+      }
+    ]
+  },
+  "line_mine_array": {
+    "base_cast_time": 0.6,
+    "base_cooldown": 6.5,
+    "base_cost": 19.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.6,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "length": 220.0,
+          "shape": "line",
+          "width": 44.0
+        }
+      },
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_summon",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "formation": "line",
+          "formation_spacing": 70.0,
+          "lifetime": 9.0,
+          "max_count": 4,
+          "per_cast": 4
+        }
+      }
+    ]
+  },
+  "mark_detonate": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 4.0,
+    "base_cost": 13.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "fire": 165.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.9,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "shape": "pt"
+        }
+      }
+    ]
+  },
+  "multi_burst": {
+    "base_cast_time": 0.45,
+    "base_cooldown": 3.2,
+    "base_cost": 11.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "fire": 22.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "point_count": 6,
+          "point_spacing": 80.0,
+          "radius": 60.0,
+          "shape": "multi"
+        }
+      }
+    ]
+  },
+  "multi_venom_bomb": {
+    "base_cast_time": 0.45,
+    "base_cooldown": 4.5,
+    "base_cost": 15.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "chaos": 12.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 3.0,
+          "lifetime": 1.4,
+          "radius": 10.0,
+          "speed": 700.0,
+          "spread_deg": 30.0
+        }
+      },
+      {
+        "base_damage": {
+          "chaos": 14.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 5,
+          "hit_interval": 0.8,
+          "radius": 100.0,
+          "shape": "circ"
+        }
+      }
+    ]
+  },
+  "orbit_blades": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 4.0,
+    "base_cost": 12.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "physical": 30.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 3.0,
+          "lifetime": 4.0,
+          "motion": "orbit",
+          "orbit_radius": 90.0,
+          "radius": 10.0,
+          "speed": 375.0
+        }
+      }
+    ]
+  },
+  "path_delay_blast": {
+    "base_cast_time": 0.2,
+    "base_cooldown": 4.2,
+    "base_cost": 13.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_dash",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "distance": 400.0,
+          "path_width": 50.0,
+          "speed": 1000.0
+        }
+      },
+      {
+        "base_damage": {
+          "fire": 55.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.4,
+          "hit_count": 2,
+          "hit_interval": 0.4,
+          "length": 280.0,
+          "shape": "line",
+          "width": 56.0
+        }
+      }
+    ]
+  },
+  "payload_arrow": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 3.5,
+    "base_cost": 12.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "physical": 30.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 1.2,
+          "radius": 12.0,
+          "speed": 650.0,
+          "spread_deg": 4.0
+        }
+      },
+      {
+        "base_damage": {
+          "fire": 90.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.35,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "radius": 90.0,
+          "shape": "circ"
+        }
+      }
+    ]
+  },
+  "piercing_bolt": {
+    "base_cast_time": 0.45,
+    "base_cooldown": 0.9,
+    "base_cost": 12.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "physical": 100.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 2.5,
+          "pierce": 3,
+          "radius": 14.0,
+          "speed": 900.0
+        }
+      }
+    ]
+  },
+  "point_snap": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 2.6,
+    "base_cost": 9.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "lightning": 135.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "shape": "pt"
+        }
+      }
+    ]
+  },
+  "quake_field": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 4.5,
+    "base_cost": 18.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "physical": 26.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 4,
+          "hit_interval": 0.7,
+          "radius": 130.0
+        }
+      }
+    ]
+  },
+  "rift_step": {
+    "base_cast_time": 0.2,
+    "base_cooldown": 2.0,
+    "base_cost": 8.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_dash",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "distance": 260.0,
+          "speed": 1300.0
+        }
+      }
+    ]
+  },
+  "ring_blast_bomb": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 3.5,
+    "base_cost": 12.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "fire": 25.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 1.5,
+          "radius": 12.0,
+          "speed": 640.0,
+          "spread_deg": 4.0
+        }
+      },
+      {
+        "base_damage": {
+          "fire": 90.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "inner_radius": 80.0,
+          "radius": 140.0,
+          "shape": "ring"
+        }
+      }
+    ]
+  },
+  "ring_of_cinders": {
+    "base_cast_time": 0.45,
+    "base_cooldown": 6.0,
+    "base_cost": 22.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "fire": 62.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.1,
+          "hit_count": 3,
+          "hit_interval": 1.0,
+          "inner_radius": 90.0,
+          "radius": 150.0
+        }
+      }
+    ]
+  },
+  "ring_summon_4": {
+    "base_cast_time": 0.6,
+    "base_cooldown": 6.0,
+    "base_cost": 22.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_summon",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "formation": "ring",
+          "formation_radius": 110.0,
+          "lifetime": 12.0,
+          "max_count": 4,
+          "per_cast": 4
+        }
+      }
+    ]
+  },
+  "scorch_trail_bolt": {
+    "base_cast_time": 0.45,
+    "base_cooldown": 4.0,
+    "base_cost": 13.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "fire": 25.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 1.4,
+          "radius": 12.0,
+          "speed": 600.0,
+          "spread_deg": 4.0
+        }
+      },
+      {
+        "base_damage": {
+          "fire": 18.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 5,
+          "hit_interval": 0.3,
+          "length": 220.0,
+          "shape": "line",
+          "width": 44.0
+        }
+      }
+    ]
+  },
+  "shadow_dash": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 4.0,
+    "base_cost": 10.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "physical": 80.0
+        },
+        "behavior_id": "bhv_dash",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "distance": 300.0,
+          "path_damage": {
+            "physical": 80.0
+          },
+          "speed": 1000.0
+        }
+      }
+    ]
+  },
+  "sky_multi_burst": {
+    "base_cast_time": 0.45,
+    "base_cooldown": 4.5,
+    "base_cost": 15.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "physical": 27.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.7,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "point_count": 5,
+          "point_spacing": 90.0,
+          "radius": 60.0,
+          "shape": "multi"
+        }
+      }
+    ]
+  },
+  "spirit_summon": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 5.0,
+    "base_cost": 20.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_summon",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "lifetime": 10.0,
+          "max_count": 2
+        }
+      }
+    ]
+  },
+  "standing_field": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 6.0,
+    "base_cost": 18.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "lightning": 24.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 5,
+          "hit_interval": 1.0,
+          "radius": 120.0,
+          "shape": "circ"
+        }
+      }
+    ]
+  },
+  "stardust_volley": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 1.2,
+    "base_cost": 18.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "lightning": 38.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 5.0,
+          "lifetime": 1.1,
+          "radius": 8.0,
+          "speed": 950.0,
+          "spread_deg": 36.0
+        }
+      }
+    ]
+  },
+  "starfall_barrage": {
+    "base_cast_time": 0.45,
+    "base_cooldown": 4.0,
+    "base_cost": 14.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "lightning": 12.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 5.0,
+          "lifetime": 1.2,
+          "radius": 9.0,
+          "speed": 800.0,
+          "spread_deg": 45.0
+        }
+      },
+      {
+        "base_damage": {
+          "lightning": 55.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.6,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "radius": 100.0,
+          "shape": "circ"
+        }
+      }
+    ]
+  },
+  "stone_stance": {
+    "base_cast_time": 0.5,
+    "base_cooldown": 8.0,
+    "base_cost": 12.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_buff_self",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "buff_mods": [
+            {
+              "op": 0,
+              "stat": "armor",
+              "value": 450.0
+            },
+            {
+              "op": 0,
+              "stat": "physical_resistance",
+              "value": 10.0
+            }
+          ],
+          "duration": 5.0
+        }
+      }
+    ]
+  },
+  "summon_wall": {
+    "base_cast_time": 0.6,
+    "base_cooldown": 7.0,
+    "base_cost": 20.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_summon",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "formation": "line",
+          "formation_spacing": 70.0,
+          "lifetime": 8.0,
+          "max_count": 3,
+          "per_cast": 3
+        }
+      },
+      {
+        "base_damage": {
+          "fire": 12.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 8,
+          "hit_interval": 1.0,
+          "length": 220.0,
+          "shape": "line",
+          "width": 44.0
+        }
+      }
+    ]
+  },
+  "sunder_strike": {
+    "base_cast_time": 0.85,
+    "base_cooldown": 1.4,
+    "base_cost": 16.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "physical": 170.0
+        },
+        "behavior_id": "bhv_melee_swing",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "arc_deg": 70.0,
+          "range": 150.0
+        }
+      }
+    ]
+  },
+  "support_area": {
+    "cost_multiplier": 1.3,
+    "kind": "supports",
+    "stat_modifiers": [
+      {
+        "stat": "area_size",
+        "value": 30.0
+      }
+    ]
+  },
+  "support_chain": {
+    "cost_multiplier": 1.35,
+    "kind": "supports",
+    "stat_modifiers": []
+  },
+  "support_channel_focus": {
+    "cost_multiplier": 1.2,
+    "kind": "supports",
+    "stat_modifiers": []
+  },
+  "support_cold_focus": {
+    "cost_multiplier": 1.2,
+    "kind": "supports",
+    "stat_modifiers": [
+      {
+        "stat": "cold_damage",
+        "value": 50.0
+      }
+    ]
+  },
+  "support_crit": {
+    "cost_multiplier": 1.25,
+    "kind": "supports",
+    "stat_modifiers": [
+      {
+        "stat": "crit_chance",
+        "value": 15.0
+      }
+    ]
+  },
+  "support_duration": {
+    "cost_multiplier": 1.25,
+    "kind": "supports",
+    "stat_modifiers": [
+      {
+        "stat": "duration",
+        "value": 30.0
+      }
+    ]
+  },
+  "support_fire_focus": {
+    "cost_multiplier": 1.2,
+    "kind": "supports",
+    "stat_modifiers": [
+      {
+        "stat": "fire_damage",
+        "value": 45.0
+      }
+    ]
+  },
+  "support_melee_focus": {
+    "cost_multiplier": 1.2,
+    "kind": "supports",
+    "stat_modifiers": [
+      {
+        "stat": "physical_damage",
+        "value": 40.0
+      }
+    ]
+  },
+  "support_minion": {
+    "cost_multiplier": 1.35,
+    "kind": "supports",
+    "stat_modifiers": [
+      {
+        "stat": "minion_damage",
+        "value": 40.0
+      },
+      {
+        "stat": "minion_life",
+        "value": 60.0
+      },
+      {
+        "stat": "minion_attack_speed",
+        "value": 25.0
+      }
+    ]
+  },
+  "support_multi": {
+    "cost_multiplier": 1.4,
+    "kind": "supports",
+    "stat_modifiers": []
+  },
+  "support_orbit": {
+    "cost_multiplier": 1.4,
+    "kind": "supports",
+    "stat_modifiers": []
+  },
+  "support_pierce": {
+    "cost_multiplier": 1.25,
+    "kind": "supports",
+    "stat_modifiers": []
+  },
+  "support_velocity": {
+    "cost_multiplier": 1.15,
+    "kind": "supports",
+    "stat_modifiers": []
+  },
+  "sustained_beam": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 3.75,
+    "base_cost": 13.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "lightning": 10.0
+        },
+        "behavior_id": "bhv_channel",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "max_channel_time": 3.0,
+          "range": 230.0,
+          "shape": "line",
+          "tick_interval": 0.25
+        }
+      }
+    ]
+  },
+  "totem_array": {
+    "base_cast_time": 0.6,
+    "base_cooldown": 6.0,
+    "base_cost": 18.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.8,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "radius": 120.0,
+          "shape": "circ"
+        }
+      },
+      {
+        "base_damage": {},
+        "behavior_id": "bhv_summon",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "formation": "ring",
+          "formation_radius": 90.0,
+          "lifetime": 10.0,
+          "max_count": 3,
+          "per_cast": 3
+        }
+      }
+    ]
+  },
+  "trajectory_burst_bomb": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 3.5,
+    "base_cost": 12.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "lightning": 20.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 1.7,
+          "radius": 12.0,
+          "speed": 640.0,
+          "spread_deg": 3.0
+        }
+      },
+      {
+        "base_damage": {
+          "lightning": 30.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.6,
+          "hit_count": 3,
+          "hit_interval": 0.25,
+          "length": 260.0,
+          "shape": "line",
+          "width": 44.0
+        }
+      }
+    ]
+  },
+  "trample_charge": {
+    "base_cast_time": 0.2,
+    "base_cooldown": 5.0,
+    "base_cost": 12.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "physical": 55.0
+        },
+        "behavior_id": "bhv_dash",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "distance": 380.0,
+          "path_damage": {
+            "physical": 55.0
+          },
+          "path_width": 60.0,
+          "speed": 1200.0
+        }
+      }
+    ]
+  },
+  "traveling_beam_bolt": {
+    "base_cast_time": 0.35,
+    "base_cooldown": 3.0,
+    "base_cost": 11.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "lightning": 20.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 1.6,
+          "radius": 12.0,
+          "speed": 680.0,
+          "spread_deg": 3.0
+        }
+      },
+      {
+        "base_damage": {
+          "lightning": 20.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 4,
+          "hit_interval": 0.25,
+          "length": 240.0,
+          "shape": "line",
+          "width": 44.0
+        }
+      }
+    ]
+  },
+  "triple_slash": {
+    "base_cast_time": 0.35,
+    "base_cooldown": 2.8,
+    "base_cost": 10.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "physical": 45.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "arc_deg": 110.0,
+          "delay": 0.0,
+          "hit_count": 3,
+          "hit_interval": 0.35,
+          "range": 140.0,
+          "shape": "sec"
+        }
+      }
+    ]
+  },
+  "venom_cloud_bomb": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 3.5,
+    "base_cost": 12.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "chaos": 15.0
+        },
+        "behavior_id": "bhv_projectile",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "count_base": 1.0,
+          "lifetime": 1.5,
+          "radius": 13.0,
+          "speed": 560.0,
+          "spread_deg": 4.0
+        }
+      },
+      {
+        "base_damage": {
+          "chaos": 17.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.0,
+          "hit_count": 5,
+          "hit_interval": 0.8,
+          "radius": 110.0,
+          "shape": "circ"
+        }
+      }
+    ]
+  },
+  "warning_circle_burst": {
+    "base_cast_time": 0.45,
+    "base_cooldown": 4.2,
+    "base_cost": 14.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "cold": 135.0
+        },
+        "behavior_id": "bhv_aoe_burst",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "delay": 0.9,
+          "hit_count": 1,
+          "hit_interval": 0.0,
+          "radius": 150.0,
+          "shape": "circ"
+        }
+      }
+    ]
+  },
+  "whirl_channel": {
+    "base_cast_time": 0.4,
+    "base_cooldown": 3.4,
+    "base_cost": 12.0,
+    "cost_type": 0,
+    "kind": "active",
+    "parts": [
+      {
+        "base_damage": {
+          "physical": 12.0
+        },
+        "behavior_id": "bhv_channel",
+        "channel": 1,
+        "effectiveness": 1.0,
+        "params": {
+          "max_channel_time": 2.4,
+          "range": 110.0,
+          "shape": "circ",
+          "tick_interval": 0.3
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "autoShow": true,
+  "joystick": {
+    "size": 132,
+    "knob": 56,
+    "deadZone": 0.18,
+    "maxVec": 1
+  },
+  "buttons": {
+    "skill": true,
+    "interact": true,
+    "backpack": true
+  },
+  "hideTouchButtons": true,
+  "npcTap": {
+    "dwellSeconds": 1,
+    "tapRadius": 110,
+    "hintRadius": 104
+  },
+  "floatStick": {
+    "enabled": true,
+    "zoneRatio": 1,
+    "returnOnRelease": true,
+    "dragBase": true,
+    "stayInZone": true,
+    "idleOpacity": 0
+  }
+}

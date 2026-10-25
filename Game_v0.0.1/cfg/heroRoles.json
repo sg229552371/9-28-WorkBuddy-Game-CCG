@@ -1,0 +1,53 @@
+{
+  "output": {
+    "name": "输出",
+    "color": "#ff6b6b",
+    "dmgBand": "高（基准 1.0）",
+    "desc": "以直接伤害为主，清场效率最高"
+  },
+  "defense": {
+    "name": "防御",
+    "color": "#6cb2ff",
+    "dmgBand": "低（约 0.5~0.7）",
+    "desc": "高生存 + 护盾/减伤，低伤害 + 附加效果"
+  },
+  "aux": {
+    "name": "辅助",
+    "color": "#6bd88a",
+    "dmgBand": "低（约 0.4~0.6）",
+    "desc": "治疗/增益/减益/召唤类，强化队伍"
+  },
+  "byHero": {
+    "H001": "output",
+    "H002": "output",
+    "H003": "output",
+    "H004": "defense",
+    "H005": "defense",
+    "H006": "output",
+    "H007": "aux",
+    "H008": "defense",
+    "H009": "defense",
+    "H010": "aux",
+    "H011": "aux",
+    "H012": "aux"
+  },
+  "requireAll": [
+    "output",
+    "defense",
+    "aux"
+  ],
+  "difficultyOrder": [
+    "H001",
+    "H004",
+    "H010",
+    "H006",
+    "H012",
+    "H005",
+    "H003",
+    "H011",
+    "H007",
+    "H008",
+    "H002",
+    "H009"
+  ]
+}

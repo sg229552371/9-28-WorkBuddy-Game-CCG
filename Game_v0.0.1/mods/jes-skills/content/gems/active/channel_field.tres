@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 CHAN·CIRC·ZONE（展开表 v2 §1.3）· 夜间施工批次 C
+; 引导领域：引导期间常驻领域（引导 tick 即领域多段判定）
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_chf"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_chf"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_chf"]
+
+[sub_resource type="Resource" id="Resource_chf_scale"]
+script = ExtResource("1_chf")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_chf_part"]
+script = ExtResource("2_chf")
+base_damage = {
+&"cold": 14.0
+}
+behavior_id = &"bhv_channel"
+behavior_params = {
+&"shape": &"circ",
+&"range": 130.0,
+&"tick_interval": 0.4,
+&"max_channel_time": 3.2
+}
+
+[resource]
+script = ExtResource("3_chf")
+gem_id = &"channel_field"
+display_name = "引导领域"
+parts = Array[ExtResource("2_chf")]([SubResource("Resource_chf_part")])
+tags = Array[StringName]([&"spell", &"channel", &"cold"])
+cast_mode = 0
+base_cast_time = 0.45
+cost_type = 0
+base_cost = 13.0
+base_cooldown = 3.9
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_chf_scale")

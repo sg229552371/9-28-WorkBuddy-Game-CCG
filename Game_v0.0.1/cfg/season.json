@@ -1,0 +1,63 @@
+{
+  "maxLv": 10,
+  "expBase": 1000,
+  "expStep": 200,
+  "weekly": {
+    "killGoal": 200,
+    "extractGoal": 3,
+    "levelUpGoal": 10
+  },
+  "durationDays": 28,
+  "expGain": {
+    "kill": 6,
+    "killElite": 40,
+    "levelUp": 200,
+    "extract": 300
+  },
+  "rewards": [
+    {
+      "id": "SR001",
+      "unlockAtLv": 1,
+      "type": "crystal",
+      "amount": 200,
+      "desc": "赛季 L1：进化结晶 ×200"
+    },
+    {
+      "id": "SR002",
+      "unlockAtLv": 3,
+      "type": "chip",
+      "amount": 1,
+      "desc": "赛季 L3：遗迹秘宝 ×1"
+    },
+    {
+      "id": "SR003",
+      "unlockAtLv": 5,
+      "type": "crystal",
+      "amount": 600,
+      "desc": "赛季 L5：进化结晶 ×600"
+    },
+    {
+      "id": "SR004",
+      "unlockAtLv": 7,
+      "type": "insurance",
+      "amount": 1,
+      "desc": "赛季 L7：保险契约 ×1"
+    },
+    {
+      "id": "SR005",
+      "unlockAtLv": 10,
+      "type": "crystal",
+      "amount": 1500,
+      "desc": "赛季 L10：进化结晶 ×1500"
+    }
+  ],
+  "challenge": {
+    "enabled": true,
+    "timeLimit": 900,
+    "note": "赛季挑战 = 深渊世界 + G.seasonRun 标记"
+  },
+  "unlock": {
+    "afterLevels": 20,
+    "note": "主线通关 20 关后开放赛季入口（主城·赛季使者 NPC）"
+  }
+}

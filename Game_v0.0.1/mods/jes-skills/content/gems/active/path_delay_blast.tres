@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 DASH·LINE·DLY（展开表 v2 §1.4）· 夜间施工批次 C
+; 路径延迟爆：冲刺路径延迟起爆（双段：位移段 + 延迟线形爆段，线形与路径同向）
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_pdb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_pdb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_pdb"]
+
+[sub_resource type="Resource" id="Resource_pdb_scale"]
+script = ExtResource("1_pdb")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_pdb_p1"]
+script = ExtResource("2_pdb")
+behavior_id = &"bhv_dash"
+behavior_params = {
+&"distance": 400.0,
+&"speed": 1000.0,
+&"path_width": 50.0
+}
+
+[sub_resource type="Resource" id="Resource_pdb_p2"]
+script = ExtResource("2_pdb")
+base_damage = {
+&"fire": 55.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"line",
+&"length": 280.0,
+&"width": 56.0,
+&"delay": 0.4,
+&"hit_count": 2,
+&"hit_interval": 0.4
+}
+
+[resource]
+script = ExtResource("3_pdb")
+gem_id = &"path_delay_blast"
+display_name = "路径延迟爆"
+parts = Array[ExtResource("2_pdb")]([SubResource("Resource_pdb_p1"), SubResource("Resource_pdb_p2")])
+tags = Array[StringName]([&"attack", &"movement", &"aoe", &"fire"])
+cast_mode = 0
+base_cast_time = 0.2
+cost_type = 0
+base_cost = 13.0
+base_cooldown = 4.2
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_pdb_scale")

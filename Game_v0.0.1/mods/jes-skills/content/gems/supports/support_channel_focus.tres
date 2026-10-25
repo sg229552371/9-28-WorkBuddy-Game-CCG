@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SupportGemData" format=3]
+
+; 夜间施工批次 D（D-45）：持久引导——引导类辅助补缺。
+; D-42 契约：max_channel_time 在 channel 标签承诺面内（TagContract channel.allow），
+; 覆盖键合法；require 锁定 channel 形态，装到非引导技能上会被整体拒绝。
+; 数值定稿（D-55，2026-10-22 制作人裁定按推算值转正，后续大 playtest 统一回调）：引导时长 +1.0 秒（加算），对 2~3 秒引导约 +33%~50%。
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/support_gem_data.gd" id="1_csf"]
+
+[resource]
+script = ExtResource("1_csf")
+support_id = &"support_channel_focus"
+display_name = "持久引导"
+require_tags = Array[StringName]([&"channel"])
+cost_multiplier = 1.2
+behavior_overrides = {
+&"max_channel_time": {
+&"add": 1.0
+}
+}

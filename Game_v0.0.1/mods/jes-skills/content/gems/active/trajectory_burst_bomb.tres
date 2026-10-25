@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 FLY·LINE·DLY（展开表 v2 §1.1）· 夜间施工批次 C
+; 轨迹爆弹：沿轨迹延迟逐段起爆（多段延迟 = 逐段起爆的 plan 层表达，D-45）
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_tjb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_tjb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_tjb"]
+
+[sub_resource type="Resource" id="Resource_tjb_scale"]
+script = ExtResource("1_tjb")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_tjb_p1"]
+script = ExtResource("2_tjb")
+base_damage = {
+&"lightning": 20.0
+}
+behavior_id = &"bhv_projectile"
+behavior_params = {
+&"count_base": 1.0,
+&"lifetime": 1.7,
+&"radius": 12.0,
+&"speed": 640.0,
+&"spread_deg": 3.0
+}
+
+[sub_resource type="Resource" id="Resource_tjb_p2"]
+script = ExtResource("2_tjb")
+base_damage = {
+&"lightning": 30.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"line",
+&"length": 260.0,
+&"width": 44.0,
+&"delay": 0.6,
+&"hit_count": 3,
+&"hit_interval": 0.25
+}
+
+[resource]
+script = ExtResource("3_tjb")
+gem_id = &"trajectory_burst_bomb"
+display_name = "轨迹爆弹"
+parts = Array[ExtResource("2_tjb")]([SubResource("Resource_tjb_p1"), SubResource("Resource_tjb_p2")])
+tags = Array[StringName]([&"spell", &"projectile", &"aoe", &"lightning"])
+cast_mode = 0
+base_cast_time = 0.4
+cost_type = 0
+base_cost = 12.0
+base_cooldown = 3.5
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_tjb_scale")

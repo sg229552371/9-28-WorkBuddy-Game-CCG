@@ -1,0 +1,62 @@
+{
+  "normal": {
+    "name": "普通宝箱",
+    "color": "#9aa7b8",
+    "shape": [
+      1,
+      1
+    ],
+    "weight": 8,
+    "stackMax": 5,
+    "value": 20,
+    "dropW": 70
+  },
+  "advanced": {
+    "name": "高级宝箱",
+    "color": "#6cb2ff",
+    "shape": [
+      1,
+      1
+    ],
+    "weight": 12,
+    "stackMax": 5,
+    "value": 60,
+    "dropW": 25
+  },
+  "epic": {
+    "name": "史诗宝箱",
+    "color": "#c79bff",
+    "shape": [
+      1,
+      1
+    ],
+    "weight": 18,
+    "stackMax": 5,
+    "value": 150,
+    "dropW": 5
+  },
+  "divine": {
+    "name": "神圣宝箱",
+    "color": "#ffd76a",
+    "shape": [
+      1,
+      1
+    ],
+    "weight": 26,
+    "stackMax": 5,
+    "value": 400,
+    "dropW": 0
+  },
+  "mythic": {
+    "name": "神话宝箱",
+    "color": "#ff8c5a",
+    "shape": [
+      1,
+      1
+    ],
+    "weight": 36,
+    "stackMax": 3,
+    "value": 1000,
+    "dropW": 0
+  }
+}

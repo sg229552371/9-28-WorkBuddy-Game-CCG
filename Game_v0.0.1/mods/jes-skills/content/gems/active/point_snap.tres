@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 INST·PT·S1（展开表 v2 §1.2）· 夜间施工批次 C
+; 单体瞬击：点名单体立即结算（点形状判定，ShapeHit pt）
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_psn"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_psn"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_psn"]
+
+[sub_resource type="Resource" id="Resource_psn_scale"]
+script = ExtResource("1_psn")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_psn_part"]
+script = ExtResource("2_psn")
+base_damage = {
+&"lightning": 135.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"pt",
+&"delay": 0.0,
+&"hit_count": 1,
+&"hit_interval": 0.0
+}
+
+[resource]
+script = ExtResource("3_psn")
+gem_id = &"point_snap"
+display_name = "单体瞬击"
+parts = Array[ExtResource("2_psn")]([SubResource("Resource_psn_part")])
+tags = Array[StringName]([&"attack", &"aoe", &"lightning"])
+cast_mode = 0
+base_cast_time = 0.4
+cost_type = 0
+base_cost = 9.0
+base_cooldown = 2.6
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_psn_scale")

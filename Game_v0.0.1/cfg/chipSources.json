@@ -1,0 +1,23 @@
+{
+  "chest": {
+    "enabled": true,
+    "weight": 26,
+    "itemQW": [
+      55,
+      28,
+      14,
+      3
+    ]
+  },
+  "shop": {
+    "enabled": true,
+    "cost": 180,
+    "qualityWeights": [
+      50,
+      30,
+      16,
+      4
+    ],
+    "desc": "遗迹工坊购买 1 枚随机遗迹秘宝"
+  }
+}

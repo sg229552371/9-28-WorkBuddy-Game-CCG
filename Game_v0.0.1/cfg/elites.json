@@ -1,0 +1,34 @@
+{
+  "convertChance": 0,
+  "chanceProgress": 0.06,
+  "riftChance": 0,
+  "affixCount": [
+    1,
+    2
+  ],
+  "sizeMul": 1.35,
+  "barWidth": 44,
+  "affixes": {
+    "坚韧": {
+      "hpMul": 3,
+      "defAdd": 2,
+      "color": "#e5a04b"
+    },
+    "迅捷": {
+      "spdMul": 1.5,
+      "atkMul": 1.1,
+      "color": "#5ad0ff"
+    },
+    "狂暴": {
+      "atkMul": 1.7,
+      "spdMul": 1.15,
+      "color": "#ff5b5b"
+    },
+    "护盾": {
+      "shieldHp": 60,
+      "hpMul": 1.5,
+      "color": "#6cb2ff"
+    }
+  },
+  "extraExp": 2
+}

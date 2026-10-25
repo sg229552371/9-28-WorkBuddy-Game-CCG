@@ -1,0 +1,11 @@
+{
+  "zoom": 1.2,
+  "viewH": 900,
+  "minAspect": 0.75,
+  "portraitFill": true,
+  "portraitBreakpoint": 1,
+  "smooth": 8,
+  "portraitViewH": 980,
+  "zoomMin": 1,
+  "zoomMax": 2
+}

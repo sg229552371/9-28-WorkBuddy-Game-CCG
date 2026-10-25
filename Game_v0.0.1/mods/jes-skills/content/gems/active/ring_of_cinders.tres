@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_rcol"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_rcol"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_rcol"]
+
+[sub_resource type="Resource" id="Resource_rcol_scale"]
+script = ExtResource("1_rcol")
+per_level = 0.08
+knee_level = 10
+per_level_late = 0.14
+
+[sub_resource type="Resource" id="Resource_rcol_part"]
+script = ExtResource("2_rcol")
+base_damage = {
+&"fire": 62.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"delay": 0.1,
+&"hit_count": 3,
+&"hit_interval": 1.0,
+&"radius": 150.0,
+&"inner_radius": 90.0
+}
+
+[resource]
+script = ExtResource("3_rcol")
+gem_id = &"ring_of_cinders"
+display_name = "落烬环"
+parts = Array[ExtResource("2_rcol")]([SubResource("Resource_rcol_part")])
+tags = Array[StringName]([&"spell", &"aoe", &"fire"])
+base_cast_time = 0.45
+base_cost = 22.0
+base_cooldown = 6.0
+level_scaling = SubResource("Resource_rcol_scale")

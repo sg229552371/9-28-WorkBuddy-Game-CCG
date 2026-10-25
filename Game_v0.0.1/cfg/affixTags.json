@@ -1,0 +1,74 @@
+{
+  "弹道数量": {
+    "base": 1,
+    "min": 1,
+    "max": 8,
+    "round": "floor",
+    "applyTo": "bullets",
+    "mode": "flat"
+  },
+  "冷却": {
+    "base": 1,
+    "min": 0.2,
+    "max": 2,
+    "round": "none",
+    "applyTo": "cdMul",
+    "mode": "mult"
+  },
+  "弹速": {
+    "base": 1,
+    "min": 0.4,
+    "max": 3,
+    "round": "none",
+    "applyTo": "spdMul",
+    "mode": "mult"
+  },
+  "范围": {
+    "base": 1,
+    "min": 0.5,
+    "max": 3,
+    "round": "none",
+    "applyTo": "aoeMul",
+    "mode": "mult"
+  },
+  "穿透": {
+    "base": 0,
+    "min": 0,
+    "max": 5,
+    "round": "floor",
+    "applyTo": "pierce",
+    "mode": "flat"
+  },
+  "弹射次数": {
+    "base": 0,
+    "min": 0,
+    "max": 4,
+    "round": "floor",
+    "applyTo": "bounce",
+    "mode": "flat"
+  },
+  "伤害": {
+    "base": 1,
+    "min": 0.5,
+    "max": 4,
+    "round": "none",
+    "applyTo": "dmgMul",
+    "mode": "mult"
+  },
+  "召唤物": {
+    "base": 1,
+    "min": 0.5,
+    "max": 3,
+    "round": "none",
+    "applyTo": "summonMul",
+    "mode": "mult"
+  },
+  "陷阱": {
+    "base": 1,
+    "min": 0.5,
+    "max": 3,
+    "round": "none",
+    "applyTo": "trapMul",
+    "mode": "mult"
+  }
+}

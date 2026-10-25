@@ -1,0 +1,18 @@
+{
+  "saveKey": "bagrogue_settings_v1",
+  "sfxVolume": {
+    "default": 0.8,
+    "min": 0,
+    "max": 1,
+    "step": 0.1
+  },
+  "joyScale": {
+    "default": 1,
+    "min": 0.7,
+    "max": 1.5,
+    "step": 0.1
+  },
+  "showTouchOnDesktop": {
+    "default": false
+  }
+}

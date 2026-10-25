@@ -1,0 +1,362 @@
+[
+  {
+    "id": "H001",
+    "name": "猎手",
+    "desc": "远程速射 / 能量爆发 · 均衡输出",
+    "role": "output",
+    "range": "ranged",
+    "sprite": "hero",
+    "str": 6,
+    "agi": 8,
+    "int": 4,
+    "hp": 94,
+    "def": 2,
+    "atk": 16,
+    "spd": 306,
+    "radius": 18,
+    "weapon": "W001",
+    "summonMax": 2,
+    "trapMax": 1,
+    "playtag": "均衡速射",
+    "difficulty": 1,
+    "statBias": {
+      "high": [
+        "agi"
+      ],
+      "low": []
+    }
+  },
+  {
+    "id": "H002",
+    "name": "散弹手",
+    "desc": "远程三向散射 / 震荡波 · 贴脸压制输出",
+    "role": "output",
+    "range": "ranged",
+    "sprite": "hero",
+    "str": 8,
+    "agi": 6,
+    "int": 3,
+    "hp": 116,
+    "def": 3,
+    "atk": 23,
+    "spd": 290,
+    "radius": 19,
+    "weapon": "W002",
+    "summonMax": 2,
+    "trapMax": 1,
+    "playtag": "贴脸散弹",
+    "difficulty": 3,
+    "statBias": {
+      "high": [
+        "atk",
+        "hp"
+      ],
+      "low": [
+        "spd",
+        "agi"
+      ]
+    }
+  },
+  {
+    "id": "H003",
+    "name": "穿甲者",
+    "desc": "远程穿透 / 贯穿射线 · 脆皮高攻输出",
+    "role": "output",
+    "range": "ranged",
+    "sprite": "hero",
+    "str": 5,
+    "agi": 9,
+    "int": 3,
+    "hp": 84,
+    "def": 1,
+    "atk": 21,
+    "spd": 300,
+    "radius": 18,
+    "weapon": "W003",
+    "summonMax": 2,
+    "trapMax": 1,
+    "playtag": "穿透玻璃炮",
+    "difficulty": 2,
+    "statBias": {
+      "high": [
+        "agi",
+        "atk"
+      ],
+      "low": [
+        "hp",
+        "def"
+      ]
+    }
+  },
+  {
+    "id": "H004",
+    "name": "弹射手",
+    "desc": "远程跳弹 / 环形弹幕 · 牵制型防御",
+    "role": "defense",
+    "range": "ranged",
+    "sprite": "hero",
+    "str": 8,
+    "agi": 5,
+    "int": 4,
+    "hp": 132,
+    "def": 6,
+    "atk": 9,
+    "spd": 296,
+    "radius": 19,
+    "weapon": "W004",
+    "summonMax": 2,
+    "trapMax": 1,
+    "playtag": "弹幕牵制",
+    "difficulty": 2,
+    "statBias": {
+      "high": [
+        "hp",
+        "def"
+      ],
+      "low": [
+        "atk"
+      ]
+    }
+  },
+  {
+    "id": "H005",
+    "name": "快枪手",
+    "desc": "近战突刺 / 疾跑翻滚 · 高机动防御",
+    "role": "defense",
+    "range": "melee",
+    "sprite": "hero",
+    "str": 8,
+    "agi": 9,
+    "int": 2,
+    "hp": 126,
+    "def": 6,
+    "atk": 10,
+    "spd": 306,
+    "radius": 18,
+    "weapon": "W005",
+    "summonMax": 2,
+    "trapMax": 1,
+    "playtag": "机动前排",
+    "difficulty": 3,
+    "statBias": {
+      "high": [
+        "spd",
+        "agi"
+      ],
+      "low": [
+        "hp",
+        "def"
+      ]
+    }
+  },
+  {
+    "id": "H006",
+    "name": "重炮手",
+    "desc": "近战重锤 / 巨型爆破 · 重甲火力输出",
+    "role": "output",
+    "range": "melee",
+    "sprite": "hero",
+    "str": 10,
+    "agi": 4,
+    "int": 3,
+    "hp": 128,
+    "def": 3,
+    "atk": 30,
+    "spd": 258,
+    "radius": 21,
+    "weapon": "W006",
+    "summonMax": 1,
+    "trapMax": 1,
+    "playtag": "慢速重炮",
+    "difficulty": 2,
+    "statBias": {
+      "high": [
+        "atk",
+        "hp",
+        "def"
+      ],
+      "low": [
+        "spd",
+        "agi"
+      ]
+    }
+  },
+  {
+    "id": "H007",
+    "name": "召唤师",
+    "desc": "远程无人机 / 机炮 · 召唤物原型角",
+    "role": "aux",
+    "range": "ranged",
+    "sprite": "hero",
+    "str": 5,
+    "agi": 5,
+    "int": 8,
+    "hp": 106,
+    "def": 3,
+    "atk": 13,
+    "spd": 300,
+    "radius": 18,
+    "weapon": "W007",
+    "summonMax": 6,
+    "trapMax": 1,
+    "playtag": "召唤托管",
+    "difficulty": 1,
+    "statBias": {
+      "high": [
+        "int",
+        "summonMax"
+      ],
+      "low": [
+        "hp",
+        "def"
+      ]
+    }
+  },
+  {
+    "id": "H008",
+    "name": "陷阱师",
+    "desc": "近战布雷 / 大地雷 · 陷阱原型角",
+    "role": "defense",
+    "range": "melee",
+    "sprite": "hero",
+    "str": 9,
+    "agi": 6,
+    "int": 3,
+    "hp": 128,
+    "def": 6,
+    "atk": 11,
+    "spd": 288,
+    "radius": 19,
+    "weapon": "W008",
+    "summonMax": 2,
+    "trapMax": 3,
+    "playtag": "预判布雷",
+    "difficulty": 3,
+    "statBias": {
+      "high": [
+        "trapMax",
+        "def"
+      ],
+      "low": [
+        "atk"
+      ]
+    }
+  },
+  {
+    "id": "H009",
+    "name": "守护者",
+    "desc": "远程护盾 / 嘲讽战吼 · 阵地防御核心",
+    "role": "defense",
+    "range": "ranged",
+    "sprite": "hero",
+    "str": 11,
+    "agi": 3,
+    "int": 4,
+    "hp": 155,
+    "def": 8,
+    "atk": 8,
+    "spd": 274,
+    "radius": 21,
+    "weapon": "W009",
+    "summonMax": 2,
+    "trapMax": 1,
+    "playtag": "站桩肉盾",
+    "difficulty": 1,
+    "statBias": {
+      "high": [
+        "hp",
+        "def",
+        "str"
+      ],
+      "low": [
+        "atk",
+        "spd"
+      ]
+    }
+  },
+  {
+    "id": "H010",
+    "name": "医疗兵",
+    "desc": "远程治疗弹 / 生命脉冲 · 续航恢复型",
+    "role": "aux",
+    "range": "ranged",
+    "sprite": "hero",
+    "str": 5,
+    "agi": 6,
+    "int": 8,
+    "hp": 110,
+    "def": 4,
+    "atk": 12,
+    "spd": 300,
+    "radius": 18,
+    "weapon": "W010",
+    "summonMax": 2,
+    "trapMax": 1,
+    "playtag": "团队续航",
+    "difficulty": 2,
+    "statBias": {
+      "high": [
+        "int",
+        "def"
+      ],
+      "low": []
+    }
+  },
+  {
+    "id": "H011",
+    "name": "圣歌者",
+    "desc": "近战圣咏 / 鼓舞光环 · 群体增益型",
+    "role": "aux",
+    "range": "melee",
+    "sprite": "hero",
+    "str": 6,
+    "agi": 5,
+    "int": 8,
+    "hp": 120,
+    "def": 5,
+    "atk": 11,
+    "spd": 294,
+    "radius": 19,
+    "weapon": "W011",
+    "summonMax": 2,
+    "trapMax": 1,
+    "playtag": "全队增益",
+    "difficulty": 2,
+    "statBias": {
+      "high": [
+        "int",
+        "def"
+      ],
+      "low": []
+    }
+  },
+  {
+    "id": "H012",
+    "name": "灵能者",
+    "desc": "近战灵能 / 灵能护罩 · 护盾自愈型",
+    "role": "aux",
+    "range": "melee",
+    "sprite": "hero",
+    "str": 5,
+    "agi": 6,
+    "int": 9,
+    "hp": 116,
+    "def": 4,
+    "atk": 12,
+    "spd": 298,
+    "radius": 19,
+    "weapon": "W012",
+    "summonMax": 2,
+    "trapMax": 1,
+    "playtag": "全队护罩",
+    "difficulty": 2,
+    "statBias": {
+      "high": [
+        "int",
+        "def",
+        "atk"
+      ],
+      "low": []
+    }
+  }
+]

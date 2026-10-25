@@ -1,0 +1,82 @@
+{
+  "defaultStyle": "balanced",
+  "manualResumeDelay": 0.5,
+  "smoothing": 10,
+  "bulletScan": 220,
+  "engageBase": 240,
+  "threatWeight": 2.6,
+  "strafeT": 1.6,
+  "wallMargin": 110,
+  "wallWeight": 3,
+  "altarRange": 640,
+  "altarTimeout": 8,
+  "chestFailCooldown": 3,
+  "styles": {
+    "berserk": {
+      "name": "疯狂",
+      "engageMul": 0.35,
+      "dodgeBullets": false,
+      "dodgeTelegraph": true,
+      "dodgeMargin": 1.15,
+      "reactDelay": 0.4,
+      "lowHpFlee": 0,
+      "loot": {
+        "range": 100,
+        "chests": true,
+        "gate": "path"
+      },
+      "altar": {
+        "war": true,
+        "chest": true,
+        "evil": true,
+        "goddessHp": 0.3,
+        "artisan": false
+      },
+      "desc": "贴脸输出；顺路捡 100px 内掉落与宝箱，主动踩战争/宝箱/邪神雕像，残血 30% 以下才踩女神"
+    },
+    "balanced": {
+      "name": "平衡",
+      "engageMul": 0.75,
+      "dodgeBullets": true,
+      "dodgeTelegraph": true,
+      "dodgeMargin": 1.5,
+      "reactDelay": 0.2,
+      "lowHpFlee": 0.4,
+      "loot": {
+        "range": 220,
+        "chests": true,
+        "gate": "gap"
+      },
+      "altar": {
+        "war": true,
+        "chest": true,
+        "evil": false,
+        "goddessHp": 0.6,
+        "artisan": false
+      },
+      "desc": "中距离风筝躲弹幕；战斗间隙捡 220px 内掉落与宝箱、激活战争/宝箱雕像，残血 60% 以下踩女神"
+    },
+    "cautious": {
+      "name": "冷静",
+      "engageMul": 1.05,
+      "dodgeBullets": true,
+      "dodgeTelegraph": true,
+      "dodgeMargin": 1.9,
+      "reactDelay": 0.1,
+      "lowHpFlee": 0.6,
+      "loot": {
+        "range": 520,
+        "chests": true,
+        "gate": "clear"
+      },
+      "altar": {
+        "war": true,
+        "chest": true,
+        "evil": false,
+        "goddessHp": 0.6,
+        "artisan": false
+      },
+      "desc": "最远距离风筝见弹就躲；战后清扫 520px 内掉落与宝箱、激活战争/宝箱雕像，残血 60% 以下踩女神"
+    }
+  }
+}

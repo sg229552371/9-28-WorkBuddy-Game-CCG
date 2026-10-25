@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" width="720" height="1280">
+  <rect x="0" y="0" width="720" height="1280" fill="#f5f0e6" stroke="#666" stroke-width="2"/>
+  <text x="360" y="36" font-size="22" text-anchor="middle" fill="#333">结算界面 settle.svg ｜ 720×1280 ｜ 9:16</text>
+
+  <!-- Z1 背景 -->
+  <rect x="8" y="56" width="704" height="1216" fill="none" stroke="#999" stroke-dasharray="4"/>
+  <text x="20" y="80" font-size="16" fill="#666">Z1 底层：结算背景（金面神殿暗调+金色尘埃粒子，全屏 720×1280）</text>
+
+  <!-- Z2 结果标题 -->
+  <rect x="16" y="96" width="688" height="96" fill="#e8e2d4" stroke="#E8B33C" stroke-width="3"/>
+  <text x="360" y="156" font-size="20" text-anchor="middle" fill="#E8B33C">Z2 结果标题（y=96~192, h=96）：「远征归来」/「全队陨落」+ 章节进度</text>
+
+  <!-- Z3 MVP 组合词条卡（分享图 480×270） -->
+  <rect x="120" y="216" width="480" height="270" fill="#fff" stroke="#E8B33C" stroke-width="4"/>
+  <text x="360" y="260" font-size="16" text-anchor="middle" fill="#333">Z3 本局 MVP 组合词条卡 ui_card_mvp（x=120~600, y=216~486，480×270）</text>
+  <text x="360" y="310" font-size="15" text-anchor="middle" fill="#E8B33C">★ 本局 MVP 组合：火墙+骨墙（拾骨者×焚香者）</text>
+  <text x="360" y="350" font-size="13" text-anchor="middle" fill="#666">三名祭司头像 + 关键圣物图标 64×64</text>
+  <text x="360" y="390" font-size="13" text-anchor="middle" fill="#666">战斗数据：回合数 / 总输出 / 承伤</text>
+  <text x="360" y="440" font-size="12" text-anchor="middle" fill="#999">一键截图布局，可直接进剪辑（录屏友好清单第 4 项）</text>
+
+  <!-- Z4 香火结算明细 -->
+  <rect x="16" y="510" width="688" height="280" fill="#f0e8d8" stroke="#666"/>
+  <text x="360" y="548" font-size="16" text-anchor="middle" fill="#333">Z4 香火结算明细（y=510~790, h=280）</text>
+  <text x="60" y="600" font-size="14" fill="#333">· 通关基础 …… +40 香火</text>
+  <text x="60" y="640" font-size="14" fill="#333">· 渎神/敬神抉择加成 …… +N</text>
+  <text x="60" y="680" font-size="14" fill="#333">· Boss 击杀 …… +N</text>
+  <text x="60" y="720" font-size="14" fill="#333">· 单局期望合计 ≈ 60 香火（meta 预算口径）</text>
+  <text x="620" y="760" font-size="16" text-anchor="middle" fill="#E8B33C">总计 +60</text>
+
+  <!-- Z5 数据统计 -->
+  <rect x="16" y="810" width="688" height="140" fill="#efe9dc" stroke="#666"/>
+  <text x="360" y="848" font-size="15" text-anchor="middle" fill="#333">Z5 数据统计（y=810~950, h=140）：单局用时（目标 15~23min）｜ 击杀数 ｜ 最高连锁 ｜ 圣物收集数</text>
+
+  <!-- Z6 底部按钮组 -->
+  <rect x="16" y="970" width="688" height="130" fill="#e8e2d4" stroke="#666"/>
+  <text x="360" y="1006" font-size="15" text-anchor="middle" fill="#333">Z6 底部按钮组（y=970~1100, h=130）</text>
+  <rect x="60" y="1024" width="260" height="60" fill="none" stroke="#35E0D8" stroke-width="3"/>
+  <text x="190" y="1062" font-size="15" text-anchor="middle" fill="#333">「进入失落之城」260×60</text>
+  <rect x="400" y="1024" width="260" height="60" fill="none" stroke="#666"/>
+  <text x="530" y="1062" font-size="15" text-anchor="middle" fill="#333">「再来一局」260×60</text>
+
+  <!-- Z7 分享按钮 -->
+  <rect x="560" y="216" width="0" height="0" fill="none"/>
+  <rect x="520" y="500" width="160" height="0" fill="none"/>
+  <rect x="20" y="970" width="0" height="0" fill="none"/>
+  <rect x="560" y="940" width="0" height="0" fill="none"/>
+  <rect x="300" y="1116" width="120" height="48" fill="none" stroke="#666"/>
+  <text x="360" y="1146" font-size="13" text-anchor="middle" fill="#666">Z7 分享 MVP 卡</text>
+
+  <!-- Z9 顶层：截图预览弹窗 -->
+  <rect x="120" y="380" width="480" height="280" fill="none" stroke="#C63D2F" stroke-dasharray="6"/>
+  <text x="360" y="530" font-size="14" text-anchor="middle" fill="#C63D2F">Z9 顶层：MVP 卡截图预览弹窗（居中 480×280）</text>
+
+  <text x="360" y="1268" font-size="12" text-anchor="middle" fill="#999">Z序：Z1背景 → Z2标题 → Z3 MVP卡 → Z4香火明细 → Z5统计 → Z6按钮组 → Z7分享 → Z9弹窗</text>
+</svg>

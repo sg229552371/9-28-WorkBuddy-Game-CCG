@@ -1,0 +1,13 @@
+{
+  "coin": {
+    "life": -1
+  },
+  "crystal": {
+    "life": -1
+  },
+  "exp": {
+    "life": 30
+  },
+  "defaultLife": 30,
+  "maxPickups": 200
+}

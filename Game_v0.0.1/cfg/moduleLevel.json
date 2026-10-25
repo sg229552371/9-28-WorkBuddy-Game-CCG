@@ -1,0 +1,26 @@
+{
+  "maxLv": 9,
+  "perStage": 3,
+  "valueStep": 0.15,
+  "linkBonus": 0.03,
+  "stageAffixes": [
+    {
+      "name": "强化·技能伤害",
+      "tag": "伤害",
+      "mode": "mult",
+      "value": 0.06
+    },
+    {
+      "name": "强化·技能冷却",
+      "tag": "冷却",
+      "mode": "mult",
+      "value": -0.05
+    },
+    {
+      "name": "强化·技能范围",
+      "tag": "范围",
+      "mode": "mult",
+      "value": 0.06
+    }
+  ]
+}

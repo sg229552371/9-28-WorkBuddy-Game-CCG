@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_pdytg"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_nio65"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_j6bwm"]
+
+[sub_resource type="Resource" id="Resource_ygb1i"]
+script = ExtResource("1_pdytg")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_irr2a"]
+script = ExtResource("2_nio65")
+base_damage = {
+&"fire": 150.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"delay": 0.5,
+&"hit_count": 1,
+&"hit_interval": 0.0,
+&"radius": 100.0
+}
+
+[resource]
+script = ExtResource("3_j6bwm")
+gem_id = &"fire_burst"
+display_name = "烈焰爆发"
+parts = Array[ExtResource("2_nio65")]([SubResource("Resource_irr2a")])
+tags = Array[StringName]([&"spell", &"aoe", &"fire"])
+base_cooldown = 2.0
+level_scaling = SubResource("Resource_ygb1i")

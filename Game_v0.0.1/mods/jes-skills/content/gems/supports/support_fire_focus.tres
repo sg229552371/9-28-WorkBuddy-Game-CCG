@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SupportGemData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/support_gem_data.gd" id="1_5462c"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/modifier_spec.gd" id="2_5qfvc"]
+
+[sub_resource type="Resource" id="Resource_ex2y7"]
+script = ExtResource("2_5qfvc")
+stat = &"fire_damage"
+op = 1
+value = 45.0
+
+[resource]
+script = ExtResource("1_5462c")
+support_id = &"support_fire_focus"
+display_name = "烈焰专注"
+require_tags = Array[StringName]([&"fire"])
+cost_multiplier = 1.2
+stat_modifiers = Array[ExtResource("2_5qfvc")]([SubResource("Resource_ex2y7")])
+conflicts_with = Array[StringName]([&"support_cold_focus"])

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="SupportGemData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/support_gem_data.gd" id="1_dcwh6"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/modifier_spec.gd" id="2_ofvil"]
+
+[sub_resource type="Resource" id="Resource_yxdos"]
+script = ExtResource("2_ofvil")
+stat = &"area_size"
+op = 1
+value = 30.0
+
+[resource]
+script = ExtResource("1_dcwh6")
+support_id = &"support_area"
+display_name = "范围扩大"
+; D-42 属性契约：area_size 只有投射物/近战/范围爆发三类行为消费（P-26），
+; 故用「任一满足」语义锁定目标形态——其余形态装配直接被拒，
+; 从根上杜绝「装上没反应」的静默亏耗（比 D-40 的排除法更严格且不误伤未来组合）。
+require_any_tags = Array[StringName]([&"projectile", &"melee", &"aoe"])
+cost_multiplier = 1.3
+stat_modifiers = Array[ExtResource("2_ofvil")]([SubResource("Resource_yxdos")])

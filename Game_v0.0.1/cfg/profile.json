@@ -1,0 +1,26 @@
+{
+  "defaultName": "无名旅者",
+  "nameMin": 2,
+  "nameMax": 8,
+  "defaultSkin": "H001",
+  "titles": [
+    {
+      "id": "t_rookie",
+      "name": "初出茅庐",
+      "flag": null,
+      "desc": "默认称号"
+    },
+    {
+      "id": "t_extractor",
+      "name": "撤离者",
+      "flag": "firstExtract",
+      "desc": "完成一次撤离"
+    },
+    {
+      "id": "t_godslayer",
+      "name": "弑神者",
+      "flag": "bossKill",
+      "desc": "击败一次 BOSS"
+    }
+  ]
+}

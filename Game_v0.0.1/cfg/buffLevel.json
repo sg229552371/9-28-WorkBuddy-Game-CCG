@@ -1,0 +1,6 @@
+{
+  "maxLv": 99,
+  "stackPerTrigger": 1,
+  "stackable": true,
+  "cdMulFloor": 0.3
+}

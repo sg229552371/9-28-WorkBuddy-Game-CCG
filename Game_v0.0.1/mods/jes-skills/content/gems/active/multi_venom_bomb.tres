@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 FLY·MULTI·ZONE（展开表 v2 §1.1）· 夜间施工批次 C
+; 多重毒圈弹：多发散射弹各留持续毒圈（zone_duration 未实现，多段模拟，D-45）
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_mvb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_mvb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_mvb"]
+
+[sub_resource type="Resource" id="Resource_mvb_scale"]
+script = ExtResource("1_mvb")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_mvb_p1"]
+script = ExtResource("2_mvb")
+base_damage = {
+&"chaos": 12.0
+}
+behavior_id = &"bhv_projectile"
+behavior_params = {
+&"count_base": 3.0,
+&"lifetime": 1.4,
+&"radius": 10.0,
+&"speed": 700.0,
+&"spread_deg": 30.0
+}
+
+[sub_resource type="Resource" id="Resource_mvb_p2"]
+script = ExtResource("2_mvb")
+base_damage = {
+&"chaos": 14.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"circ",
+&"radius": 100.0,
+&"delay": 0.0,
+&"hit_count": 5,
+&"hit_interval": 0.8
+}
+
+[resource]
+script = ExtResource("3_mvb")
+gem_id = &"multi_venom_bomb"
+display_name = "多重毒圈弹"
+parts = Array[ExtResource("2_mvb")]([SubResource("Resource_mvb_p1"), SubResource("Resource_mvb_p2")])
+tags = Array[StringName]([&"spell", &"projectile", &"aoe", &"chaos"])
+cast_mode = 0
+base_cast_time = 0.45
+cost_type = 0
+base_cost = 15.0
+base_cooldown = 4.5
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_mvb_scale")

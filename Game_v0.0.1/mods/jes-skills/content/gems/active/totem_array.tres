@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 SUMN·CIRC·DLY（展开表 v2 §1.6）· 夜间施工批次 C
+; 图腾阵：圆内预警后落图腾（双段：预警圈段不产出伤害 + 环形阵落段；
+; 散布阵型键未实现，按环形阵在预警圈内落位近似，D-45 待晨间复核）
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_tta"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_tta"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_tta"]
+
+[sub_resource type="Resource" id="Resource_tta_scale"]
+script = ExtResource("1_tta")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_tta_p1"]
+script = ExtResource("2_tta")
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"circ",
+&"radius": 120.0,
+&"delay": 0.8,
+&"hit_count": 1,
+&"hit_interval": 0.0
+}
+
+[sub_resource type="Resource" id="Resource_tta_p2"]
+script = ExtResource("2_tta")
+behavior_id = &"bhv_summon"
+behavior_params = {
+&"max_count": 3,
+&"lifetime": 10.0,
+&"formation": &"ring",
+&"per_cast": 3,
+&"formation_radius": 90.0
+}
+
+[resource]
+script = ExtResource("3_tta")
+gem_id = &"totem_array"
+display_name = "图腾阵"
+parts = Array[ExtResource("2_tta")]([SubResource("Resource_tta_p1"), SubResource("Resource_tta_p2")])
+tags = Array[StringName]([&"spell", &"aoe", &"summon"])
+cast_mode = 0
+base_cast_time = 0.6
+cost_type = 0
+base_cost = 18.0
+base_cooldown = 6.0
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_tta_scale")

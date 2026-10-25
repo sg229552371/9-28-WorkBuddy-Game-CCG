@@ -1,0 +1,10 @@
+{
+  "autoCast": false,
+  "repairDrone": {
+    "healPerSec": 3,
+    "repairInterval": 1,
+    "skillIds": [
+      "AT113"
+    ]
+  }
+}

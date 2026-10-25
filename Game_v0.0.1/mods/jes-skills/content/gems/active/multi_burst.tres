@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 INST·MULTI·S1（展开表 v2 §1.2）· 夜间施工批次 C
+; 周身多点爆：周身 6 点同时结算（多点判定 ShapeHit multi，D-43）
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_mbs"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_mbs"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_mbs"]
+
+[sub_resource type="Resource" id="Resource_mbs_scale"]
+script = ExtResource("1_mbs")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_mbs_part"]
+script = ExtResource("2_mbs")
+base_damage = {
+&"fire": 22.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"multi",
+&"point_count": 6,
+&"point_spacing": 80.0,
+&"radius": 60.0,
+&"delay": 0.0,
+&"hit_count": 1,
+&"hit_interval": 0.0
+}
+
+[resource]
+script = ExtResource("3_mbs")
+gem_id = &"multi_burst"
+display_name = "周身多点爆"
+parts = Array[ExtResource("2_mbs")]([SubResource("Resource_mbs_part")])
+tags = Array[StringName]([&"spell", &"aoe", &"fire"])
+cast_mode = 0
+base_cast_time = 0.45
+cost_type = 0
+base_cost = 11.0
+base_cooldown = 3.2
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_mbs_scale")

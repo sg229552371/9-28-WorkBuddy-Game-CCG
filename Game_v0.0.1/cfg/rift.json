@@ -1,0 +1,52 @@
+{
+  "channel": 5,
+  "worldSize": 1920,
+  "freezeTime": 3,
+  "defaultSpawnCount": 16,
+  "spawnPool": "NM0010:40/NM0011:26/NM0012:16/NM0017:10/NM0020:8",
+  "eliteBase": 3,
+  "elitePool": "ED0001:50/ED0002:30/ED0003:20",
+  "rewardKills": 12,
+  "chestWeights": {
+    "normal": 0,
+    "advanced": 20,
+    "epic": 45,
+    "divine": 25,
+    "mythic": 10
+  },
+  "tasks": [
+    {
+      "id": "hunt",
+      "name": "深入猎杀",
+      "weight": 2,
+      "goal": 20,
+      "spawnCount": 22,
+      "desc": "击杀 20 只裂缝怪物"
+    },
+    {
+      "id": "purge",
+      "name": "歼灭作战",
+      "weight": 2,
+      "goal": 18,
+      "spawnCount": 20,
+      "time": 75,
+      "desc": "75 秒内击杀 18 只"
+    },
+    {
+      "id": "raid",
+      "name": "闪电突袭",
+      "weight": 1,
+      "goal": 10,
+      "spawnCount": 14,
+      "time": 40,
+      "desc": "40 秒内击杀 10 只"
+    }
+  ],
+  "taskBonusWeights": {
+    "normal": 0,
+    "advanced": 0,
+    "epic": 30,
+    "divine": 45,
+    "mythic": 25
+  }
+}

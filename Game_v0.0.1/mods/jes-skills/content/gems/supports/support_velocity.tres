@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SupportGemData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/support_gem_data.gd" id="1_fpe3f"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/modifier_spec.gd" id="2_l3r4v"]
+
+[resource]
+script = ExtResource("1_fpe3f")
+support_id = &"support_velocity"
+display_name = "弹道加速"
+require_tags = Array[StringName]([&"projectile"])
+cost_multiplier = 1.15
+behavior_overrides = {
+&"speed": {
+&"mul": 1.3
+}
+}

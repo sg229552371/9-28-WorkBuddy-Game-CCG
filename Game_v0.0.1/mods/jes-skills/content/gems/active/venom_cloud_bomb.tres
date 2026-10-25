@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 FLY·CIRC·ZONE（展开表 v2 §1.1）· 夜间施工批次 C
+; 毒云弹：命中处留下持续毒云区域（zone_duration 未实现，按手册 C4 条款用多段模拟，D-45）
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_vcb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_vcb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_vcb"]
+
+[sub_resource type="Resource" id="Resource_vcb_scale"]
+script = ExtResource("1_vcb")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_vcb_p1"]
+script = ExtResource("2_vcb")
+base_damage = {
+&"chaos": 15.0
+}
+behavior_id = &"bhv_projectile"
+behavior_params = {
+&"count_base": 1.0,
+&"lifetime": 1.5,
+&"radius": 13.0,
+&"speed": 560.0,
+&"spread_deg": 4.0
+}
+
+[sub_resource type="Resource" id="Resource_vcb_p2"]
+script = ExtResource("2_vcb")
+base_damage = {
+&"chaos": 17.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"circ",
+&"radius": 110.0,
+&"delay": 0.0,
+&"hit_count": 5,
+&"hit_interval": 0.8
+}
+
+[resource]
+script = ExtResource("3_vcb")
+gem_id = &"venom_cloud_bomb"
+display_name = "毒云弹"
+parts = Array[ExtResource("2_vcb")]([SubResource("Resource_vcb_p1"), SubResource("Resource_vcb_p2")])
+tags = Array[StringName]([&"spell", &"projectile", &"aoe", &"chaos"])
+cast_mode = 0
+base_cast_time = 0.4
+cost_type = 0
+base_cost = 12.0
+base_cooldown = 3.5
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_vcb_scale")

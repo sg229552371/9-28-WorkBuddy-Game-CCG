@@ -1,0 +1,12 @@
+{
+  "enabled": false,
+  "startDelay": 20,
+  "shrinkDuration": 85,
+  "minRadius": 380,
+  "tickInterval": 1,
+  "dmgPercent": 0.01,
+  "dmgPerTick": 7,
+  "cx": 0.5,
+  "cy": 0.5,
+  "color": "#ff3b3b"
+}

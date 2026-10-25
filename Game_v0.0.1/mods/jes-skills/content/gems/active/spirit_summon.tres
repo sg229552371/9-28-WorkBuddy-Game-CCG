@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_s5ape"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_c5bdd"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_irexh"]
+
+[sub_resource type="Resource" id="Resource_nbvry"]
+script = ExtResource("1_s5ape")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_wuvsg"]
+script = ExtResource("2_c5bdd")
+behavior_id = &"bhv_summon"
+behavior_params = {
+&"lifetime": 10.0,
+&"max_count": 2
+}
+
+[resource]
+script = ExtResource("3_irexh")
+gem_id = &"spirit_summon"
+display_name = "灵魂召唤"
+parts = Array[ExtResource("2_c5bdd")]([SubResource("Resource_wuvsg")])
+tags = Array[StringName]([&"spell", &"summon", &"physical"])
+base_cost = 20.0
+base_cooldown = 5.0
+level_scaling = SubResource("Resource_nbvry")

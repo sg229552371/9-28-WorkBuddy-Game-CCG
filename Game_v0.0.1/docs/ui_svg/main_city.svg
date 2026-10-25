@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" width="720" height="1280">
+  <rect x="0" y="0" width="720" height="1280" fill="#f5f0e6" stroke="#666" stroke-width="2"/>
+  <text x="360" y="36" font-size="22" text-anchor="middle" fill="#333">主城（失落之城）main_city.svg ｜ 720×1280 ｜ 9:16</text>
+
+  <!-- Z1 底层：背景 -->
+  <rect x="8" y="56" width="704" height="1216" fill="none" stroke="#999" stroke-dasharray="4"/>
+  <text x="20" y="80" font-size="16" fill="#666">Z1 底层：主城背景 bg_city（泥塑山丘+青霓虹天际线剪影，全屏 720×1280）</text>
+
+  <!-- Z2：场景层：图腾山丘 -->
+  <rect x="64" y="360" width="592" height="360" fill="#eee" stroke="#666"/>
+  <text x="360" y="390" font-size="16" text-anchor="middle" fill="#666">Z2 场景层：失落之城图腾山丘（可点击图腾剪影，锚点 x=64~656, y=360~720）</text>
+  <polygon points="200,720 360,480 520,720" fill="#ddd" stroke="#666"/>
+  <text x="360" y="710" font-size="14" text-anchor="middle" fill="#666">图腾剪影（青霓虹 #35E0D8 点亮纹）</text>
+
+  <!-- Z3：顶部资源条 -->
+  <rect x="16" y="96" width="688" height="64" fill="#e8e2d4" stroke="#666"/>
+  <text x="360" y="134" font-size="16" text-anchor="middle" fill="#333">Z3 顶部资源条（y=96~160，h=64）：香火图标+数量 ｜ 神话残片图标+数量 ｜ 设置按钮 64×64</text>
+
+  <!-- Z4：标题/游戏名区 -->
+  <rect x="120" y="180" width="480" height="120" fill="none" stroke="#666"/>
+  <text x="360" y="250" font-size="18" text-anchor="middle" fill="#333">Z4 标题区（x=120~600, y=180~300）：《巴别回路》LOGO + 版本号</text>
+
+  <!-- Z5：主按钮组 -->
+  <rect x="140" y="760" width="440" height="120" fill="#e0f5f3" stroke="#666"/>
+  <text x="360" y="800" font-size="16" text-anchor="middle" fill="#333">Z5 主按钮组（x=140~580, y=760~880）</text>
+  <rect x="180" y="810" width="360" height="60" fill="none" stroke="#35E0D8" stroke-width="3"/>
+  <text x="360" y="848" font-size="18" text-anchor="middle" fill="#333">「开局远征」主按钮 360×60，锚点居中</text>
+
+  <!-- Z6：次按钮组 -->
+  <rect x="140" y="900" width="440" height="72" fill="#eee" stroke="#666"/>
+  <text x="360" y="944" font-size="15" text-anchor="middle" fill="#666">Z6 次按钮组（y=900~972）：祭司图鉴 ｜ 教义树 ｜ 图鉴收集</text>
+
+  <!-- Z7：图腾进度面板 -->
+  <rect x="16" y="992" width="688" height="140" fill="#f0e8d8" stroke="#666"/>
+  <text x="360" y="1028" font-size="16" text-anchor="middle" fill="#333">Z7 图腾进度面板（y=992~1132, h=140）：9 座图腾图标横排 128×128 缩略（已建/未建/可升级 3 态）+ 香火余额</text>
+
+  <!-- Z8：每日/公告条 -->
+  <rect x="16" y="1148" width="688" height="56" fill="#eee" stroke="#666"/>
+  <text x="360" y="1184" font-size="15" text-anchor="middle" fill="#666">Z8 公告条（y=1148~1204, h=56）：版本公告 / 试玩反馈入口</text>
+
+  <!-- Z9 顶层：弹窗预留 -->
+  <rect x="120" y="420" width="480" height="240" fill="none" stroke="#C63D2F" stroke-dasharray="6"/>
+  <text x="360" y="550" font-size="15" text-anchor="middle" fill="#C63D2F">Z9 顶层：弹窗层（图腾购买/升级确认，锚点居中 480×240）</text>
+
+  <text x="360" y="1268" font-size="12" text-anchor="middle" fill="#999">Z序：Z1背景 → Z2场景 → Z3资源条 → Z4标题 → Z5主按钮 → Z6次按钮 → Z7图腾面板 → Z8公告 → Z9弹窗</text>
+</svg>

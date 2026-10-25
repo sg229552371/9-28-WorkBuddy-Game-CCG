@@ -1,0 +1,188 @@
+{
+  "ALTAR_001": {
+    "name": "女神雕像",
+    "color": "#7de08a",
+    "icon": "✚",
+    "radius": 117,
+    "channel": 2.5,
+    "weight": 22,
+    "effects": [
+      {
+        "type": "heal",
+        "pct": 0.25
+      }
+    ]
+  },
+  "ALTAR_002": {
+    "name": "战争雕像",
+    "color": "#e5484d",
+    "icon": "⚔",
+    "radius": 117,
+    "channel": 2.5,
+    "weight": 20,
+    "effects": [
+      {
+        "type": "randomBuff",
+        "pool": "war",
+        "duration": 20
+      }
+    ]
+  },
+  "ALTAR_003": {
+    "name": "宝箱",
+    "color": "#ffd76a",
+    "icon": "▣",
+    "radius": 91,
+    "channel": 1.2,
+    "weight": 26,
+    "effects": [
+      {
+        "type": "giveChest",
+        "weightsFrom": "levelChestTier",
+        "weights": {
+          "normal": 48,
+          "advanced": 28,
+          "epic": 16,
+          "divine": 6,
+          "mythic": 2
+        }
+      }
+    ]
+  },
+  "ALTAR_004a": {
+    "name": "邪神雕像·小怪数量",
+    "color": "#9a5cf5",
+    "icon": "☠",
+    "radius": 117,
+    "channel": 2.5,
+    "weight": 3,
+    "effects": [
+      {
+        "type": "adjustMonsters",
+        "target": "小怪数量",
+        "range": [
+          -100,
+          100
+        ],
+        "duration": 30
+      }
+    ]
+  },
+  "ALTAR_004b": {
+    "name": "邪神雕像·小怪属性",
+    "color": "#8e6cf0",
+    "icon": "☣",
+    "radius": 117,
+    "channel": 2.5,
+    "weight": 3,
+    "effects": [
+      {
+        "type": "adjustMonsters",
+        "target": "小怪属性",
+        "range": [
+          -100,
+          100
+        ],
+        "duration": 30
+      }
+    ]
+  },
+  "ALTAR_004c": {
+    "name": "邪神雕像·精英数量",
+    "color": "#a86cf0",
+    "icon": "❖",
+    "radius": 117,
+    "channel": 2.5,
+    "weight": 3,
+    "effects": [
+      {
+        "type": "adjustMonsters",
+        "target": "精英数量",
+        "range": [
+          -100,
+          100
+        ],
+        "duration": 30
+      }
+    ]
+  },
+  "ALTAR_004d": {
+    "name": "邪神雕像·精英属性",
+    "color": "#b06cf0",
+    "icon": "✷",
+    "radius": 117,
+    "channel": 2.5,
+    "weight": 3,
+    "effects": [
+      {
+        "type": "adjustMonsters",
+        "target": "精英属性",
+        "range": [
+          -100,
+          100
+        ],
+        "duration": 30
+      }
+    ]
+  },
+  "ALTAR_004e": {
+    "name": "邪神雕像·BOSS属性",
+    "color": "#c06cf5",
+    "icon": "☢",
+    "radius": 117,
+    "channel": 2.5,
+    "weight": 3,
+    "effects": [
+      {
+        "type": "adjustMonsters",
+        "target": "BOSS属性",
+        "range": [
+          -100,
+          100
+        ],
+        "duration": 30
+      }
+    ]
+  },
+  "ALTAR_005": {
+    "name": "工匠雕像",
+    "color": "#6cb2ff",
+    "icon": "⚒",
+    "radius": 117,
+    "channel": 2.5,
+    "weight": 0,
+    "effects": [
+      {
+        "type": "teleport",
+        "submap": "artisan"
+      }
+    ]
+  },
+  "RIFT": {
+    "name": "空间裂缝",
+    "color": "#5ad0ff",
+    "icon": "◈",
+    "radius": 117,
+    "channel": 2,
+    "weight": 0,
+    "effects": [
+      {
+        "type": "rift"
+      }
+    ]
+  },
+  "ALTAR_007": {
+    "name": "保险雕像",
+    "color": "#5aa2ff",
+    "icon": "⛨",
+    "radius": 117,
+    "channel": 1.5,
+    "weight": 0,
+    "effects": [
+      {
+        "type": "giveInsurance",
+        "count": 1
+      }
+    ]
+  }
+}

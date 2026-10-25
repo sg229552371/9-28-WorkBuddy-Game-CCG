@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_d2a"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_d2a"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_d2a"]
+
+[sub_resource type="Resource" id="Resource_scale"]
+script = ExtResource("1_d2a")
+per_level = 0.16
+knee_level = 8
+per_level_late = 0.04
+
+[sub_resource type="Resource" id="Resource_part1"]
+script = ExtResource("2_d2a")
+damage_channel = 1
+base_damage = {
+&"physical": 100.0
+}
+behavior_id = &"bhv_projectile"
+behavior_params = {
+&"count_base": 1.0,
+&"lifetime": 2.5,
+&"pierce": 3,
+&"radius": 14.0,
+&"speed": 900.0
+}
+
+[resource]
+script = ExtResource("3_d2a")
+gem_id = &"piercing_bolt"
+display_name = "贯空箭"
+parts = Array[ExtResource("2_d2a")]([SubResource("Resource_part1")])
+tags = Array[StringName]([&"attack", &"projectile", &"physical"])
+cast_mode = 0
+base_cast_time = 0.45
+cost_type = 0
+base_cost = 12.0
+base_cooldown = 0.9
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_scale")

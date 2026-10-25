@@ -1,0 +1,18 @@
+{
+  "maxSize": 3,
+  "follow": {
+    "trailStep": 5,
+    "depth": 58,
+    "lateralBase": 18,
+    "seedDir": [
+      0,
+      1
+    ],
+    "seedDirArtisan": [
+      0,
+      -1
+    ]
+  },
+  "aiSkill": true,
+  "skillStagger": 0.6
+}

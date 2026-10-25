@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_5j5aq"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_2gv0f"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_2ss6b"]
+
+[sub_resource type="Resource" id="Resource_06b7u"]
+script = ExtResource("1_5j5aq")
+per_level = 0.08
+
+[sub_resource type="Resource" id="Resource_gj05w"]
+script = ExtResource("2_2gv0f")
+base_damage = {
+&"physical": 30.0
+}
+behavior_id = &"bhv_projectile"
+behavior_params = {
+&"count_base": 3.0,
+&"lifetime": 4.0,
+&"motion": &"orbit",
+&"orbit_radius": 90.0,
+&"radius": 10.0,
+&"speed": 375.0
+}
+
+[resource]
+script = ExtResource("3_2ss6b")
+gem_id = &"orbit_blades"
+display_name = "环绕飞刃"
+parts = Array[ExtResource("2_2gv0f")]([SubResource("Resource_gj05w")])
+tags = Array[StringName]([&"attack", &"projectile", &"physical"])
+# 调参定值（2026-10-21 实测，bench_orbit_cinders.gd）：原占位 55 伤 + 默认 CD 0
+# 实测环上敌人 220/s（全游戏第一）且无代价叠层 → 伤害减半档 + 冷却锁 1 套
+base_cast_time = 0.4
+base_cost = 12.0
+base_cooldown = 4.0
+level_scaling = SubResource("Resource_06b7u")

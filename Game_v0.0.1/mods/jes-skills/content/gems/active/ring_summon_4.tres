@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_rs4"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_rs4"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_rs4"]
+
+[sub_resource type="Resource" id="Resource_rs4_scale"]
+script = ExtResource("1_rs4")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_rs4_part"]
+script = ExtResource("2_rs4")
+behavior_id = &"bhv_summon"
+behavior_params = {
+&"max_count": 4,
+&"lifetime": 12.0,
+&"formation": &"ring",
+&"per_cast": 4,
+&"formation_radius": 110.0
+}
+
+[resource]
+script = ExtResource("3_rs4")
+gem_id = &"ring_summon_4"
+display_name = "环形召4"
+parts = Array[ExtResource("2_rs4")]([SubResource("Resource_rs4_part")])
+tags = Array[StringName]([&"spell", &"summon", &"physical"])
+cast_mode = 0
+base_cast_time = 0.6
+cost_type = 0
+base_cost = 22.0
+base_cooldown = 6.0
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_rs4_scale")

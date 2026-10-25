@@ -1,0 +1,8 @@
+{
+  "name": "保险契约",
+  "chance": 0.15,
+  "weight": 5,
+  "value": 60,
+  "maxStack": 9,
+  "protectItems": 1
+}

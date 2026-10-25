@@ -1,0 +1,746 @@
+{
+  "NM0010": {
+    "name": "重甲兵",
+    "type": "melee",
+    "sprite": "enemy16",
+    "skillList": [
+      "AT201"
+    ],
+    "hp": 20,
+    "atk": 8,
+    "def": 1,
+    "spd": 115,
+    "radius": 17,
+    "exp": 3,
+    "coin": 2
+  },
+  "NM0011": {
+    "name": "游击弓手",
+    "type": "ranged",
+    "sprite": "enemy08",
+    "skillList": [
+      "AT202"
+    ],
+    "hp": 13,
+    "atk": 6,
+    "def": 0,
+    "spd": 95,
+    "radius": 15,
+    "exp": 4,
+    "coin": 3
+  },
+  "NM0012": {
+    "name": "冲锋猎犬",
+    "type": "charger",
+    "sprite": "enemy00",
+    "skillList": [
+      "AT203"
+    ],
+    "hp": 15,
+    "atk": 10,
+    "def": 0,
+    "spd": 135,
+    "radius": 15,
+    "exp": 5,
+    "coin": 3
+  },
+  "NM0013": {
+    "name": "腐化树人",
+    "type": "melee",
+    "sprite": "enemy16",
+    "skillList": [
+      "AT201"
+    ],
+    "hp": 42,
+    "atk": 11,
+    "def": 2,
+    "spd": 95,
+    "radius": 20,
+    "exp": 6,
+    "coin": 4
+  },
+  "NM0014": {
+    "name": "深渊狙击虫",
+    "type": "ranged",
+    "sprite": "enemy08",
+    "skillList": [
+      "AT204"
+    ],
+    "hp": 20,
+    "atk": 9,
+    "def": 1,
+    "spd": 90,
+    "radius": 16,
+    "exp": 7,
+    "coin": 5
+  },
+  "NM0015": {
+    "name": "腐锈游荡者",
+    "type": "melee",
+    "sprite": "enemy16",
+    "skillList": [
+      "AT201"
+    ],
+    "hp": 26,
+    "atk": 9,
+    "def": 1,
+    "spd": 105,
+    "radius": 17,
+    "exp": 4,
+    "coin": 2
+  },
+  "NM0016": {
+    "name": "骨刺散兵",
+    "type": "ranged",
+    "sprite": "enemy08",
+    "skillList": [
+      "AT202"
+    ],
+    "hp": 15,
+    "atk": 7,
+    "def": 0,
+    "spd": 100,
+    "radius": 15,
+    "exp": 5,
+    "coin": 3
+  },
+  "NM0017": {
+    "name": "疾行撕咬兽",
+    "type": "charger",
+    "sprite": "enemy00",
+    "skillList": [
+      "AT241"
+    ],
+    "hp": 18,
+    "atk": 11,
+    "def": 0,
+    "spd": 145,
+    "radius": 15,
+    "exp": 6,
+    "coin": 3
+  },
+  "NM0018": {
+    "name": "枯枝卫士",
+    "type": "melee",
+    "sprite": "enemy16",
+    "skillList": [
+      "AT201"
+    ],
+    "hp": 50,
+    "atk": 12,
+    "def": 3,
+    "spd": 88,
+    "radius": 21,
+    "exp": 8,
+    "coin": 5
+  },
+  "NM0019": {
+    "name": "腐沼射手",
+    "type": "ranged",
+    "sprite": "enemy08",
+    "skillList": [
+      "AT204"
+    ],
+    "hp": 24,
+    "atk": 10,
+    "def": 1,
+    "spd": 92,
+    "radius": 16,
+    "exp": 9,
+    "coin": 6
+  },
+  "NM0020": {
+    "name": "狂澜冲角兽",
+    "type": "charger",
+    "sprite": "enemy00",
+    "skillList": [
+      "AT243"
+    ],
+    "hp": 30,
+    "atk": 14,
+    "def": 1,
+    "spd": 150,
+    "radius": 17,
+    "exp": 10,
+    "coin": 6
+  },
+  "NM0021": {
+    "name": "暗影潜伏者",
+    "type": "melee",
+    "sprite": "enemy00",
+    "skillList": [
+      "AT206"
+    ],
+    "hp": 34,
+    "atk": 15,
+    "def": 2,
+    "spd": 128,
+    "radius": 18,
+    "exp": 12,
+    "coin": 7
+  },
+  "NM0022": {
+    "name": "深渊猎手",
+    "type": "ranged",
+    "sprite": "enemy08",
+    "skillList": [
+      "AT205"
+    ],
+    "hp": 32,
+    "atk": 13,
+    "def": 2,
+    "spd": 98,
+    "radius": 17,
+    "exp": 13,
+    "coin": 8
+  },
+  "NM0023": {
+    "name": "裂地冲撞者",
+    "type": "charger",
+    "sprite": "enemy00",
+    "skillList": [
+      "AT242"
+    ],
+    "hp": 44,
+    "atk": 17,
+    "def": 2,
+    "spd": 140,
+    "radius": 19,
+    "exp": 15,
+    "coin": 9
+  },
+  "NM0024": {
+    "name": "重渊守卫",
+    "type": "melee",
+    "sprite": "enemy16",
+    "skillList": [
+      "AT201"
+    ],
+    "hp": 72,
+    "atk": 19,
+    "def": 4,
+    "spd": 82,
+    "radius": 23,
+    "exp": 18,
+    "coin": 11
+  },
+  "NM0025": {
+    "name": "虚空狙击者",
+    "type": "ranged",
+    "sprite": "enemy08",
+    "skillList": [
+      "AT205"
+    ],
+    "hp": 46,
+    "atk": 18,
+    "def": 3,
+    "spd": 94,
+    "radius": 18,
+    "exp": 20,
+    "coin": 12
+  },
+  "NM0026": {
+    "name": "终焉追猎兽",
+    "type": "charger",
+    "sprite": "enemy00",
+    "skillList": [
+      "AT244"
+    ],
+    "hp": 60,
+    "atk": 22,
+    "def": 3,
+    "spd": 158,
+    "radius": 20,
+    "exp": 24,
+    "coin": 14
+  },
+  "NM0027": {
+    "name": "岩壳冲犀",
+    "type": "charger",
+    "sprite": "enemy00",
+    "skillList": [
+      "AT243"
+    ],
+    "hp": 36,
+    "atk": 12,
+    "def": 2,
+    "spd": 105,
+    "radius": 20,
+    "exp": 10,
+    "coin": 6
+  },
+  "NM0028": {
+    "name": "风暴突隼",
+    "type": "charger",
+    "sprite": "enemy00",
+    "skillList": [
+      "AT244"
+    ],
+    "hp": 24,
+    "atk": 13,
+    "def": 0,
+    "spd": 156,
+    "radius": 15,
+    "exp": 10,
+    "coin": 5
+  },
+  "NM0029": {
+    "name": "熔核突进者",
+    "type": "charger",
+    "sprite": "enemy00",
+    "skillList": [
+      "AT242"
+    ],
+    "hp": 50,
+    "atk": 18,
+    "def": 2,
+    "spd": 120,
+    "radius": 19,
+    "exp": 16,
+    "coin": 10
+  },
+  "NM0030": {
+    "name": "影袭连爪",
+    "type": "charger",
+    "sprite": "enemy00",
+    "skillList": [
+      "AT241"
+    ],
+    "hp": 46,
+    "atk": 15,
+    "def": 2,
+    "spd": 162,
+    "radius": 17,
+    "exp": 19,
+    "coin": 11
+  },
+  "ED0001": {
+    "name": "重装督军",
+    "type": "melee",
+    "sprite": "enemy16",
+    "skillList": [
+      "AT201"
+    ],
+    "hp": 150,
+    "atk": 16,
+    "def": 6,
+    "spd": 120,
+    "radius": 30,
+    "exp": 30,
+    "coin": 20
+  },
+  "ED0002": {
+    "name": "蚀魂狙击手",
+    "type": "ranged",
+    "sprite": "enemy08",
+    "skillList": [
+      "AT205"
+    ],
+    "hp": 110,
+    "atk": 14,
+    "def": 4,
+    "spd": 95,
+    "radius": 28,
+    "exp": 32,
+    "coin": 22
+  },
+  "ED0003": {
+    "name": "裂颅追猎者",
+    "type": "melee",
+    "sprite": "enemy00",
+    "skillList": [
+      "AT206"
+    ],
+    "hp": 130,
+    "atk": 18,
+    "def": 3,
+    "spd": 135,
+    "radius": 28,
+    "exp": 34,
+    "coin": 24
+  },
+  "BS0001": {
+    "name": "触手邪神",
+    "type": "boss",
+    "sprite": "enemy19",
+    "skillList": [
+      "AT207",
+      "AT211",
+      "AT212",
+      "AT217",
+      "AT220"
+    ],
+    "phases": [
+      {
+        "hp": 1,
+        "skills": [
+          "AT211",
+          "AT212"
+        ]
+      },
+      {
+        "hp": 0.5,
+        "skills": [
+          "AT217",
+          "AT220"
+        ]
+      }
+    ],
+    "patternCd": 3.2,
+    "hp": 600,
+    "atk": 15,
+    "def": 3,
+    "spd": 72,
+    "radius": 46,
+    "exp": 60,
+    "coin": 80,
+    "sizeMul": 1.2
+  },
+  "BS0002": {
+    "name": "腐化树母",
+    "type": "boss",
+    "sprite": "enemy13",
+    "skillList": [
+      "AT208",
+      "AT213",
+      "AT214",
+      "AT219"
+    ],
+    "phases": [
+      {
+        "hp": 1,
+        "skills": [
+          "AT213",
+          "AT214"
+        ]
+      },
+      {
+        "hp": 0.5,
+        "skills": [
+          "AT219",
+          "AT213"
+        ]
+      }
+    ],
+    "patternCd": 3.4,
+    "hp": 950,
+    "atk": 18,
+    "def": 4,
+    "spd": 64,
+    "radius": 54,
+    "exp": 90,
+    "coin": 130,
+    "sizeMul": 1.35
+  },
+  "BS0003": {
+    "name": "深渊吞噬者",
+    "type": "boss",
+    "sprite": "enemy20",
+    "skillList": [
+      "AT209",
+      "AT215",
+      "AT218",
+      "AT216"
+    ],
+    "phases": [
+      {
+        "hp": 1,
+        "skills": [
+          "AT215",
+          "AT218"
+        ]
+      },
+      {
+        "hp": 0.5,
+        "skills": [
+          "AT216",
+          "AT218"
+        ]
+      }
+    ],
+    "patternCd": 3,
+    "hp": 1400,
+    "atk": 22,
+    "def": 5,
+    "spd": 80,
+    "radius": 60,
+    "exp": 130,
+    "coin": 200,
+    "sizeMul": 1.5
+  },
+  "BS0004": {
+    "name": "旋刃使者",
+    "type": "boss",
+    "sprite": "enemy15",
+    "skillList": [
+      "AT207",
+      "AT216",
+      "AT219",
+      "AT220",
+      "AT214"
+    ],
+    "phases": [
+      {
+        "hp": 1,
+        "skills": [
+          "AT216",
+          "AT219"
+        ]
+      },
+      {
+        "hp": 0.45,
+        "skills": [
+          "AT219",
+          "AT220",
+          "AT214"
+        ]
+      }
+    ],
+    "patternCd": 3.1,
+    "hp": 1750,
+    "atk": 25,
+    "def": 6,
+    "spd": 96,
+    "radius": 56,
+    "exp": 150,
+    "coin": 240
+  },
+  "BS0005": {
+    "name": "熔核暴君",
+    "type": "boss",
+    "sprite": "enemy12",
+    "skillList": [
+      "AT208",
+      "AT215",
+      "AT218",
+      "AT211"
+    ],
+    "phases": [
+      {
+        "hp": 1,
+        "skills": [
+          "AT215",
+          "AT218"
+        ]
+      },
+      {
+        "hp": 0.5,
+        "skills": [
+          "AT218",
+          "AT215",
+          "AT211"
+        ]
+      }
+    ],
+    "patternCd": 2.9,
+    "hp": 2100,
+    "atk": 28,
+    "def": 6,
+    "spd": 88,
+    "radius": 58,
+    "exp": 170,
+    "coin": 280
+  },
+  "BS0006": {
+    "name": "棱镜之眼",
+    "type": "boss",
+    "sprite": "enemy21",
+    "skillList": [
+      "AT207",
+      "AT212",
+      "AT213",
+      "AT217"
+    ],
+    "phases": [
+      {
+        "hp": 1,
+        "skills": [
+          "AT212",
+          "AT213"
+        ]
+      },
+      {
+        "hp": 0.5,
+        "skills": [
+          "AT213",
+          "AT217"
+        ]
+      }
+    ],
+    "patternCd": 3.4,
+    "laserSkills": [
+      "AT231",
+      "AT232"
+    ],
+    "laserCd": 4,
+    "hp": 2450,
+    "atk": 30,
+    "def": 7,
+    "spd": 78,
+    "radius": 60,
+    "exp": 190,
+    "coin": 320
+  },
+  "BS0007": {
+    "name": "裂空织者",
+    "type": "boss",
+    "sprite": "enemy03",
+    "skillList": [
+      "AT208",
+      "AT216",
+      "AT219",
+      "AT213",
+      "AT212"
+    ],
+    "phases": [
+      {
+        "hp": 1,
+        "skills": [
+          "AT216",
+          "AT219"
+        ]
+      },
+      {
+        "hp": 0.5,
+        "skills": [
+          "AT219",
+          "AT213",
+          "AT212"
+        ]
+      }
+    ],
+    "patternCd": 3.2,
+    "hp": 2800,
+    "atk": 32,
+    "def": 7,
+    "spd": 84,
+    "radius": 60,
+    "exp": 210,
+    "coin": 360
+  },
+  "BS0008": {
+    "name": "噬弹虫母",
+    "type": "boss",
+    "sprite": "enemy07",
+    "skillList": [
+      "AT209",
+      "AT212",
+      "AT214",
+      "AT217",
+      "AT220"
+    ],
+    "phases": [
+      {
+        "hp": 1,
+        "skills": [
+          "AT212",
+          "AT214"
+        ]
+      },
+      {
+        "hp": 0.5,
+        "skills": [
+          "AT217",
+          "AT220"
+        ]
+      }
+    ],
+    "patternCd": 3.6,
+    "hp": 3200,
+    "atk": 34,
+    "def": 8,
+    "spd": 70,
+    "radius": 64,
+    "exp": 230,
+    "coin": 400
+  },
+  "BS0009": {
+    "name": "深渊领主",
+    "type": "boss",
+    "sprite": "enemy14",
+    "skillList": [
+      "AT209",
+      "AT211",
+      "AT214",
+      "AT220",
+      "AT215"
+    ],
+    "phases": [
+      {
+        "hp": 1,
+        "skills": [
+          "AT211",
+          "AT214"
+        ]
+      },
+      {
+        "hp": 0.5,
+        "skills": [
+          "AT220",
+          "AT215"
+        ]
+      }
+    ],
+    "patternCd": 3,
+    "laserSkills": [
+      "AT233"
+    ],
+    "laserCd": 3.8,
+    "hp": 3600,
+    "atk": 36,
+    "def": 8,
+    "spd": 76,
+    "radius": 66,
+    "exp": 260,
+    "coin": 460
+  },
+  "BS0010": {
+    "name": "终焉·邪神本体",
+    "type": "boss",
+    "sprite": "enemy22",
+    "skillList": [
+      "AT207",
+      "AT211",
+      "AT213",
+      "AT216",
+      "AT217",
+      "AT218",
+      "AT220",
+      "AT215",
+      "AT212"
+    ],
+    "phases": [
+      {
+        "hp": 1,
+        "skills": [
+          "AT211",
+          "AT213"
+        ]
+      },
+      {
+        "hp": 0.66,
+        "skills": [
+          "AT216",
+          "AT217",
+          "AT218"
+        ]
+      },
+      {
+        "hp": 0.33,
+        "skills": [
+          "AT220",
+          "AT215",
+          "AT212"
+        ]
+      }
+    ],
+    "patternCd": 2.8,
+    "hp": 4500,
+    "atk": 40,
+    "def": 9,
+    "spd": 74,
+    "radius": 72,
+    "exp": 320,
+    "coin": 600
+  }
+}

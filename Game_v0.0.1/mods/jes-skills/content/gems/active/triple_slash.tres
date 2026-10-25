@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 INST·SEC·TICK（展开表 v2 §1.2）· 夜间施工批次 C
+; 三段连斩：同一扇形内反复判定（近战风味的攻击类内容，形态走 aoe 行为 + attack 标签）
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_tsl"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_tsl"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_tsl"]
+
+[sub_resource type="Resource" id="Resource_tsl_scale"]
+script = ExtResource("1_tsl")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_tsl_part"]
+script = ExtResource("2_tsl")
+base_damage = {
+&"physical": 45.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"sec",
+&"arc_deg": 110.0,
+&"range": 140.0,
+&"delay": 0.0,
+&"hit_count": 3,
+&"hit_interval": 0.35
+}
+
+[resource]
+script = ExtResource("3_tsl")
+gem_id = &"triple_slash"
+display_name = "三段连斩"
+parts = Array[ExtResource("2_tsl")]([SubResource("Resource_tsl_part")])
+tags = Array[StringName]([&"attack", &"aoe", &"physical"])
+cast_mode = 0
+base_cast_time = 0.35
+cost_type = 0
+base_cost = 10.0
+base_cooldown = 2.8
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_tsl_scale")

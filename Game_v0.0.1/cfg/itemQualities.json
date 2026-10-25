@@ -1,0 +1,22 @@
+[
+  {
+    "name": "白",
+    "valueMul": 1,
+    "color": "#b8c4d4"
+  },
+  {
+    "name": "蓝",
+    "valueMul": 1.8,
+    "color": "#5aa2ff"
+  },
+  {
+    "name": "紫",
+    "valueMul": 3.2,
+    "color": "#b06cff"
+  },
+  {
+    "name": "金",
+    "valueMul": 6,
+    "color": "#ffd76a"
+  }
+]

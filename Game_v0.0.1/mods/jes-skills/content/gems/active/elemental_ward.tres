@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_s2a"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_s2a"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_s2a"]
+
+[sub_resource type="Resource" id="Resource_scale"]
+script = ExtResource("1_s2a")
+per_level = 0.12
+knee_level = 10
+per_level_late = 0.0
+
+[sub_resource type="Resource" id="Resource_part1"]
+script = ExtResource("2_s2a")
+damage_channel = 1
+behavior_id = &"bhv_buff_self"
+behavior_params = {
+&"buff_mods": [{
+&"op": 0,
+&"stat": &"fire_resistance",
+&"value": 30.0
+}, {
+&"op": 0,
+&"stat": &"cold_resistance",
+&"value": 30.0
+}, {
+&"op": 0,
+&"stat": &"lightning_resistance",
+&"value": 30.0
+}, {
+&"op": 0,
+&"stat": &"chaos_resistance",
+&"value": 15.0
+}],
+&"duration": 5.0
+}
+
+[resource]
+script = ExtResource("3_s2a")
+gem_id = &"elemental_ward"
+display_name = "元素壁障"
+parts = Array[ExtResource("2_s2a")]([SubResource("Resource_part1")])
+tags = Array[StringName]([&"spell", &"buff"])
+cast_mode = 0
+base_cast_time = 0.5
+cost_type = 0
+base_cost = 14.0
+base_cooldown = 7.0
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_scale")

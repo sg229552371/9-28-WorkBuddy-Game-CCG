@@ -1,0 +1,42 @@
+[
+  {
+    "skillId": "BF001",
+    "id": "狂力",
+    "stat": "atk",
+    "mul": 1.3,
+    "label": "攻击力 +30%",
+    "stackable": true,
+    "maxLv": 10,
+    "stackPerTrigger": 1
+  },
+  {
+    "skillId": "BF002",
+    "id": "迅击",
+    "stat": "cdMul",
+    "mul": 0.7,
+    "label": "攻速 +30%",
+    "stackable": true,
+    "maxLv": 10,
+    "stackPerTrigger": 1
+  },
+  {
+    "skillId": "BF003",
+    "id": "疾风",
+    "stat": "spd",
+    "mul": 1.3,
+    "label": "移速 +30%",
+    "stackable": true,
+    "maxLv": 10,
+    "stackPerTrigger": 1
+  },
+  {
+    "skillId": "BF004",
+    "id": "汲血",
+    "stat": "lifesteal",
+    "mul": 0.15,
+    "label": "吸血 15%",
+    "stackable": true,
+    "maxLv": 10,
+    "stackPerTrigger": 1
+  }
+]

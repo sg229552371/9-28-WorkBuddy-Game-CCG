@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_cnf"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_cnf"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_cnf"]
+
+[sub_resource type="Resource" id="Resource_cnf_scale"]
+script = ExtResource("1_cnf")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_cnf_part"]
+script = ExtResource("2_cnf")
+base_damage = {
+&"fire": 14.0
+}
+behavior_id = &"bhv_channel"
+behavior_params = {
+&"shape": &"sec",
+&"arc_deg": 70.0,
+&"range": 160.0,
+&"tick_interval": 0.25,
+&"max_channel_time": 2.0
+}
+
+[resource]
+script = ExtResource("3_cnf")
+gem_id = &"cone_flame"
+display_name = "扇形喷火"
+parts = Array[ExtResource("2_cnf")]([SubResource("Resource_cnf_part")])
+tags = Array[StringName]([&"spell", &"channel", &"fire"])
+cast_mode = 0
+base_cast_time = 0.35
+cost_type = 0
+base_cost = 14.0
+base_cooldown = 3.5
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_cnf_scale")

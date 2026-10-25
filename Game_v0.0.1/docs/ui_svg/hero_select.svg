@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" width="720" height="1280">
+  <rect x="0" y="0" width="720" height="1280" fill="#f5f0e6" stroke="#666" stroke-width="2"/>
+  <text x="360" y="36" font-size="22" text-anchor="middle" fill="#333">选人界面 hero_select.svg ｜ 720×1280 ｜ 9:16</text>
+
+  <!-- Z1 背景 -->
+  <rect x="8" y="56" width="704" height="1216" fill="none" stroke="#999" stroke-dasharray="4"/>
+  <text x="20" y="80" font-size="16" fill="#666">Z1 底层：背景（骨白底 #F2EAD8 + 暖沙纹理，全屏）</text>
+
+  <!-- Z2 标题与流程 -->
+  <rect x="16" y="96" width="688" height="56" fill="#e8e2d4" stroke="#666"/>
+  <text x="360" y="132" font-size="16" text-anchor="middle" fill="#333">Z2 标题条（y=96~152, h=56）：「选择出战 3 名祭司」+ 步骤指示（选人 0~2min）</text>
+
+  <!-- Z3 祭司卡片列表：12 名，2 列 6 行，滚动区 -->
+  <rect x="16" y="168" width="440" height="880" fill="#f0e8d8" stroke="#666"/>
+  <text x="236" y="200" font-size="16" text-anchor="middle" fill="#333">Z3 祭司卡列表（x=16~456, y=168~1048，可滚动）</text>
+  <!-- 示例卡 ×2 列 -->
+  <rect x="32" y="220" width="200" height="160" fill="#fff" stroke="#35E0D8" stroke-width="3"/>
+  <text x="132" y="280" font-size="14" text-anchor="middle" fill="#333">立绘缩略 160×120</text>
+  <text x="132" y="310" font-size="13" text-anchor="middle" fill="#333">焚香者·烬（神权词条1行）</text>
+  <rect x="248" y="220" width="200" height="160" fill="#fff" stroke="#666"/>
+  <text x="348" y="280" font-size="14" text-anchor="middle" fill="#666">观星者·瞳</text>
+  <text x="348" y="310" font-size="13" text-anchor="middle" fill="#999">未选中（骨白描边）</text>
+  <text x="236" y="1030" font-size="13" text-anchor="middle" fill="#999">…共 12 卡（2 列×6 行，卡 200×160，间距 16）…</text>
+
+  <!-- Z4 详情面板 -->
+  <rect x="472" y="168" width="232" height="560" fill="#fff" stroke="#666"/>
+  <text x="588" y="200" font-size="16" text-anchor="middle" fill="#333">Z4 详情面板（x=472~704, y=168~728）</text>
+  <rect x="488" y="220" width="200" height="240" fill="#eee" stroke="#666"/>
+  <text x="588" y="340" font-size="14" text-anchor="middle" fill="#666">立绘 720×900 等比缩放</text>
+  <rect x="488" y="480" width="200" height="200" fill="none" stroke="#666"/>
+  <text x="588" y="520" font-size="13" text-anchor="middle" fill="#333">神权（被动）+ 技能A/B 图标 64×64</text>
+  <text x="588" y="550" font-size="13" text-anchor="middle" fill="#333">CD 与效果文字</text>
+  <text x="588" y="640" font-size="13" text-anchor="middle" fill="#35E0D8">「加入队伍」按钮 200×48</text>
+
+  <!-- Z5 组合提示词条区 -->
+  <rect x="472" y="744" width="232" height="304" fill="#e0f5f3" stroke="#35E0D8"/>
+  <text x="588" y="776" font-size="15" text-anchor="middle" fill="#333">Z5 组合提示词条区（y=744~1048）</text>
+  <text x="588" y="820" font-size="13" text-anchor="middle" fill="#333">当前已选 3 人实时组合函数</text>
+  <text x="588" y="850" font-size="13" text-anchor="middle" fill="#333">白话词条（如「火格击杀→供盾」）</text>
+  <text x="588" y="880" font-size="13" text-anchor="middle" fill="#333">录屏观众无需读说明书</text>
+
+  <!-- Z6 底部确认条 -->
+  <rect x="16" y="1064" width="688" height="120" fill="#e8e2d4" stroke="#666"/>
+  <text x="360" y="1100" font-size="15" text-anchor="middle" fill="#333">Z6 底部确认条（y=1064~1184, h=120）：已选 3 头像 96×96 + 「出发」主按钮（选满 3 人点亮青霓虹）</text>
+
+  <!-- Z7 返回 -->
+  <rect x="16" y="96" width="0" height="0" fill="none"/>
+  <rect x="580" y="1196" width="124" height="60" fill="none" stroke="#666"/>
+  <text x="642" y="1232" font-size="14" text-anchor="middle" fill="#666">Z7 返回主城</text>
+
+  <!-- Z9 顶层：筛选/排序弹窗 -->
+  <rect x="120" y="420" width="480" height="200" fill="none" stroke="#C63D2F" stroke-dasharray="6"/>
+  <text x="360" y="530" font-size="14" text-anchor="middle" fill="#C63D2F">Z9 顶层：排序/筛选/未解锁提示弹窗（居中 480×200）</text>
+
+  <text x="360" y="1272" font-size="12" text-anchor="middle" fill="#999">Z序：Z1背景 → Z2标题条 → Z3卡列表 → Z4详情 → Z5组合词条 → Z6确认条 → Z7返回 → Z9弹窗</text>
+</svg>

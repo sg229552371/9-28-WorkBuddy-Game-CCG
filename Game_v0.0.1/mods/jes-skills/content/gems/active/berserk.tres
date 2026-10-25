@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_pqfu3"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_3tiea"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_r1h7w"]
+
+[sub_resource type="Resource" id="Resource_e2fec"]
+script = ExtResource("1_pqfu3")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_ukk51"]
+script = ExtResource("2_3tiea")
+behavior_id = &"bhv_buff_self"
+behavior_params = {
+&"buff_mods": [{
+&"op": 1,
+&"stat": &"physical_damage",
+&"value": 30.0
+}, {
+&"op": 0,
+&"stat": &"crit_chance",
+&"value": 25.0
+}],
+&"duration": 5.0
+}
+
+[resource]
+script = ExtResource("3_r1h7w")
+gem_id = &"berserk"
+display_name = "狂暴"
+parts = Array[ExtResource("2_3tiea")]([SubResource("Resource_ukk51")])
+tags = Array[StringName]([&"spell", &"buff"])
+base_cooldown = 6.0
+level_scaling = SubResource("Resource_e2fec")

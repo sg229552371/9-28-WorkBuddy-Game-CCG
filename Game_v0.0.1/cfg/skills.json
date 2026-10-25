@@ -1,0 +1,951 @@
+{
+  "AT101": {
+    "name": "速射",
+    "cat": "active",
+    "kind": "basic",
+    "type": "bullet",
+    "cd": 0.5,
+    "dmgMul": 0.75,
+    "bullets": 1,
+    "bulletSpd": 620,
+    "pierce": 0,
+    "bounce": 0
+  },
+  "AT102": {
+    "name": "能量爆发",
+    "cat": "active",
+    "kind": "skill",
+    "type": "bullet",
+    "cd": 1.8,
+    "tags": [
+      "伤害",
+      "冷却",
+      "范围",
+      "弹道数量"
+    ],
+    "dmgMul": 1.5,
+    "radius": 130
+  },
+  "AT103": {
+    "name": "三向散射",
+    "cat": "active",
+    "kind": "basic",
+    "type": "bullet",
+    "cd": 0.8,
+    "dmgMul": 0.7,
+    "bullets": 3,
+    "bulletSpd": 520,
+    "pierce": 0,
+    "bounce": 0
+  },
+  "AT104": {
+    "name": "震荡波",
+    "cat": "active",
+    "kind": "skill",
+    "type": "bullet",
+    "cd": 1.9,
+    "tags": [
+      "伤害",
+      "冷却",
+      "范围"
+    ],
+    "dmgMul": 1.3,
+    "radius": 150
+  },
+  "AT105": {
+    "name": "磁轨弹",
+    "cat": "active",
+    "kind": "basic",
+    "type": "bullet",
+    "cd": 0.7,
+    "dmgMul": 0.85,
+    "bullets": 1,
+    "bulletSpd": 760,
+    "pierce": 2,
+    "bounce": 0
+  },
+  "AT106": {
+    "name": "贯穿射线",
+    "cat": "active",
+    "kind": "skill",
+    "type": "bullet",
+    "cd": 1.8,
+    "tags": [
+      "伤害",
+      "冷却",
+      "穿透",
+      "弹速"
+    ],
+    "dmgMul": 1.6,
+    "radius": 120
+  },
+  "AT107": {
+    "name": "跳弹",
+    "cat": "active",
+    "kind": "basic",
+    "type": "bullet",
+    "cd": 0.65,
+    "dmgMul": 0.75,
+    "bullets": 1,
+    "bulletSpd": 560,
+    "pierce": 0,
+    "bounce": 2
+  },
+  "AT108": {
+    "name": "环形弹幕",
+    "cat": "active",
+    "kind": "skill",
+    "type": "bullet",
+    "cd": 2,
+    "tags": [
+      "伤害",
+      "冷却",
+      "范围",
+      "弹道数量"
+    ],
+    "dmgMul": 1.2,
+    "radius": 160,
+    "bullets": 8
+  },
+  "AT109": {
+    "name": "双生速射",
+    "cat": "active",
+    "kind": "basic",
+    "type": "bullet",
+    "cd": 0.4,
+    "dmgMul": 0.55,
+    "bullets": 1,
+    "bulletSpd": 640,
+    "pierce": 0,
+    "bounce": 0
+  },
+  "AT110": {
+    "name": "疾风连爆",
+    "cat": "active",
+    "kind": "skill",
+    "type": "bullet",
+    "cd": 1.5,
+    "tags": [
+      "伤害",
+      "冷却",
+      "弹道数量"
+    ],
+    "dmgMul": 1.2,
+    "radius": 120,
+    "bullets": 3
+  },
+  "AT111": {
+    "name": "重锤弹",
+    "cat": "active",
+    "kind": "basic",
+    "type": "bullet",
+    "cd": 0.9,
+    "dmgMul": 1.15,
+    "bullets": 1,
+    "bulletSpd": 430,
+    "pierce": 1,
+    "bounce": 0
+  },
+  "AT112": {
+    "name": "攻城爆破",
+    "cat": "active",
+    "kind": "skill",
+    "type": "bullet",
+    "cd": 2.3,
+    "tags": [
+      "伤害",
+      "冷却",
+      "范围",
+      "弹速"
+    ],
+    "dmgMul": 1.9,
+    "radius": 190
+  },
+  "AT113": {
+    "name": "召唤无人机",
+    "cat": "active",
+    "type": "summon",
+    "kind": "skill",
+    "cd": 5.5,
+    "tags": [
+      "召唤物",
+      "伤害",
+      "冷却"
+    ],
+    "repair": true,
+    "desc": "召唤/补充维修型无人机协战（自动攻击 + 每秒修理 HP 最低的己方成员，再次施放补满）",
+    "anchors": {
+      "count": {
+        "1": 3,
+        "25": 4,
+        "60": 5,
+        "100": 6
+      },
+      "hp": {
+        "1": 40,
+        "50": 120,
+        "100": 260
+      },
+      "atk": {
+        "1": 6,
+        "50": 20,
+        "100": 48
+      },
+      "fireCd": {
+        "1": 0.8,
+        "50": 0.65,
+        "100": 0.5
+      },
+      "orbit": {
+        "1": 66,
+        "50": 74,
+        "100": 90
+      }
+    }
+  },
+  "AT114": {
+    "name": "大地雷",
+    "cat": "active",
+    "type": "trap",
+    "kind": "skill",
+    "cd": 5,
+    "tags": [
+      "陷阱",
+      "伤害",
+      "范围",
+      "冷却"
+    ],
+    "armDelay": 0.5,
+    "desc": "在脚下布设地雷：敌人进入范围 0.5 秒后引爆（范围伤害），随后消失",
+    "anchors": {
+      "count": {
+        "1": 1,
+        "25": 2,
+        "60": 2,
+        "100": 3
+      },
+      "dmgMul": {
+        "1": 2.6,
+        "50": 4,
+        "100": 5.5
+      },
+      "radius": {
+        "1": 110,
+        "50": 135,
+        "100": 180
+      }
+    }
+  },
+  "AT115": {
+    "name": "机炮",
+    "cat": "active",
+    "kind": "basic",
+    "type": "bullet",
+    "cd": 0.8,
+    "dmgMul": 0.9,
+    "bullets": 1,
+    "bulletSpd": 560,
+    "pierce": 0,
+    "bounce": 0
+  },
+  "AT116": {
+    "name": "掷雷",
+    "cat": "active",
+    "kind": "basic",
+    "type": "bullet",
+    "cd": 1.1,
+    "dmgMul": 1.2,
+    "bullets": 1,
+    "bulletSpd": 480,
+    "pierce": 0,
+    "bounce": 0
+  },
+  "AT120": {
+    "name": "嘲讽战吼",
+    "cat": "active",
+    "kind": "skill",
+    "type": "taunt",
+    "cd": 3.5,
+    "tags": [
+      "伤害",
+      "范围",
+      "冷却"
+    ],
+    "dmgMul": 0.5,
+    "duration": 4,
+    "scaleBy": {
+      "stat": "def",
+      "pct": 0.02
+    },
+    "desc": "战吼嘲讽：半径内敌人强制攻击自身 4 秒（半径 = 锚点固定值 + 防御×2%×等级系数）",
+    "anchors": {
+      "radius": {
+        "1": 180,
+        "50": 260,
+        "100": 340
+      }
+    }
+  },
+  "AT121": {
+    "name": "近战挥砍",
+    "cat": "active",
+    "kind": "basic",
+    "type": "melee",
+    "cd": 0.62,
+    "dmgMul": 1.35,
+    "reach": 78,
+    "meleeArc": 1.75,
+    "desc": "贴身扇形挥击：对身前面向约 100° 内、距离 78px 的敌人造成伤害（近战英雄共用的普攻）"
+  },
+  "AT122": {
+    "name": "生命脉冲",
+    "cat": "active",
+    "kind": "skill",
+    "type": "healNova",
+    "cd": 6,
+    "tags": [
+      "伤害",
+      "范围",
+      "冷却"
+    ],
+    "dmgMul": 1.6,
+    "healBase": 18,
+    "healPerAdd": 1,
+    "scaleBy": {
+      "stat": "atk",
+      "pct": 0.04
+    },
+    "desc": "生命脉冲：对半径内敌人造成伤害，并回复全队生命（回复量 = 18 + 攻击×4%×等级系数，走攻击成长）",
+    "anchors": {
+      "radius": {
+        "1": 150,
+        "50": 200,
+        "100": 260
+      }
+    }
+  },
+  "AT123": {
+    "name": "鼓舞光环",
+    "cat": "active",
+    "kind": "skill",
+    "type": "aura",
+    "cd": 8,
+    "tags": [
+      "冷却"
+    ],
+    "dmgMul": 0.9,
+    "auraDuration": 10,
+    "auraPct": 0.08,
+    "scaleBy": {
+      "stat": "def",
+      "pct": 0.01
+    },
+    "desc": "鼓舞光环：对身周敌人造成伤害，并令全队攻击与移速提升（幅度 = 8% + 防御×1%×等级系数），持续 10 秒",
+    "anchors": {
+      "radius": {
+        "1": 160,
+        "50": 200,
+        "100": 250
+      }
+    }
+  },
+  "AT124": {
+    "name": "灵能护罩",
+    "cat": "active",
+    "kind": "skill",
+    "type": "barrier",
+    "cd": 7,
+    "tags": [
+      "伤害",
+      "范围",
+      "冷却"
+    ],
+    "dmgMul": 1.4,
+    "barrierDuration": 12,
+    "barrierDef": 4,
+    "scaleBy": {
+      "stat": "def",
+      "pct": 0.26
+    },
+    "desc": "灵能护罩：对身周敌人造成伤害，并为全队附加防御提升（+4 + 防御×26%×等级系数）的护罩，持续 12 秒",
+    "anchors": {
+      "radius": {
+        "1": 140,
+        "50": 190,
+        "100": 240
+      }
+    }
+  },
+  "AT201": {
+    "name": "重甲撞击",
+    "cat": "active",
+    "ai": "melee",
+    "tags": [],
+    "cd": 0.8,
+    "dmgMul": 1
+  },
+  "AT202": {
+    "name": "游击射击",
+    "cat": "active",
+    "ai": "ranged",
+    "tags": [
+      "弹速"
+    ],
+    "cd": 2.6,
+    "bulletSpd": 300,
+    "keepDist": 280,
+    "dmgMul": 1
+  },
+  "AT203": {
+    "name": "冲撞突袭",
+    "cat": "active",
+    "ai": "charger",
+    "tags": [],
+    "cd": 3,
+    "chargeRange": 320,
+    "telegraph": 0.6,
+    "dashSpd": 560,
+    "dashTime": 0.45,
+    "dmgMul": 1
+  },
+  "AT204": {
+    "name": "深渊狙击",
+    "cat": "active",
+    "ai": "ranged",
+    "tags": [
+      "弹速"
+    ],
+    "cd": 3.2,
+    "bulletSpd": 420,
+    "keepDist": 340,
+    "dmgMul": 1
+  },
+  "AT205": {
+    "name": "蚀魂狙击",
+    "cat": "active",
+    "ai": "ranged",
+    "tags": [
+      "弹速"
+    ],
+    "cd": 2.6,
+    "bulletSpd": 300,
+    "keepDist": 300,
+    "dmgMul": 1
+  },
+  "AT206": {
+    "name": "裂颅撕咬",
+    "cat": "active",
+    "ai": "melee",
+    "tags": [],
+    "cd": 0.7,
+    "dmgMul": 1
+  },
+  "AT207": {
+    "name": "触手范围爆炸",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害",
+      "范围"
+    ],
+    "cd": 5,
+    "warnTime": 1.5,
+    "radius": 230,
+    "dmgMul": 2.4,
+    "touchMul": 0.6,
+    "touchCd": 1,
+    "minionId": "NM0010",
+    "minionWave": 2,
+    "minionCd": 8
+  },
+  "AT208": {
+    "name": "腐化范围爆炸",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害",
+      "范围"
+    ],
+    "cd": 4.2,
+    "warnTime": 1.5,
+    "radius": 260,
+    "dmgMul": 2.4,
+    "touchMul": 0.6,
+    "touchCd": 1,
+    "minionId": "NM0010",
+    "minionWave": 3,
+    "minionCd": 7
+  },
+  "AT209": {
+    "name": "深渊范围爆炸",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害",
+      "范围"
+    ],
+    "cd": 3.6,
+    "warnTime": 1.4,
+    "radius": 290,
+    "dmgMul": 2.6,
+    "touchMul": 0.6,
+    "touchCd": 1,
+    "minionId": "NM0010",
+    "minionWave": 3,
+    "minionCd": 6
+  },
+  "AT211": {
+    "name": "触手放射",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害"
+    ],
+    "pattern": "radial",
+    "count": 10,
+    "offset": 0,
+    "bulletSpd": 190,
+    "dmgMul": 0.7,
+    "cd": 3.2,
+    "warnTime": 0.9,
+    "warnRadius": 170,
+    "life": 6.5
+  },
+  "AT212": {
+    "name": "触手追瞄",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害"
+    ],
+    "pattern": "fan",
+    "count": 3,
+    "arc": 0.16,
+    "bulletSpd": 300,
+    "dmgMul": 0.5,
+    "cd": 1.7,
+    "warnTime": 0.35,
+    "warnRadius": 220,
+    "life": 6
+  },
+  "AT213": {
+    "name": "藤蔓扇射",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害"
+    ],
+    "pattern": "fan",
+    "count": 7,
+    "arc": 1.15,
+    "bulletSpd": 210,
+    "dmgMul": 0.65,
+    "cd": 3.4,
+    "warnTime": 0.85,
+    "warnRadius": 240,
+    "life": 6
+  },
+  "AT214": {
+    "name": "根系翻涌",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害"
+    ],
+    "pattern": "ring",
+    "count": 7,
+    "layers": 2,
+    "layerMul": 0.18,
+    "offset": 0,
+    "bulletSpd": 175,
+    "dmgMul": 0.6,
+    "cd": 4,
+    "warnTime": 1,
+    "warnRadius": 190,
+    "life": 6.5
+  },
+  "AT215": {
+    "name": "落地冲击环",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害"
+    ],
+    "pattern": "radial",
+    "count": 14,
+    "offset": 0,
+    "bulletSpd": 150,
+    "dmgMul": 0.75,
+    "cd": 4.2,
+    "warnTime": 1.1,
+    "warnRadius": 210,
+    "life": 7
+  },
+  "AT216": {
+    "name": "深渊漩涡",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害"
+    ],
+    "pattern": "spiral",
+    "arms": 3,
+    "spin": 0.42,
+    "bulletSpd": 170,
+    "dmgMul": 0.45,
+    "cd": 0.3,
+    "warnTime": 0,
+    "warnRadius": 0,
+    "life": 5
+  },
+  "AT217": {
+    "name": "邪神花形",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害"
+    ],
+    "pattern": "grid",
+    "count": 7,
+    "layers": 3,
+    "gap": 95,
+    "offset": 0,
+    "bulletSpd": 165,
+    "dmgMul": 0.55,
+    "cd": 4.5,
+    "warnTime": 1,
+    "warnRadius": 300,
+    "life": 7
+  },
+  "AT218": {
+    "name": "深渊波幕",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害"
+    ],
+    "pattern": "wave",
+    "count": 9,
+    "lateral": 26,
+    "bulletSpd": 200,
+    "dmgMul": 0.6,
+    "cd": 2.6,
+    "warnTime": 0.7,
+    "warnRadius": 260,
+    "life": 6
+  },
+  "AT219": {
+    "name": "藤蔓绞杀",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害"
+    ],
+    "pattern": "spiral",
+    "arms": 2,
+    "spin": -0.5,
+    "bulletSpd": 185,
+    "dmgMul": 0.5,
+    "cd": 0.34,
+    "warnTime": 0,
+    "warnRadius": 0,
+    "life": 5.5
+  },
+  "AT220": {
+    "name": "触手狂潮",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害"
+    ],
+    "pattern": "ring",
+    "count": 9,
+    "layers": 3,
+    "layerMul": 0.14,
+    "offset": 0,
+    "bulletSpd": 160,
+    "dmgMul": 0.6,
+    "cd": 4,
+    "warnTime": 1,
+    "warnRadius": 230,
+    "life": 7
+  },
+  "AT231": {
+    "name": "三束旋转扫描",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害"
+    ],
+    "arms": 3,
+    "spin": 0.3,
+    "laserLen": 1600,
+    "dmgMul": 0.5,
+    "cd": 4.2,
+    "laserWarn": 0.9,
+    "laserActive": 1.6,
+    "laserFade": 0.35
+  },
+  "AT232": {
+    "name": "交叉棱光扫描",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害"
+    ],
+    "arms": 2,
+    "spin": -0.45,
+    "laserLen": 1500,
+    "dmgMul": 0.55,
+    "cd": 3.6,
+    "laserWarn": 0.75,
+    "laserActive": 1.4,
+    "laserFade": 0.35
+  },
+  "AT233": {
+    "name": "深渊旋转激光",
+    "cat": "active",
+    "ai": "boss",
+    "tags": [
+      "伤害"
+    ],
+    "arms": 2,
+    "spin": 0.5,
+    "laserLen": 1600,
+    "dmgMul": 0.55,
+    "cd": 4,
+    "laserWarn": 0.85,
+    "laserActive": 1.6,
+    "laserFade": 0.35
+  },
+  "AT241": {
+    "name": "疾风连突",
+    "cat": "active",
+    "ai": "charger",
+    "tags": [
+      "连击"
+    ],
+    "cd": 0.5,
+    "chargeRange": 400,
+    "telegraph": 0.3,
+    "dashSpd": 470,
+    "dashTime": 0.3,
+    "dmgMul": 0.7
+  },
+  "AT242": {
+    "name": "蓄力猛冲",
+    "cat": "active",
+    "ai": "charger",
+    "tags": [
+      "高伤"
+    ],
+    "cd": 4.6,
+    "chargeRange": 360,
+    "telegraph": 1.2,
+    "dashSpd": 760,
+    "dashTime": 0.22,
+    "dmgMul": 2.2
+  },
+  "AT243": {
+    "name": "重装碾压",
+    "cat": "active",
+    "ai": "charger",
+    "tags": [
+      "压制"
+    ],
+    "cd": 2.6,
+    "chargeRange": 300,
+    "telegraph": 0.8,
+    "dashSpd": 400,
+    "dashTime": 0.7,
+    "dmgMul": 1.4
+  },
+  "AT244": {
+    "name": "游隼俯冲",
+    "cat": "active",
+    "ai": "charger",
+    "tags": [
+      "突袭"
+    ],
+    "cd": 2.2,
+    "chargeRange": 280,
+    "telegraph": 0.45,
+    "dashSpd": 640,
+    "dashTime": 0.35,
+    "dmgMul": 1.1
+  },
+  "BF001": {
+    "name": "狂力",
+    "cat": "buff",
+    "pool": "war",
+    "tags": [
+      "攻击"
+    ],
+    "duration": 20,
+    "stat": "atk",
+    "mul": 1.3,
+    "label": "攻击力 +30%",
+    "stackable": true,
+    "maxLv": 10,
+    "anchors": {
+      "mul": {
+        "1": 1.3,
+        "3": 1.36,
+        "6": 1.44,
+        "10": 1.55
+      }
+    }
+  },
+  "BF002": {
+    "name": "迅击",
+    "cat": "buff",
+    "pool": "war",
+    "tags": [
+      "冷却"
+    ],
+    "duration": 20,
+    "stat": "cdMul",
+    "mul": 0.7,
+    "label": "攻速 +30%",
+    "stackable": true,
+    "maxLv": 10,
+    "anchors": {
+      "mul": {
+        "1": 0.7,
+        "3": 0.68,
+        "6": 0.66,
+        "10": 0.62
+      }
+    }
+  },
+  "BF003": {
+    "name": "疾风",
+    "cat": "buff",
+    "pool": "war",
+    "tags": [
+      "移速"
+    ],
+    "duration": 20,
+    "stat": "spd",
+    "mul": 1.3,
+    "label": "移速 +30%",
+    "stackable": true,
+    "maxLv": 10,
+    "anchors": {
+      "mul": {
+        "1": 1.3,
+        "3": 1.34,
+        "6": 1.41,
+        "10": 1.5
+      }
+    }
+  },
+  "BF004": {
+    "name": "汲血",
+    "cat": "buff",
+    "pool": "war",
+    "tags": [
+      "吸血"
+    ],
+    "duration": 20,
+    "stat": "lifesteal",
+    "mul": 0.15,
+    "label": "吸血 15%",
+    "stackable": true,
+    "maxLv": 10,
+    "anchors": {
+      "mul": {
+        "1": 0.15,
+        "3": 0.17,
+        "6": 0.19,
+        "10": 0.22
+      }
+    }
+  },
+  "BF005": {
+    "name": "圣咏鼓舞",
+    "cat": "buff",
+    "pool": "skill",
+    "tags": [
+      "攻击"
+    ],
+    "stat": "atk",
+    "mul": 1.08,
+    "label": "攻击 +8%"
+  },
+  "BF006": {
+    "name": "圣咏迅捷",
+    "cat": "buff",
+    "pool": "skill",
+    "tags": [
+      "移速"
+    ],
+    "stat": "spd",
+    "mul": 1.08,
+    "label": "移速 +8%"
+  },
+  "BF007": {
+    "name": "灵能护罩",
+    "cat": "buff",
+    "pool": "skill",
+    "tags": [
+      "防御"
+    ],
+    "stat": "def",
+    "mul": 4,
+    "label": "防御 +4"
+  },
+  "DB001": {
+    "name": "铁壁诅咒",
+    "cat": "debuff",
+    "target": "monster",
+    "tags": [
+      "防御",
+      "生命"
+    ],
+    "duration": 45,
+    "desc": "敌人防御 ×3、生命 ×1.5",
+    "rewardMul": 2,
+    "mods": {
+      "defMul": 3,
+      "hpMul": 1.5,
+      "atkMul": 1,
+      "spdMul": 1
+    }
+  },
+  "DB002": {
+    "name": "狂暴诅咒",
+    "cat": "debuff",
+    "target": "monster",
+    "tags": [
+      "攻击",
+      "移速"
+    ],
+    "duration": 45,
+    "desc": "敌人攻击 ×1.6、移速 ×1.25",
+    "rewardMul": 2.5,
+    "mods": {
+      "defMul": 1,
+      "hpMul": 1.2,
+      "atkMul": 1.6,
+      "spdMul": 1.25
+    }
+  },
+  "DB003": {
+    "name": "巨影诅咒",
+    "cat": "debuff",
+    "target": "monster",
+    "tags": [
+      "生命"
+    ],
+    "duration": 45,
+    "desc": "敌人生命 ×2.5",
+    "rewardMul": 2,
+    "mods": {
+      "defMul": 1,
+      "hpMul": 2.5,
+      "atkMul": 1,
+      "spdMul": 1
+    }
+  }
+}

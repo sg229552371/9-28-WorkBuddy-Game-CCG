@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="app-version" content="20261024">
+<title>弹幕射击 Roguelike × 背包肉鸽 — HTML 原型</title>
+<script>
+/* ====== 缓存自愈：静态资源统一版本号 + 旧版自动强刷（必须先于其他脚本执行） ======
+ * 背景：手机浏览器可能缓存新旧混合版本（旧 js 配新 html）导致无法开始游戏。
+ * 机制：所有 js/css 引用统一带 ?v=版本号；localStorage.app_version 与当前版本不一致
+ * （说明刚从旧版升上来）时，强制 location.reload 重拉一次（sessionStorage 标记防死循环）。
+ * 整段包裹 try/catch：隐私模式 / 存储被禁时静默降级，绝不阻断页面加载。 */
+var APP_VERSION = "20261024";
+(function () {
+  try {
+    var alreadyReloaded = sessionStorage.getItem("app_version_reloaded");
+    var saved = localStorage.getItem("app_version");
+    if (saved !== APP_VERSION && !alreadyReloaded) {
+      // 从旧版升级而来：重载前先写入新版本号 + 本次会话标记（防死循环），再强制重拉
+      localStorage.setItem("app_version", APP_VERSION);
+      sessionStorage.setItem("app_version_reloaded", "1");
+      location.reload(true);
+    }
+    // 版本一致（或本会话已重载过）→ 什么都不做
+  } catch (e) { /* 存储不可用：静默降级，不阻断页面 */ }
+})();
+</script>
+<link rel="stylesheet" href="css/style.css?v=20261024">
+</head>
+<body>
+<div id="app">
+  <!-- 游戏画布（局内） -->
+  <canvas id="game-canvas" width="1920" height="1080"></canvas>
+
+  <!-- ====== 20.5 素材加载遮罩（纯 DOM/CSS；接口缺失立即隐藏，不阻塞） ====== -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-box">
+      <div class="loading-title">弹幕射击 Roguelike</div>
+      <div class="loading-track"><div id="loading-bar" class="loading-bar"></div></div>
+      <div id="loading-text" class="loading-text">载入素材…</div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：游戏首页 ====== -->
+  <div id="screen-main" class="screen hidden">
+    <h1 class="title">弹幕射击 Roguelike × 背包肉鸽</h1>
+    <p class="subtitle">搜打撤 · 枪火与背包的极限博弈</p>
+    <div class="panel main-panel">
+      <button id="btn-main-start" class="btn primary big">开始游戏</button>
+      <button id="btn-home-help" class="btn big">操作说明</button>
+      <button id="btn-home-settings" class="btn big">设置</button>
+      <button id="btn-home-codex" class="btn big">图鉴</button>
+      <button id="btn-home-exit" class="btn big ghost">退出游戏</button>
+    </div>
+    <div id="home-user-line" class="home-user-line"></div>
+    <p class="tip" style="margin-top:14px;opacity:.7">v0.6 · 首页 → 主城 → 传送门出征（赛季玩法上线后开放第二座传送门）</p>
+  </div>
+
+  <!-- ====== 界面层：操作说明 ====== -->
+  <div id="screen-help" class="screen hidden">
+    <div class="panel help-panel">
+      <h2>操作说明</h2>
+      <div class="help-cols">
+        <div>
+          <h3>触屏（手机 · 推荐）</h3>
+          <p><b>左下摇杆</b> — 移动（左半屏按下即为中心，灵敏度可在设置里调）</p>
+          <p><b>技能 / 背包 / 交互</b> — 右下按钮（技能自动释放）</p>
+          <p><b>长按物品</b> — 弹出 TIPS 详情；点选物品 — 查看详情并选中（供工匠强化）</p>
+          <p><b>拖动物品</b> — 整理背包 / 装备武器模块</p>
+        </div>
+        <div>
+          <h3>桌面端操作（键盘 / 鼠标）</h3>
+          <p><b>移动</b> — <span class="kbd-desktop"><b>WASD / 方向键</b>（队长带队，队友蛇形跟随）</span><span class="kbd-touch">左下摇杆（左半屏按下即为中心，灵敏度可在设置里调）</span></p>
+          <p><b>主动技能</b> — 冷却与能量就绪后自动释放（19.1 移除普攻，技能即唯一输出；无需按键）</p>
+          <p><b>B</b> — 打开 / 关闭背包与武器栏</p>
+          <p><b>E</b> — 撤离点查看进度 / 工匠世界开关面板</p>
+          <p><b>鼠标悬停</b> — 物品 TIPS 详情；拖拽整理背包</p>
+        </div>
+        <div>
+          <h3>核心循环</h3>
+          <p><b>主城</b> 找 NPC 强化 → <b>传送门</b> 出征</p>
+          <p><b>搜打撤</b>：击杀凑进度 → BOSS → 撤离点读条撤离</p>
+          <p><b>撤离</b> 才结算资源；死亡只保留 30% 结晶</p>
+          <p><b>工匠世界</b>：开宝箱 / 抽卡牌 / 购买与服务</p>
+        </div>
+      </div>
+      <div class="btn-row"><button id="btn-help-back" class="btn ghost">返回首页</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：设置 ====== -->
+  <div id="screen-settings" class="screen hidden">
+    <div class="panel settings-panel">
+      <h2>设置</h2>
+      <div class="set-row">
+        <span>音效音量</span>
+        <input id="set-sfx" type="range" min="0" max="1" step="0.1">
+        <button id="btn-set-sfx-mute" class="btn small ghost">静音</button>
+      </div>
+      <div class="set-row">
+        <span>触屏控件大小</span>
+        <input id="set-joy" type="range" min="0.7" max="1.5" step="0.1">
+      </div>
+      <div class="set-row">
+        <span>桌面端显示触屏控件</span>
+        <button id="set-touch" class="btn small">关</button>
+      </div>
+      <div class="set-row">
+        <span>低画质模式</span>
+        <button id="set-lowq" class="btn small">关</button>
+      </div>
+      <!-- 23.x 画质三档（低/中/高）：分段控件，点击即生效并落盘；手动选择后自动降档本次会话关闭 -->
+      <div class="set-row">
+        <span>画质</span>
+        <div id="set-quality" class="quality-seg" role="group" aria-label="画质档位">
+          <button id="set-quality-low" class="seg-btn" data-quality="0">低</button>
+          <button id="set-quality-mid" class="seg-btn" data-quality="1">中</button>
+          <button id="set-quality-high" class="seg-btn" data-quality="2">高</button>
+        </div>
+      </div>
+      <div id="set-quality-hint" class="set-hint"></div>
+      <div class="btn-row"><button id="btn-settings-back" class="btn ghost">返回首页</button></div>
+
+      <!-- 20.5 性能诊断区块（追加；桩环境无 DOM 时 renderSettings 判空跳过） -->
+      <div id="perf-diag" class="perf-diag">
+        <h3 class="perf-diag-title">性能诊断</h3>
+        <div class="perf-diag-grid">
+          <div class="perf-row"><span class="perf-k">帧率</span><span id="perf-fps" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">帧耗时 p50 / p95</span><span id="perf-p50p95" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">最长卡死帧</span><span id="perf-maxstuck" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">卡死帧计数（&gt;80ms）</span><span id="perf-stuck" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">素材加载</span><span id="perf-assets" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">设备像素比</span><span id="perf-dpr" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">视口</span><span id="perf-viewport" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">屏幕方向</span><span id="perf-orient" class="perf-v">—</span></div>
+          <div class="perf-row"><span class="perf-k">运行环境</span><span id="perf-ua" class="perf-v">—</span></div>
+        </div>
+        <div class="btn-row"><button id="btn-perf-copy" class="btn small">复制诊断信息</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：图鉴 ====== -->
+  <div id="screen-codex" class="screen hidden">
+    <div class="panel codex-panel">
+      <div class="bp-head"><h2>图鉴 <span id="codex-count" class="codex-count"></span></h2></div>
+      <h3>英雄（使用出征激活 → 解锁同名皮肤）</h3>
+      <div id="codex-heroes" class="codex-grid"></div>
+      <h3>怪物（击杀收录）</h3>
+      <div id="codex-monsters" class="codex-grid"></div>
+      <!-- 21.11：遗迹秘宝分区并入图鉴（原首页「遗迹秘宝图鉴」独立入口移除）——数据口径与 renderChipCodex 一致 -->
+      <h3>遗迹秘宝（战斗中拾取后收录）</h3>
+      <div id="codex-chips" class="codex-grid"></div>
+      <div class="btn-row"><button id="btn-codex-back" class="btn ghost">返回首页</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：遗迹秘宝图鉴（19.7：只读收集展示，不加属性） ====== -->
+  <div id="screen-chip-codex" class="screen hidden">
+    <div class="panel codex-panel">
+      <div class="bp-head"><h2>遗迹秘宝图鉴 <span id="chip-codex-count" class="codex-count"></span></h2></div>
+      <h3>数值型遗迹秘宝（白 / 蓝：纯数值放大）</h3>
+      <div id="chip-codex-value" class="codex-grid"></div>
+      <h3>行为型遗迹秘宝（紫 / 金：附加行为）</h3>
+      <div id="chip-codex-behavior" class="codex-grid"></div>
+      <div class="btn-row"><button id="btn-chip-codex-back" class="btn ghost">返回首页</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：退出告别 ====== -->
+  <div id="screen-goodbye" class="screen hidden">
+    <div class="panel goodbye-panel">
+      <h1 class="title">感谢试玩</h1>
+      <p class="subtitle">网页版可直接关闭此标签页；存档已自动保存</p>
+      <div class="btn-row"><button id="btn-goodbye-back" class="btn primary">返回首页</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：关卡选择（从主城传送门进入） ======
+       单屏布局：panel 用 flex 纵向三段（header 固定 / #level-list flex:1 滚动 / footer 固定）。
+       10 关改 2 列紧凑网格 → 一屏塞下，返回按钮始终在屏内可见。 -->
+  <div id="screen-level" class="screen hidden">
+    <div class="panel level-panel">
+      <div class="level-head">
+        <h2>选择出征关卡</h2>
+        <div class="tip">达成目标击杀或坚持到时限 → 触发 Boss → 击败生成撤离点</div>
+      </div>
+      <div id="level-list"></div>
+      <div class="btn-row level-foot"><button id="btn-level-back" class="btn ghost">返回主城</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 界面层：角色选择 ======
+       单屏布局（自上而下）：标题 + #meta-line → 12 宫格头像（#char-list）→ 固定高度详情区
+       （#char-detail，展示当前选中英雄的技能/角色说明）→ 底部按钮。整屏不滚动。 -->
+  <div id="screen-character" class="screen hidden">
+    <div class="panel char-panel">
+      <div class="char-head">
+        <h2>角色选择</h2>
+        <div id="meta-line" class="meta-line"></div>
+        <!-- 26.x：右上角「属性说明」图标 → 点击弹出 tips（内容 = CFG.statDesc 全量说明） -->
+        <button id="btn-stat-help" class="ico-btn" type="button" title="属性说明" aria-label="属性说明">?</button>
+        <div id="stat-help-tip" class="stat-help-tip hidden"></div>
+      </div>
+      <div id="char-list"></div>
+      <div id="char-detail" class="char-detail"></div>
+      <div class="btn-row">
+        <button id="btn-char-back" class="btn ghost">返回</button>
+        <button id="btn-abyss-records" class="btn ghost hidden">深渊战绩</button>
+        <button id="btn-char-start" class="btn primary" disabled>开始游戏</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 局内 HUD（city-mode 下只显示头像栏 / 摇杆 / 提示） ====== -->
+  <div id="hud" class="hidden">
+    <div id="city-avatar-bar" class="hidden-in-battle"></div>
+    <div id="hud-tl">
+      <!-- 21.17 🅒 无尽模式 HUD 大秘境信息区（倒计时 / 推进进度条 / BOSS 状态 / 撤离点提示
+           / 波次 / 击杀 / 同屏）；仅无尽世界显示。
+           实际内容由 canvas 绘制（mods/jes-endless/systems/hud_endless.js），本容器作锚点/语义占位与测试 id。 -->
+      <div id="hud-endless-info" class="hidden" aria-live="polite"></div>
+      <!-- 技能冷却环（19.3：能量条退役 → 冷却制）。冷却中就绪比例填充，就绪时常亮显示 READY -->
+      <div id="hud-skill-cd" class="ready" title="主动技能冷却（冷却中就绪比例填充 / 就绪时 READY）">
+        <svg viewBox="0 0 80 80"><circle class="cd-track" cx="40" cy="40" r="34"/><circle id="skill-cd-arc" class="cd-arc" cx="40" cy="40" r="34"/></svg>
+        <span id="skill-cd-txt">READY</span>
+        <small id="skill-cd-name"></small>
+      </div>
+      <div id="buff-area"></div>
+    </div>
+    <div id="hud-top">
+      <div id="progress-wrap">
+        <div id="progress-fill"></div>
+        <span id="progress-txt">击杀进度 0/60</span>
+      </div>
+      <div id="boss-name" class="hidden">⚠ BOSS 出现！</div>
+    </div>
+    <div id="hud-tr">
+      <div id="lv-line">LV <b id="lv-num">1</b></div>
+      <div class="bar exp"><div class="fill" id="bar-exp"></div></div>
+      <div id="coin-line">◈ 货币 <b id="coin-num">0</b>　◆ 经验 <b id="exp-num">0</b></div>
+      <!-- 阶段 F：技能面板入口（两技能 + 4 水晶槽 + 辅助矩阵 + 点槽看详情）。
+           放右上信息区，避开右下 #hud-br 的移动端虚拟按钮。 -->
+      <button id="btn-skill-panel" class="btn ghost small" type="button">技能面板</button>
+    </div>
+    <!-- ====== 深渊（无尽）战斗 HUD —— 26.x 已统一 ======
+         深渊复用与主线**完全相同**的战斗 UI 布局（#hud-top 进度条 + #hud-tr 等级·货币·经验
+         + 底部 #party-skillbar，数据同源 G.run）。唯一差异 = CSS（#hud.abyss-mode）隐藏
+         深渊用不到的自动战斗按钮。原 21.21 独立 #abyss-hud 经验条已删除（与 #hud-tr 重复）。
+         口径：战斗 UI 高度统一，只允许功能级的新增/隐藏，布局不动。 -->
+    <div id="hud-bl">
+      <div id="weight-line">负重 <b id="weight-num">0</b> / 100</div>
+      <div id="weight-pen"></div>
+    </div>
+    <!-- 全队技能栏（19.12）：底部居中；每人一条 [主动技能图标 + 冷却环][模块槽 ×4]（存升级所选武器模块） -->
+    <div id="party-skillbar" class="party-skillbar"></div>
+    <div id="hud-br">
+      <!-- 21.1：自动战斗开关与风格选择器移至右下角，与背包按钮垂直堆叠（在 #hud-br 内，不遮挡左下浮动摇杆） -->
+      <button id="btn-autofight" class="btn ghost">自动战斗：关</button>
+      <div id="autofight-styles" class="hidden">
+        <!-- 手机端无 tooltip：风格说明改为可见小字提示行（title 仅桌面保留作补充） -->
+        <div id="af-style-hint" class="af-hint">疯狂=贴脸 · 平衡=中距风筝 · 冷静=远距风筝（见血线说明）</div>
+        <button class="af-style" data-style="berserk" title="贴脸输出，只预判冲锋与Boss大招，血线再低也不退">疯狂</button>
+        <button class="af-style" data-style="balanced" title="中距离风筝，躲密集弹幕与预警技能，血量40%以下拉开">平衡</button>
+        <button class="af-style" data-style="cautious" title="最远距离风筝，见弹就躲，血量过半即拉开距离">冷静</button>
+      </div>
+      <button id="btn-backpack" class="btn">背包<span class="kbd-hint"> (B)</span></button>
+    </div>
+    <div id="channel-wrap" class="hidden">
+      <div id="channel-circle"><svg viewBox="0 0 80 80"><circle id="channel-arc" cx="40" cy="40" r="34"/></svg><span id="channel-txt"></span></div>
+    </div>
+    <!-- 移动端虚拟控件（触屏设备自动显示；CFG.mobile 配置） -->
+    <div id="touch-controls" class="hidden">
+      <!-- 21.3 浮动摇杆：底盘不再固定于左下角，由 JS 在手指按下的位置动态生成（position:fixed + 屏幕坐标）。
+           故 #joy-base 直接挂在 #touch-controls 下，不再嵌套在固定定位的 #joy-zone 中。 -->
+      <div id="joy-base"><div id="joy-stick"></div></div>
+      <div id="touch-btns">
+        <button id="btn-touch-bag" class="tbtn tbtn-small">背包</button>
+        <button id="btn-touch-act" class="tbtn tbtn-small">交互</button>
+        <button id="btn-touch-skill" class="tbtn tbtn-big">技能</button>
+      </div>
+    </div>
+    <div id="toast-area"></div>
+    <div id="hint-center"></div>
+  </div>
+
+  <!-- ====== 物品 TIPS 浮窗（悬停/长按，跟随指针，边缘翻转） ====== -->
+  <div id="tooltip" class="hidden"></div>
+
+  <!-- ====== 模块槽词条详情浮窗（20.3 任务二：点击底部技能栏模块槽弹出） ====== -->
+  <div id="module-tip" class="module-tip hidden"></div>
+
+  <!-- ====== 主城 NPC 面板：强化导师（局外等级） ====== -->
+  <div id="panel-npc-outlevel" class="overlay hidden">
+    <div class="panel meta-panel" style="width:min(760px,94vw)">
+      <div class="bp-head">
+        <h2>✦ 强化导师 · 局外等级</h2>
+        <div class="bp-head-right"><span id="npc-crystals" class="meta-crystals">◆ 进化结晶 <b>0</b></span><button id="btn-npc-outlevel-close" class="btn ghost small">关闭</button></div>
+      </div>
+      <div id="outlevel-list" class="npc-list"></div>
+      <div class="tip">升级消耗进化结晶（撤离/击杀获得，死亡仅保留 30%）；也可找武器匠升级武器。</div>
+    </div>
+  </div>
+
+  <!-- ====== 主城 NPC 面板：武器匠（武器/技能等级） ====== -->
+  <div id="panel-npc-weapon" class="overlay hidden">
+    <div class="panel meta-panel" style="width:min(760px,94vw)">
+      <div class="bp-head">
+        <h2>⚔ 武器匠 · 武器 / 技能等级</h2>
+        <div class="bp-head-right"><span id="npc-crystals-weapon" class="meta-crystals">◆ 进化结晶 <b>0</b></span><button id="btn-npc-weapon-close" class="btn ghost small">关闭</button></div>
+      </div>
+      <div id="weapon-list" class="npc-list"></div>
+      <div class="tip">武器等级 = 技能等级（同步强化普攻与主动技能），永久保留。</div>
+    </div>
+  </div>
+
+  <!-- ====== 主城 NPC 面板：形象师（更名 / 皮肤 / 称号） ====== -->
+  <div id="panel-profile" class="overlay hidden">
+    <div class="panel meta-panel" style="width:min(640px,94vw)">
+      <div class="bp-head"><h2>☺ 形象师 · 角色档案</h2><button id="btn-profile-close" class="btn ghost small">关闭</button></div>
+      <div class="profile-rename">
+        <span>名字</span>
+        <input id="profile-name-input" maxlength="8" type="text">
+        <button id="btn-profile-rename" class="btn small primary">确认更名</button>
+      </div>
+      <h3>形象皮肤（图鉴激活的英雄外貌）</h3>
+      <div id="skin-grid" class="skin-grid"></div>
+      <h3>称号</h3>
+      <div id="title-list"></div>
+    </div>
+  </div>
+
+  <!-- ====== 背包管理（局内 B 键：三段横排；工匠模式下 #bp-grid-unit 整体移入工匠面板复用） ====== -->
+  <div id="panel-backpack" class="overlay hidden">
+    <div class="panel bp-panel" id="bp-panel-main">
+      <div class="bp-head">
+        <h2>背包管理</h2>
+        <span id="bp-lock-hint" class="warn hidden">⚔ 战斗进行中，仅可查看（工匠世界内可操作）</span>
+        <button id="btn-bp-close" class="btn ghost small">关闭<span class="kbd-hint"> (B)</span></button>
+      </div>
+      <!-- 竖屏工匠单屏三段用：本单元在原地/工匠面板复用，CSS 按 zone 类区分排布 -->
+      <div class="bp-body" id="bp-grid-unit">
+        <!-- 中段：搜刮背包 -->
+        <div class="grid-zone zone-backpack">
+          <h3>搜刮背包 6×4</h3>
+          <div id="grid-backpack" class="grid w64"></div>
+          <div id="drop-zone">拖到此处丢弃</div>
+        </div>
+        <!-- 下段：武器模块槽（每英雄 4 格）+ 遗迹秘宝背包 -->
+        <div class="grid-zone slot-zone zone-slots">
+          <h3>武器模块槽（每英雄 4 格）</h3>
+          <div id="module-slots" class="module-slots"></div>
+          <div id="weapon-tags" class="tags"></div>
+        </div>
+        <div class="grid-zone zone-chip">
+          <h3>遗迹秘宝背包 6×5</h3>
+          <div id="grid-chip" class="grid w65"></div>
+        </div>
+        <!-- 最底：物品信息（小尺寸单行展示） -->
+        <div class="grid-zone side zone-info">
+          <h3>物品信息</h3>
+          <div id="item-info" class="item-info">点选物品查看详情</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 工匠世界：竖屏单屏三段（上页签 / 中搜刮背包 / 下武器栏+遗迹秘宝背包） ======
+       20.10 重排：页签 4 → 3（开宝箱 / 商店·工坊 / 遗迹工坊已并入商店·工坊）；
+       「抽卡牌」页签已随属性卡牌系统「彻底退役」物理删除（D018，原 CFG.cardPool 整表移除）。 -->
+  <div id="panel-artisan" class="overlay hidden">
+    <div class="panel art-panel">
+      <div class="bp-head">
+        <h2>工匠 · 工坊</h2>
+        <button id="btn-artisan-close" class="btn ghost small">关闭<span class="kbd-hint"> (E)</span></button>
+      </div>
+      <div class="art-tabs" id="art-tabs">
+        <button class="art-tab active" id="art-tab-chest">开宝箱</button>
+        <button class="art-tab" id="art-tab-shop">商店·工坊</button>
+      </div>
+      <div class="art-layout">
+        <div class="art-side">
+          <!-- 页签①：开宝箱 -->
+          <div id="art-page-chest">
+            <h3>未开封货物</h3>
+            <div id="chest-list"></div>
+            <h3>开箱结果（拖入网格）</h3>
+            <div id="pending-area"></div>
+          </div>
+          <!-- 页签②：商店·工坊（原「购买·服务」+「遗迹工坊」合并为一页，上下排列） -->
+          <div id="art-page-shop" class="hidden">
+            <h3>购买·服务（局内金币）</h3>
+            <div id="shop-list"></div>
+            <p class="tip" style="margin-top:6px">「强化品质 / 洗词缀」需先在下方背包中<b>点击选中</b>装备或武器模块。</p>
+            <h3 class="art-sec-h">遗迹工坊（局内金币）</h3>
+            <div id="forge-list"></div>
+            <p class="tip" style="margin-top:6px">合成 / 升级 / 重铸遗迹秘宝。</p>
+          </div>
+        </div>
+        <div id="art-grids" class="art-grids"><!-- 背包/武器栏单元在此处与背包面板间移动 --></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 升级 4 选 1 暂停弹窗（21.4 参考图改版：丝带标题 + 竖版大卡 + 刷新按钮） ====== -->
+  <div id="levelup-overlay" class="overlay hidden">
+    <div class="panel levelup-panel">
+      <!-- 丝带横幅标题（21.4）：参考图「增益选择」样式 -->
+      <div class="lu-banner"><span class="lu-banner-txt">增益选择</span></div>
+      <!-- 21.8：原归属英雄标题宿主节点已移除（归属由每张卡的 lu-owner 徽章表达） -->
+      <p class="tip">战斗已暂停 · 点选一张卡牌继续（不倒计时）</p>
+      <div id="levelup-cards" class="levelup-cards"></div>
+      <!-- 刷新按钮（21.4）：参考图底部绿色大按钮；次数由 CFG.levelUp.rerollFreePerRun 驱动 -->
+      <div class="lu-foot">
+        <button id="btn-lu-reroll" class="lu-reroll" type="button">
+          <span class="lu-reroll-ico">↻</span>
+          <span class="lu-reroll-body">刷新<b id="lu-reroll-count">0/0</b></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 通用选择弹窗（W2 能量水晶：踩雕像授予稀有技能时的选择） ======
+       与升级弹窗同款版式（复用 .levelup-cards / .lu-v2 卡面），但**不共享状态机**：
+       暂停闸门由调用方（skill-playtest）自行开合，UI 只渲染 + 回调。 -->
+  <div id="choice-overlay" class="overlay hidden">
+    <div class="panel choice-panel">
+      <div class="lu-banner"><span class="lu-banner-txt" id="choice-title">选择</span></div>
+      <p class="tip" id="choice-sub"></p>
+      <div id="choice-cards" class="levelup-cards choice-cards"></div>
+    </div>
+  </div>
+
+  <!-- ====== 技能面板（阶段 F · 主动可打开的总览） ======
+       两技能区 + 4 共享水晶槽区 + 辅助矩阵区 + 点槽详情 + 汇总标签/诊断。
+       数据**全部来自 SkillPresenter**（合同 §13：UI 不自行判断「能不能用」）；
+       未通电英雄（旧路径）→ 单行降级文案，不白屏、不报错。
+       样式前缀一律 `crystal-panel*`（不复用 .mod-slot）。 -->
+  <div id="skill-panel-overlay" class="overlay hidden">
+    <div class="panel crystal-panel">
+      <div class="crystal-panel-head">
+        <h2 class="crystal-panel-title" id="crystal-panel-title">技能面板</h2>
+        <div class="crystal-panel-tabs" id="crystal-panel-tabs"></div>
+        <button id="btn-skill-panel-close" class="btn ghost small" type="button">关闭</button>
+      </div>
+      <div class="crystal-panel-body">
+        <div class="crystal-panel-col">
+          <h3 class="crystal-panel-h3">技能</h3>
+          <div class="crystal-panel-skills" id="crystal-panel-skills"></div>
+        </div>
+        <div class="crystal-panel-col">
+          <h3 class="crystal-panel-h3">能量水晶槽 ×4（两技能共享）</h3>
+          <div class="crystal-panel-slots" id="crystal-panel-slots"></div>
+        </div>
+        <div class="crystal-panel-col">
+          <h3 class="crystal-panel-h3">辅助矩阵（技能 × 水晶）</h3>
+          <div class="crystal-panel-matrix" id="crystal-panel-matrix"></div>
+        </div>
+        <div class="crystal-panel-col">
+          <h3 class="crystal-panel-h3">水晶详情（点上方槽位查看）</h3>
+          <div class="crystal-panel-detail" id="crystal-panel-detail"></div>
+        </div>
+        <div class="crystal-panel-notices" id="crystal-panel-notices"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 结算界面 ====== -->
+  <div id="screen-settle" class="screen hidden">
+    <div class="panel settle-panel">
+      <h2>撤离成功 · 结算</h2>
+      <div id="settle-stats" class="stats"></div>
+      <h3>带出的宝箱战利品</h3>
+      <div id="settle-chests"></div>
+      <h3>最终背包</h3>
+      <div id="settle-items" class="items-list"></div>
+      <div class="btn-row"><button id="btn-settle-ok" class="btn primary">确认 · 返回主城</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 死亡界面 ====== -->
+  <div id="screen-death" class="screen hidden">
+    <div class="panel death-panel">
+      <h2>你死了</h2>
+      <div id="death-stats" class="stats"></div>
+      <h3>损失报告</h3>
+      <div id="death-lost" class="items-list lost"></div>
+      <h3>保留（原型中死亡物品不入库，仅展示判定）</h3>
+      <div id="death-kept" class="items-list"></div>
+      <div class="btn-row"><button id="btn-death-ok" class="btn primary">返回主城</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 21.15 无尽模式 · 首次规则说明（每个存档只弹一次） ====== -->
+  <div id="screen-endless-intro" class="screen hidden">
+    <div class="panel">
+      <h2>深渊之门 · 规则说明</h2>
+      <div id="endless-intro-body"></div>
+      <div class="btn-row"><button id="btn-endless-intro-ok" class="btn primary">知道了</button></div>
+    </div>
+  </div>
+
+  <!-- ====== 21.17 无尽模式 · 结算面板（三结局：撤离成功 / 时限耗尽 / 深渊阵亡） ======
+       标题文案与色调（class="good"绿 / class="bad"红）由 UI.showEndlessSettle 按结局注入。 -->
+  <div id="screen-endless-settle" class="screen hidden">
+    <div class="panel settle-panel">
+      <h2 id="endless-settle-title" class="good">深渊结算</h2>
+      <div id="endless-settle-stats" class="stats"></div>
+      <div id="endless-settle-team" class="hidden"></div>
+      <div class="btn-row">
+        <button id="btn-endless-retry" class="btn">再来一次</button>
+        <button id="btn-endless-city" class="btn primary">返回主城</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 21.19 深渊「入口 / 选层」界面（大秘境层级选择） ======
+       由 mods/jes-endless/systems/ui-abyss.js 渲染：层级列表（#abyss-tier-list）+ 所选层信息（#abyss-tier-info）
+       + 最高记录（#abyss-best）+ 开始按钮。 -->
+  <div id="screen-abyss" class="screen hidden">
+    <div class="panel abyss-panel">
+      <div class="abyss-head">
+        <h2>深渊 · 战绩榜</h2>
+        <div class="tip">记录每次挑战：到达关卡 / 用时 / 结局 / 队伍逐角色伤害与承伤（保留前 10 名）</div>
+      </div>
+      <div id="abyss-tier-list"></div>
+      <div id="abyss-tier-info" class="abyss-tier-info"></div>
+      <div id="abyss-best" class="abyss-best"></div>
+      <div class="btn-row level-foot">
+        <button id="btn-abyss-back" class="btn ghost">返回</button>
+        <button id="btn-abyss-start" class="btn primary">去选角出战</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 21.19 深渊「暂停菜单」（局内 ESC / 按钮触发；复用 Game.paused 闸门） ====== -->
+  <div id="screen-abyss-pause" class="screen hidden">
+    <div class="panel">
+      <h2 id="abyss-pause-title">已暂停</h2>
+      <div id="abyss-pause-info" class="stats"></div>
+      <div class="btn-row">
+        <button id="btn-abyss-resume" class="btn primary">继续</button>
+        <button id="btn-abyss-quit" class="btn ghost">放弃并返回主城</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 21.6 赛季玩法（占位）：赛季大厅（99 关通关后开放，当前仅占位面板） ====== -->
+  <div id="screen-season" class="screen hidden">
+    <div class="panel">
+      <h2>赛季大厅</h2>
+      <div class="stats">
+        <span>当前赛季等级 <b id="season-lv">LV 1</b>（L10 封顶，99 关通关后开放）</span>
+        <span style="flex-basis:100%">
+          <span style="display:block;height:14px;background:#223;border-radius:7px;overflow:hidden">
+            <span id="season-exp-bar" style="display:block;height:100%;width:0%;background:#4da3ff"></span>
+          </span>
+          <span id="season-exp-text" style="font-size:12px;opacity:.85">经验 0 / 1000</span>
+        </span>
+      </div>
+      <h3>本周任务</h3>
+      <div id="season-tasks" class="items-list"></div>
+      <h3>赛季奖励</h3>
+      <div id="season-rewards" class="items-list"></div>
+      <div class="btn-row">
+        <button id="btn-season-challenge" class="btn primary">进入赛季挑战</button>
+        <button id="btn-season-back" class="btn ghost">返回主城</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 拖拽幽灵 -->
+  <div id="drag-ghost" class="hidden"></div>
+
+  <!-- ====== 20.6 首屏启动兜底面板（默认隐藏；纯 DOM，样式由 js/main.js 内联注入，不依赖 css/style.css） ====== -->
+  <div id="boot-error-panel" class="hidden">
+    <div class="bep-box">
+      <h2>启动未能完成</h2>
+      <p>页面似乎没有正常加载。可能是网络或缓存问题，也可能是浏览器环境异常。</p>
+      <p>你可以点「重试」重新加载，或点「复制诊断信息」把情况发给开发者。</p>
+      <div class="bep-sec">
+        <div class="bep-k">脚本加载状态</div>
+        <div id="boot-err-scripts" class="bep-v">—</div>
+      </div>
+      <div class="bep-sec">
+        <div class="bep-k">素材进度</div>
+        <div id="boot-err-assets" class="bep-v">—</div>
+      </div>
+      <div class="bep-sec">
+        <div class="bep-k">捕获到的错误</div>
+        <div id="boot-err-errors" class="bep-v err">—</div>
+      </div>
+      <div class="bep-btns">
+        <button id="boot-error-retry" class="bep-btn primary">重试</button>
+        <button id="boot-error-copy" class="bep-btn">复制诊断信息</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js?v=20261024"></script>
+<script src="js/core.js?v=20261024"></script>
+<script src="js/pool.js?v=20261024"></script>
+<script src="js/game.js?v=20261024"></script>
+<!-- 21.16 物理搬移：原 game.js 拆为 5 个职责单一文件，加载顺序沿用原行序（game → items → combat → modes → render）。
+     跨文件仅为函数调用（提升安全），顶层 const/class 各自唯一且初始化不跨文件引用 → 无 TDZ 风险。 -->
+<script src="js/items.js?v=20261024"></script>
+<script src="js/combat.js?v=20261024"></script>
+<script src="js/modes.js?v=20261024"></script>
+<script src="js/render.js?v=20261024"></script>
+<!-- 21.12 性能压测场景（独立模块，无 ?stress 参数时零开销；依赖 game.js 的 World/Monster/Bullet 类） -->
+<script src="js/stress.js?v=20261024"></script>
+<!-- 21.15 🅐 无尽模式核心（波次/刷怪/难度曲线；依赖 game.js 的 World/Monster/Player 类，须在 game.js 之后） -->
+<script src="mods/jes-endless/systems/endless.js?v=20261024"></script>
+<!-- 21.15 🅒 无尽模式 HUD 信息区（canvas 绘制左上角三项：波次/击杀/同屏）；依赖 game.js 的 G（render 内单行桥接） -->
+<script src="mods/jes-endless/systems/hud_endless.js?v=20261024"></script>
+<script src="js/ui.js?v=20261024"></script>
+<!-- 21.16 物理搬移（第二阶段）：原巨型 const UI = {...} 按行号切成两段——ui.js 保留前半段（基础层），
+     ui-screens.js 以 Object.assign(UI, {...}) 承载后半段（屏幕层）。故 ui-screens.js 必须在 ui.js 之后。 -->
+<script src="js/ui-screens.js?v=20261024"></script>
+<!-- 21.16 物理搬移：原 ui.js 拆为「基础（ui.js + ui-screens.js）+ 面板（ui-panels.js）」，加载顺序沿用原行序。
+     ui-panels.js 多处 UI.xxx = ... 挂载到 UI 对象（定义于 ui.js）→ 必须紧跟 ui.js/ui-screens.js 之后。 -->
+<script src="js/ui-panels.js?v=20261024"></script>
+<!-- 21.16 物理搬移：原 main.js 拆为「quality.js（画质三档/性能护栏/加载遮罩）+ rewards.js（无尽奖励包装）+
+     main.js（宿主）」。quality.js 必须在 main.js 之前——main.js 顶层 Game.loadSettings() 会调用
+     _defaultQuality()/_migrateQuality()；rewards.js 依赖 endless.js/modes.js 且 main.js 依赖 rewards 接线。 -->
+<script src="js/quality.js?v=20261024"></script>
+<script src="js/rewards.js?v=20261024"></script>
+<!-- 21.19 深渊功能模块（并行波次 W1~W7）：层级 / 词缀 / 世界内容（祭坛+奖励节点）/ 记录首通 / 组队。
+     均为「末尾独立区块」式纯全局脚本，只消费 CFG.endless 与既有全局，不改既有中间逻辑；
+     须在 endless.js / modes.js 之后加载（依赖 Endless / modes 侧接口）。 -->
+<script src="mods/jes-endless/systems/endless-affix.js?v=20261024"></script>
+<script src="mods/jes-endless/systems/endless-arena.js?v=20261024"></script>
+<script src="mods/jes-endless/systems/endless-record.js?v=20261024"></script>
+<script src="mods/jes-endless/systems/endless-team.js?v=20261024"></script>
+<!-- 21.19 深渊 UI 模块（依赖 ui.js / ui-screens.js / ui-panels.js 的 UI 对象） -->
+<script src="mods/jes-endless/systems/ui-abyss.js?v=20261024"></script>
+<script src="mods/jes-endless/systems/ui-abyss-pause.js?v=20261024"></script>
+<!-- 22.x 能量水晶技能系统（9 文件，接口冻结见 G_docs/skill_system_interface_v1.md）。
+     顺序 = 依赖方向：config → compiler → damage/events → scheduler/runtime → reward/presenter/save。
+     必须在 main.js 之前（main.js 主循环单行调用 SkillRuntime.updateAll；Game 为顶层 const，共享全局词法环境）。 -->
+<script src="mods/jes-skill-crystal/systems/skill-config.js?v=20261024"></script>
+<script src="mods/jes-skill-crystal/systems/skill-compiler.js?v=20261024"></script>
+<script src="mods/jes-skill-crystal/systems/skill-damage.js?v=20261024"></script>
+<script src="mods/jes-skill-crystal/systems/skill-events.js?v=20261024"></script>
+<script src="mods/jes-skill-crystal/systems/skill-scheduler.js?v=20261024"></script>
+<script src="mods/jes-skill-crystal/systems/skill-runtime.js?v=20261024"></script>
+<script src="mods/jes-skill-crystal/systems/skill-reward.js?v=20261024"></script>
+<script src="mods/jes-skill-crystal/systems/skill-presenter.js?v=20261024"></script>
+<script src="mods/jes-skill-crystal/systems/skill-save.js?v=20261024"></script>
+<!-- 22.x 技能系统「试玩通电」引导块：只有 URL 带 ?skill=... 才通电（打开总开关 + 迁移英雄 +
+     懒注入 skillState + 效果可视化叠加层）。不带参数 → 整块空转，正式默认零影响。
+     必须排在 9 个 skill-*.js 之后（要包装 SkillRuntime.ownsHero）、main.js 之前。 -->
+<script src="mods/jes-skill-crystal/systems/skill-playtest.js?v=20261024"></script>
+<script src="js/main.js?v=20261024"></script>
+<!-- 20.6 JS 未加载兜底：main.js 之后立刻执行；若 window.Game 未定义（脚本全部/部分加载失败）
+     则直接显示兜底面板。面板与按钮由 main.js 的 BootGuard.ensure() 建成（本行也可能在
+     main.js 未执行时运行，故此处再自查一次并按需补按钮）。 -->
+<script>
+(function () {
+  try {
+    // 注意：Game 是顶层 const，不挂在 window 上，故用 typeof Game 判断（后置 script 共享全局词法环境）
+    var hasGame = (typeof Game !== "undefined");
+    if (hasGame) return;   // 脚本正常：静默走正常流程
+    var msg = "脚本加载失败，可能是网络或缓存问题，请刷新重试。";
+    if (typeof BootGuard !== "undefined" && BootGuard && BootGuard.ensure) {
+      BootGuard.ensure();                       // 建面板 + 按钮 + 错误监听
+      BootGuard.showPanel(null, msg);           // 覆盖错误区为明确提示
+      return;
+    }
+    // BootGuard 也缺失（main.js 完全没执行）→ 纯 DOM 兜底，不依赖任何脚本
+    var doc = document;
+    var p = doc.getElementById("boot-error-panel");
+    if (!p) return;
+    var set = function (id, t) { var el = doc.getElementById(id); if (el) el.textContent = t; };
+    set("boot-err-scripts", "Game：× 未定义");
+    set("boot-err-assets", "未知");
+    set("boot-err-errors", msg);
+    if (p.classList) p.classList.remove("hidden");
+    var btn = doc.getElementById("boot-error-retry");
+    if (btn) btn.onclick = function () { try { location.reload(); } catch (e) { } };
+    var cpy = doc.getElementById("boot-error-copy");
+    if (cpy) cpy.onclick = function () {
+      try {
+        var txt = "【启动诊断】脚本加载失败\n" + msg + "\n" + (navigator && navigator.userAgent ? navigator.userAgent : "");
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt);
+        else if (window.prompt) window.prompt("请长按复制以下信息：", txt);
+      } catch (e) { }
+    };
+  } catch (e) { /* 兜底脚本自身绝不抛错 */ }
+})();
+</script>
+</body>
+</html>

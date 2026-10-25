@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 CHAN·SEC·DLY（展开表 v2 §1.3）· 夜间施工批次 C
+; 蓄力扇爆：引导蓄力、松手扇形爆（双段表达：引导蓄力段不产出伤害 + 延迟扇爆段，D-45）
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_cfb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_cfb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_cfb"]
+
+[sub_resource type="Resource" id="Resource_cfb_scale"]
+script = ExtResource("1_cfb")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_cfb_p1"]
+script = ExtResource("2_cfb")
+behavior_id = &"bhv_channel"
+behavior_params = {
+&"shape": &"sec",
+&"arc_deg": 90.0,
+&"range": 150.0,
+&"tick_interval": 0.3,
+&"max_channel_time": 1.2
+}
+
+[sub_resource type="Resource" id="Resource_cfb_p2"]
+script = ExtResource("2_cfb")
+base_damage = {
+&"fire": 170.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"sec",
+&"arc_deg": 100.0,
+&"range": 160.0,
+&"delay": 0.25,
+&"hit_count": 1,
+&"hit_interval": 0.0
+}
+
+[resource]
+script = ExtResource("3_cfb")
+gem_id = &"charge_fan_blast"
+display_name = "蓄力扇爆"
+parts = Array[ExtResource("2_cfb")]([SubResource("Resource_cfb_p1"), SubResource("Resource_cfb_p2")])
+tags = Array[StringName]([&"spell", &"channel", &"aoe", &"fire"])
+cast_mode = 0
+base_cast_time = 0.5
+cost_type = 0
+base_cost = 15.0
+base_cooldown = 4.4
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_cfb_scale")

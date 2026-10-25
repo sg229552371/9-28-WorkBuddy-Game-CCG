@@ -1,0 +1,6 @@
+{
+  "threshold": 100,
+  "minFactor": 0.2,
+  "slope": 0.8,
+  "divisor": 100
+}

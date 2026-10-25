@@ -1,0 +1,12 @@
+"gpt-6-astra" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"}
+已生成唯一交付文件：[B类一致性定正_补丁草案_v0.1.md](B类一致性定正_补丁草案_v0.1.md)。
+
+- **56 条整行替换指令**，附精确行号、完整原文、新文本、裁决依据和全局降序执行索引。
+- **12 项需接线缺口**单列，未伪装为已解决。
+- 已完成唯一一轮自检：全部锚点匹配；内存模拟确认 **83 条 AC、14 条已确认决策及禁改章节不变**。
+- 未执行 apply，未修改主书稿或其他正式文档。
+
+总字数按全文字符数统计（含空白及 Markdown 标记）：32,846。
+
+DONE::PKG_L::32846

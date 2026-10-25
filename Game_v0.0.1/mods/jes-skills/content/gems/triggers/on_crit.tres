@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="TriggerData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/trigger_data.gd" id="1_6qmxy"]
+
+[resource]
+script = ExtResource("1_6qmxy")
+event = &"on_crit"
+cooldown = 2.0
+linked_slot_index = 2

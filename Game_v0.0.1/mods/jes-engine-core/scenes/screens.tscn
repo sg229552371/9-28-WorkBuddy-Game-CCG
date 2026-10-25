@@ -1,0 +1,42 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://mods/jes-engine-core/scripts/screens_controller.gd" id="1_screens"]
+
+[node name="GameScreens" type="CanvasLayer"]
+script = ExtResource("1_screens")
+
+[node name="Panel" type="Panel" parent="."]
+offset_left = 280.0
+offset_top = 90.0
+offset_right = 1000.0
+offset_bottom = 850.0
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+text = "游戏导航"
+theme_override_font_sizes/font_size = 28
+
+[node name="Tabs" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Content" type="VBoxContainer" parent="Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 560)
+layout_mode = 2
+theme_override_constants/separation = 8

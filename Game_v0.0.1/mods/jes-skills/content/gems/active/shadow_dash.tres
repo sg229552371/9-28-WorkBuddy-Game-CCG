@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_cqp7w"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_pmcss"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_bvi8x"]
+
+[sub_resource type="Resource" id="Resource_n8blu"]
+script = ExtResource("1_cqp7w")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_0y0m5"]
+script = ExtResource("2_pmcss")
+base_damage = {
+&"physical": 80.0
+}
+behavior_id = &"bhv_dash"
+behavior_params = {
+&"distance": 300.0,
+&"path_damage": {
+&"physical": 80.0
+},
+&"speed": 1000.0
+}
+
+[resource]
+script = ExtResource("3_bvi8x")
+gem_id = &"shadow_dash"
+display_name = "暗影冲刺"
+parts = Array[ExtResource("2_pmcss")]([SubResource("Resource_0y0m5")])
+tags = Array[StringName]([&"attack", &"movement", &"physical"])
+base_cooldown = 4.0
+level_scaling = SubResource("Resource_n8blu")

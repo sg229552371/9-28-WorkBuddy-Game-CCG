@@ -1,0 +1,102 @@
+[
+  {
+    "id": "G001",
+    "name": "瞄准镜",
+    "shape": [
+      1,
+      1
+    ],
+    "weight": 3,
+    "stats": {
+      "atk": 4
+    }
+  },
+  {
+    "id": "G002",
+    "name": "作战背心",
+    "shape": [
+      2,
+      2
+    ],
+    "weight": 9,
+    "stats": {
+      "hp": 30
+    }
+  },
+  {
+    "id": "G003",
+    "name": "动力靴",
+    "shape": [
+      1,
+      2
+    ],
+    "weight": 4,
+    "stats": {
+      "spd": 25
+    }
+  },
+  {
+    "id": "G004",
+    "name": "装甲板",
+    "shape": [
+      2,
+      1
+    ],
+    "weight": 6,
+    "stats": {
+      "def": 3
+    }
+  },
+  {
+    "id": "G005",
+    "name": "核心电池",
+    "shape": [
+      1,
+      1
+    ],
+    "weight": 2,
+    "stats": {
+      "hp": 20,
+      "def": 1
+    }
+  },
+  {
+    "id": "G006",
+    "name": "强化握把",
+    "shape": [
+      1,
+      1
+    ],
+    "weight": 2,
+    "stats": {
+      "atk": 2,
+      "def": 1
+    }
+  },
+  {
+    "id": "G007",
+    "name": "动力核心",
+    "shape": [
+      2,
+      2
+    ],
+    "weight": 10,
+    "stats": {
+      "hp": 40,
+      "regen": 6
+    }
+  },
+  {
+    "id": "G008",
+    "name": "超载电容",
+    "shape": [
+      1,
+      2
+    ],
+    "weight": 5,
+    "stats": {
+      "hp": 30,
+      "def": 2
+    }
+  }
+]

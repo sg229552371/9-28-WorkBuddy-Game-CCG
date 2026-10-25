@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_swl"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_swl"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_swl"]
+
+[sub_resource type="Resource" id="Resource_swl_scale"]
+script = ExtResource("1_swl")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_swl_part1"]
+script = ExtResource("2_swl")
+behavior_id = &"bhv_summon"
+behavior_params = {
+&"max_count": 3,
+&"lifetime": 8.0,
+&"formation": &"line",
+&"per_cast": 3,
+&"formation_spacing": 70.0
+}
+
+[sub_resource type="Resource" id="Resource_swl_part2"]
+script = ExtResource("2_swl")
+base_damage = {
+&"fire": 12.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"line",
+&"length": 220.0,
+&"width": 44.0,
+&"delay": 0.0,
+&"hit_count": 8,
+&"hit_interval": 1.0
+}
+
+[resource]
+script = ExtResource("3_swl")
+gem_id = &"summon_wall"
+display_name = "召唤墙"
+parts = Array[ExtResource("2_swl")]([SubResource("Resource_swl_part1"), SubResource("Resource_swl_part2")])
+tags = Array[StringName]([&"spell", &"summon", &"aoe", &"fire"])
+cast_mode = 0
+base_cast_time = 0.6
+cost_type = 0
+base_cost = 20.0
+base_cooldown = 7.0
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_swl_scale")

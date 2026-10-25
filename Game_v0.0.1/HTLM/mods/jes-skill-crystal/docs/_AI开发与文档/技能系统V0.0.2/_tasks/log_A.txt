@@ -1,0 +1,11 @@
+"gpt-6-astra" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"}
+已写入指定文件：`ch01-03_定位术语数据模型.md`。
+
+- 正文 **11,491 字**（按汉字计，含表格正文，不含代码块、版本块及表格标记）。
+- 校验通过：YAML 解析、七个顶层键、积木卡十二字段、表现七段、每章运行时引用小节。
+- 禁用旧词仅出现在禁用清单中。
+- 载体枚举等接口冲突已列入「未决问题」，未修改共享文件或主书稿。
+- CFG 示例为完整结构草案，**未认证可运行**；未执行机器 Schema 或运行时测试。
+
+DONE::CH01-03::11491

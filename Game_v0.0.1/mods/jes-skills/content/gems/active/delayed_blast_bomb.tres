@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 FLY·CIRC·DLY（展开表 v2 §1.1）· 夜间施工批次 C
+; 延时爆弹：弹体飞到落点后延迟起爆的范围弹
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_dbb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_dbb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_dbb"]
+
+[sub_resource type="Resource" id="Resource_dbb_scale"]
+script = ExtResource("1_dbb")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_dbb_p1"]
+script = ExtResource("2_dbb")
+base_damage = {
+&"fire": 25.0
+}
+behavior_id = &"bhv_projectile"
+behavior_params = {
+&"count_base": 1.0,
+&"lifetime": 1.6,
+&"radius": 13.0,
+&"speed": 620.0,
+&"spread_deg": 4.0
+}
+
+[sub_resource type="Resource" id="Resource_dbb_p2"]
+script = ExtResource("2_dbb")
+base_damage = {
+&"fire": 105.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"circ",
+&"radius": 120.0,
+&"delay": 0.7,
+&"hit_count": 1,
+&"hit_interval": 0.0
+}
+
+[resource]
+script = ExtResource("3_dbb")
+gem_id = &"delayed_blast_bomb"
+display_name = "延时爆弹"
+parts = Array[ExtResource("2_dbb")]([SubResource("Resource_dbb_p1"), SubResource("Resource_dbb_p2")])
+tags = Array[StringName]([&"attack", &"projectile", &"aoe", &"fire"])
+cast_mode = 0
+base_cast_time = 0.4
+cost_type = 0
+base_cost = 13.0
+base_cooldown = 4.0
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_dbb_scale")

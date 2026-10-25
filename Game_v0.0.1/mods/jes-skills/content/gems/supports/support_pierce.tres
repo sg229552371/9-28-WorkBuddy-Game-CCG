@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SupportGemData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/support_gem_data.gd" id="1_jdmd7"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/modifier_spec.gd" id="2_xuyt8"]
+
+[resource]
+script = ExtResource("1_jdmd7")
+support_id = &"support_pierce"
+display_name = "穿透强化"
+require_tags = Array[StringName]([&"projectile"])
+cost_multiplier = 1.25
+behavior_overrides = {
+&"pierce": {
+&"add": 2.0
+}
+}

@@ -1,0 +1,933 @@
+{
+  "rows": [
+    {
+      "lv": 1,
+      "countMul": 1,
+      "hpMul": 1,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT1"
+    },
+    {
+      "lv": 2,
+      "countMul": 1.12,
+      "hpMul": 1.12,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT1"
+    },
+    {
+      "lv": 3,
+      "countMul": 1.25,
+      "hpMul": 1.24,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT2"
+    },
+    {
+      "lv": 4,
+      "countMul": 1.38,
+      "hpMul": 1.36,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT2"
+    },
+    {
+      "lv": 5,
+      "countMul": 1.5,
+      "hpMul": 1.48,
+      "hazard": "HZ1",
+      "supply": "SP1",
+      "chest": "CT2"
+    },
+    {
+      "lv": 6,
+      "countMul": 1.65,
+      "hpMul": 1.6,
+      "hazard": "HZ2",
+      "supply": "SP2",
+      "chest": "CT3"
+    },
+    {
+      "lv": 7,
+      "countMul": 1.8,
+      "hpMul": 1.72,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT3"
+    },
+    {
+      "lv": 8,
+      "countMul": 1.95,
+      "hpMul": 1.84,
+      "hazard": "HZ3",
+      "supply": "SP3",
+      "chest": "CT3"
+    },
+    {
+      "lv": 9,
+      "countMul": 2.1,
+      "hpMul": 1.96,
+      "hazard": "HZ4",
+      "supply": "SP4",
+      "chest": "CT4"
+    },
+    {
+      "lv": 10,
+      "countMul": 2.25,
+      "hpMul": 2.08,
+      "hazard": "HZ5",
+      "supply": "SP5",
+      "chest": "CT4"
+    },
+    {
+      "lv": 11,
+      "countMul": 2.4,
+      "hpMul": 2.2,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 12,
+      "countMul": 2.55,
+      "hpMul": 2.32,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 13,
+      "countMul": 2.7,
+      "hpMul": 2.44,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 14,
+      "countMul": 2.85,
+      "hpMul": 2.56,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 15,
+      "countMul": 3,
+      "hpMul": 2.68,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 16,
+      "countMul": 3.15,
+      "hpMul": 2.8,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 17,
+      "countMul": 3.3,
+      "hpMul": 2.92,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 18,
+      "countMul": 3.45,
+      "hpMul": 3.04,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 19,
+      "countMul": 3.6,
+      "hpMul": 3.16,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 20,
+      "countMul": 3.75,
+      "hpMul": 3.28,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 21,
+      "countMul": 3.9,
+      "hpMul": 3.38,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 22,
+      "countMul": 4.05,
+      "hpMul": 3.48,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 23,
+      "countMul": 4.2,
+      "hpMul": 3.58,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 24,
+      "countMul": 4.35,
+      "hpMul": 3.68,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 25,
+      "countMul": 4.5,
+      "hpMul": 3.78,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 26,
+      "countMul": 4.65,
+      "hpMul": 3.88,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 27,
+      "countMul": 4.8,
+      "hpMul": 3.98,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 28,
+      "countMul": 4.95,
+      "hpMul": 4.08,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 29,
+      "countMul": 5.1,
+      "hpMul": 4.18,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 30,
+      "countMul": 5.25,
+      "hpMul": 4.28,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 31,
+      "countMul": 5.4,
+      "hpMul": 4.38,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 32,
+      "countMul": 5.55,
+      "hpMul": 4.48,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 33,
+      "countMul": 5.7,
+      "hpMul": 4.58,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 34,
+      "countMul": 5.85,
+      "hpMul": 4.68,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 35,
+      "countMul": 6,
+      "hpMul": 4.78,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 36,
+      "countMul": 6.15,
+      "hpMul": 4.88,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 37,
+      "countMul": 6.3,
+      "hpMul": 4.98,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 38,
+      "countMul": 6.45,
+      "hpMul": 5.08,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 39,
+      "countMul": 6.6,
+      "hpMul": 5.18,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 40,
+      "countMul": 6.75,
+      "hpMul": 5.28,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 41,
+      "countMul": 6.9,
+      "hpMul": 5.38,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 42,
+      "countMul": 7.05,
+      "hpMul": 5.48,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 43,
+      "countMul": 7.2,
+      "hpMul": 5.58,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 44,
+      "countMul": 7.35,
+      "hpMul": 5.68,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 45,
+      "countMul": 7.5,
+      "hpMul": 5.78,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 46,
+      "countMul": 7.65,
+      "hpMul": 5.88,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 47,
+      "countMul": 7.8,
+      "hpMul": 5.98,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 48,
+      "countMul": 7.95,
+      "hpMul": 6.08,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 49,
+      "countMul": 8.1,
+      "hpMul": 6.18,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 50,
+      "countMul": 8.25,
+      "hpMul": 6.28,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 51,
+      "countMul": 8.4,
+      "hpMul": 6.38,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 52,
+      "countMul": 8.55,
+      "hpMul": 6.48,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 53,
+      "countMul": 8.7,
+      "hpMul": 6.58,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 54,
+      "countMul": 8.85,
+      "hpMul": 6.68,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 55,
+      "countMul": 9,
+      "hpMul": 6.78,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 56,
+      "countMul": 9.15,
+      "hpMul": 6.88,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 57,
+      "countMul": 9.3,
+      "hpMul": 6.98,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 58,
+      "countMul": 9.45,
+      "hpMul": 7.08,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 59,
+      "countMul": 9.6,
+      "hpMul": 7.18,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 60,
+      "countMul": 9.75,
+      "hpMul": 7.28,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 61,
+      "countMul": 9.9,
+      "hpMul": 7.38,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 62,
+      "countMul": 10.05,
+      "hpMul": 7.48,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 63,
+      "countMul": 10.2,
+      "hpMul": 7.58,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 64,
+      "countMul": 10.35,
+      "hpMul": 7.68,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 65,
+      "countMul": 10.5,
+      "hpMul": 7.78,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 66,
+      "countMul": 10.65,
+      "hpMul": 7.88,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 67,
+      "countMul": 10.8,
+      "hpMul": 7.98,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 68,
+      "countMul": 10.95,
+      "hpMul": 8.08,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 69,
+      "countMul": 11.1,
+      "hpMul": 8.18,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 70,
+      "countMul": 11.25,
+      "hpMul": 8.28,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 71,
+      "countMul": 11.4,
+      "hpMul": 8.38,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 72,
+      "countMul": 11.55,
+      "hpMul": 8.48,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 73,
+      "countMul": 11.7,
+      "hpMul": 8.58,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 74,
+      "countMul": 11.85,
+      "hpMul": 8.68,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 75,
+      "countMul": 12,
+      "hpMul": 8.78,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 76,
+      "countMul": 12.15,
+      "hpMul": 8.88,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 77,
+      "countMul": 12.3,
+      "hpMul": 8.98,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 78,
+      "countMul": 12.45,
+      "hpMul": 9.08,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 79,
+      "countMul": 12.6,
+      "hpMul": 9.18,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 80,
+      "countMul": 12.75,
+      "hpMul": 9.28,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 81,
+      "countMul": 12.9,
+      "hpMul": 9.38,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 82,
+      "countMul": 13.05,
+      "hpMul": 9.48,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 83,
+      "countMul": 13.2,
+      "hpMul": 9.58,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 84,
+      "countMul": 13.35,
+      "hpMul": 9.68,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 85,
+      "countMul": 13.5,
+      "hpMul": 9.78,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 86,
+      "countMul": 13.65,
+      "hpMul": 9.88,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 87,
+      "countMul": 13.8,
+      "hpMul": 9.98,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 88,
+      "countMul": 13.95,
+      "hpMul": 10.08,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 89,
+      "countMul": 14.1,
+      "hpMul": 10.18,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 90,
+      "countMul": 14.25,
+      "hpMul": 10.28,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 91,
+      "countMul": 14.4,
+      "hpMul": 10.38,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 92,
+      "countMul": 14.55,
+      "hpMul": 10.48,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 93,
+      "countMul": 14.7,
+      "hpMul": 10.58,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 94,
+      "countMul": 14.85,
+      "hpMul": 10.68,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 95,
+      "countMul": 15,
+      "hpMul": 10.78,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 96,
+      "countMul": 15.15,
+      "hpMul": 10.88,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 97,
+      "countMul": 15.3,
+      "hpMul": 10.98,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 98,
+      "countMul": 15.45,
+      "hpMul": 11.08,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    },
+    {
+      "lv": 99,
+      "countMul": 15.6,
+      "hpMul": 11.18,
+      "hazard": null,
+      "supply": null,
+      "chest": "CT4"
+    }
+  ],
+  "hazardTiers": {
+    "HZ1": {
+      "name": "教学档",
+      "startDelay": 20,
+      "shrinkDuration": 85,
+      "minRadius": 380,
+      "tickInterval": 1,
+      "dmgPercent": 0.01,
+      "dmgPerTick": 7
+    },
+    "HZ2": {
+      "name": "进阶档",
+      "startDelay": 18,
+      "shrinkDuration": 75,
+      "minRadius": 350,
+      "tickInterval": 1,
+      "dmgPercent": 0.01,
+      "dmgPerTick": 8
+    },
+    "HZ3": {
+      "name": "压迫档",
+      "startDelay": 16,
+      "shrinkDuration": 65,
+      "minRadius": 330,
+      "tickInterval": 0.8,
+      "dmgPercent": 0.01,
+      "dmgPerTick": 8
+    },
+    "HZ4": {
+      "name": "高压档",
+      "startDelay": 14,
+      "shrinkDuration": 60,
+      "minRadius": 310,
+      "tickInterval": 0.8,
+      "dmgPercent": 0.01,
+      "dmgPerTick": 9
+    },
+    "HZ5": {
+      "name": "终局档",
+      "startDelay": 12,
+      "shrinkDuration": 55,
+      "minRadius": 290,
+      "tickInterval": 0.8,
+      "dmgPercent": 0.01,
+      "dmgPerTick": 10
+    }
+  },
+  "supplyTiers": {
+    "SP1": {
+      "name": "教学档·慷慨",
+      "count": 3,
+      "channelSeconds": 2.5,
+      "effect": {
+        "type": "heal",
+        "pct": 0.25
+      }
+    },
+    "SP2": {
+      "name": "进阶档·增益",
+      "count": 2,
+      "channelSeconds": 3,
+      "effect": {
+        "type": "buff",
+        "buffPool": "war",
+        "duration": 20
+      }
+    },
+    "SP3": {
+      "name": "压迫档·缩水",
+      "count": 2,
+      "channelSeconds": 3,
+      "effect": {
+        "type": "heal",
+        "pct": 0.2
+      }
+    },
+    "SP4": {
+      "name": "高压档·资源",
+      "count": 2,
+      "channelSeconds": 3.5,
+      "effect": {
+        "type": "crystal",
+        "amount": 50
+      }
+    },
+    "SP5": {
+      "name": "终局档·稀缺",
+      "count": 1,
+      "channelSeconds": 4,
+      "effect": {
+        "type": "heal",
+        "pct": 0.15
+      }
+    }
+  },
+  "chestTiers": {
+    "CT1": {
+      "name": "前期档",
+      "weights": {
+        "normal": 55,
+        "advanced": 30,
+        "epic": 12,
+        "divine": 3,
+        "mythic": 0
+      }
+    },
+    "CT2": {
+      "name": "中期档",
+      "weights": {
+        "normal": 48,
+        "advanced": 28,
+        "epic": 16,
+        "divine": 6,
+        "mythic": 2
+      }
+    },
+    "CT3": {
+      "name": "中后期档",
+      "weights": {
+        "normal": 40,
+        "advanced": 28,
+        "epic": 20,
+        "divine": 9,
+        "mythic": 3
+      }
+    },
+    "CT4": {
+      "name": "后期档",
+      "weights": {
+        "normal": 34,
+        "advanced": 28,
+        "epic": 22,
+        "divine": 12,
+        "mythic": 4
+      }
+    }
+  }
+}

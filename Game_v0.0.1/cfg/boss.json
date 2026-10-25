@@ -1,0 +1,29 @@
+{
+  "bulletBudget": 40,
+  "bulletWindow": 1,
+  "bulletCap": 260,
+  "bulletLife": 6,
+  "patternCd": 3.2,
+  "warnTime": 0.8,
+  "warnRadius": 150,
+  "phaseInvuln": 1.2,
+  "color": {
+    "boom": "#e5484d",
+    "charge": "#ff9f43",
+    "laser": "#4dd6e5",
+    "summon": "#c79bff",
+    "bullet": "#ffffff"
+  },
+  "laserCap": 6,
+  "laserWarn": 0.9,
+  "laserActive": 1.6,
+  "laserFade": 0.35,
+  "laserLen": 1600,
+  "laserHalfW": 12,
+  "laserDmgInterval": 0.25,
+  "laserDmgMul": 0.5,
+  "skillNameTime": 1.5,
+  "phaseChest": {
+    "enabled": true
+  }
+}

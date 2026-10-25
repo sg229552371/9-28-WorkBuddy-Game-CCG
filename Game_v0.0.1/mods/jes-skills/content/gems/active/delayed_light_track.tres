@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 INST·LINE·DLY（展开表 v2 §1.2）· 夜间施工批次 C
+; 延迟光轨：直线上预警后延迟起爆
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_dlt"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_dlt"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_dlt"]
+
+[sub_resource type="Resource" id="Resource_dlt_scale"]
+script = ExtResource("1_dlt")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_dlt_part"]
+script = ExtResource("2_dlt")
+base_damage = {
+&"lightning": 120.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"line",
+&"length": 250.0,
+&"width": 44.0,
+&"delay": 0.8,
+&"hit_count": 1,
+&"hit_interval": 0.0
+}
+
+[resource]
+script = ExtResource("3_dlt")
+gem_id = &"delayed_light_track"
+display_name = "延迟光轨"
+parts = Array[ExtResource("2_dlt")]([SubResource("Resource_dlt_part")])
+tags = Array[StringName]([&"spell", &"aoe", &"lightning"])
+cast_mode = 0
+base_cast_time = 0.4
+cost_type = 0
+base_cost = 13.0
+base_cooldown = 4.0
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_dlt_scale")

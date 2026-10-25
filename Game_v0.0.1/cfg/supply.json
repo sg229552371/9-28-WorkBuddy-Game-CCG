@@ -1,0 +1,11 @@
+{
+  "enabled": false,
+  "count": 2,
+  "radius": 90,
+  "channelSeconds": 3,
+  "effect": {
+    "type": "heal",
+    "pct": 0.2
+  },
+  "color": "#5ad07a"
+}

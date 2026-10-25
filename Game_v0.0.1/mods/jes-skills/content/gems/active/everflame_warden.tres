@@ -1,0 +1,58 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_t4a"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_t4a"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_t4a"]
+
+[sub_resource type="Resource" id="Resource_scale"]
+script = ExtResource("1_t4a")
+per_level = 0.04
+knee_level = 10
+per_level_late = 0.2
+
+; 段序冻结（D-39）：必须「先增益、后召唤」——随从在召唤瞬间快照继承三项属性，
+; 顺序写反则强化拷贝不到。强化值 40/30/40 为推荐默认（规划稿未定值，制作人可调）。
+[sub_resource type="Resource" id="Resource_part1"]
+script = ExtResource("2_t4a")
+damage_channel = 1
+behavior_id = &"bhv_buff_self"
+behavior_params = {
+&"buff_mods": [{
+&"op": 0,
+&"stat": &"minion_damage",
+&"value": 40.0
+}, {
+&"op": 1,
+&"stat": &"minion_attack_speed",
+&"value": 30.0
+}, {
+&"op": 0,
+&"stat": &"minion_life",
+&"value": 40.0
+}],
+&"duration": 7.0
+}
+
+[sub_resource type="Resource" id="Resource_part2"]
+script = ExtResource("2_t4a")
+damage_channel = 1
+behavior_id = &"bhv_summon"
+behavior_params = {
+&"lifetime": 20.0,
+&"max_count": 1
+}
+
+[resource]
+script = ExtResource("3_t4a")
+gem_id = &"everflame_warden"
+display_name = "火烛守卫"
+parts = Array[ExtResource("2_t4a")]([SubResource("Resource_part1"), SubResource("Resource_part2")])
+tags = Array[StringName]([&"spell", &"summon", &"physical", &"buff"])
+cast_mode = 0
+base_cast_time = 0.5
+cost_type = 0
+base_cost = 16.0
+base_cooldown = 8.0
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_scale")

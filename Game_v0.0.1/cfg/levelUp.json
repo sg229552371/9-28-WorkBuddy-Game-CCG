@@ -1,0 +1,60 @@
+{
+  "expSource": "participation",
+  "participationWindow": 0,
+  "expShareOnKill": true,
+  "expShareEven": false,
+  "curve": {
+    "shape": "fastEarly",
+    "base": 8,
+    "growth": 1.32,
+    "softCapLv": 12,
+    "softCapMul": 0.7,
+    "maxLv": 99
+  },
+  "choiceCount": 4,
+  "pickCount": 1,
+  "poolMode": "perHero",
+  "allowDuplicateOffer": false,
+  "weighted": true,
+  "rerollFreePerRun": 1,
+  "growth": {
+    "mode": "add",
+    "rate": 0.06,
+    "mul": 1.01976,
+    "hybrid": {
+      "segLv": 30,
+      "segMul": 1.01337
+    },
+    "stats": [
+      "hp",
+      "atk",
+      "def"
+    ]
+  },
+  "statPack": [
+    {
+      "id": "pack_atk",
+      "name": "强攻包",
+      "stat": "atk",
+      "value": 3
+    },
+    {
+      "id": "pack_hp",
+      "name": "坚韧包",
+      "stat": "hp",
+      "value": 15
+    },
+    {
+      "id": "pack_def",
+      "name": "铁壁包",
+      "stat": "def",
+      "value": 1
+    },
+    {
+      "id": "pack_spd",
+      "name": "疾行包",
+      "stat": "spd",
+      "value": 8
+    }
+  ]
+}

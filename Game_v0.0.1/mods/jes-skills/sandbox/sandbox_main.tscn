@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://bl1om2iqc4kgg"]
+
+[ext_resource type="Script" uid="uid://l0a15ym3r0iv" path="res://mods/jes-skills/sandbox/sandbox_main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://m3egos4wo2c0" path="res://mods/jes-skills/sandbox/sandbox_hud.gd" id="2_hud"]
+[ext_resource type="Script" path="res://mods/jes-skills/sandbox/sandbox_lab.gd" id="3_lab"]
+
+[node name="SandboxMain" type="Node2D" unique_id=829471121]
+script = ExtResource("1_main")
+
+[node name="Hud" type="CanvasLayer" parent="." unique_id=225363975]
+layer = 10
+
+[node name="HudView" type="Control" parent="Hud" unique_id=2092247477]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_hud")
+
+[node name="Lab" type="Control" parent="Hud"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_lab")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=242444656]
+position = Vector2(500, 300)

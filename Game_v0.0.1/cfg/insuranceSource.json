@@ -1,0 +1,21 @@
+{
+  "altar": {
+    "enabled": true,
+    "id": "ALTAR_007",
+    "count": 1
+  },
+  "artisan": {
+    "enabled": true
+  },
+  "chestDrop": {
+    "enabled": true
+  },
+  "eliteDrop": {
+    "enabled": false,
+    "chance": 0
+  },
+  "assured": {
+    "enabled": false,
+    "count": 0
+  }
+}

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" width="720" height="1280">
+  <rect x="0" y="0" width="720" height="1280" fill="#f5f0e6" stroke="#666" stroke-width="2"/>
+  <text x="360" y="36" font-size="22" text-anchor="middle" fill="#333">失落之城图腾页 totem.svg ｜ 720×1280 ｜ 9:16</text>
+
+  <!-- Z1 背景 -->
+  <rect x="8" y="56" width="704" height="1216" fill="none" stroke="#999" stroke-dasharray="4"/>
+  <text x="20" y="80" font-size="16" fill="#666">Z1 底层：失落之城夜景背景（山丘剪影+青霓虹天际线，全屏 720×1280）</text>
+
+  <!-- Z2 标题与货币条 -->
+  <rect x="16" y="96" width="688" height="64" fill="#e8e2d4" stroke="#666"/>
+  <text x="360" y="136" font-size="16" text-anchor="middle" fill="#333">Z2 标题+货币条（y=96~160, h=64）：「失落之城」+ 香火余额（icon_ui_incense 64×64）</text>
+
+  <!-- Z3 图腾网格：9 座，3×3 -->
+  <rect x="16" y="180" width="688" height="700" fill="#f0e8d8" stroke="#666"/>
+  <text x="360" y="216" font-size="16" text-anchor="middle" fill="#333">Z3 图腾网格（y=180~880）：9 座图腾，3 列×3 行，槽位 128×128，间距 40，锚点居中</text>
+  <!-- 3×3 槽位示意 -->
+  <g stroke="#666" fill="#fff">
+    <rect x="120" y="240" width="128" height="128" stroke="#35E0D8" stroke-width="3"/>
+    <rect x="296" y="240" width="128" height="128"/>
+    <rect x="472" y="240" width="128" height="128"/>
+    <rect x="120" y="408" width="128" height="128"/>
+    <rect x="296" y="408" width="128" height="128"/>
+    <rect x="472" y="408" width="128" height="128"/>
+    <rect x="120" y="576" width="128" height="128"/>
+    <rect x="296" y="576" width="128" height="128"/>
+    <rect x="472" y="576" width="128" height="128"/>
+  </g>
+  <text x="184" y="310" font-size="13" text-anchor="middle" fill="#333">初火图腾（已建，青霓虹点亮）</text>
+  <text x="360" y="478" font-size="13" text-anchor="middle" fill="#666">图腾 icon_totem 128×128</text>
+  <text x="536" y="646" font-size="13" text-anchor="middle" fill="#999">未解锁（骨白虚态）</text>
+  <text x="360" y="860" font-size="13" text-anchor="middle" fill="#666">全解锁 ≈ 12~15 局（单局期望 60 香火，每座 30~120 香火）</text>
+
+  <!-- Z4 图腾详情面板 -->
+  <rect x="16" y="900" width="688" height="200" fill="#fff" stroke="#666"/>
+  <text x="360" y="936" font-size="15" text-anchor="middle" fill="#333">Z4 图腾详情面板（y=900~1100, h=200）：选中图腾大图 128×128 + 名称 + 下局开局规则效果描述 + 等级</text>
+
+  <!-- Z5 建造/升级按钮 -->
+  <rect x="16" y="1120" width="688" height="80" fill="#e8e2d4" stroke="#666"/>
+  <text x="360" y="1156" font-size="15" text-anchor="middle" fill="#333">Z5 建造/升级按钮区（y=1120~1200, h=80）：「建造（30~120 香火）」/「升级」/「返回主城」，ui_totem_slot 三态联动</text>
+
+  <!-- Z9 顶层：购买确认 -->
+  <rect x="160" y="420" width="400" height="200" fill="none" stroke="#C63D2F" stroke-dasharray="6"/>
+  <text x="360" y="530" font-size="14" text-anchor="middle" fill="#C63D2F">Z9 顶层：建造/升级确认弹窗（居中 400×200，含香火余额校验）</text>
+
+  <text x="360" y="1268" font-size="12" text-anchor="middle" fill="#999">Z序：Z1背景 → Z2货币条 → Z3图腾网格 → Z4详情面板 → Z5按钮区 → Z9弹窗</text>
+</svg>

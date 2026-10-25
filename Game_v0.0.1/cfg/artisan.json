@@ -1,0 +1,54 @@
+{
+  "limiter": {
+    "maxOnField": 1,
+    "cooldown": 20,
+    "maxPerLevel": 6,
+    "spawnDelay": [
+      3,
+      8
+    ],
+    "minDistFromPlayer": 300
+  },
+  "triggers": [
+    {
+      "id": "first",
+      "name": "首次里程碑",
+      "type": "levelKills",
+      "quota": 1,
+      "desc": "击杀数达到关卡 artisanAtKills"
+    },
+    {
+      "id": "progress",
+      "name": "进度里程碑",
+      "type": "progressStep",
+      "quota": 1,
+      "max": 3,
+      "step": 0.25,
+      "desc": "击杀进度每 25% 触发一次（最多 3 次）"
+    },
+    {
+      "id": "boss",
+      "name": "BOSS 击败",
+      "type": "bossDefeated",
+      "quota": 1,
+      "desc": "BOSS 被击败后额外投一座（撤离前的最后改造机会）"
+    },
+    {
+      "id": "elite",
+      "name": "精英猎杀",
+      "type": "eliteKills",
+      "quota": 1,
+      "perQuota": 2,
+      "max": 3,
+      "desc": "每击杀 2 只精英怪触发一次（最多 3 次）"
+    },
+    {
+      "id": "pity",
+      "name": "保底计时",
+      "type": "pity",
+      "quota": 1,
+      "interval": 90,
+      "desc": "距上次雕像出现超过 90 秒则强制投放一座"
+    }
+  ]
+}

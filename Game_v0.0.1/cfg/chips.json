@@ -1,0 +1,146 @@
+{
+  "name": "遗迹秘宝",
+  "grid": {
+    "cols": 6,
+    "rows": 5
+  },
+  "qualityCount": 4,
+  "lifetime": "inRun",
+  "qualityMode": {
+    "0": "value",
+    "1": "value",
+    "2": "behavior",
+    "3": "behavior"
+  },
+  "valuePool": [
+    {
+      "id": "C_V_DMG",
+      "name": "增幅秘宝",
+      "tag": "伤害",
+      "mode": "mult",
+      "vals": [
+        0.12,
+        0.2,
+        0.3,
+        0.45
+      ]
+    },
+    {
+      "id": "C_V_CD",
+      "name": "循环秘宝",
+      "tag": "冷却",
+      "mode": "mult",
+      "vals": [
+        -0.06,
+        -0.1,
+        -0.15,
+        -0.22
+      ]
+    },
+    {
+      "id": "C_V_RANGE",
+      "name": "扩散秘宝",
+      "tag": "范围",
+      "mode": "mult",
+      "vals": [
+        0.1,
+        0.16,
+        0.24,
+        0.36
+      ]
+    },
+    {
+      "id": "C_V_SPD",
+      "name": "加速秘宝",
+      "tag": "弹速",
+      "mode": "mult",
+      "vals": [
+        0.1,
+        0.16,
+        0.24,
+        0.36
+      ]
+    },
+    {
+      "id": "C_V_BULLET",
+      "name": "分流秘宝",
+      "tag": "弹道数量",
+      "mode": "flat",
+      "vals": [
+        1,
+        1,
+        1,
+        2
+      ]
+    }
+  ],
+  "behaviorPool": [
+    {
+      "id": "C_B_BOUNCE",
+      "name": "折射秘宝",
+      "behavior": "bounce",
+      "vals": [
+        1,
+        1,
+        2,
+        2
+      ],
+      "desc": "命中后弹射 N 次"
+    },
+    {
+      "id": "C_B_BURN",
+      "name": "燃蚀秘宝",
+      "behavior": "burn",
+      "vals": [
+        3,
+        5,
+        8,
+        12
+      ],
+      "desc": "命中附加灼烧（每秒 N 伤害，3 秒）"
+    },
+    {
+      "id": "C_B_SPLIT",
+      "name": "裂变秘宝",
+      "behavior": "split",
+      "vals": [
+        1,
+        1,
+        2,
+        3
+      ],
+      "desc": "击杀后分裂出 N 枚小弹"
+    },
+    {
+      "id": "C_B_CHAIN",
+      "name": "链锁秘宝",
+      "behavior": "chain",
+      "vals": [
+        1,
+        1,
+        2,
+        2
+      ],
+      "desc": "命中后向 N 个敌人链接传导"
+    }
+  ],
+  "shapes": {
+    "value": [
+      1,
+      1
+    ],
+    "behavior": [
+      2,
+      1
+    ]
+  },
+  "maxStack": 9,
+  "carryOut": true,
+  "valueByQuality": [
+    20,
+    36,
+    64,
+    120
+  ],
+  "weightMul": 1
+}

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SupportGemData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/support_gem_data.gd" id="1_nkgsh"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/modifier_spec.gd" id="2_ob13i"]
+
+[resource]
+script = ExtResource("1_nkgsh")
+support_id = &"support_multi"
+display_name = "多重投射"
+require_tags = Array[StringName]([&"projectile"])
+cost_multiplier = 1.4
+behavior_overrides = {
+&"projectile_count": {
+&"add": 2.0
+}
+}

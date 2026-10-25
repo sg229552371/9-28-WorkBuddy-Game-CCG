@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 DASH·RING·S1（展开表 v2 §1.4）· 夜间施工批次 C
+; 终点环爆：冲刺终点立即爆出空环（双段：位移段 + 空环爆发段）
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_erb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_erb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_erb"]
+
+[sub_resource type="Resource" id="Resource_erb_scale"]
+script = ExtResource("1_erb")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_erb_p1"]
+script = ExtResource("2_erb")
+behavior_id = &"bhv_dash"
+behavior_params = {
+&"distance": 360.0,
+&"speed": 1100.0,
+&"path_width": 40.0
+}
+
+[sub_resource type="Resource" id="Resource_erb_p2"]
+script = ExtResource("2_erb")
+base_damage = {
+&"physical": 115.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"ring",
+&"radius": 150.0,
+&"inner_radius": 80.0,
+&"delay": 0.0,
+&"hit_count": 1,
+&"hit_interval": 0.0
+}
+
+[resource]
+script = ExtResource("3_erb")
+gem_id = &"end_ring_burst"
+display_name = "终点环爆"
+parts = Array[ExtResource("2_erb")]([SubResource("Resource_erb_p1"), SubResource("Resource_erb_p2")])
+tags = Array[StringName]([&"attack", &"movement", &"aoe", &"physical"])
+cast_mode = 0
+base_cast_time = 0.2
+cost_type = 0
+base_cost = 12.0
+base_cooldown = 3.8
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_erb_scale")

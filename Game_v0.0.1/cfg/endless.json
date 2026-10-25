@@ -1,0 +1,287 @@
+{
+  "waveGap": 3,
+  "timeLimit": 780,
+  "spawnIntervalStart": 4,
+  "spawnIntervalEnd": 11,
+  "spawnIntervalWaves": 99,
+  "spawnInterval": 4,
+  "spawnIntervalMin": 1.5,
+  "spawnIntervalDecay": 0.12,
+  "bossProgressBase": 300,
+  "bossProgressStep": 260,
+  "timeWeight": 1,
+  "finalBossIndex": 3,
+  "extractChannel": 3,
+  "waveCapAnchors": [
+    [
+      1,
+      10
+    ],
+    [
+      50,
+      100
+    ],
+    [
+      80,
+      200
+    ],
+    [
+      90,
+      256
+    ],
+    [
+      100,
+      300
+    ]
+  ],
+  "capMax": 3000,
+  "capBase": 40,
+  "capPerWave": 12,
+  "hpMulPerWave": 0.18,
+  "atkMul": 1.25,
+  "dmgMulPerWave": 0.06,
+  "reward": {
+    "base": 8,
+    "exp": 1.15
+  },
+  "crystalCapPerRun": 0,
+  "chestEvery": 5,
+  "altarTimeline": {
+    "enabled": true,
+    "firstDelay": 25,
+    "interval": 35,
+    "pick": 1,
+    "pool": [
+      "ALTAR_001",
+      "ALTAR_002",
+      "ALTAR_003",
+      "ALTAR_004a",
+      "ALTAR_004b"
+    ]
+  },
+  "composition": {
+    "rangedPct": 0.7
+  },
+  "spawnRingMargin": 100,
+  "firstWaveDelay": 5,
+  "mapW": 1920,
+  "mapH": 1920,
+  "spawnBatch": 12,
+  "monsterLevelBase": 1,
+  "monsterLevelPerWave": 0.35,
+  "eliteRatioAnchors": [
+    [
+      1,
+      0.1
+    ],
+    [
+      40,
+      0.35
+    ],
+    [
+      79,
+      0.6
+    ]
+  ],
+  "bossMixRatioAnchors": [
+    [
+      80,
+      0.05
+    ],
+    [
+      89,
+      0.1
+    ]
+  ],
+  "bossOnlyRatio": 1,
+  "bossBudgetPerWave": 20,
+  "bossMixAnchorId": "BS0001",
+  "eliteSpawnBatch": 6,
+  "bossSpawnBatch": 3,
+  "eliteAffixChance": 1,
+  "expMul": 1,
+  "coinMul": 1,
+  "weightFree": true,
+  "playerBuff": {
+    "hpMul": 5,
+    "defMul": 2,
+    "atkMul": 1.5
+  },
+  "hud": {
+    "timeWarnSec": 60,
+    "blinkPeriodSec": 0.5,
+    "barWidth": 176,
+    "barHeight": 8,
+    "panelPadX": 12,
+    "panelPadY": 9,
+    "lineH": 22,
+    "fontSize": 15,
+    "fontSmall": 11,
+    "timeFontSize": 24,
+    "bossFontSize": 14,
+    "hintFontSize": 13,
+    "safeAreaExtra": 0
+  },
+  "hudColors": {
+    "time": "#cfe0ff",
+    "timeWarn": "#ff5b5b",
+    "progressBg": "rgba(120,150,200,0.25)",
+    "progressFill": "#7de08a",
+    "progressBoss": "#ffd76a",
+    "boss": "#ff8f6a",
+    "bossFinal": "#ff5b5b",
+    "extract": "#7de08a",
+    "wave": "#e8c574",
+    "kill": "#ff8f6a",
+    "cap": "#8fd0ff",
+    "panel": "rgba(10,16,28,0.55)",
+    "edge": "rgba(120,150,200,0.35)"
+  },
+  "settle": {
+    "extractTitle": "撤离成功",
+    "timeoutTitle": "时限耗尽",
+    "deathTitle": "深渊阵亡",
+    "extractClass": "good",
+    "failClass": "bad"
+  },
+  "affixes": {
+    "countAnchors": [
+      [
+        1,
+        0
+      ],
+      [
+        3,
+        1
+      ],
+      [
+        8,
+        2
+      ],
+      [
+        15,
+        3
+      ]
+    ],
+    "list": [
+      {
+        "id": "swift",
+        "name": "迅捷",
+        "desc": "怪物移动速度 +25%",
+        "weight": 10,
+        "mods": {
+          "monsterSpdMul": 1.25
+        }
+      },
+      {
+        "id": "tough",
+        "name": "坚韧",
+        "desc": "怪物生命 +30%",
+        "weight": 10,
+        "mods": {
+          "monsterHpMul": 1.3
+        }
+      },
+      {
+        "id": "frenzy",
+        "name": "狂怒",
+        "desc": "怪物攻击 +20%",
+        "weight": 8,
+        "mods": {
+          "monsterAtkMul": 1.2
+        }
+      },
+      {
+        "id": "horde",
+        "name": "成群",
+        "desc": "每波只数 +15%",
+        "weight": 8,
+        "mods": {
+          "waveCapMul": 1.15
+        }
+      },
+      {
+        "id": "greed",
+        "name": "贪婪",
+        "desc": "奖励 +40%，怪物攻击 +15%",
+        "weight": 6,
+        "mods": {
+          "rewardMul": 1.4,
+          "monsterAtkMul": 1.15
+        }
+      },
+      {
+        "id": "frail",
+        "name": "脆弱",
+        "desc": "玩家生命上限 -20%",
+        "weight": 5,
+        "mods": {
+          "playerHpMul": 0.8
+        }
+      },
+      {
+        "id": "haste",
+        "name": "催命",
+        "desc": "深渊总时限 -20%",
+        "weight": 5,
+        "mods": {
+          "timeLimitMul": 0.8
+        }
+      },
+      {
+        "id": "famine",
+        "name": "荒芜",
+        "desc": "掉落经验 -30%",
+        "weight": 6,
+        "mods": {
+          "expMul": 0.7
+        }
+      }
+    ],
+    "maxActive": 3
+  },
+  "rewardNodes": {
+    "count": 4,
+    "types": [
+      {
+        "id": "gold",
+        "name": "金币堆",
+        "weight": 6,
+        "amount": 50
+      },
+      {
+        "id": "crystal",
+        "name": "结晶堆",
+        "weight": 3,
+        "amount": 20
+      },
+      {
+        "id": "supply",
+        "name": "补给点",
+        "weight": 3,
+        "healRatio": 0.25
+      }
+    ],
+    "radius": 44,
+    "channel": 1.5
+  },
+  "records": {
+    "firstExtractReward": 200,
+    "firstFinalBossReward": 100,
+    "milestones": [
+      1,
+      5,
+      10,
+      15,
+      20
+    ]
+  },
+  "team": {
+    "reviveTime": 8,
+    "reviveHpRatio": 0.5,
+    "rescueRadius": 120,
+    "rescueChannel": 2,
+    "playerScalePerExtra": 0.15,
+    "rewardScalePerExtra": 0.1
+  }
+}

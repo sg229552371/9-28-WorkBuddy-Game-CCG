@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 INST·MULTI·DLY（展开表 v2 §1.2）· 夜间施工批次 C
+; 天降多点：多点各自延迟落下
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_smb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_smb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_smb"]
+
+[sub_resource type="Resource" id="Resource_smb_scale"]
+script = ExtResource("1_smb")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_smb_part"]
+script = ExtResource("2_smb")
+base_damage = {
+&"physical": 27.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"multi",
+&"point_count": 5,
+&"point_spacing": 90.0,
+&"radius": 60.0,
+&"delay": 0.7,
+&"hit_count": 1,
+&"hit_interval": 0.0
+}
+
+[resource]
+script = ExtResource("3_smb")
+gem_id = &"sky_multi_burst"
+display_name = "天降多点"
+parts = Array[ExtResource("2_smb")]([SubResource("Resource_smb_part")])
+tags = Array[StringName]([&"spell", &"aoe", &"physical"])
+cast_mode = 0
+base_cast_time = 0.45
+cost_type = 0
+base_cost = 15.0
+base_cooldown = 4.5
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_smb_scale")

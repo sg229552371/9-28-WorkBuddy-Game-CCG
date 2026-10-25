@@ -1,0 +1,8 @@
+{
+  "perHero": 4,
+  "slotMode": "type",
+  "stackSameName": true,
+  "stackLevelUp": 1,
+  "maxLv": 9,
+  "stages": 3
+}

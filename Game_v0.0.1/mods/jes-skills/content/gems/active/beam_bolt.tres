@@ -1,0 +1,56 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 FLY·LINE·S1（展开表 v2 §1.1）· 夜间施工批次 C
+; 光束弹：弹道直线命中一次（线形判定复用 ShapeHit，D-43）
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_bmb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_bmb"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_bmb"]
+
+[sub_resource type="Resource" id="Resource_bmb_scale"]
+script = ExtResource("1_bmb")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_bmb_p1"]
+script = ExtResource("2_bmb")
+base_damage = {
+&"lightning": 30.0
+}
+behavior_id = &"bhv_projectile"
+behavior_params = {
+&"count_base": 1.0,
+&"lifetime": 1.4,
+&"radius": 12.0,
+&"speed": 700.0,
+&"spread_deg": 3.0
+}
+
+[sub_resource type="Resource" id="Resource_bmb_p2"]
+script = ExtResource("2_bmb")
+base_damage = {
+&"lightning": 80.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"line",
+&"length": 240.0,
+&"width": 44.0,
+&"delay": 0.0,
+&"hit_count": 1,
+&"hit_interval": 0.0
+}
+
+[resource]
+script = ExtResource("3_bmb")
+gem_id = &"beam_bolt"
+display_name = "光束弹"
+parts = Array[ExtResource("2_bmb")]([SubResource("Resource_bmb_p1"), SubResource("Resource_bmb_p2")])
+tags = Array[StringName]([&"spell", &"projectile", &"aoe", &"lightning"])
+cast_mode = 0
+base_cast_time = 0.35
+cost_type = 0
+base_cost = 11.0
+base_cooldown = 3.0
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_bmb_scale")

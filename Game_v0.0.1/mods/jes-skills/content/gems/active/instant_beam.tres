@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_bem"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_bem"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_bem"]
+
+[sub_resource type="Resource" id="Resource_bem_scale"]
+script = ExtResource("1_bem")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_bem_part"]
+script = ExtResource("2_bem")
+base_damage = {
+&"lightning": 72.0
+}
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"line",
+&"length": 260.0,
+&"width": 44.0,
+&"delay": 0.0,
+&"hit_count": 1,
+&"hit_interval": 0.0
+}
+
+[resource]
+script = ExtResource("3_bem")
+gem_id = &"instant_beam"
+display_name = "瞬发光束"
+parts = Array[ExtResource("2_bem")]([SubResource("Resource_bem_part")])
+tags = Array[StringName]([&"spell", &"aoe", &"lightning"])
+cast_mode = 0
+base_cast_time = 0.4
+cost_type = 0
+base_cost = 13.0
+base_cooldown = 3.0
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_bem_scale")

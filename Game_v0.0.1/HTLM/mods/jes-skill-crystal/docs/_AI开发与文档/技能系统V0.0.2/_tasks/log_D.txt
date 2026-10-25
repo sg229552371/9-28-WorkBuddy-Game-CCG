@@ -1,0 +1,10 @@
+"gpt-6-astra" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"}
+已写入 `ch06-12_挂点成长文案.md`，未修改其他文件。
+
+- 五章齐全，每章末尾均有运行时契约引用表。
+- 旧词扫描、冻结字段及章节结构校验通过。
+- 升级对旧实例的边界、源材料矛盾和待冻结接口已登记。
+- 正文 **17558 字**，含表格内容与未决问题；英文、数字连续串按词计数，不计格式标记。
+
+DONE::CH06-12::17558

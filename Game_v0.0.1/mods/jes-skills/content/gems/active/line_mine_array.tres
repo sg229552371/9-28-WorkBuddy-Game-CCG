@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+; 格号 SUMN·LINE·DLY（展开表 v2 §1.6）· 夜间施工批次 C
+; 沿线雷阵：直线上预警后依次预埋（双段：预警线段不产出伤害 + 线形阵落段）
+
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/gem_level_scaling.gd" id="1_lma"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_part.gd" id="2_lma"]
+[ext_resource type="Script" path="res://mods/jes-skills/systems/skills/data/skill_data.gd" id="3_lma"]
+
+[sub_resource type="Resource" id="Resource_lma_scale"]
+script = ExtResource("1_lma")
+per_level = 0.1
+
+[sub_resource type="Resource" id="Resource_lma_p1"]
+script = ExtResource("2_lma")
+behavior_id = &"bhv_aoe_burst"
+behavior_params = {
+&"shape": &"line",
+&"length": 220.0,
+&"width": 44.0,
+&"delay": 0.6,
+&"hit_count": 1,
+&"hit_interval": 0.0
+}
+
+[sub_resource type="Resource" id="Resource_lma_p2"]
+script = ExtResource("2_lma")
+behavior_id = &"bhv_summon"
+behavior_params = {
+&"max_count": 4,
+&"lifetime": 9.0,
+&"formation": &"line",
+&"per_cast": 4,
+&"formation_spacing": 70.0
+}
+
+[resource]
+script = ExtResource("3_lma")
+gem_id = &"line_mine_array"
+display_name = "沿线雷阵"
+parts = Array[ExtResource("2_lma")]([SubResource("Resource_lma_p1"), SubResource("Resource_lma_p2")])
+tags = Array[StringName]([&"spell", &"aoe", &"summon"])
+cast_mode = 0
+base_cast_time = 0.6
+cost_type = 0
+base_cost = 19.0
+base_cooldown = 6.5
+max_charges = 0
+charge_recharge_time = 0.0
+level_scaling = SubResource("Resource_lma_scale")

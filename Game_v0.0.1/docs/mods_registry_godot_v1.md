@@ -8,7 +8,7 @@
 |---|---|---|---|
 | `mods/jes-engine-core/` | ✅ P1 完成 | spatial_hash.gd / object_pool.gd / main.gd（变步长双钳制主循环）+ boot 自检场景 | js/core.js、js/pool.js、js/main.js |
 | `mods/jes-skills/` | 🚧 骨架就绪（来自 skill-editor-godot-V201） | systems/skills+perf、content/gems（active/supports/triggers）、sandbox、tools、docs 三分区 | HTLM/mods/jes-skill-crystal（P3 对接 skill-*.js 对译产物） |
-| `mods/jes-babel/` | 🚧 批次 A 完成 | SRPG《巴别回路》核心：board_grid.gd（11×9 棋盘/5 形状取格）/unit_state.gd/combat_resolver.gd（朝向盾/护盾/wet/AoE/神罚）/turn_manager.gd（回合状态机）；数据表 cfg/srpg_*.json ×8 | docs/SRPG组队肉鸽策划书_v1.md |
+| `mods/jes-babel/` | 🚧 ✅ B/C 完成 | SRPG《巴别回路》核心：board_grid.gd（11×9 棋盘/5 形状取格）/unit_state.gd/combat_resolver.gd（朝向盾/护盾/wet/AoE/神罚）/turn_manager.gd（回合状态机）；数据表 cfg/srpg_*.json ×8 | docs/SRPG组队肉鸽策划书_v1.md |
 | `tests/unit/` | ✅ GUT 门禁 | 19 用例（spatial_hash / object_pool / game_state） | mods/jes-quality-perf/tests/pool_test.js 等口径 |
 
 ## 改名记录

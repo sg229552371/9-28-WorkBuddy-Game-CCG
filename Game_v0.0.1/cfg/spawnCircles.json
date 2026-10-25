@@ -1,0 +1,30 @@
+{
+  "SC01": {
+    "radius": 180,
+    "waveSize": 2,
+    "pool": "NM0010:23/NM0011:70/NM0012:5/NM0027:2",
+    "interval": 7,
+    "trigger": "immediate"
+  },
+  "SC02": {
+    "radius": 200,
+    "waveSize": 2,
+    "pool": "NM0010:11/NM0011:70/NM0012:6/NM0013:5/NM0027:4/NM0028:4",
+    "interval": 6,
+    "trigger": "immediate"
+  },
+  "SC03": {
+    "radius": 220,
+    "waveSize": 3,
+    "pool": "NM0011:39/NM0013:11/NM0012:8/NM0014:31/NM0028:4/NM0029:4/NM0030:3",
+    "interval": 5.5,
+    "trigger": "immediate"
+  },
+  "SC04": {
+    "radius": 220,
+    "waveSize": 3,
+    "pool": "NM0020:6/NM0021:4/NM0022:35/NM0023:5/NM0025:35/NM0029:6/NM0030:5/NM0026:4",
+    "interval": 5,
+    "trigger": "immediate"
+  }
+}

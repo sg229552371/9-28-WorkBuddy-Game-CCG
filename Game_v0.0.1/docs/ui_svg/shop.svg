@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" width="720" height="1280">
+  <rect x="0" y="0" width="720" height="1280" fill="#f5f0e6" stroke="#666" stroke-width="2"/>
+  <text x="360" y="36" font-size="22" text-anchor="middle" fill="#333">神殿商店 shop.svg ｜ 720×1280 ｜ 9:16</text>
+
+  <!-- Z1 背景 -->
+  <rect x="8" y="56" width="704" height="1216" fill="none" stroke="#999" stroke-dasharray="4"/>
+  <text x="20" y="80" font-size="16" fill="#666">Z1 底层：神殿内景背景（暖沙石柱+青霓虹纹路，全屏 720×1280）</text>
+
+  <!-- Z2 标题与货币条 -->
+  <rect x="16" y="96" width="688" height="64" fill="#e8e2d4" stroke="#666"/>
+  <text x="360" y="136" font-size="16" text-anchor="middle" fill="#333">Z2 标题+货币条（y=96~160, h=64）：「神殿商店」+ 神话残片余额 + 商店金概率提示（12%）</text>
+
+  <!-- Z3 圣物货架：3 商品卡 -->
+  <rect x="16" y="180" width="688" height="560" fill="#f0e8d8" stroke="#666"/>
+  <text x="360" y="214" font-size="16" text-anchor="middle" fill="#333">Z3 圣物货架（y=180~740）：3 张商品卡，卡 200×240，横排间距 20，锚点居中</text>
+  <rect x="40" y="240" width="200" height="240" fill="#fff" stroke="#bbb" stroke-width="3"/>
+  <text x="140" y="300" font-size="14" text-anchor="middle" fill="#333">白·断角</text>
+  <text x="140" y="340" font-size="13" text-anchor="middle" fill="#666">icon_relic 128×128</text>
+  <text x="140" y="380" font-size="13" text-anchor="middle" fill="#333">近战伤害 +3</text>
+  <text x="140" y="450" font-size="14" text-anchor="middle" fill="#E8B33C">残片 ×N</text>
+  <rect x="260" y="240" width="200" height="240" fill="#fff" stroke="#35E0D8" stroke-width="3"/>
+  <text x="360" y="300" font-size="14" text-anchor="middle" fill="#333">蓝·双子神像</text>
+  <text x="360" y="340" font-size="13" text-anchor="middle" fill="#666">青霓虹框=稀有</text>
+  <text x="360" y="380" font-size="13" text-anchor="middle" fill="#333">相邻友军分摊 30% 伤害</text>
+  <text x="360" y="450" font-size="14" text-anchor="middle" fill="#E8B33C">残片 ×N</text>
+  <rect x="480" y="240" width="200" height="240" fill="#fff" stroke="#E8B33C" stroke-width="3"/>
+  <text x="580" y="300" font-size="14" text-anchor="middle" fill="#333">金·巴别残砖</text>
+  <text x="580" y="340" font-size="13" text-anchor="middle" fill="#666">圣物金框=传说</text>
+  <text x="580" y="380" font-size="13" text-anchor="middle" fill="#333">首次移动=瞬移任意空格</text>
+  <text x="580" y="450" font-size="14" text-anchor="middle" fill="#E8B33C">残片 ×N</text>
+
+  <!-- Z4 组合预览条 -->
+  <rect x="16" y="760" width="688" height="96" fill="#e0f5f3" stroke="#35E0D8"/>
+  <text x="360" y="800" font-size="15" text-anchor="middle" fill="#333">Z4 组合预览条（y=760~856, h=96）：悬停商品时显示与当前队伍的组合函数词条（与战斗组合面板同款 UI）</text>
+
+  <!-- Z5 操作按钮区 -->
+  <rect x="16" y="872" width="688" height="120" fill="#e8e2d4" stroke="#666"/>
+  <text x="360" y="908" font-size="15" text-anchor="middle" fill="#333">Z5 操作按钮区（y=872~992, h=120）</text>
+  <rect x="80" y="928" width="220" height="56" fill="none" stroke="#666"/>
+  <text x="190" y="964" font-size="15" text-anchor="middle" fill="#333">「离开商店」220×56</text>
+  <rect x="420" y="928" width="220" height="56" fill="none" stroke="#E8B33C" stroke-width="3"/>
+  <text x="530" y="964" font-size="15" text-anchor="middle" fill="#333">「刷新货架（残片×N，-20% 图腾生效）」220×56</text>
+
+  <!-- Z6 换技能槽 -->
+  <rect x="16" y="1012" width="688" height="120" fill="#f0e8d8" stroke="#666"/>
+  <text x="360" y="1050" font-size="15" text-anchor="middle" fill="#333">Z6 换技能槽（y=1012~1132, h=120）：出售技能换残片 / 购买替换技能（icon_skill 64×64 ×当前 3 人）</text>
+
+  <!-- Z7 圣物背包栏 -->
+  <rect x="16" y="1152" width="688" height="64" fill="#efe9dc" stroke="#666"/>
+  <text x="360" y="1192" font-size="14" text-anchor="middle" fill="#333">Z7 已持有圣物栏（y=1152~1216, h=64）：icon_relic 64×64 横排（≥4 蓝档时渎神提示角标闪烁）</text>
+
+  <!-- Z9 顶层：购买确认 -->
+  <rect x="160" y="380" width="400" height="200" fill="none" stroke="#C63D2F" stroke-dasharray="6"/>
+  <text x="360" y="490" font-size="14" text-anchor="middle" fill="#C63D2F">Z9 顶层：购买确认弹窗（居中 400×200，含组合词条预览）</text>
+
+  <text x="360" y="1268" font-size="12" text-anchor="middle" fill="#999">Z序：Z1背景 → Z2货币条 → Z3货架 → Z4组合预览 → Z5操作按钮 → Z6换技能 → Z7背包栏 → Z9弹窗</text>
+</svg>

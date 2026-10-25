@@ -1,0 +1,12 @@
+"gpt-6-astra" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"}
+已完成：`运行时补洞_补丁草案_v0.1.md`
+
+- 覆盖 R1、R3、R10、F-23，包含定位锚点、完整补丁原文、影响范围及复跑清单。
+- 静态校验通过：新增 10 条 AC，预期总数 83；案例与汇总一致；YAML 语法、旧词扫描通过。
+- 未修改主书稿或 `_shared/`；尚未 apply，也未执行运行时验证。
+- `config_error` 扩展及 T2／Schema 依赖已列入待评审事项。
+
+正文计 **11,899 个汉字**，不含代码块及表格标记，英文标识符另计。
+
+DONE::RUNTIME-PATCH::11899
