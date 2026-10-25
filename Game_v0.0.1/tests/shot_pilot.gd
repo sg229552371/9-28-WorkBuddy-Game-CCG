@@ -26,6 +26,10 @@ func _run() -> void:
 		flow.call("_on_char_card_pressed", {"id": "H001"}, Control.new())
 		flow.call("_on_char_card_pressed", {"id": "H002"}, Control.new())
 		await _wait(0.5)
+		# 复现回归：选人屏期间重复收到传送门事件，不应弹回选关
+		EventBus.emit_event("cityPortalEnter", {"portal": "portal_exit"})
+		await _wait(1.5)
+		await _shot("4_still_character.png")
 		_press("开始出战")
 	await _wait(3.5)
 	await _shot("3_battle.png")

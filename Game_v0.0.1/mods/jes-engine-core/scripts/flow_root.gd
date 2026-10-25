@@ -141,6 +141,9 @@ func go_city() -> void:
 
 
 func open_level_select() -> void:
+	# 防重入：已在选关/选人流程中时，重复的传送门事件不再弹回选关
+	if current_screen == "screen-level" or current_screen == "screen-character":
+		return
 	_rebuild_level_grid()
 	selected_hero_ids.clear()
 	visible = true

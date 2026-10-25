@@ -74,6 +74,7 @@ func _update_interaction(dt: float) -> void:
 		if logic.open_panel_id != "":
 			logic.close_panel()
 			_close_panel_ui()
+		_portal_fired = ""   # 走出交互圈后允许下一次传送门触发
 		return
 	var e: Dictionary = logic.entry_by_id(near)
 	var kind: String = str(e.get("kind", "npc"))
@@ -91,7 +92,12 @@ func _update_interaction(dt: float) -> void:
 		if logic.tick_channel(dt):
 			_on_channel_done(near, kind)
 
+var _portal_fired := ""   # 本次进圈已触发的传送门 id（防同圈反复广播）
+
 func _on_channel_done(id: String, kind: String) -> void:
+	if _portal_fired == id:
+		return   # 玩家未出圈：不重复触发（选人屏期间主城仍在跑）
+	_portal_fired = id
 	if kind == "abyss":
 		# 深渊之门：读条完发进入深渊意图（不改 event_bus.gd，只发既有信号）
 		EventBus.emit_event("enter_abyss", {"portal": id})
