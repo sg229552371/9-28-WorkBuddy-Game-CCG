@@ -1,6 +1,4 @@
-## 《巴别回路》战斗屏：_draw 棋盘 + 点选移动 + 技能施放 + 简版敌方 AI。
-## 纯接线 scripts/ 四核心类（BabelBoard/BabelUnit/BabelResolver/BabelTurnManager），
-## systems 目录的敌方 AI/圣物等通过 Callable/数据留口，不在本文件 import。
+## 《巴别回路》战斗屏：_draw 棋盘 + 点选移动 + 8 技能全接线（BabelChiefSystem）+ 完整敌方 AI（BabelEnemyAI）。
 class_name BabelBattle
 extends Node2D
 
@@ -18,6 +16,16 @@ const COLOR_HOVER: Color = Color(1, 1, 1, 0.9)
 const COLOR_SELECT: Color = Color(1, 1, 1, 1)
 const FACING_CYCLE: Array[Vector2i] = [Vector2i(0, 1), Vector2i(1, 0), Vector2i(0, -1), Vector2i(-1, 0)]
 const LOG_LINES_MAX: int = 6
+## 走 BabelChiefSystem 专用分支的技能 id（其余 damage 技能走通用伤害路径）
+const CHIEF_SKILL_IDS: Array[String] = [
+	"SK_OFFER", "SK_REWIND", "SK_COFFIN_WALL", "SK_TIDE",
+	"SK_HOLY_RAIN", "SK_CUT_TONGUE", "SK_SHADOW_SWAP", "SK_BONE_MAUSOLEUM",
+	"SK_PYRE", "SK_COFFIN_CHARGE",
+]
+## 骨仆基础属性
+const BONE_HP: int = 3
+const BONE_MOVE: int = 2
+const BONE_DMG: int = 2
 
 ## 战斗结束（winner: "player" | "enemy"）
 signal battle_finished(winner: String)
@@ -39,8 +47,14 @@ var unit_names: Dictionary = {}
 var unit_dmg: Dictionary = {}
 ## 单位附加数据：unit_id -> 技能 id 列表
 var unit_skills: Dictionary = {}
-## 简版敌方 AI 开关（留 Callable 注入口：敌方回合可被 systems 覆盖）
+## 敌方回合注入口（Callable(unit)；默认用 BabelEnemyAI 完整决策）
 var enemy_turn_hook: Callable = Callable()
+## Boss 突变（holy_repay / divine_wrath），由 babel_main 注入
+var boss_mutation: Dictionary = {}
+## 章节 Boss 的 enemy_id（突变载体），由 babel_main 注入
+var boss_id: String = ""
+## boss_dread 起始层数（每章战斗 +1），由 babel_main 注入
+var boss_dread_stacks: int = 0
 
 var selected: BabelUnit = null
 var mode: String = "idle"
@@ -48,6 +62,18 @@ var pending_skill: Dictionary = {}
 var hover_cell: Vector2i = Vector2i(-1, -1)
 var fire_dmg: int = 5
 var log_lines: PackedStringArray = PackedStringArray()
+## 技能结算系统（8 技能走 execute_skill）
+var chief_sys: BabelChiefSystem = null
+## 敌方完整 AI
+var enemy_ai: BabelEnemyAI = null
+## 尸体格列表（SK_BONE_MAUSOLEUM 召唤素材）
+var corpses: Array[Vector2i] = []
+## 每单位本回合开始位置（SK_REWIND 复位用）：unit_id -> Vector2i
+var round_start_pos: Dictionary = {}
+## 章节 Boss 单位引用（突变效果载体）
+var boss_unit: BabelUnit = null
+## divine_wrath 是否已触发（每场一次）
+var wrath_done: bool = false
 
 var panel: Panel
 var lbl_actor: Label
@@ -61,12 +87,14 @@ var btn_face: Button
 
 
 ## 装配一场战斗：p_team/p_enemies 元素形如
-## {"id": String, "name_cn": String, "hp": int, "move": int, "skills": Array[String](可选), "dmg": int(敌), "shield": int(可选)}
+## {"id": String, "name_cn": String, "hp": int, "move": int, "skills": Array[String](可选), "dmg": int(敌), "shield": int(可选), "traits": Array[String](敌,可选), "params": Dictionary(敌,可选)}
 func setup(p_chapter_label: String, p_team: Array[Dictionary], p_enemies: Array[Dictionary]) -> void:
 	chapter_label = p_chapter_label
 	board = BabelBoard.create_from_cfg()
 	resolver = BabelResolver.create_from_cfg()
 	tm = BabelTurnManager.new(board, resolver)
+	chief_sys = BabelChiefSystem.create_default()
+	enemy_ai = BabelEnemyAI.new()
 	tm.enemy_turn_callback = Callable(self, "_run_enemy_phase")
 	tm.battle_over.connect(_on_battle_over)
 	tm.round_started.connect(_on_round_started)
@@ -82,17 +110,21 @@ func setup(p_chapter_label: String, p_team: Array[Dictionary], p_enemies: Array[
 	var enemy_slots: Array[Vector2i] = [Vector2i(1, 1), Vector2i(4, 0), Vector2i(6, 1), Vector2i(9, 0), Vector2i(10, 1), Vector2i(2, 0), Vector2i(8, 1)]
 	idx = 0
 	for d: Dictionary in p_enemies:
-		var u: BabelUnit = _mk_unit(d, false)
-		var slot: Vector2i = enemy_slots[mini(idx, enemy_slots.size() - 1)]
-		board.place(u, slot)
-		tm.enemies.append(u)
+		var u2: BabelUnit = _mk_unit(d, false)
+		var slot2: Vector2i = enemy_slots[mini(idx, enemy_slots.size() - 1)]
+		board.place(u2, slot2)
+		tm.enemies.append(u2)
 		idx += 1
-	for u: BabelUnit in tm.players:
-		u.hp_changed.connect(_on_unit_hp_changed)
-		u.unit_died.connect(_on_unit_died)
-	for u: BabelUnit in tm.enemies:
-		u.hp_changed.connect(_on_unit_hp_changed)
-		u.unit_died.connect(_on_unit_died)
+	for u3: BabelUnit in tm.players:
+		u3.hp_changed.connect(_on_unit_hp_changed)
+		u3.unit_died.connect(_on_unit_died)
+	for u4: BabelUnit in tm.enemies:
+		u4.hp_changed.connect(_on_unit_hp_changed)
+		u4.unit_died.connect(_on_unit_died)
+	_resolve_boss_unit()
+	for e: BabelUnit in tm.enemies:
+		if BabelEnemyAI.has_trait(e, "boss_dread") and boss_dread_stacks > 0:
+			BabelEnemyAI.add_dread(e, boss_dread_stacks)
 	selected = _first_alive_player()
 	tm.begin_round()
 	_build_panel()
@@ -120,7 +152,37 @@ func _mk_unit(d: Dictionary, is_player: bool) -> BabelUnit:
 		for s: Variant in (sk as Array):
 			skill_list.append(str(s))
 	unit_skills[uid] = skill_list
+	if not is_player:
+		# 敌人 traits/params 装入 state（BabelEnemyAI 按此读取）
+		var traits: Variant = d.get("traits", [])
+		var tl: Array[String] = []
+		if traits is Array:
+			for t: Variant in (traits as Array):
+				tl.append(str(BabelEnemyAI.TRAIT_ALIASES.get(str(t), str(t))))
+		u.state["traits"] = tl
+		var params: Variant = d.get("params", {})
+		if params is Dictionary:
+			u.state["params"] = params
+		u.state["dmg"] = int(d.get("dmg", 0))
+	var extras: Variant = d.get("state", {})
+	if extras is Dictionary:
+		for key: String in (extras as Dictionary).keys():
+			u.state[key] = (extras as Dictionary).get(key)
 	return u
+
+
+## 解析章节 Boss 单位：优先 boss_id 匹配，其次 boss_dread 特征
+func _resolve_boss_unit() -> void:
+	boss_unit = null
+	if boss_id != "":
+		for e: BabelUnit in tm.enemies:
+			if e.enemy_id == boss_id:
+				boss_unit = e
+				return
+	for e2: BabelUnit in tm.enemies:
+		if BabelEnemyAI.has_trait(e2, "boss_dread"):
+			boss_unit = e2
+			return
 
 
 func _build_terrain() -> void:
@@ -211,7 +273,8 @@ func skill_cells(u: BabelUnit, skill: Dictionary, target: Vector2i) -> Array[Vec
 	return board.cells_in_shape(shape, target, dir, rng)
 
 
-## 施放技能（目标格已合法）；返回是否成功
+## 施放技能（目标格已合法）；返回是否成功。
+## 8 个技能 + 火刑柱/扛棺冲锋走 BabelChiefSystem.execute_skill；其余 damage 技能走通用伤害。
 func cast_skill(u: BabelUnit, skill: Dictionary, target: Vector2i) -> bool:
 	if u == null or not u.can_act() or tm.phase != "player":
 		return false
@@ -219,24 +282,109 @@ func cast_skill(u: BabelUnit, skill: Dictionary, target: Vector2i) -> bool:
 		return false
 	if int(u.cds.get(str(skill.get("id", "")), 0)) > 0:
 		return false
-	var cells: Array[Vector2i] = skill_cells(u, skill, target)
-	if not tm.try_cast(u, skill, cells):
+	if not tm.try_cast(u, skill, [target]):
 		return false
 	var sid: String = str(skill.get("id", ""))
 	_log("%s 施放 [%s]" % [unit_names.get(u.unit_id, u.unit_id), str(skill.get("name_cn", sid))])
 	_spawn_float(u.pos, str(skill.get("name_cn", sid)), Color("ffd166"))
-	var tags: Variant = skill.get("tags", [])
-	var value: int = int(skill.get("value", 0))
-	if tags is Array and (tags as Array).has("damage") and value > 0:
-		_apply_damage(u, cells, value)
-	elif sid == "SK_PYRE":
-		var burn: int = int((skill.get("params", {}) as Dictionary).get("burn_dmg", 5))
-		fire_dmg = burn
-		board.set_terrain(target, "fire")
-		_log("目标格燃起火格（每回合 %d 伤害）" % [burn])
+	var options: Dictionary = {"corpses": corpses.size()}
+	if u.state.has("relic_sacrifice_redirect"):
+		options["sacrifice_redirect"] = true
+	if CHIEF_SKILL_IDS.has(sid):
+		if sid == "SK_PYRE":
+			var pm: Variant = skill.get("params")
+			if pm is Dictionary:
+				fire_dmg = int((pm as Dictionary).get("burn_dmg", fire_dmg))
+		var results: Array[Dictionary] = chief_sys.execute_skill(skill, u, [target] as Array, board, resolver, tm.players, options)
+		_apply_skill_results(sid, results)
+	else:
+		var tags: Variant = skill.get("tags", [])
+		var value: int = int(skill.get("value", 0))
+		if tags is Array and (tags as Array).has("damage") and value > 0:
+			_apply_damage(u, skill_cells(u, skill, target), value)
 	_refresh_panel()
 	queue_redraw()
 	return true
+
+
+## execute_skill 返回结果落地：回溯复位 / 骨仆召唤 / 日志
+func _apply_skill_results(_sid: String, results: Array[Dictionary]) -> void:
+	for r: Dictionary in results:
+		var action: String = str(r.get("action", ""))
+		match action:
+			"rewind":
+				var v: Variant = r.get("unit")
+				if v is BabelUnit:
+					_rewind_unit(v as BabelUnit)
+			"summon":
+				_spawn_bone_servants()
+			"damage":
+				var res_list: Variant = r.get("results")
+				if res_list is Array:
+					for d: Variant in (res_list as Array):
+						if d is Dictionary and bool((d as Dictionary).get("killed", false)):
+							_log("命中目标被击破")
+			"tide":
+				var pushed: Variant = r.get("pushed")
+				if pushed is Array:
+					for p: Variant in (pushed as Array):
+						if p is Dictionary:
+							var pd: Dictionary = p as Dictionary
+							var pu: Variant = pd.get("unit")
+							if pu is BabelUnit:
+								_log("潮涌推动 %s → %s" % [unit_names.get((pu as BabelUnit).unit_id, "?"), str(pd.get("to", ""))])
+			"coffin_wall":
+				_log("棺墙铺就 %d 格掩体（HP %d）" % [(r.get("cells") as Array).size(), int(r.get("hp", 0))])
+			"holy_rain":
+				_log("圣雨浸湿 %d 名敌人（后续受击 +3）" % [(r.get("units") as Array).size()])
+			"silence":
+				var silenced: BabelUnit = r.get("unit") as BabelUnit
+				_log("%s 被沉默 %d 回合" % [unit_names.get(silenced.unit_id, silenced.unit_id), int(r.get("rounds", 0))])
+			"shadow_swap":
+				if bool(r.get("ok", false)):
+					_log("影替换位完成，双方 +5 盾")
+			"offer":
+				if bool(r.get("redirected", false)):
+					_log("献祭转向敌方全体")
+				else:
+					_log("献祭：自损 %d，全队攻击 +%d" % [int(r.get("self_loss", 0)), int(r.get("team_add", 0))])
+			"terrain_fire":
+				_log("目标格燃起火格")
+			_:
+				pass
+
+
+## SK_REWIND：单位回到本回合开始位置并重置行动
+func _rewind_unit(u: BabelUnit) -> void:
+	var sp: Variant = round_start_pos.get(u.unit_id, u.pos)
+	if sp is Vector2i and board.in_bounds(sp as Vector2i) and board.unit_at(sp as Vector2i) == null:
+		board.move_unit(u, sp as Vector2i)
+	u.acted = false
+	_log("%s 回溯到回合开始位置 %s" % [unit_names.get(u.unit_id, u.unit_id), str(u.pos)])
+
+
+## SK_BONE_MAUSOLEUM：每具尸体生成 1 个 3HP 骨仆（我方召唤单位，可移动可攻击）
+func _spawn_bone_servants() -> void:
+	var n: int = corpses.size()
+	for i: int in range(n):
+		var pos: Vector2i = corpses[i]
+		if board.unit_at(pos) != null or not board.in_bounds(pos):
+			continue
+		var bone: BabelUnit = BabelUnit.new("bone_%d_%d" % [tm.round_idx, i], true)
+		bone.max_hp = BONE_HP
+		bone.hp = BONE_HP
+		bone.move_max = BONE_MOVE
+		bone.move_left = BONE_MOVE
+		bone.chief_id = ""
+		board.place(bone, pos)
+		tm.players.append(bone)
+		bone.hp_changed.connect(_on_unit_hp_changed)
+		bone.unit_died.connect(_on_unit_died)
+		unit_names[bone.unit_id] = "骨仆"
+		unit_dmg[bone.unit_id] = BONE_DMG
+		unit_skills[bone.unit_id] = [] as Array[String]
+		_log("骨仆自尸堆中站起（HP %d）" % [BONE_HP])
+	corpses.clear()
 
 
 func _apply_damage(caster: BabelUnit, cells: Array[Vector2i], base: int) -> void:
@@ -247,7 +395,12 @@ func _apply_damage(caster: BabelUnit, cells: Array[Vector2i], base: int) -> void
 			if t.is_player == caster.is_player:
 				continue
 			var bonus: int = int(caster.state.get("atk_bonus", 0))
-			var res: Dictionary = resolver.resolve_damage(caster, t, base + bonus, board)
+			var dmg: int = base + bonus
+			dmg = int(round(float(dmg) * chief_sys.damage_bonus(caster, t, board)))
+			# front_block：正面减伤敌人（玩家攻击结算时乘区）
+			if not t.is_player:
+				dmg = maxi(int(round(float(dmg) * BabelEnemyAI.front_block_mul(t))), 1)
+			var res: Dictionary = resolver.resolve_damage(caster, t, dmg, board)
 			_spawn_float(t.pos, str(int(res.get("after_facing", 0))), Color("ff6b6b"))
 			if bool(res.get("killed", false)):
 				_log("%s 被击破" % [unit_names.get(t.unit_id, t.unit_id)])
@@ -271,7 +424,7 @@ func advance_actor() -> void:
 
 func _next_unacted_player() -> BabelUnit:
 	for u: BabelUnit in tm.players:
-		if u.alive and not u.acted:
+		if u.alive and not u.acted and int(u.state.get("stunned_rounds", 0)) == 0:
 			return u
 	return null
 
@@ -296,7 +449,7 @@ func _nearest_player(from: Vector2i) -> BabelUnit:
 	return best
 
 
-## 简版敌方 AI：贪心走近最近玩家，贴身则攻击。每步移动合法（空格+界内+耗移动力）。
+## 简版敌方 AI（兼容保留）：贪心走近最近玩家，贴身则攻击。
 func enemy_ai_step(e: BabelUnit) -> void:
 	var target: BabelUnit = _nearest_player(e.pos)
 	if target == null:
@@ -327,24 +480,116 @@ func enemy_ai_step(e: BabelUnit) -> void:
 	queue_redraw()
 
 
-## 敌方回合（BabelTurnManager.enemy_turn_callback 注入点；systems 就绪后可整体替换为 enemy_turn_hook）
+## 完整敌方 AI：BabelEnemyAI.decide_action 决策并落地
+## （移动/AoE/光环/拉人/召唤/震退在 decide 内执行；attack/aoe/summon 在此结算）。每步 _log 保证可读。
+func _execute_enemy_ai(e: BabelUnit) -> void:
+	var plan: Dictionary = enemy_ai.decide_action(e, board, tm.players)
+	var action: String = str(plan.get("action", "wait"))
+	match action:
+		"attack":
+			var t: Variant = plan.get("target")
+			if t is BabelUnit:
+				var target: BabelUnit = t as BabelUnit
+				var dmg: int = int(plan.get("dmg", 0))
+				dmg += BabelEnemyAI.backstab_bonus(e)
+				if BabelEnemyAI.has_trait(e, "boss_dread"):
+					dmg = BabelEnemyAI.boss_damage(e)
+				var res: Dictionary = resolver.resolve_damage(e, target, dmg, board)
+				_spawn_float(target.pos, str(int(res.get("after_facing", 0))), Color("ff6b6b"))
+				_log("%s 攻击 %s（%d 伤）" % [unit_names.get(e.unit_id, e.unit_id), unit_names.get(target.unit_id, target.unit_id), int(res.get("after_facing", 0))])
+		"aoe":
+			var center_dmg: int = int(plan.get("center_dmg", 0))
+			var edge_dmg: int = int(plan.get("edge_dmg", 0))
+			var cells: Variant = plan.get("cells")
+			if cells is Array:
+				for c: Variant in (cells as Array):
+					if not (c is Vector2i):
+						continue
+					var cell: Vector2i = c as Vector2i
+					var v: Variant = board.unit_at(cell)
+					if v is BabelUnit and (v as BabelUnit).is_player and (v as BabelUnit).alive:
+						var dmg2: int = center_dmg if cell == e.pos else edge_dmg
+						if dmg2 > 0:
+							resolver.resolve_damage(e, v as BabelUnit, dmg2, board)
+				_log("%s 释放 AoE（中心 %d / 外圈 %d）" % [unit_names.get(e.unit_id, e.unit_id), center_dmg, edge_dmg])
+		"summon":
+			var spec: Variant = plan.get("unit")
+			if spec is Dictionary:
+				_spawn_enemy_summon(e, spec as Dictionary)
+		"pull":
+			_log("%s 拉拽 %s" % [unit_names.get(e.unit_id, e.unit_id), unit_names.get((plan.get("unit") as BabelUnit).unit_id, "?")])
+		"shockwave":
+			_log("%s 鸣钟震退 %d 个单位" % [unit_names.get(e.unit_id, e.unit_id), (plan.get("pushed") as Array).size()])
+		"aura_shield":
+			_log("%s 光环加持 %d 名友军护盾" % [unit_names.get(e.unit_id, e.unit_id), (plan.get("targets") as Array).size()])
+		_:
+			_log("%s 待命" % [unit_names.get(e.unit_id, e.unit_id)])
+	queue_redraw()
+
+
+## 敌方召唤落地：在计划格生成敌人单位并入队
+func _spawn_enemy_summon(caster: BabelUnit, spec: Dictionary) -> void:
+	var pos_v: Variant = spec.get("pos", Vector2i(-999, -999))
+	if not (pos_v is Vector2i):
+		return
+	var pos: Vector2i = pos_v as Vector2i
+	if not board.in_bounds(pos) or board.unit_at(pos) != null:
+		return
+	var uid: String = str(spec.get("id", "EN01")) + "_s%d" % [tm.round_idx]
+	var u: BabelUnit = BabelUnit.new(uid, false)
+	u.enemy_id = str(spec.get("id", "EN01"))
+	u.max_hp = int(spec.get("hp", 6))
+	u.hp = u.max_hp
+	u.move_max = 2
+	u.move_left = 2
+	u.state["traits"] = [] as Array[String]
+	u.state["params"] = {}
+	u.state["dmg"] = 2
+	board.place(u, pos)
+	tm.enemies.append(u)
+	u.hp_changed.connect(_on_unit_hp_changed)
+	u.unit_died.connect(_on_unit_died)
+	unit_names[uid] = "召唤物·" + u.enemy_id
+	unit_dmg[uid] = 2
+	unit_skills[uid] = [] as Array[String]
+	_log("%s 召唤了 %s" % [unit_names.get(caster.unit_id, caster.unit_id), unit_names[uid]])
+
+
+## 敌方回合（BabelTurnManager.enemy_turn_callback 注入点）
 func _run_enemy_phase() -> void:
 	for e: BabelUnit in tm.enemies:
-		if e.alive and enemy_turn_hook.is_valid():
+		if not e.alive:
+			continue
+		if enemy_turn_hook.is_valid():
 			enemy_turn_hook.call(e)
-		elif e.alive:
-			enemy_ai_step(e)
+		else:
+			_execute_enemy_ai(e)
 
 
 func _on_round_started(idx: int) -> void:
 	_log("回合 %d 开始" % [idx])
+	# 记录回合开始位置（SK_REWIND 复位基准）
 	for u: BabelUnit in tm.players:
-		if u.alive and board.terrain_at(u.pos) == "fire":
-			var res: Dictionary = resolver.resolve_damage(null, u, fire_dmg, board)
-			_spawn_float(u.pos, str(int(res.get("after_facing", 0))), Color("e76f51"))
-	for u: BabelUnit in tm.enemies:
-		if u.alive and board.terrain_at(u.pos) == "fire":
-			resolver.resolve_damage(null, u, fire_dmg, board)
+		round_start_pos[u.unit_id] = u.pos
+	for e: BabelUnit in tm.enemies:
+		round_start_pos[e.unit_id] = e.pos
+	# 火格持续伤害
+	for u2: BabelUnit in tm.players:
+		if u2.alive and board.terrain_at(u2.pos) == "fire":
+			var res: Dictionary = resolver.resolve_damage(null, u2, fire_dmg, board)
+			_spawn_float(u2.pos, str(int(res.get("after_facing", 0))), Color("e76f51"))
+	for e2: BabelUnit in tm.enemies:
+		if e2.alive and board.terrain_at(e2.pos) == "fire":
+			resolver.resolve_damage(null, e2, fire_dmg, board)
+	# Boss 突变：圣偿（每 interval 回合回复比例 HP）
+	if boss_unit != null and boss_unit.alive and str(boss_mutation.get("type", "")) == "holy_repay":
+		var pm: Variant = boss_mutation.get("params")
+		if pm is Dictionary:
+			var interval: int = int((pm as Dictionary).get("interval_rounds", 5))
+			if interval > 0 and idx % interval == 0:
+				var heal: int = int(ceil(float(boss_unit.max_hp) * float((pm as Dictionary).get("heal_ratio", 0.05))))
+				boss_unit.apply_hp(heal)
+				_log("圣偿：%s 回复 %d HP" % [unit_names.get(boss_unit.unit_id, boss_unit.unit_id), heal])
 
 
 func _on_battle_over(winner: String) -> void:
@@ -357,6 +602,18 @@ func _on_unit_hp_changed(unit: Variant, delta: int) -> void:
 		var u: BabelUnit = unit as BabelUnit
 		if delta < 0:
 			_log("%s 受 %d 伤（HP %d）" % [unit_names.get(u.unit_id, u.unit_id), -delta, u.hp])
+		# Boss 突变：神怒（首次跌破阈值对全体玩家 AoE）
+		if u == boss_unit and not wrath_done and u.alive and str(boss_mutation.get("type", "")) == "divine_wrath":
+			var pm: Variant = boss_mutation.get("params")
+			if pm is Dictionary:
+				var threshold: float = float((pm as Dictionary).get("threshold", 0.5))
+				if float(u.hp) <= float(u.max_hp) * threshold:
+					wrath_done = true
+					var aoe: int = int((pm as Dictionary).get("aoe_dmg", 12))
+					_log("神怒降临：%s 对全队释放 %d 点 AoE" % [unit_names.get(u.unit_id, u.unit_id), aoe])
+					for p: BabelUnit in tm.players:
+						if p.alive:
+							resolver.resolve_damage(u, p, aoe, board)
 	_refresh_panel()
 
 
@@ -364,9 +621,17 @@ func _on_unit_died(unit: Variant) -> void:
 	if unit is BabelUnit:
 		var u: BabelUnit = unit as BabelUnit
 		_log("%s 阵亡" % [unit_names.get(u.unit_id, u.unit_id)])
+		# 尸体登记（SK_BONE_MAUSOLEUM 素材）
+		if board.in_bounds(u.pos) and not corpses.has(u.pos):
+			corpses.append(u.pos)
 		if not u.is_player:
 			kills += 1
 			kills_changed.emit(kills)
+		# smoke 特征：死亡留烟格
+		for cell: Dictionary in BabelEnemyAI.on_death_cells(u):
+			var pos_v: Variant = cell.get("pos")
+			if pos_v is Vector2i:
+				board.set_terrain(pos_v as Vector2i, "fire", int(cell.get("dmg", 2)))
 	queue_redraw()
 
 
@@ -468,10 +733,10 @@ func _draw() -> void:
 					targets.append(p)
 	for y: int in range(board.rows):
 		for x: int in range(board.cols):
-			var p: Vector2i = Vector2i(x, y)
+			var p2: Vector2i = Vector2i(x, y)
 			var rect: Rect2 = Rect2(BOARD_ORIGIN + Vector2(x * TILE, y * TILE), Vector2(TILE - 2, TILE - 2))
 			var col: Color = COLOR_BOARD
-			var terr: String = board.terrain_at(p)
+			var terr: String = board.terrain_at(p2)
 			if terr == "fire":
 				col = COLOR_FIRE
 			elif terr == "water":
@@ -479,13 +744,13 @@ func _draw() -> void:
 			elif terr == "cover":
 				col = COLOR_COVER
 			draw_rect(rect, col)
-			if reach.has(p):
+			if reach.has(p2):
 				draw_rect(rect, COLOR_REACH)
-			if targets.has(p):
+			if targets.has(p2):
 				draw_rect(rect.grow(-4), COLOR_TARGET, false, 3)
-			if p == hover_cell:
+			if p2 == hover_cell:
 				draw_rect(rect, COLOR_HOVER, false, 2)
-			var v: Variant = board.unit_at(p)
+			var v: Variant = board.unit_at(p2)
 			if v is BabelUnit:
 				var u: BabelUnit = v as BabelUnit
 				_draw_unit(u, rect)
@@ -587,10 +852,7 @@ func _refresh_panel() -> void:
 				if skill is Dictionary:
 					var sd: Dictionary = skill as Dictionary
 					var cd_left: int = int(selected.cds.get(str(sd.get("id", "")), 0))
-					if not is_skill_supported(sd):
-						b.text = "%s [待接线]" % str(sd.get("name_cn", ""))
-						b.disabled = true
-					elif cd_left > 0:
+					if cd_left > 0:
 						b.text = "%s 冷却 %d" % [str(sd.get("name_cn", "")), cd_left]
 						b.disabled = true
 					else:
