@@ -1,0 +1,181 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B002-关闭方式 · Esc / 回车 / 点黑幕 / 点 ✕ 四宫格</title>
+
+  <defs>
+    <linearGradient id="qtBg" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#131c2c"/>
+      <stop offset="0.55" stop-color="#101725"/>
+      <stop offset="1" stop-color="#0b1119"/>
+    </linearGradient>
+    <linearGradient id="qtKey" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#313746"/>
+      <stop offset="1" stop-color="#232833"/>
+    </linearGradient>
+    <linearGradient id="qtKey2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a4150"/>
+      <stop offset="1" stop-color="#2a3040"/>
+    </linearGradient>
+    <filter id="qtShadow" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+    <filter id="qtKeyShadow" x="-30%" y="-60%" width="160%" height="260%">
+      <feDropShadow dx="0" dy="4" stdDeviation="2" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <filter id="qtClickGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="#e8b33c" flood-opacity="0.8"/>
+    </filter>
+    <marker id="qtArrowHead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0 0 L6 3 L0 6 Z" fill="#9fe0af"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#qtBg)"/>
+
+  <text x="56" y="44" font-size="15" font-weight="700" fill="#e8b33c">退出确认框 · 四种关闭方式（001/B004 第三节口径）</text>
+  <text x="56" y="66" font-size="12" fill="#8a93a5">每种方式的去处都一样：<tspan fill="#9fe0af">关掉框、回主菜单</tspan>，绝不关闭游戏。默认动作永远是「继续」。</text>
+  <line x1="56" y1="78" x2="1224" y2="78" stroke="#2a2f3a"/>
+
+  <!-- ============================ 宫格 1：Esc ============================ -->
+  <g>
+    <rect x="56" y="96" width="568" height="266" rx="10" fill="#1d2027" stroke="#252a34" stroke-width="1.5"/>
+    <text x="80" y="126" font-size="13" font-weight="700" fill="#e8b33c">① 按 Esc 键</text>
+
+    <!-- 键盘 -->
+    <g transform="translate(120 208)" filter="url(#qtKeyShadow)">
+      <rect x="0" y="0" width="72" height="56" rx="9" fill="url(#qtKey2)" stroke="#4d5668" stroke-width="1.5"/>
+      <rect x="6" y="6" width="60" height="40" rx="5" fill="none" stroke="#5a6572" opacity="0.6"/>
+      <text x="36" y="34" font-size="17" font-weight="700" fill="#e8b33c" text-anchor="middle">Esc</text>
+    </g>
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3" fill="none">
+      <path d="M156 236 L156 272 M100 272 L212 272"/>
+    </g>
+    <text x="156" y="290" font-size="10.5" fill="#e8b33c" text-anchor="middle">72 × 56</text>
+
+    <text x="236" y="176" font-size="12" fill="#c9ced9">按下 Esc → 触发「继续」</text>
+    <g font-size="11.5" fill="#8a93a5">
+      <text x="236" y="200">绑定：_unhandled_input / KEY_ESCAPE</text>
+      <text x="236" y="220">只在 screen-goodbye 生效</text>
+      <text x="236" y="240">长按不连发（event.echo 忽略）</text>
+    </g>
+    <path d="M400 236 L444 236" stroke="#9fe0af" stroke-width="1.5" marker-end="url(#qtArrowHead)"/>
+    <g>
+      <rect x="450" y="216" width="150" height="40" rx="8" fill="#2e4a36" stroke="#4a7a56"/>
+      <text x="525" y="241" font-size="12.5" fill="#9fe0af" text-anchor="middle">= 继续（安全默认）</text>
+    </g>
+  </g>
+
+  <!-- ============================ 宫格 2：回车 ============================ -->
+  <g>
+    <rect x="656" y="96" width="568" height="266" rx="10" fill="#1d2027" stroke="#252a34" stroke-width="1.5"/>
+    <text x="680" y="126" font-size="13" font-weight="700" fill="#e8b33c">② 按回车键</text>
+
+    <g transform="translate(700 208)" filter="url(#qtKeyShadow)">
+      <rect x="0" y="0" width="96" height="56" rx="9" fill="url(#qtKey2)" stroke="#4d5668" stroke-width="1.5"/>
+      <rect x="8" y="8" width="80" height="40" rx="5" fill="none" stroke="#5a6572" opacity="0.6"/>
+      <text x="52" y="34" font-size="13" font-weight="700" fill="#e8b33c" text-anchor="middle">Enter</text>
+    </g>
+    <!-- 回车符号 -->
+    <g transform="translate(812 236)" stroke="#5a6572" stroke-width="1.6" fill="none" stroke-linecap="round">
+      <path d="M0 -8 L0 8 L18 8"/>
+      <path d="M12 2 L18 8 L12 14"/>
+    </g>
+    <text x="748" y="290" font-size="10.5" fill="#e8b33c" text-anchor="middle">96 × 56</text>
+
+    <text x="856" y="176" font-size="12" fill="#c9ced9">回车 = 触发当前焦点按钮</text>
+    <g font-size="11.5" fill="#8a93a5">
+      <text x="856" y="200">焦点默认在「继续」→ 回车即继续</text>
+      <text x="856" y="220">绝不把回车绑到「退出」</text>
+      <text x="856" y="240">Tab 切换焦点时跟随</text>
+    </g>
+    <g>
+      <rect x="1074" y="216" width="130" height="40" rx="8" fill="#2e4a36" stroke="#4a7a56"/>
+      <text x="1139" y="241" font-size="12.5" fill="#9fe0af" text-anchor="middle">= 继续（安全）</text>
+    </g>
+  </g>
+
+  <!-- ============================ 宫格 3：点黑幕 ============================ -->
+  <g>
+    <rect x="56" y="382" width="568" height="240" rx="10" fill="#1d2027" stroke="#252a34" stroke-width="1.5"/>
+    <text x="80" y="412" font-size="13" font-weight="700" fill="#e8b33c">③ 点黑幕空白处</text>
+
+    <!-- 小示意：黑幕 + 弹窗 -->
+    <g>
+      <rect x="80" y="428" width="330" height="176" rx="8" fill="#131c2c" stroke="#2b3240"/>
+      <rect x="80" y="428" width="330" height="176" rx="8" fill="#000000" opacity="0.6"/>
+      <rect x="150" y="470" width="190" height="94" rx="8" fill="#1d2027" stroke="#3a4150"/>
+      <text x="245" y="504" font-size="10" fill="#e2e6ee" text-anchor="middle">确定要退出游戏吗？</text>
+      <rect x="162" y="518" width="80" height="26" rx="5" fill="#e2554f"/>
+      <rect x="250" y="518" width="80" height="26" rx="5" fill="#252a34" stroke="#3a4150"/>
+      <!-- 点击光标 -->
+      <g transform="translate(122 552)">
+        <path d="M0 0 L0 22 L6 16 L10 25 L14 23 L10 14 L18 14 Z" fill="#ffffff" stroke="#131c2c" stroke-width="1.2"/>
+      </g>
+      <g stroke="#e8b33c" stroke-width="1.6" opacity="0.9">
+        <circle cx="122" cy="552" r="18" fill="none" stroke-dasharray="4 4"/>
+      </g>
+    </g>
+    <text x="245" y="624" font-size="10.5" fill="#8a93a5" text-anchor="middle">光标落在弹窗外的黑幕上（命中区 = 全屏减去弹窗）</text>
+
+    <text x="436" y="466" font-size="12" fill="#c9ced9">黑幕本身是可点击的遮罩层</text>
+    <g font-size="11.5" fill="#8a93a5">
+      <text x="436" y="490">点弹窗内部空白：不关闭</text>
+      <text x="436" y="510">点提示文字：不关闭</text>
+      <text x="436" y="530">拖拽拖动到黑幕：不触发</text>
+    </g>
+    <g>
+      <rect x="436" y="546" width="168" height="40" rx="8" fill="#2e4a36" stroke="#4a7a56"/>
+      <text x="520" y="571" font-size="12.5" fill="#9fe0af" text-anchor="middle">= 继续（安全默认）</text>
+    </g>
+  </g>
+
+  <!-- ============================ 宫格 4：点 ✕ ============================ -->
+  <g>
+    <rect x="656" y="382" width="568" height="240" rx="10" fill="#1d2027" stroke="#252a34" stroke-width="1.5"/>
+    <text x="680" y="412" font-size="13" font-weight="700" fill="#e8b33c">④ 点右上角 ✕</text>
+
+    <g>
+      <rect x="680" y="428" width="330" height="176" rx="8" fill="#131c2c" stroke="#2b3240"/>
+      <rect x="680" y="428" width="330" height="176" rx="8" fill="#000000" opacity="0.6"/>
+      <rect x="750" y="452" width="190" height="128" rx="8" fill="#1d2027" stroke="#3a4150"/>
+      <!-- ✕ -->
+      <circle cx="922" cy="470" r="13" fill="#252a34" stroke="#3a4150"/>
+      <path d="M917 465 L927 475 M927 465 L917 475" stroke="#8a93a5" stroke-width="1.6" stroke-linecap="round"/>
+      <g stroke="#e8b33c" stroke-width="1.6" fill="none">
+        <circle cx="932" cy="482" r="14" stroke-dasharray="4 4"/>
+      </g>
+      <text x="845" y="502" font-size="10" fill="#e2e6ee" text-anchor="middle">确定要退出游戏吗？</text>
+      <rect x="762" y="524" width="80" height="26" rx="5" fill="#e2554f"/>
+      <text x="802" y="541" font-size="10" fill="#ffffff" text-anchor="middle">退出</text>
+      <rect x="850" y="524" width="80" height="26" rx="5" fill="#252a34" stroke="#3a4150"/>
+      <text x="890" y="541" font-size="10" fill="#e2e6ee" text-anchor="middle">继续</text>
+      <!-- 光标 -->
+      <g transform="translate(944 494)">
+        <path d="M0 0 L0 20 L5 15 L9 23 L13 21 L9 13 L16 13 Z" fill="#ffffff" stroke="#131c2c" stroke-width="1.1"/>
+      </g>
+      <text x="845" y="624" font-size="10.5" fill="#8a93a5" text-anchor="middle">✕ 命中区 28×28（视觉 26 + 热区外扩），距弹窗右上 16</text>
+    </g>
+
+    <text x="1036" y="466" font-size="12" fill="#c9ced9">✕ 是「关掉框」的意思</text>
+    <g font-size="11.5" fill="#8a93a5">
+      <text x="1036" y="490">不是「退出游戏」的快捷键</text>
+      <text x="1036" y="510">悬停：✕ 变亮 + 背景 #313746</text>
+      <text x="1036" y="530">不可以做成关闭程序的红叉</text>
+    </g>
+    <g>
+      <rect x="1036" y="546" width="168" height="40" rx="8" fill="#2e4a36" stroke="#4a7a56"/>
+      <text x="1120" y="571" font-size="12.5" fill="#9fe0af" text-anchor="middle">= 继续（安全默认）</text>
+    </g>
+  </g>
+
+  <!-- ============================ 底部红字 ============================ -->
+  <g>
+    <rect x="56" y="640" width="1168" height="60" rx="8" fill="#1a1414" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <rect x="56" y="640" width="7" height="60" rx="3" fill="#e2554f"/>
+    <text x="78" y="664" font-size="13" font-weight="700" fill="#ff8a84">⚠ 当前代码 4 种都没有实现；且按 Esc 在其他屏是「关面板」，在退出屏必须专门处理，不能误关游戏</text>
+    <text x="78" y="686" font-size="11.5" fill="#e0a3a3">flow_root.gd 全文件没有 _input / _unhandled_input；battle.gd 391~397 把 Esc 占用为「暂停」，两套输入互不知情 —— 退出屏要单独拦截 Esc，且只回主菜单，绝不 quit()。</text>
+  </g>
+
+  <text x="56" y="714" font-size="10.5" fill="#5d6575">按钮 / Esc / 回车 / 黑幕 / ✕ 五种入口，五种都等于「继续」——这是本屏唯一的安全出口，永远不设「按一下直接退出」的快捷方式。</text>
+
+  <text x="1248" y="714" font-size="10.5" fill="#5d6575" text-anchor="end">B002-关闭方式 / 1280×720 / v1.0</text>
+</svg>

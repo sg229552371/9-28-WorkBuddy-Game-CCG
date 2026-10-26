@@ -1,0 +1,201 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B007 神秘商人 规格图（货架 + 刷新 + 门口与面板说法矛盾）</title>
+
+  <defs>
+    <linearGradient id="ctyBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <linearGradient id="ctyBtn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3444"/>
+      <stop offset="1" stop-color="#222936"/>
+    </linearGradient>
+    <filter id="ctyShadow" x="-30%" y="-40%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="7" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <marker id="ctyArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="ctyArrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e2554f"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#ctyBg)"/>
+  <g stroke="rgba(61,79,107,0.14)" stroke-width="1">
+    <path d="M0 64 H1280 M0 128 H1280 M0 192 H1280 M0 256 H1280 M0 320 H1280 M0 384 H1280 M0 448 H1280 M0 512 H1280 M0 576 H1280 M0 640 H1280 M0 704 H1280"/>
+    <path d="M64 0 V720 M128 0 V720 M192 0 V720 M256 0 V720 M320 0 V720 M384 0 V720 M448 0 V720 M512 0 V720 M576 0 V720 M640 0 V720 M704 0 V720 M768 0 V720 M832 0 V720 M896 0 V720 M960 0 V720 M1024 0 V720 M1088 0 V720 M1152 0 V720 M1216 0 V720"/>
+  </g>
+
+  <!-- 页眉 -->
+  <text x="32" y="40" font-size="13" fill="#5d6575" letter-spacing="3">002-主城 / 点位 06</text>
+  <text x="32" y="70" font-size="24" font-weight="700" fill="#ffd76a">神秘商人</text>
+  <text x="32" y="92" font-size="12" fill="#a6b2c7">圈 (179, 595) r 76 橙黄 #e5a04b ◈　｜　面板 420 宽 @ (810, 90)　｜　货架 + 刷新 + 已购入计数</text>
+  <text x="32" y="110" font-size="12" fill="#8d95a5">设定上应是「花小钱赌一把」的地方，和导师的「稳赚」互补；入口说没开张，推门却是真货架</text>
+  <line x1="32" y1="122" x2="1248" y2="122" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- ============ 左：圈（门口） ============ -->
+  <g id="ctyNpc">
+    <text x="32" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">门口 · NPC 圈</text>
+    <circle cx="152" cy="300" r="76" fill="none" stroke="#e5a04b" stroke-width="2" stroke-dasharray="14 12"/>
+    <circle cx="152" cy="300" r="22" fill="rgba(18,28,46,0.9)" stroke="#e5a04b" stroke-width="2.5"/>
+    <text x="152" y="306" font-size="16" fill="#e5a04b" text-anchor="middle">◈</text>
+    <text x="152" y="192" font-size="16" fill="#e8e2c8" text-anchor="middle">神秘商人</text>
+    <text x="152" y="210" font-size="12" fill="#a6b2c7" text-anchor="middle">敬请期待</text>
+    <path d="M152 300 L228 300" stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="190" y="294" font-size="11" fill="#e8b33c" text-anchor="middle">r 76</text>
+
+    <!-- 矛盾标注 -->
+    <path d="M156 214 L262 246" stroke="#e2554f" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ctyArrowRed)"/>
+    <rect x="252" y="238" width="280" height="70" rx="8" fill="#2a1b1b" stroke="#e2554f" stroke-opacity="0.6"/>
+    <text x="266" y="258" font-size="11" font-weight="700" fill="#e2554f">门口写着「敬请期待」</text>
+    <text x="266" y="276" font-size="10.5" fill="#b08a8a">= 还没开放</text>
+    <text x="266" y="296" font-size="10.5" fill="#b08a8a">玩家据此会绕开这个人</text>
+
+    <path d="M152 384 L152 356" stroke="#e5a04b" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="32" y="416" font-size="11" fill="#8d95a5">地图左下角 (179,595)，离出生点有段距离</text>
+    <text x="32" y="434" font-size="11" fill="#8d95a5">位置配「偏门生意」很合适</text>
+    <text x="32" y="456" font-size="11" fill="#5d6575">⚠ 与赛季使者同为符号 ◈，只靠颜色区分</text>
+  </g>
+
+  <line x1="276" y1="140" x2="276" y2="628" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- ============ 中：面板 1:1 ============ -->
+  <g id="ctyPanel">
+    <text x="296" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">面板（1:1，420 × 300）· 现状</text>
+    <g filter="url(#ctyShadow)">
+      <rect x="296" y="160" width="420" height="300" rx="10" fill="#16233a" stroke="#c9a84c" stroke-width="2"/>
+    </g>
+    <text x="314" y="192" font-size="22" font-weight="700" fill="#ffd76a">神秘商人</text>
+    <text x="314" y="214" font-size="13" fill="#a6b2c7">购买搜刮补给 · 每次随机交付</text>
+    <line x1="314" y1="226" x2="698" y2="226" stroke="#c9a84c" stroke-opacity="0.45" stroke-width="1"/>
+
+    <!-- 货架行 -->
+    <g font-size="13" fill="#e8e2c8">
+      <text x="314" y="254">SV_01</text>
+      <text x="314" y="292">SV_02</text>
+      <text x="314" y="330">SV_03</text>
+      <text x="314" y="368">SV_04</text>
+    </g>
+    <g>
+      <rect x="614" y="236" width="84" height="28" rx="5" fill="url(#ctyBtn)" stroke="#c9a84c" stroke-width="1.5"/>
+      <text x="656" y="255" font-size="12" fill="#ffd76a" text-anchor="middle">购买</text>
+      <rect x="614" y="274" width="84" height="28" rx="5" fill="url(#ctyBtn)" stroke="#c9a84c" stroke-width="1.5"/>
+      <text x="656" y="293" font-size="12" fill="#ffd76a" text-anchor="middle">购买</text>
+      <rect x="614" y="312" width="84" height="28" rx="5" fill="url(#ctyBtn)" stroke="#c9a84c" stroke-width="1.5"/>
+      <text x="656" y="331" font-size="12" fill="#ffd76a" text-anchor="middle">购买</text>
+      <rect x="614" y="350" width="84" height="28" rx="5" fill="url(#ctyBtn)" stroke="#c9a84c" stroke-width="1.5"/>
+      <text x="656" y="369" font-size="12" fill="#ffd76a" text-anchor="middle">购买</text>
+    </g>
+    <g stroke="#232a36" stroke-width="1">
+      <path d="M314 264 H698 M314 302 H698 M314 340 H698"/>
+    </g>
+
+    <rect x="314" y="388" width="384" height="32" rx="5" fill="url(#ctyBtn)" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="506" y="409" font-size="13" fill="#e2e6ee" text-anchor="middle">刷新货架</text>
+
+    <text x="314" y="444" font-size="14" font-weight="700" fill="#ffd76a">已购入 2 件</text>
+
+    <!-- 内部编号标注 -->
+    <path d="M356 250 L406 218" stroke="#e2554f" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#ctyArrowRed)"/>
+    <text x="414" y="214" font-size="10.5" fill="#e2554f">这里显示的是内部编号，不是商品名</text>
+
+    <!-- 尺寸 -->
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3">
+      <path d="M296 136 H716" marker-start="url(#ctyArrow)" marker-end="url(#ctyArrow)"/>
+    </g>
+    <text x="506" y="132" font-size="11" fill="#e8b33c" text-anchor="middle">420</text>
+    <text x="730" y="256" font-size="10.5" fill="#8d95a5">行高 38　按钮 84 × 28</text>
+    <text x="730" y="274" font-size="10.5" fill="#8d95a5">刷新按钮 384 × 32</text>
+  </g>
+
+  <!-- ============ 中下：建议版（商品名 + 价格） ============ -->
+  <g id="ctyPanelFixed">
+    <text x="296" y="492" font-size="12" fill="#7de08a" letter-spacing="1">建议版（改为商品名 + 价格，1:1）</text>
+    <rect x="296" y="502" width="420" height="126" rx="10" fill="#16233a" stroke="#7de08a" stroke-opacity="0.5" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <g font-size="12.5" fill="#e8e2c8">
+      <text x="314" y="528">止血草 ×3</text>
+      <text x="314" y="562">火油瓶 ×1</text>
+      <text x="314" y="596">铁皮护符 ×1</text>
+    </g>
+    <g font-size="12" fill="#ffd76a">
+      <text x="512" y="528">◆60</text>
+      <text x="512" y="562">◆140</text>
+      <text x="512" y="596">◆220</text>
+    </g>
+    <g>
+      <rect x="614" y="512" width="84" height="26" rx="5" fill="url(#ctyBtn)" stroke="#c9a84c" stroke-width="1.5"/>
+      <text x="656" y="530" font-size="12" fill="#ffd76a" text-anchor="middle">购买</text>
+      <rect x="614" y="546" width="84" height="26" rx="5" fill="url(#ctyBtn)" stroke="#c9a84c" stroke-width="1.5"/>
+      <text x="656" y="564" font-size="12" fill="#ffd76a" text-anchor="middle">购买</text>
+      <rect x="614" y="580" width="84" height="26" rx="5" fill="url(#ctyBtn)" stroke="#c9a84c" stroke-width="1.5"/>
+      <text x="656" y="598" font-size="12" fill="#ffd76a" text-anchor="middle">购买</text>
+    </g>
+    <text x="314" y="618" font-size="10" fill="#5d6575">价格必须在点之前就写出来：主城不设确认框</text>
+  </g>
+
+  <line x1="740" y1="140" x2="740" y2="628" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- ============ 右：矛盾 + 行为 + 问题 ============ -->
+  <g id="ctyRight">
+    <text x="760" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">同一扇门的两句话（自相矛盾）</text>
+
+    <rect x="760" y="162" width="230" height="96" rx="8" fill="#101823" stroke="#e5a04b" stroke-opacity="0.5"/>
+    <text x="776" y="182" font-size="10.5" fill="#8d95a5">圈上 · 副标题</text>
+    <text x="776" y="208" font-size="16" fill="#e8e2c8">神秘商人</text>
+    <text x="776" y="230" font-size="12" fill="#a6b2c7">敬请期待</text>
+    <text x="776" y="250" font-size="10" fill="#5d6575">= 还没开放</text>
+
+    <rect x="1018" y="162" width="230" height="96" rx="8" fill="#101823" stroke="#c9a84c" stroke-opacity="0.5"/>
+    <text x="1034" y="182" font-size="10.5" fill="#8d95a5">面板 · 副标题</text>
+    <text x="1034" y="208" font-size="16" fill="#ffd76a">神秘商人</text>
+    <text x="1034" y="230" font-size="12" fill="#a6b2c7">购买搜刮补给 · 每次随机交付</text>
+    <text x="1034" y="250" font-size="10" fill="#5d6575">= 已经在做生意</text>
+
+    <g stroke="#e2554f" stroke-width="1.4" stroke-dasharray="5 3">
+      <path d="M996 210 H1012" marker-end="url(#ctyArrowRed)"/>
+    </g>
+    <text x="1004" y="286" font-size="12.5" font-weight="700" fill="#e2554f" text-anchor="middle">≠</text>
+    <text x="760" y="286" font-size="11.5" fill="#e2554f">门口挂「未开张」，推门却发现已在营业 —— 必须在两者之间选一个</text>
+    <text x="760" y="304" font-size="10.5" fill="#5d6575">建议：要么把副标题改成真话（如「搜刮补给」），要么门后先清空。</text>
+
+    <line x1="760" y1="318" x2="1248" y2="318" stroke="#2b3240"/>
+
+    <text x="760" y="340" font-size="12" fill="#e8b33c" letter-spacing="1">点「购买」以后</text>
+    <g font-size="10.5">
+      <rect x="760" y="350" width="86" height="24" rx="4" fill="#16233a" stroke="#2b3440"/>
+      <text x="803" y="366" fill="#e8e2c8" text-anchor="middle">按编号查货</text>
+      <path d="M850 362 H864" stroke="#e8b33c" stroke-width="1.2" marker-end="url(#ctyArrow)"/>
+      <rect x="868" y="350" width="66" height="24" rx="4" fill="#16233a" stroke="#2b3440"/>
+      <text x="901" y="366" fill="#e8e2c8" text-anchor="middle">查结晶</text>
+      <path d="M938 362 H952" stroke="#e8b33c" stroke-width="1.2" marker-end="url(#ctyArrow)"/>
+      <rect x="956" y="350" width="92" height="24" rx="4" fill="#16233a" stroke="#2b3440"/>
+      <text x="1002" y="366" fill="#e8e2c8" text-anchor="middle">扣钱 + 入背包</text>
+      <path d="M1052 362 H1066" stroke="#e8b33c" stroke-width="1.2" marker-end="url(#ctyArrow)"/>
+      <rect x="1070" y="350" width="94" height="24" rx="4" fill="#16233a" stroke="#c9a84c"/>
+      <text x="1117" y="366" fill="#ffd76a" text-anchor="middle">已购入 +1</text>
+    </g>
+    <text x="760" y="392" font-size="10.5" fill="#8d95a5">全程 &lt; 0.1 秒；买到的进「背包」，不自动穿，不直接进战斗</text>
+
+    <line x1="760" y1="406" x2="1248" y2="406" stroke="#2b3240"/>
+
+    <text x="760" y="428" font-size="12" fill="#e8b33c" letter-spacing="1">已知问题（一句话：表面最热闹、底下最空）</text>
+    <g font-size="10.5" fill="#b08a8a">
+      <text x="760" y="448">· 货架显示内部编号 SV_01 —— 玩家看不懂自己在买什么</text>
+      <text x="760" y="466">· 「刷新货架」是假的：只重掷随机数，列表来自固定清单遍历</text>
+      <text x="760" y="484">· 没有价格：点之前不知道花多少</text>
+      <text x="760" y="502">· 没有售罄：同一行可无限买；没有背包满的检查</text>
+      <text x="760" y="520">· 结晶不足时按钮仍亮，点了只记日志</text>
+      <text x="760" y="538">· 免费无限刷新 → 「随机」失去意义，可刷到满意为止</text>
+    </g>
+
+    <!-- 规格速查 -->
+    <rect x="760" y="552" width="488" height="76" rx="10" fill="#0d1017" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="776" y="572" font-size="12" font-weight="700" fill="#e8b33c">规格速查</text>
+    <text x="776" y="590" font-size="10.5" fill="#a6b2c7">面板 420 自动高 @ (810,90)　标题 22 #ffd76a　副标题 13 #a6b2c7</text>
+    <text x="776" y="606" font-size="10.5" fill="#a6b2c7">货架行高 38　购买按钮 84×28 rx5　刷新 384×32　「已购入 N 件」14 粗 #ffd76a</text>
+    <text x="776" y="622" font-size="10.5" fill="#a6b2c7">圈 #e5a04b r76 ◈　面板底 #16233a　边框 #c9a84c 2px　rx 10</text>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B007-神秘商人 / 1280×720 / v1.0</text>
+</svg>

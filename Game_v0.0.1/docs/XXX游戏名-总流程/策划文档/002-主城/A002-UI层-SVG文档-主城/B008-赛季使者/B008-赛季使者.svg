@@ -1,0 +1,185 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B008 赛季使者 规格图（空壳面板 + 将来的虚框草图）</title>
+
+  <defs>
+    <linearGradient id="ctyBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <filter id="ctyShadow" x="-30%" y="-40%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="7" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <marker id="ctyArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="ctyArrowGray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5d6575"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#ctyBg)"/>
+  <g stroke="rgba(61,79,107,0.14)" stroke-width="1">
+    <path d="M0 64 H1280 M0 128 H1280 M0 192 H1280 M0 256 H1280 M0 320 H1280 M0 384 H1280 M0 448 H1280 M0 512 H1280 M0 576 H1280 M0 640 H1280 M0 704 H1280"/>
+    <path d="M64 0 V720 M128 0 V720 M192 0 V720 M256 0 V720 M320 0 V720 M384 0 V720 M448 0 V720 M512 0 V720 M576 0 V720 M640 0 V720 M704 0 V720 M768 0 V720 M832 0 V720 M896 0 V720 M960 0 V720 M1024 0 V720 M1088 0 V720 M1152 0 V720 M1216 0 V720"/>
+  </g>
+
+  <!-- 页眉 -->
+  <text x="32" y="40" font-size="13" fill="#5d6575" letter-spacing="3">002-主城 / 点位 07</text>
+  <text x="32" y="70" font-size="24" font-weight="700" fill="#ffd76a">赛季使者</text>
+  <text x="32" y="92" font-size="12" fill="#a6b2c7">圈 (870, 595) r 76 亮蓝 #4da3ff ◈　｜　面板 420 宽 @ (810, 90)　｜　面板内无任何可点元素</text>
+  <text x="32" y="110" font-size="12" fill="#8d95a5">主城唯一一个完全没有功能的点位：走过去、弹面板、只看见一句话、再走开 —— 这一整段路是白走的</text>
+  <line x1="32" y1="122" x2="1248" y2="122" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- ============ 左：圈 ============ -->
+  <g id="ctyNpc">
+    <text x="32" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">门口 · NPC 圈</text>
+    <circle cx="152" cy="286" r="76" fill="none" stroke="#4da3ff" stroke-width="2" stroke-dasharray="14 12"/>
+    <circle cx="152" cy="286" r="22" fill="rgba(18,28,46,0.9)" stroke="#4da3ff" stroke-width="2.5"/>
+    <text x="152" y="292" font-size="16" fill="#4da3ff" text-anchor="middle">◈</text>
+    <text x="152" y="178" font-size="16" fill="#e8e2c8" text-anchor="middle">赛季使者</text>
+    <text x="152" y="196" font-size="12" fill="#a6b2c7" text-anchor="middle">赛季挑战大厅</text>
+    <path d="M152 286 L228 286" stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="190" y="280" font-size="11" fill="#e8b33c" text-anchor="middle">r 76</text>
+
+    <text x="32" y="386" font-size="11" fill="#8d95a5">看起来和能用的 NPC 一样亮 = 问题</text>
+    <text x="32" y="404" font-size="11" fill="#8d95a5">建议：圈变暗灰 + 符号换锁 + 副标题「未开放」</text>
+    <text x="32" y="426" font-size="11" fill="#5d6575">⚠ 与神秘商人同为符号 ◈</text>
+    <text x="32" y="444" font-size="11" fill="#5d6575">⚠ seasonPortal 配置为 null：通往</text>
+    <text x="32" y="460" font-size="11" fill="#5d6575">　赛季大厅的门根本不存在</text>
+    <text x="32" y="482" font-size="11" fill="#5d6575">结论：先摆招牌，后盖房子 —— 连门都没修</text>
+  </g>
+
+  <line x1="252" y1="140" x2="252" y2="628" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- ============ 中：空壳面板（大面积留白） ============ -->
+  <g id="ctyPanel">
+    <text x="272" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">面板（1:1，420 × 300）· 这就是全部内容</text>
+    <g filter="url(#ctyShadow)">
+      <rect x="272" y="160" width="420" height="300" rx="10" fill="#16233a" stroke="#c9a84c" stroke-width="2"/>
+    </g>
+    <text x="290" y="192" font-size="22" font-weight="700" fill="#ffd76a">赛季使者</text>
+    <text x="290" y="214" font-size="13" fill="#a6b2c7">赛季挑战大厅</text>
+    <line x1="290" y1="226" x2="674" y2="226" stroke="#c9a84c" stroke-opacity="0.45" stroke-width="1"/>
+
+    <text x="290" y="254" font-size="13" fill="#e2e6ee">赛季系统尚未开放，敬请期待</text>
+
+    <!-- 大面积留白说明（灰字，不属于界面） -->
+    <text x="290" y="420" font-size="11" fill="#4a5260">（此下 250px 全空：没有按钮、没有列表、没有任何可点的东西）</text>
+    <text x="396" y="300" font-size="10.5" fill="#3a4459" text-anchor="middle">— 空 —</text>
+
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3">
+      <path d="M272 136 H692" marker-start="url(#ctyArrow)" marker-end="url(#ctyArrow)"/>
+      <path d="M700 160 V460" marker-start="url(#ctyArrow)" marker-end="url(#ctyArrow)"/>
+      <path d="M290 300 H380"/>
+      <path d="M290 296 V304 M380 296 V304"/>
+    </g>
+    <text x="482" y="132" font-size="11" fill="#e8b33c" text-anchor="middle">420</text>
+    <text x="712" y="314" font-size="11" fill="#e8b33c" transform="rotate(90 712 314)" text-anchor="middle">300</text>
+    <text x="335" y="294" font-size="10" fill="#e8b33c" text-anchor="middle">250 留给虚空的空白</text>
+  </g>
+
+  <!-- ============ 右：将来要长成什么样（虚框草图） ============ -->
+  <g id="ctyFuture">
+    <text x="740" y="150" font-size="12" fill="#8d95a5" letter-spacing="1">将来要长成什么样（虚框草图 · 未实现）</text>
+    <rect x="740" y="160" width="508" height="300" rx="10" fill="none" stroke="#5d6575" stroke-width="1.5" stroke-dasharray="8 6"/>
+    <text x="756" y="180" font-size="10.5" fill="#5d6575">草案占位 · 三块模块，具体规则归赛季自己的文档</text>
+
+    <!-- 模块 1 赛季等级 -->
+    <rect x="756" y="192" width="150" height="118" rx="8" fill="#101823" stroke="#3a4150" stroke-dasharray="6 4"/>
+    <text x="770" y="212" font-size="11.5" fill="#8d95a5">赛季等级</text>
+    <circle cx="830" cy="252" r="26" fill="none" stroke="#3a4150" stroke-width="2" stroke-dasharray="5 4"/>
+    <text x="830" y="257" font-size="14" fill="#5d6575" text-anchor="middle">Lv.?</text>
+    <text x="770" y="298" font-size="10" fill="#4a5260">占位：等级 / 经验条</text>
+
+    <!-- 模块 2 赛季任务 -->
+    <rect x="918" y="192" width="150" height="118" rx="8" fill="#101823" stroke="#3a4150" stroke-dasharray="6 4"/>
+    <text x="932" y="212" font-size="11.5" fill="#8d95a5">赛季任务</text>
+    <g stroke="#3a4150" stroke-width="1.5" stroke-dasharray="4 3">
+      <path d="M932 236 H1052 M932 256 H1052 M932 276 H1042"/>
+    </g>
+    <text x="932" y="298" font-size="10" fill="#4a5260">占位：任务清单</text>
+
+    <!-- 模块 3 赛季奖励 -->
+    <rect x="1080" y="192" width="150" height="118" rx="8" fill="#101823" stroke="#3a4150" stroke-dasharray="6 4"/>
+    <text x="1094" y="212" font-size="11.5" fill="#8d95a5">赛季奖励</text>
+    <g stroke="#3a4150" stroke-width="1.5" fill="none">
+      <rect x="1094" y="228" width="30" height="30" rx="4" stroke-dasharray="4 3"/>
+      <rect x="1134" y="228" width="30" height="30" rx="4" stroke-dasharray="4 3"/>
+      <rect x="1174" y="228" width="30" height="30" rx="4" stroke-dasharray="4 3"/>
+    </g>
+    <text x="1094" y="298" font-size="10" fill="#4a5260">占位：奖励格</text>
+
+    <!-- 依赖链 -->
+    <text x="756" y="336" font-size="10.5" fill="#5d6575">依赖链</text>
+    <g font-size="10">
+      <rect x="756" y="344" width="98" height="24" rx="4" fill="none" stroke="#5d6575" stroke-dasharray="4 3"/>
+      <text x="805" y="360" fill="#5d6575" text-anchor="middle">赛季大厅门</text>
+      <path d="M858 356 H874" stroke="#5d6575" stroke-width="1.2" marker-end="url(#ctyArrowGray)"/>
+      <rect x="878" y="344" width="98" height="24" rx="4" fill="none" stroke="#5d6575" stroke-dasharray="4 3"/>
+      <text x="927" y="360" fill="#5d6575" text-anchor="middle">赛季任务</text>
+      <path d="M980 356 H996" stroke="#5d6575" stroke-width="1.2" marker-end="url(#ctyArrowGray)"/>
+      <rect x="1000" y="344" width="98" height="24" rx="4" fill="none" stroke="#5d6575" stroke-dasharray="4 3"/>
+      <text x="1049" y="360" fill="#5d6575" text-anchor="middle">赛季奖励</text>
+      <path d="M1102 356 H1118" stroke="#5d6575" stroke-width="1.2" marker-end="url(#ctyArrowGray)"/>
+      <rect x="1122" y="344" width="108" height="24" rx="4" fill="none" stroke="#5d6575" stroke-dasharray="4 3"/>
+      <text x="1176" y="360" fill="#5d6575" text-anchor="middle">真实可玩</text>
+    </g>
+    <text x="756" y="386" font-size="10.5" fill="#5d6575">现在四步里一步都没有。中间状态「摆着但不能用」是最差的。</text>
+    <text x="756" y="404" font-size="10.5" fill="#8d95a5">二选一：要么做（先做门 + 能玩的入口），要么藏（从配置删掉，赛季做好再放回）</text>
+    <text x="756" y="422" font-size="10.5" fill="#5d6575">不许写「下周开放」这种做不到的时间承诺</text>
+
+    <!-- 建议的「未开放」视觉 -->
+    <g>
+      <rect x="756" y="436" width="476" height="2" fill="#2b3240"/>
+      <text x="756" y="470" font-size="12" fill="#8d95a5" letter-spacing="1">若保留该 NPC · 建议的「未开放」样子（1:2 小样）</text>
+      <circle cx="782" cy="506" r="38" fill="none" stroke="#4a5260" stroke-width="1.5" stroke-dasharray="7 6"/>
+      <circle cx="782" cy="506" r="11" fill="rgba(18,28,46,0.9)" stroke="#4a5260" stroke-width="1.5"/>
+      <text x="782" y="511" font-size="17" fill="#5d6575" text-anchor="middle">⊘</text>
+      <text x="782" y="466" font-size="10.5" fill="#5d6575" text-anchor="middle">赛季使者</text>
+      <text x="782" y="562" font-size="10" fill="#4a5260" text-anchor="middle">未开放</text>
+      <text x="836" y="500" font-size="10.5" fill="#5d6575">圈：亮蓝 → 暗灰 #4a5260，靠近时变暗而不是变亮</text>
+      <text x="836" y="518" font-size="10.5" fill="#5d6575">符号：◈ → 一枚禁止标 ⊘；副标题：「未开放」</text>
+      <text x="836" y="536" font-size="10.5" fill="#5d6575">目标：玩家从远处就知道这里关门了，不必走过来</text>
+    </g>
+  </g>
+
+  <!-- ============ 底部：现况对照 + 规格速查 ============ -->
+  <line x1="32" y1="500" x2="1248" y2="500" stroke="#2b3240" stroke-width="1" stroke-dasharray="6 6"/>
+
+  <g>
+    <text x="32" y="528" font-size="12" fill="#e8b33c" letter-spacing="1">现状对照</text>
+    <g font-size="10.5">
+      <text x="32" y="550" fill="#7de08a">✓ 圈 (870,595) 与头顶文字</text>
+      <text x="32" y="568" fill="#7de08a">✓ 进圈弹面板 / 出圈自动关</text>
+      <text x="32" y="586" fill="#7de08a">✓ 标题 + 副标题 + 分隔线</text>
+      <text x="32" y="610" fill="#e2554f">✗ 正文只有一句话</text>
+      <text x="32" y="628" fill="#e2554f">✗ 一个可点元素都没有</text>
+      <text x="240" y="550" fill="#e2554f">✗ seasonPortal = null（无门）</text>
+      <text x="240" y="568" fill="#e2554f">✗ 没有「未开放」的视觉提示</text>
+      <text x="240" y="586" fill="#e2554f">✗ 和兜底面板长得一样（玩家分不出）</text>
+      <text x="240" y="610" fill="#5d6575">· 无音效；走过去本身是白费</text>
+      <text x="240" y="628" fill="#5d6575">· 它占了主城一个显眼位置</text>
+    </g>
+  </g>
+
+  <g>
+    <rect x="570" y="518" width="300" height="112" rx="10" fill="#0d1017" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="586" y="538" font-size="12" font-weight="700" fill="#e8b33c">规格速查</text>
+    <text x="586" y="556" font-size="10.5" fill="#a6b2c7">面板 420 × 300 @ (810,90)</text>
+    <text x="586" y="572" font-size="10.5" fill="#a6b2c7">底 #16233a　边 #c9a84c 2px　rx 10</text>
+    <text x="586" y="588" font-size="10.5" fill="#a6b2c7">标题 22 #ffd76a　副标题 13 #a6b2c7</text>
+    <text x="586" y="604" font-size="10.5" fill="#a6b2c7">分隔线 1px #c9a84c @ 45%</text>
+    <text x="586" y="620" font-size="10.5" fill="#a6b2c7">正文 13 #e2e6ee　圈 #4da3ff r76 ◈</text>
+  </g>
+
+  <g>
+    <rect x="890" y="518" width="358" height="112" rx="8" fill="#2a1b1b" stroke="#e2554f" stroke-opacity="0.5"/>
+    <text x="906" y="538" font-size="11.5" font-weight="700" fill="#e2554f">⚠ 为什么这是最差的一种状态</text>
+    <text x="906" y="556" font-size="10.5" fill="#b08a8a">玩家必须先找到它、走过去、看着面板弹出来，再确认</text>
+    <text x="906" y="574" font-size="10.5" fill="#b08a8a">「哦，什么都没有」。主城里的走路是宝贵的，每一步</text>
+    <text x="906" y="592" font-size="10.5" fill="#b08a8a">都该有回报 —— 而这一段路的回报是零。</text>
+    <text x="906" y="614" font-size="10.5" fill="#5d6575">「敬请期待」是写给开发自己看的，玩家读到的是「没做完」</text>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B008-赛季使者 / 1280×720 / v1.0</text>
+</svg>

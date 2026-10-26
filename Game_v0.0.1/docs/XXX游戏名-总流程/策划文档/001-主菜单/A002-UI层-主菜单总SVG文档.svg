@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>001-主菜单 · 整屏总图（1280×720 实尺寸）</title>
+
+  <defs>
+    <linearGradient id="mnBg" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#131c2c"/>
+      <stop offset="0.55" stop-color="#101725"/>
+      <stop offset="1" stop-color="#0b1119"/>
+    </linearGradient>
+    <radialGradient id="mnGlow" cx="0.5" cy="0.42" r="0.55">
+      <stop offset="0" stop-color="#e8b33c" stop-opacity="0.13"/>
+      <stop offset="0.55" stop-color="#e8b33c" stop-opacity="0.03"/>
+      <stop offset="1" stop-color="#e8b33c" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="mnShadow" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    <filter id="mnShadowBig" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="5" stdDeviation="14" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- ============ L0 背景 ============ -->
+  <rect x="0" y="0" width="1280" height="720" fill="url(#mnBg)"/>
+  <rect x="0" y="0" width="1280" height="720" fill="url(#mnGlow)"/>
+
+  <!-- ============ L1 装饰层（预留位，当前只有地面与光柱） ============ -->
+  <g opacity="0.5">
+    <path d="M0 604 L1280 588 L1280 720 L0 720 Z" fill="#0a0f16"/>
+    <path d="M0 604 L1280 588" stroke="#233047" stroke-width="1.5"/>
+  </g>
+  <g stroke="#e8b33c" stroke-width="1" opacity="0.07">
+    <path d="M300 720 L470 200"/><path d="M980 720 L810 200"/>
+  </g>
+
+  <!-- ============ L2 主标题 / 副标题 ============ -->
+  <text x="640" y="248" font-size="32" font-weight="700" fill="#e8b33c" text-anchor="middle" letter-spacing="2">弹幕射击 × 背包肉鸽</text>
+  <text x="640" y="284" font-size="16" fill="#8a93a5" text-anchor="middle">组队下矿 · 撤离拿结晶 · 局外养成</text>
+
+  <!-- ============ L2 主按钮：开始游戏 ============ -->
+  <g filter="url(#mnShadowBig)">
+    <rect x="480" y="320" width="320" height="56" rx="6" fill="#e8b33c"/>
+  </g>
+  <text x="640" y="356" font-size="24" font-weight="700" fill="#131c2c" text-anchor="middle">开始游戏</text>
+
+  <!-- ============ L2 次按钮组（间距统一 16） ============ -->
+  <g filter="url(#mnShadow)">
+    <rect x="480" y="392" width="320" height="44" rx="6" fill="#252a34" stroke="#3a4150"/>
+    <rect x="480" y="452" width="320" height="44" rx="6" fill="#252a34" stroke="#3a4150"/>
+    <rect x="480" y="512" width="320" height="44" rx="6" fill="#252a34" stroke="#3a4150"/>
+    <rect x="480" y="572" width="320" height="44" rx="6" fill="#252a34" stroke="#3a4150"/>
+  </g>
+  <g font-size="20" fill="#e2e6ee" text-anchor="middle">
+    <text x="640" y="420">操作说明</text>
+    <text x="640" y="480">设置</text>
+    <text x="640" y="540">图鉴</text>
+    <text x="640" y="600">退出游戏</text>
+  </g>
+
+  <!-- ============ L3 档案行 ============ -->
+  <g filter="url(#mnShadow)" opacity="0.95">
+    <rect x="500" y="644" width="280" height="26" rx="13" fill="#161d29" stroke="#242d3c"/>
+  </g>
+  <text x="640" y="661" font-size="14" text-anchor="middle"><tspan fill="#e2e6ee">无名旅者</tspan><tspan fill="#8a93a5"> ·「初出茅庐」· </tspan><tspan fill="#e8b33c" font-weight="700">✦330</tspan></text>
+
+  <!-- ============ L3 版本行 ============ -->
+  <text x="640" y="692" font-size="12" fill="#5a6572" text-anchor="middle">v0.6 · 主城 → 串行关卡 → 边界</text>
+
+  <!-- ============ L5 版面标注（给美术看，不在游戏里显示） ============ -->
+  <g opacity="0.55">
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
+      <path d="M440 248 L470 248 M810 356 L840 356"/>
+      <rect x="480" y="320" width="320" height="56"/>
+    </g>
+    <g fill="#e8b33c" font-size="11">
+      <text x="446" y="244" text-anchor="end">居中 X=640</text>
+      <text x="846" y="352">320 × 56　rx 6</text>
+    </g>
+    <!-- 右列：尺寸链 -->
+    <g stroke="#5d6575" stroke-width="1" stroke-dasharray="3 3">
+      <path d="M840 392 L840 616"/>
+      <path d="M836 392 L868 392 M836 436 L868 436 M836 452 L868 452 M836 496 L868 496 M836 512 L868 512 M836 556 L868 556 M836 572 L868 572 M836 616 L868 616"/>
+    </g>
+    <g fill="#8d95a5" font-size="10.5">
+      <text x="874" y="417">44</text>
+      <text x="874" y="445" fill="#e8b33c">间距 16</text>
+      <text x="874" y="477">44</text>
+      <text x="874" y="505" fill="#e8b33c">间距 16</text>
+      <text x="874" y="537">44</text>
+      <text x="874" y="565" fill="#e8b33c">间距 16</text>
+      <text x="874" y="597">44</text>
+    </g>
+  </g>
+
+  <!-- 左上角图注 -->
+  <g opacity="0.85">
+    <rect x="32" y="32" width="252" height="66" rx="8" fill="#0d1017" stroke="#2b3240"/>
+    <text x="48" y="55" font-size="12" font-weight="700" fill="#e8b33c">整屏总图 · 1:1 实尺寸</text>
+    <text x="48" y="74" font-size="11" fill="#8d95a5">1280 × 720　｜　安全边距 48</text>
+    <text x="48" y="90" font-size="11" fill="#5d6575">虚线为版面标注，游戏内不显示</text>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-主菜单总SVG文档 / v1.0</text>
+</svg>

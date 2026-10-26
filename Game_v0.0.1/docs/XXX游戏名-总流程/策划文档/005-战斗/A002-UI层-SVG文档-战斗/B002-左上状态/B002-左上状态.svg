@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B002 左上状态 界面规格图（1280×720）</title>
+
+  <defs>
+    <linearGradient id="btlBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <linearGradient id="btlPanel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d2330"/>
+      <stop offset="1" stop-color="#141922"/>
+    </linearGradient>
+    <linearGradient id="btlExp" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4de566" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#8cd99a" stop-opacity="0.85"/>
+    </linearGradient>
+    <marker id="btlArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="btlArrowS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#btlBg)"/>
+  <g stroke="#1a2130" stroke-width="1" opacity="0.55">
+    <path d="M0 140 L1280 140 M0 340 L1280 340 M0 540 L1280 540"/>
+    <path d="M320 0 L320 720 M640 0 L640 720 M960 0 L960 720"/>
+  </g>
+
+  <rect x="0" y="0" width="1280" height="64" fill="url(#btlPanel)"/>
+  <rect x="0" y="62" width="1280" height="2" fill="#2b3240"/>
+  <text x="32" y="40" font-size="22" font-weight="700" fill="#f2fafe">B002 · 左上状态（HP 行 + READY 冻结徽章）</text>
+  <text x="1248" y="40" font-size="13" fill="#8d95a5" text-anchor="end">HP 24 号　｜　徽章 56×56 rx28　｜　小字 12</text>
+
+  <!-- ================= 放大展示区（2 倍） ================= -->
+  <g>
+    <rect x="40" y="88" width="1200" height="330" rx="12" fill="#12161f" fill-opacity="0.85" stroke="#2b3240" stroke-width="1.5"/>
+    <text x="62" y="114" font-size="12" fill="#5d6575" letter-spacing="2">放大 2 倍展示（游戏内为实尺寸一半）</text>
+
+    <!-- HP 行：实尺寸 (16,10) → 放大后 (96,150) -->
+    <text x="96" y="176" font-size="48" fill="#f2fafe" stroke="#000000" stroke-width="8" paint-order="stroke" stroke-linejoin="round">HP 94/94   Lv1   经验 0</text>
+
+    <!-- READY 徽章：实 (16,42) 56×56 → 放大 (96,200) 112×112 -->
+    <circle cx="152" cy="256" r="56" fill="#1a331f" fill-opacity="0.85" stroke="#4de566" stroke-width="4"/>
+    <text x="152" y="267" font-size="28" fill="#4de566" text-anchor="middle">READY</text>
+    <text x="152" y="336" font-size="24" fill="#8cd99a" text-anchor="middle">全场冻结</text>
+
+    <!-- 经验条示意（文档口径：示意性追加，代码当前无此条） -->
+    <g>
+      <text x="96" y="374" font-size="24" fill="#8a93a5">经验条示意（建议新增 · 当前代码无）</text>
+      <rect x="96" y="388" width="440" height="12" rx="6" fill="#1a1e27" stroke="#2b3240" stroke-width="1"/>
+      <rect x="98" y="390" width="176" height="8" rx="4" fill="url(#btlExp)"/>
+    </g>
+    <text x="560" y="400" font-size="22" fill="#8cd99a">240 / 601</text>
+    <text x="560" y="424" font-size="18" fill="#5d6575">本局总经验 → 下一级所需（8 × 1.32^(Lv-1)）</text>
+
+    <!-- 标注：徽章高度 56 -->
+    <g stroke="#e8b33c" stroke-width="1.4" fill="none">
+      <path d="M64 200 L64 312 M56 200 L72 200 M56 312 L72 312" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
+    </g>
+    <text x="48" y="262" font-size="13" fill="#e8b33c" transform="rotate(-90 48 262)" text-anchor="middle">56（放大 112）</text>
+
+    <!-- 标注：小字下探 2px 溢出 -->
+    <g stroke="#e2554f" stroke-width="1.2" stroke-dasharray="5 4" fill="none">
+      <path d="M200 312 L200 336 M152 326 L214 326"/>
+    </g>
+    <text x="222" y="330" font-size="12" fill="#ff7b73">小字 y=58 探出圆章 2px（现状偏挤）</text>
+
+  </g>
+
+  <!-- 右侧要点卡 -->
+  <g>
+    <rect x="660" y="130" width="560" height="132" rx="10" fill="#0d1017" fill-opacity="0.96" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="678" y="154" font-size="13" font-weight="700" fill="#e8b33c">HP 行规格</text>
+    <g font-size="12.5" fill="#cdd3de">
+      <text x="678" y="176">锚点　左上绝对 (16, 10)　字号 24　左对齐</text>
+      <text x="678" y="196">颜色　#f2fafe（冷白）　描边 6px 黑</text>
+      <text x="678" y="216">格式　「HP 94/94   Lv1   经验 0」三组数空格分隔</text>
+      <text x="678" y="236">94 = 猎手 H001 初始血量（cfg/heroes.json）</text>
+      <text x="678" y="254" fill="#8a93a5">升级加血时分子分母同时 +15，等于顺带回血</text>
+    </g>
+  </g>
+
+  <g>
+    <rect x="660" y="274" width="560" height="144" rx="10" fill="#0d1017" fill-opacity="0.96" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="678" y="298" font-size="13" font-weight="700" fill="#e8b33c">READY 徽章规格</text>
+    <g font-size="12.5" fill="#cdd3de">
+      <text x="678" y="320">锚点　(16, 42)　尺寸 56 × 56　圆角 28（正圆）</text>
+      <text x="678" y="340">底色　#1a331f 85%（rgba(26,51,31,0.85)）</text>
+      <text x="678" y="360">描边　#4de566　宽 2px　主字 READY 14 号 #4de566</text>
+      <text x="678" y="380">小字　「全场冻结」12 号 #8cd99a　×2 / +58</text>
+      <text x="678" y="400" fill="#8a93a5">它是状态灯，不是按钮（不可点、无 hover）</text>
+    </g>
+  </g>
+
+  <!-- ================= 三种状态（实尺寸 1:1） ================= -->
+  <line x1="40" y1="440" x2="1240" y2="440" stroke="#2b3240" stroke-width="1" stroke-dasharray="6 5"/>
+
+  <!-- 状态 1 -->
+  <g>
+    <text x="40" y="470" font-size="12" fill="#e8b33c" letter-spacing="1">状态 1 · 开局冻结（0~3s）</text>
+    <rect x="40" y="482" width="360" height="170" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
+    <text x="56" y="512" font-size="24" fill="#f2fafe" stroke="#000000" stroke-width="4" paint-order="stroke">HP 94/94   Lv1   经验 0</text>
+    <circle cx="84" cy="546" r="28" fill="#1a331f" fill-opacity="0.85" stroke="#4de566" stroke-width="2"/>
+    <text x="84" y="551" font-size="14" fill="#4de566" text-anchor="middle">READY</text>
+    <text x="84" y="588" font-size="12" fill="#8cd99a" text-anchor="middle">全场冻结</text>
+    <text x="200" y="596" font-size="12" fill="#5d6575">怪还没刷，世界停 3 秒</text>
+  </g>
+
+  <!-- 状态 2 -->
+  <g>
+    <text x="440" y="470" font-size="12" fill="#e8b33c" letter-spacing="1">状态 2 · 常态（99% 的时间）</text>
+    <rect x="440" y="482" width="360" height="170" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
+    <text x="456" y="512" font-size="24" fill="#f2fafe" stroke="#000000" stroke-width="4" paint-order="stroke">HP 61/94   Lv3   经验 240</text>
+    <g stroke="#3a4150" stroke-width="1" stroke-dasharray="4 4" fill="none">
+      <circle cx="484" cy="546" r="28"/>
+    </g>
+    <text x="484" y="551" font-size="12" fill="#4a5260" text-anchor="middle">隐藏</text>
+    <text x="600" y="596" font-size="12" fill="#5d6575">freeze_time=0 → visible=false</text>
+  </g>
+
+  <!-- 状态 3 -->
+  <g>
+    <text x="840" y="470" font-size="12" fill="#e2554f" letter-spacing="1">状态 3 · 低血（现状：无变化）</text>
+    <rect x="840" y="482" width="400" height="170" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
+    <text x="856" y="512" font-size="24" fill="#f2fafe" stroke="#000000" stroke-width="4" paint-order="stroke">HP 18/94   Lv3   经验 240</text>
+    <g stroke="#3a4150" stroke-width="1" stroke-dasharray="4 4" fill="none">
+      <circle cx="884" cy="546" r="28"/>
+    </g>
+    <text x="884" y="551" font-size="12" fill="#4a5260" text-anchor="middle">隐藏</text>
+    <text x="940" y="540" font-size="12" fill="#ff7b73">血量 &lt; 30% 仍为白字，无变红、无心跳</text>
+    <text x="940" y="560" font-size="12" fill="#8a93a5">应为 #e2554f + 掉血那一帧闪一下</text>
+    <text x="940" y="580" font-size="12" fill="#5d6575">（脚底 48×6 小血条会变红，但看不清）</text>
+  </g>
+
+  <!-- ================= 图角灰字 + 速查 ================= -->
+  <g>
+    <rect x="40" y="664" width="300" height="42" rx="8" fill="#0d1017" fill-opacity="0.96" stroke="#e8b33c" stroke-width="1.2" stroke-dasharray="6 4"/>
+    <text x="56" y="683" font-size="12" font-weight="700" fill="#e8b33c">READY 徽章触发条件（灰字规则）</text>
+    <text x="56" y="699" font-size="11.5" fill="#8a93a5">一局只在开局冻结的 3 秒内出现，之后再无触发</text>
+  </g>
+
+  <g>
+    <rect x="900" y="600" width="340" height="106" rx="10" fill="#0d1017" fill-opacity="0.96" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="916" y="622" font-size="13" font-weight="700" fill="#e8b33c">规格速查</text>
+    <g font-size="11.5" fill="#cdd3de">
+      <text x="916" y="642">HP 行　(16,10)　24 号　#f2fafe　6px 黑描边</text>
+      <text x="916" y="660">徽章　(16,42)　56×56　rx 28　边 #4de566 2px</text>
+      <text x="916" y="678">小字　(18,100) 附近　12 号　#8cd99a</text>
+      <text x="916" y="696">冻结配置　cfg/levelFreeze.json freezeTime=3</text>
+    </g>
+  </g>
+
+  <text x="848" y="708" font-size="11" fill="#5d6575" text-anchor="end">B002-左上状态 / 1280×720 / v1.0</text>
+</svg>

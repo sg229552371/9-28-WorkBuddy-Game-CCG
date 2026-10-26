@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B002 档案卡 规格图（有数据 / 数据缺失兜底）</title>
+
+  <defs>
+    <linearGradient id="ctyBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <filter id="ctyShadow" x="-30%" y="-60%" width="160%" height="220%">
+      <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <marker id="ctyArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="ctyArrowStart" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M10 0 L0 5 L10 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#ctyBg)"/>
+  <g stroke="rgba(61,79,107,0.14)" stroke-width="1">
+    <path d="M0 64 H1280 M0 128 H1280 M0 192 H1280 M0 256 H1280 M0 320 H1280 M0 384 H1280 M0 448 H1280 M0 512 H1280 M0 576 H1280 M0 640 H1280 M0 704 H1280"/>
+    <path d="M64 0 V720 M128 0 V720 M192 0 V720 M256 0 V720 M320 0 V720 M384 0 V720 M448 0 V720 M512 0 V720 M576 0 V720 M640 0 V720 M704 0 V720 M768 0 V720 M832 0 V720 M896 0 V720 M960 0 V720 M1024 0 V720 M1088 0 V720 M1152 0 V720 M1216 0 V720"/>
+  </g>
+
+  <!-- 页眉 -->
+  <text x="32" y="40" font-size="13" fill="#5d6575" letter-spacing="3">002-主城 / 屏幕固定层</text>
+  <text x="32" y="70" font-size="24" font-weight="700" fill="#ffd76a">档案卡</text>
+  <text x="32" y="92" font-size="12" fill="#a6b2c7">屏幕坐标 (16, 12)　圆角 8　底 rgba(18,28,46,0.9)　无边框　不可点·只读</text>
+  <text x="32" y="110" font-size="12" fill="#8d95a5">挂在 CanvasLayer(10) 屏幕层，不随镜头上下跑：横 810 起的 NPC 面板永远碰不到它</text>
+  <line x1="32" y1="122" x2="1248" y2="122" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- ============ 左：屏幕位置示意（缩略整屏） ============ -->
+  <g id="ctyWhere">
+    <text x="32" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">在屏幕上的位置（1:1）</text>
+    <rect x="32" y="160" width="600" height="338" rx="6" fill="#131c2c" stroke="#2b3240"/>
+    <text x="48" y="182" font-size="10.5" fill="#3a4459">屏幕 1280×720（缩略 0.48×）</text>
+    <g stroke="rgba(61,79,107,0.25)" stroke-width="1">
+      <path d="M176 160 V498 M240 160 V498 M304 160 V498 M368 160 V498 M432 160 V498 M496 160 V498 M560 160 V498"/>
+      <path d="M32 248 H632 M32 336 H632 M32 424 H632"/>
+    </g>
+
+    <!-- 地图层上的点（示意，位置按 0.48× 折算） -->
+    <circle cx="339" cy="215" r="36" fill="none" stroke="#ffd76a" stroke-opacity="0.4" stroke-width="1"/>
+    <circle cx="265" cy="270" r="36" fill="none" stroke="#ffd76a" stroke-opacity="0.4" stroke-width="1"/>
+    <circle cx="413" cy="270" r="36" fill="none" stroke="#7de08a" stroke-opacity="0.4" stroke-width="1"/>
+    <circle cx="155" cy="307" r="36" fill="none" stroke="#c79bff" stroke-opacity="0.4" stroke-width="1"/>
+    <circle cx="523" cy="307" r="36" fill="none" stroke="#6cb2ff" stroke-opacity="0.4" stroke-width="1"/>
+    <circle cx="118" cy="445" r="36" fill="none" stroke="#e5a04b" stroke-opacity="0.4" stroke-width="1"/>
+    <circle cx="450" cy="445" r="36" fill="none" stroke="#4da3ff" stroke-opacity="0.4" stroke-width="1"/>
+
+    <!-- 档案卡真位置 16,12 → 缩略图里贴在左上角 -->
+    <g filter="url(#ctyShadow)">
+      <rect x="32" y="160" width="196" height="48" rx="8" fill="rgba(18,28,46,0.9)" stroke="#3a4150"/>
+    </g>
+    <text x="46" y="192" font-size="18" fill="#ffd76a">✦</text>
+    <text x="68" y="184" font-size="16" fill="#ffffff">无名旅者</text>
+    <text x="68" y="200" font-size="12" fill="#a6b2c7">初出茅庐</text>
+    <text x="212" y="190" font-size="16" font-weight="700" fill="#ffd76a" text-anchor="end">✦330</text>
+
+    <!-- NPC 面板位置示意（810×0.48 ≈ 389） -->
+    <rect x="421" y="203" width="202" height="150" rx="8" fill="#16233a" stroke="#c9a84c" stroke-width="1.5"/>
+    <text x="435" y="227" font-size="13" font-weight="700" fill="#ffd76a">NPC 面板</text>
+    <text x="435" y="245" font-size="10.5" fill="#8d95a5">屏幕 x=810 起 · 宽 420</text>
+    <text x="435" y="261" font-size="10.5" fill="#8d95a5">高随内容长</text>
+
+    <text x="32" y="480" font-size="10" fill="#5d6575">缩略 0.48× · 仅示意位置关系，尺寸以右侧放大图为准</text>
+    <text x="236" y="180" font-size="10.5" fill="#e8b33c">钉在左上角，永久可见</text>
+    <path d="M232 184 L232 208" stroke="#e8b33c" stroke-width="1" stroke-dasharray="3 3"/>
+  </g>
+
+  <!-- ============ 右上：版本 A 有数据（放大 150%） ============ -->
+  <text x="672" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">A · 有数据（放大 1.5×，实际 196×48）</text>
+  <g id="ctyCardA">
+    <rect x="672" y="160" width="294" height="72" rx="12" fill="rgba(18,28,46,0.9)" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="696" y="209" font-size="27" fill="#ffd76a">✦</text>
+    <text x="732" y="198" font-size="24" fill="#ffffff">无名旅者</text>
+    <text x="732" y="222" font-size="18" fill="#a6b2c7">初出茅庐</text>
+    <text x="942" y="206" font-size="24" font-weight="700" fill="#ffd76a" text-anchor="end">✦330</text>
+
+    <!-- 内边距标注 -->
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3">
+      <path d="M660 160 H672" marker-start="url(#ctyArrowStart)"/>
+      <path d="M660 172 V160"/>
+      <path d="M672 232 H684"/>
+    </g>
+    <text x="666" y="236" font-size="10" fill="#e8b33c" text-anchor="middle">12</text>
+    <text x="656" y="176" font-size="10" fill="#e8b33c" text-anchor="end">6</text>
+  </g>
+
+  <!-- ============ 右中：版本 B 兜底 ============ -->
+  <text x="672" y="266" font-size="12" fill="#e8b33c" letter-spacing="1">B · 数据缺失兜底（存档读不出 / 名字为空）</text>
+  <g id="ctyCardB">
+    <rect x="672" y="276" width="294" height="72" rx="12" fill="rgba(18,28,46,0.9)" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="696" y="325" font-size="27" fill="#ffd76a">✦</text>
+    <text x="732" y="314" font-size="24" fill="#ffffff">无名旅者</text>
+    <text x="732" y="338" font-size="18" fill="#a6b2c7">初出茅庐</text>
+    <text x="942" y="322" font-size="24" font-weight="700" fill="#ffd76a" text-anchor="end">✦0</text>
+  </g>
+  <text x="672" y="368" font-size="11" fill="#5d6575">兜底规则：名字空 →「无名旅者」；称号缺表 →「初出茅庐」；结晶读不到 → ✦0；后台记一条 warn，玩家什么都看不到，不弹报错框</text>
+
+  <!-- 8 字上限 -->
+  <text x="672" y="400" font-size="12" fill="#e8b33c" letter-spacing="1">C · 名字 8 字上限（卡片撑到 ≈ 200 宽，不换行不省略）</text>
+  <g id="ctyCardC">
+    <rect x="672" y="410" width="300" height="72" rx="12" fill="rgba(18,28,46,0.9)" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="696" y="459" font-size="27" fill="#ffd76a">✦</text>
+    <text x="732" y="448" font-size="24" fill="#ffffff">一二三四五六七八</text>
+    <text x="732" y="472" font-size="18" fill="#a6b2c7">初出茅庐</text>
+    <text x="956" y="456" font-size="24" font-weight="700" fill="#ffd76a" text-anchor="end">✦9999</text>
+  </g>
+
+  <!-- 规格速查 -->
+  <g>
+    <rect x="1004" y="150" width="244" height="332" rx="10" fill="#0d1017" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="1020" y="172" font-size="12.5" font-weight="700" fill="#e8b33c">规格速查</text>
+    <text x="1020" y="194" font-size="11" fill="#a6b2c7">位置　(16, 12) 屏幕坐标</text>
+    <text x="1020" y="212" font-size="11" fill="#a6b2c7">尺寸　≈196 × 48（跟内容走）</text>
+    <text x="1020" y="230" font-size="11" fill="#a6b2c7">圆角 8　底 rgba(18,28,46,0.9)</text>
+    <text x="1020" y="248" font-size="11" fill="#a6b2c7">内边距　左右 12 / 上下 6</text>
+    <text x="1020" y="266" font-size="11" fill="#a6b2c7">边框　无</text>
+    <text x="1020" y="288" font-size="11" fill="#a6b2c7">✦ 徽章　18 号　#ffd76a</text>
+    <text x="1020" y="306" font-size="11" fill="#a6b2c7">名字　16 号　#ffffff</text>
+    <text x="1020" y="324" font-size="11" fill="#a6b2c7">称号　12 号　#a6b2c7</text>
+    <text x="1020" y="342" font-size="11" fill="#a6b2c7">结晶　16 号粗　#ffd76a</text>
+    <text x="1020" y="360" font-size="11" fill="#a6b2c7">格间距 8　名字/称号 间距 0</text>
+    <text x="1020" y="382" font-size="11" fill="#5d6575">最大宽度 ≈ 200</text>
+    <text x="1020" y="400" font-size="11" fill="#5d6575">永远不与 x=810 的面板相碰</text>
+    <text x="1020" y="418" font-size="11" fill="#5d6575">鼠标悬停/点击：无任何反馈</text>
+  </g>
+
+  <line x1="32" y1="516" x2="1248" y2="516" stroke="#2b3240" stroke-width="1" stroke-dasharray="6 6"/>
+
+  <!-- ============ 下半：刷新链路 + 已知问题 ============ -->
+  <text x="32" y="544" font-size="13" font-weight="700" fill="#ffd76a" letter-spacing="2">刷 新 时 机</text>
+  <g font-size="11.5">
+    <rect x="32" y="558" width="132" height="30" rx="6" fill="#16233a" stroke="#2b3440"/>
+    <text x="98" y="578" fill="#e8e2c8" text-anchor="middle">主城建好</text>
+    <rect x="180" y="558" width="132" height="30" rx="6" fill="#16233a" stroke="#2b3440"/>
+    <text x="246" y="578" fill="#e8e2c8" text-anchor="middle">强化导师升级</text>
+    <rect x="328" y="558" width="132" height="30" rx="6" fill="#16233a" stroke="#2b3440"/>
+    <text x="394" y="578" fill="#e8e2c8" text-anchor="middle">武器匠强化</text>
+    <rect x="476" y="558" width="132" height="30" rx="6" fill="#16233a" stroke="#2b3440"/>
+    <text x="542" y="578" fill="#e8e2c8" text-anchor="middle">商人买货</text>
+    <rect x="624" y="558" width="132" height="30" rx="6" fill="#16233a" stroke="#2b3440"/>
+    <text x="690" y="578" fill="#e8e2c8" text-anchor="middle">形象师改名</text>
+    <path d="M762 573 H796" stroke="#e8b33c" stroke-width="1.5" marker-end="url(#ctyArrow)"/>
+    <rect x="802" y="558" width="150" height="30" rx="6" fill="#16233a" stroke="#c9a84c"/>
+    <text x="877" y="578" fill="#ffd76a" text-anchor="middle">重读结晶/名字/称号</text>
+    <path d="M956 573 H990" stroke="#e8b33c" stroke-width="1.5" marker-end="url(#ctyArrow)"/>
+    <rect x="996" y="558" width="252" height="30" rx="6" fill="#16233a" stroke="#3a4150"/>
+    <text x="1122" y="578" fill="#e8e2c8" text-anchor="middle">同一帧改文字，0 秒，无延迟</text>
+  </g>
+
+  <g>
+    <rect x="32" y="608" width="760" height="88" rx="8" fill="#1a1a22" stroke="#3a4150"/>
+    <text x="48" y="628" font-size="12" font-weight="700" fill="#e8b33c">已知问题 · 真实状况</text>
+    <text x="48" y="648" font-size="11.5" fill="#a6b2c7">① 称号写死「初出茅庐」：打赢 Boss、撤离成功都不会变，映射表尚未建表 → 所有玩家戴同一顶假帽子</text>
+    <text x="48" y="666" font-size="11.5" fill="#a6b2c7">② 结晶数字变化无动画：在他视野边缘悄悄跳动，花钱时看不见「钱少了」</text>
+    <text x="48" y="684" font-size="11.5" fill="#a6b2c7">③ 结晶为负照显示（如 ✦-5）：不许偷偷改成 0，这是 bug 信号</text>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B002-档案卡 / 1280×720 / v1.0</text>
+</svg>

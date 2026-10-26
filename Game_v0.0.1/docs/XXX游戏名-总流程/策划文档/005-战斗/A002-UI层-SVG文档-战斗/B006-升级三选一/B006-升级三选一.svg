@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B006 升级面板（4 选 1）界面规格图（1280×720）</title>
+
+  <defs>
+    <linearGradient id="btlBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <linearGradient id="btlPanel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d2330"/>
+      <stop offset="1" stop-color="#141922"/>
+    </linearGradient>
+    <linearGradient id="btlPanelFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b3140"/>
+      <stop offset="1" stop-color="#20252f"/>
+    </linearGradient>
+    <filter id="btlBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3.5"/>
+    </filter>
+    <marker id="btlArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="btlArrowS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#btlBg)"/>
+  <g stroke="#1a2130" stroke-width="1" opacity="0.55">
+    <path d="M0 160 L1280 160 M0 400 L1280 400 M0 600 L1280 600"/>
+    <path d="M320 0 L320 720 M640 0 M960 0 L960 720"/>
+  </g>
+
+  <rect x="0" y="0" width="1280" height="64" fill="url(#btlPanel)"/>
+  <rect x="0" y="62" width="1280" height="2" fill="#2b3240"/>
+  <text x="32" y="40" font-size="22" font-weight="700" fill="#f2fafe">B006 · 升级面板（实际 4 选 1）</text>
+  <text x="1248" y="40" font-size="13" fill="#8d95a5" text-anchor="end">800 × 400　（240,160）→（1040,560）　标题 28 / 选项 22</text>
+
+  <!-- ================= 战场背景（透出，无遮罩） ================= -->
+  <g opacity="0.75">
+    <g filter="url(#btlBlur)">
+      <circle cx="150" cy="300" r="26" fill="#2a3a33"/>
+      <circle cx="1130" cy="380" r="30" fill="#2c3a34"/>
+      <circle cx="1080" cy="240" r="20" fill="#26332e"/>
+      <path d="M240 420 l22 -34 l22 34 z" fill="#33282a"/>
+      <path d="M1180 300 l18 -28 l18 28 z" fill="#33282a"/>
+    </g>
+    <g filter="url(#btlBlur)" stroke="#8a6b3a" stroke-width="2.5" opacity="0.5" stroke-linecap="round">
+      <path d="M980 300 L1030 280"/><path d="M180 240 L230 222"/><path d="M1160 440 L1200 424"/>
+    </g>
+    <circle cx="640" cy="620" r="18" fill="#31465a" stroke="#5f88a8" stroke-width="2" opacity="0.6"/>
+  </g>
+
+  <!-- ================= 升级面板 800×400 ================= -->
+  <g>
+    <rect x="240" y="160" width="800" height="400" rx="8" fill="#20252f" fill-opacity="0.96" stroke="#3a4150" stroke-width="2"/>
+
+    <text x="272" y="216" font-size="28" fill="#f2fafe">升级！选择一项强化（Lv5）</text>
+    <line x1="272" y1="234" x2="1008" y2="234" stroke="#3a4150" stroke-width="1"/>
+
+    <!-- 选项 1 -->
+    <rect x="272" y="250" width="736" height="62" rx="6" fill="url(#btlPanelFill)" stroke="#4a5265" stroke-width="1.5"/>
+    <text x="294" y="290" font-size="22" fill="#e2e6ee">[1] 攻击力 +8</text>
+    <text x="988" y="288" font-size="12" fill="#5d6575" text-anchor="end">数字键 1</text>
+
+    <!-- 选项 2 -->
+    <rect x="272" y="324" width="736" height="62" rx="6" fill="url(#btlPanelFill)" stroke="#4a5265" stroke-width="1.5"/>
+    <text x="294" y="364" font-size="22" fill="#e2e6ee">[2] 生命 +40</text>
+    <text x="988" y="362" font-size="12" fill="#5d6575" text-anchor="end">数字键 2</text>
+
+    <!-- 选项 3 -->
+    <rect x="272" y="398" width="736" height="62" rx="6" fill="url(#btlPanelFill)" stroke="#4a5265" stroke-width="1.5"/>
+    <text x="294" y="438" font-size="22" fill="#e2e6ee">[3] 移速 +15</text>
+    <text x="988" y="436" font-size="12" fill="#5d6575" text-anchor="end">数字键 3</text>
+
+    <!-- 选项 4（hover 高亮示意） -->
+    <rect x="272" y="472" width="736" height="62" rx="6" fill="#2f3648" stroke="#e8b33c" stroke-width="1.5"/>
+    <text x="294" y="512" font-size="22" fill="#fff2cc">[4] 战意·击杀回血（warbuff）</text>
+    <text x="988" y="510" font-size="12" fill="#e8b33c" text-anchor="end">数字键 4 · 悬停态</text>
+  </g>
+
+  <!-- ================= 标注：位置与尺寸 ================= -->
+  <g stroke="#e8b33c" stroke-width="1" fill="none">
+    <path d="M240 150 L1040 150" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
+    <path d="M240 142 L240 158 M1040 142 L1040 158"/>
+    <path d="M1116 160 L1116 560" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
+    <path d="M1108 160 L1124 160 M1108 560 L1124 560"/>
+    <path d="M1048 160 L1064 160 M1048 560 L1064 560"/>
+  </g>
+  <text x="640" y="142" font-size="12" fill="#e8b33c" text-anchor="middle">宽 800（水平居中：左 240 / 右 1040）</text>
+  <text x="1136" y="366" font-size="12" fill="#e8b33c" transform="rotate(90 1136 366)" text-anchor="middle">高 400</text>
+  <text x="167" y="366" font-size="12" fill="#e8b33c" transform="rotate(-90 167 366)" text-anchor="middle">居中偏移：上 160 / 下 160</text>
+
+  <!-- 竖直居中线 -->
+  <path d="M640 160 L640 560" stroke="#5d6575" stroke-width="1" stroke-dasharray="4 6" opacity="0.6"/>
+
+  <!-- ================= 红字：无遮罩 ================= -->
+  <g>
+    <rect x="56" y="196" width="170" height="76" rx="8" fill="#2a1013" fill-opacity="0.94" stroke="#e2554f" stroke-width="1.5"/>
+    <text x="72" y="220" font-size="13" font-weight="700" fill="#ff7b73">没有背景遮罩</text>
+    <text x="72" y="240" font-size="11" fill="#f0a9a4">战斗画面直接透出，</text>
+    <text x="72" y="256" font-size="11" fill="#f0a9a4">怪/子弹仍在背后亮着</text>
+    <path d="M226 234 L240 234" stroke="#e2554f" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#btlArrow)"/>
+  </g>
+
+  <!-- ================= 右侧信息卡 ================= -->
+  <g>
+    <rect x="1104" y="196" width="160" height="0" rx="8" fill="none"/>
+  </g>
+
+  <!-- ================= 底部：现状文案 vs 建议中文对照 ================= -->
+  <line x1="32" y1="586" x2="1248" y2="586" stroke="#2b3240" stroke-width="1" stroke-dasharray="6 5"/>
+
+  <g>
+    <text x="32" y="612" font-size="13" font-weight="700" fill="#e8b33c">选项文字现状（代码拼接格式）</text>
+    <g font-size="12" fill="#cdd3de">
+      <text x="32" y="634">属性类：[序号] 名称（stat +数值）　例「[1] 强攻包（atk +3）」</text>
+      <text x="32" y="654">战意类：[序号] 名称（label）　例「[4] 狂力（攻击力 +30%）」</text>
+      <text x="32" y="674" fill="#ff7b73">红字：属性名是英文原字段（hp/atk/def/spd），玩家看不懂</text>
+    </g>
+  </g>
+
+  <g>
+    <text x="660" y="612" font-size="13" font-weight="700" fill="#8cd99a">建议中文对照</text>
+    <g font-size="12" fill="#cdd3de">
+      <text x="660" y="634">atk → 攻击力　hp → 生命上限　def → 防御　spd → 移动速度</text>
+      <text x="660" y="654">例：「[1] 强攻包（攻击力 +3）」「[2] 坚韧包（生命上限 +15）」</text>
+      <text x="660" y="674" fill="#8a93a5">cfg/levelUp.json：choiceCount=4、pickCount=1、statPack 4 项</text>
+    </g>
+  </g>
+
+  <!-- 图角灰字 -->
+  <g>
+    <rect x="32" y="688" width="820" height="26" rx="5" fill="#0d1017" fill-opacity="0.96" stroke="#e8b33c" stroke-width="1.2" stroke-dasharray="6 4"/>
+    <text x="44" y="706" font-size="11.5" fill="#8a93a5">实际是 4 选 1（配置 choiceCount=4），不是 3 选 1；选项里的属性名是英文原字段（hp/atk），应改中文</text>
+  </g>
+
+  <text x="876" y="708" font-size="11" fill="#5d6575">B006-升级三选一 / 1280×720 / v1.0</text>
+</svg>

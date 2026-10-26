@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B003-结晶收益 · 胜利版 / 死亡版 + 收益规则流程</title>
+
+  <defs>
+    <linearGradient id="stlBg" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#131c2c"/>
+      <stop offset="0.55" stop-color="#101725"/>
+      <stop offset="1" stop-color="#0b1119"/>
+    </linearGradient>
+    <linearGradient id="stlArrow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5a6572"/>
+      <stop offset="1" stop-color="#e8b33c"/>
+    </linearGradient>
+    <radialGradient id="stlDiamond" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#f6d27a"/>
+      <stop offset="1" stop-color="#dcac33"/>
+    </radialGradient>
+    <filter id="stlShadow" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    <marker id="stlArrowHead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0 0 L6 3 L0 6 Z" fill="#8a93a5"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#stlBg)"/>
+
+  <!-- ================= 左上：胜利版 ================= -->
+  <text x="56" y="52" font-size="13" font-weight="700" fill="#9fe0af">状态 A · 撤离成功（won = true）</text>
+  <g filter="url(#stlShadow)">
+    <rect x="48" y="66" width="576" height="126" rx="10" fill="#1d2027" stroke="#252a34" stroke-width="2"/>
+  </g>
+  <text x="72" y="112" font-size="17" fill="#e8b33c">本关评级
+    <tspan font-size="22">★★☆</tspan>
+  </text>
+  <text x="72" y="150" font-size="11" fill="#5a6572">★ 实心 / ☆ 空心　星级由数据 stars 给（代码现在恒为 1 星）</text>
+
+  <line x1="304" y1="86" x2="304" y2="172" stroke="#2a2f3a"/>
+
+  <text x="328" y="112" font-size="17" font-weight="700" fill="#e8b33c">结晶收益</text>
+  <g>
+    <path d="M404 128 l11 -13 l11 13 l-11 13 Z" fill="url(#stlDiamond)"/>
+    <text x="432" y="140" font-size="34" font-weight="700" fill="#e8b33c" letter-spacing="1">340</text>
+  </g>
+  <text x="328" y="166" font-size="11" fill="#5a6572">◆ + 数字，中间不空格；胜利 = 全额（crystalBoss 60 / crystalKill 1）</text>
+
+  <!-- ================= 左下：死亡版 ================= -->
+  <text x="56" y="228" font-size="13" font-weight="700" fill="#e0a3a3">状态 B · 不幸阵亡（won = false，不评星）</text>
+  <g filter="url(#stlShadow)">
+    <rect x="48" y="242" width="576" height="126" rx="10" fill="#171b22" stroke="#4a2e2e" stroke-width="2"/>
+  </g>
+  <text x="72" y="288" font-size="17" fill="#a88a4a">结晶收益</text>
+  <g>
+    <path d="M164 304 l9 -11 l9 11 l-9 11 Z" fill="#8a6a2a"/>
+    <text x="188" y="316" font-size="34" font-weight="700" fill="#c9a35a" letter-spacing="1">38</text>
+  </g>
+  <text x="258" y="298" font-size="15" fill="#e0a3a3">（死亡仅保留 30%）</text>
+  <text x="258" y="318" font-size="11" fill="#e0a3a3" opacity="0.85">代码写的是 30%% — Godot 转义，屏幕显示一个 %</text>
+  <text x="72" y="350" font-size="11" fill="#5a6572">死亡不给星；击杀 128 × 0.3 = 38.4 → 抹掉小数 = 38（floori）</text>
+
+  <!-- ================= 右上：收益规则流程 ================= -->
+  <text x="664" y="52" font-size="12.5" font-weight="700" fill="#e8b33c">收益规则流程（_apply_settle_to_meta 166~186）</text>
+
+  <!-- 起点 -->
+  <g>
+    <rect x="664" y="70" width="140" height="46" rx="8" fill="#252a34" stroke="#3a4150"/>
+    <text x="734" y="99" font-size="14" fill="#e2e6ee" text-anchor="middle">一局结束</text>
+  </g>
+  <path d="M804 93 L838 93" stroke="#8a93a5" stroke-width="1.5" marker-end="url(#stlArrowHead)"/>
+  <g>
+    <path d="M846 70 l48 23 l-48 23 Z" fill="#1d2027" stroke="#e8b33c" stroke-width="1.5"/>
+    <text x="864" y="98" font-size="13" fill="#e8b33c">won?</text>
+  </g>
+
+  <!-- 分支：赢 -->
+  <path d="M894 82 L930 82 L930 62 L980 62" stroke="url(#stlArrow)" stroke-width="1.5" fill="none" marker-end="url(#stlArrowHead)"/>
+  <text x="946" y="56" font-size="11" fill="#9fe0af">是</text>
+  <g>
+    <rect x="984" y="44" width="256" height="40" rx="7" fill="#2e4a36" stroke="#4a7a56"/>
+    <text x="1000" y="69" font-size="13" fill="#9fe0af">① 全额结晶（◆340）</text>
+  </g>
+  <g>
+    <rect x="984" y="92" width="256" height="40" rx="7" fill="#2e4a36" stroke="#4a7a56"/>
+    <text x="1000" y="117" font-size="13" fill="#9fe0af">② 解锁下一关（unlock_level_to +2）</text>
+  </g>
+  <g>
+    <rect x="984" y="140" width="256" height="40" rx="7" fill="#2e4a36" stroke="#4a7a56"/>
+    <text x="1000" y="165" font-size="13" fill="#9fe0af">③ 写星级 set_level_stars()</text>
+  </g>
+  <path d="M1112 84 L1112 92 M1112 132 L1112 140" stroke="#8a93a5" stroke-width="1.2" stroke-dasharray="3 3"/>
+
+  <!-- 分支：输 -->
+  <path d="M894 104 L930 104 L930 250 L980 250" stroke="#a86b6b" stroke-width="1.5" fill="none" marker-end="url(#stlArrowHead)"/>
+  <text x="946" y="234" font-size="11" fill="#e0a3a3">否</text>
+  <g>
+    <rect x="900" y="230" width="28" height="40" fill="#131c2c"/>
+    <rect x="984" y="230" width="256" height="40" rx="7" fill="#4a2e2e" stroke="#7a4a4a"/>
+    <text x="1000" y="255" font-size="13" fill="#e0a3a3">结晶 = 击杀数 × 30%</text>
+  </g>
+  <text x="984" y="290" font-size="10.5" fill="#8a93a5">deathRatio = 0.3（cfg/outLevel.json 44 行）</text>
+  <text x="984" y="306" font-size="10.5" fill="#8a93a5">128 × 0.3 = 38.4 → floori → ◆38</text>
+  <text x="984" y="292" font-size="11" fill="#8a93a5">解锁 / 星级：不动</text>
+
+  <!-- 汇合 -->
+  <g>
+    <rect x="664" y="176" width="288" height="40" rx="8" fill="#252a34" stroke="#3a4150"/>
+    <text x="808" y="198" font-size="12" fill="#e2e6ee" text-anchor="middle">add_crystals() + meta.commit()（183~186）</text>
+  </g>
+  <path d="M664 196 L628 196" stroke="#8a93a5" stroke-width="1.5" marker-end="url(#stlArrowHead)"/>
+
+  <path d="M952 190 L952 222 L1000 222 L1000 230" stroke="#8a93a5" stroke-width="1" stroke-dasharray="3 3" fill="none" marker-end="url(#stlArrowHead)"/>
+
+  <!-- 数据来源注 -->
+  <g>
+    <rect x="664" y="292" width="576" height="82" rx="8" fill="#0d1017" stroke="#2b3240"/>
+    <text x="680" y="314" font-size="12" font-weight="700" fill="#8a93a5">口径提醒</text>
+    <g font-size="11.5" fill="#8d95a5">
+      <text x="680" y="336">显示的「结晶」实际是金币（combat.gd 367 行 PLACEHOLDER：结晶折算口径待 settleConvert 接入）</text>
+      <text x="680" y="356">stars 没人发 → 永远 1 星；「解锁下一关」写了但屏上不显示 → 玩家回选关才知道</text>
+    </g>
+  </g>
+
+  <!-- ================= 底部红字：设计冲突 ================= -->
+  <g>
+    <rect x="48" y="392" width="1192" height="198" rx="10" fill="#1a1414" stroke="#e2554f" stroke-width="2" stroke-dasharray="7 5"/>
+    <rect x="48" y="392" width="8" height="198" rx="4" fill="#e2554f"/>
+    <text x="76" y="424" font-size="16" font-weight="700" fill="#ff8a84">⚠ 设计冲突：死亡到底丢多少？两个口径必须二选一</text>
+
+    <g>
+      <rect x="76" y="442" width="560" height="86" rx="6" fill="#101316" stroke="#3a4150"/>
+      <text x="92" y="466" font-size="13" font-weight="700" fill="#e2e6ee">口径 1 · 太奶奶定的（005-战斗 定-1）</text>
+      <text x="92" y="490" font-size="12.5" fill="#c9ced9">「死了丢光本局捡到的所有东西」（局外等级保住）</text>
+      <text x="92" y="512" font-size="11.5" fill="#8a93a5">→ 死亡版应为「◆0 · 本局收获全部丢失」</text>
+    </g>
+
+    <g>
+      <rect x="656" y="442" width="560" height="86" rx="6" fill="#101316" stroke="#3a4150"/>
+      <text x="672" y="466" font-size="13" font-weight="700" fill="#e2e6ee">口径 2 · 代码实际（flow_root.gd 177~182）</text>
+      <text x="672" y="490" font-size="12.5" fill="#c9ced9">「死亡仅保留 30%」，击杀数 × deathRatio(0.3)</text>
+      <text x="672" y="512" font-size="11.5" fill="#8a93a5">→ 死亡版为「◆38（死亡仅保留 30%）」</text>
+    </g>
+
+    <g font-size="12.5" fill="#e0a3a3">
+      <text x="76" y="554">「丢光」和「保留 30%」是相反的承诺，同一屏不能并存。建议：功能上按口径 1 先落地（更符合「下矿赌命」的调子），</text>
+      <text x="76" y="574">若要用 30% 缓冲，就把它写成正式规则并改 005 定-1 —— 改之前，死亡版文字不能出现「保留 30%」。</text>
+    </g>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B003-结晶收益 / 1280×720 / v1.0</text>
+</svg>

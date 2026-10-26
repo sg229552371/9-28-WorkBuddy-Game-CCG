@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B004 返回选关 按钮规格 + 流程箭头</title>
+
+  <defs>
+    <linearGradient id="chrBg5" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <filter id="chrShadow5" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="4" stdDeviation="9" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <marker id="chrA5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="chrA5w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e2e6ee"/>
+    </marker>
+    <marker id="chrA5r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e2554f"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#chrBg5)"/>
+  <text x="48" y="46" font-size="18" font-weight="700" fill="#e8b33c" letter-spacing="3">返回选关</text>
+  <text x="176" y="46" font-size="13" fill="#8a93a5">B004-返回选关　｜　140 × 48，左下角，永远可点 —— 选错了关卡，退一步就能换</text>
+  <path d="M48 60 L1232 60" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- ============ A 按钮（3× 放大） ============ -->
+  <text x="48" y="92" font-size="13" font-weight="700" fill="#e8b33c">A. 按钮本体（2.5× 放大 · 350 × 120 示意）</text>
+
+  <g transform="translate(48,106)">
+    <rect x="0" y="0" width="440" height="220" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
+    <!-- 面板底部行示意（左边空白把按钮顶到右边 → 这里只画按钮本身，靠左对齐演示） -->
+    <g filter="url(#chrShadow5)">
+      <rect x="24" y="52" width="350" height="120" rx="20" fill="#252a34"/>
+    </g>
+    <text x="199" y="128" font-size="50" fill="#e2e6ee" text-anchor="middle">返回</text>
+
+    <!-- 尺寸 -->
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
+      <path d="M24 40 L374 40" marker-start="url(#chrA5)" marker-end="url(#chrA5)"/>
+      <path d="M24 34 L24 46 M374 34 L374 46"/>
+      <path d="M406 52 L406 172" marker-start="url(#chrA5)" marker-end="url(#chrA5)"/>
+      <path d="M400 52 L412 52 M400 172 L412 172"/>
+    </g>
+    <text x="199" y="36" font-size="12" fill="#e8b33c" text-anchor="middle">140 宽</text>
+    <text x="420" y="116" font-size="12" fill="#e8b33c">48</text>
+    <text x="24" y="196" font-size="11.5" fill="#8a93a5">底 #252a34 · 圆角 8 · 无边框 · 字 20 号 #e2e6ee</text>
+    <text x="24" y="212" font-size="11.5" fill="#5a6572">悬停 / 按下沿用系统默认（很轻）→ 建议按下加一点下沉，防连点</text>
+  </g>
+
+  <!-- ============ B 同一行对照 ============ -->
+  <g>
+    <text x="512" y="92" font-size="13" font-weight="700" fill="#e8b33c">B. 和「开始出战」挤在同一行（1:1）</text>
+    <rect x="512" y="106" width="720" height="220" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
+    <!-- 面板底部 -->
+    <rect x="536" y="136" width="672" height="160" rx="8" fill="#1d2027" stroke="#252a34" stroke-width="1"/>
+    <rect x="552" y="212" width="140" height="48" rx="8" fill="#252a34"/>
+    <text x="622" y="242" font-size="20" fill="#e2e6ee" text-anchor="middle">返回</text>
+    <rect x="988" y="212" width="220" height="48" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="2"/>
+    <text x="1098" y="242" font-size="20" font-weight="700" fill="#e8b33c" text-anchor="middle">开始出战 (2/3)</text>
+
+    <!-- 左边空白 -->
+    <path d="M700 236 L980 236" stroke="#3a4150" stroke-width="1" stroke-dasharray="6 5"/>
+    <text x="840" y="228" font-size="11" fill="#5a6572" text-anchor="middle">空白占位（把两个按钮顶到两端）</text>
+
+    <text x="552" y="180" font-size="11.5" fill="#8a93a5">左：退路 —— 素的、小的</text>
+    <text x="1208" y="180" font-size="11.5" fill="#e8b33c" text-anchor="end">右：正事 —— 金的、大的</text>
+
+    <text x="552" y="284" font-size="11.5" fill="#5a6572">左右内边距各 24 · 两个按钮同一水平线 · 不要把「返回」也做成金色，会抢主次</text>
+  </g>
+
+  <!-- ============ C 流程 ============ -->
+  <g>
+    <text x="48" y="368" font-size="13" font-weight="700" fill="#e8b33c">C. 它在整个流程里的位置</text>
+    <rect x="48" y="380" width="1184" height="200" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
+
+    <!-- 主城 -->
+    <g>
+      <rect x="76" y="430" width="180" height="96" rx="8" fill="#252a34" stroke="#5a6572" stroke-width="1.5"/>
+      <text x="166" y="470" font-size="17" font-weight="700" fill="#e2e6ee" text-anchor="middle">主城</text>
+      <text x="166" y="492" font-size="11" fill="#8a93a5" text-anchor="middle">002</text>
+    </g>
+    <path d="M262 478 L336 478" stroke="#5a6572" stroke-width="2" marker-end="url(#chrA5w)"/>
+    <text x="299" y="468" font-size="10" fill="#5a6572" text-anchor="middle">进门 2s</text>
+
+    <!-- 选关 -->
+    <g>
+      <rect x="342" y="430" width="180" height="96" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="2"/>
+      <text x="432" y="470" font-size="17" font-weight="700" fill="#e8b33c" text-anchor="middle">选关</text>
+      <text x="432" y="492" font-size="11" fill="#8a93a5" text-anchor="middle">003</text>
+    </g>
+    <path d="M528 478 L602 478" stroke="#e8b33c" stroke-width="2" marker-end="url(#chrA5)"/>
+    <text x="565" y="468" font-size="10" fill="#e8b33c" text-anchor="middle">点关卡</text>
+
+    <!-- 选人（当前） -->
+    <g>
+      <rect x="608" y="430" width="180" height="96" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="2.5"/>
+      <text x="698" y="470" font-size="17" font-weight="700" fill="#e8b33c" text-anchor="middle">选人</text>
+      <text x="698" y="492" font-size="11" fill="#8a93a5" text-anchor="middle">004 · 你在这</text>
+    </g>
+    <path d="M794 478 L868 478" stroke="#e8b33c" stroke-width="2" marker-end="url(#chrA5)"/>
+    <text x="831" y="468" font-size="10" fill="#e8b33c" text-anchor="middle">开始出战</text>
+
+    <!-- 战斗 -->
+    <g>
+      <rect x="874" y="430" width="180" height="96" rx="8" fill="#1b2029" stroke="#3a4150" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="964" y="470" font-size="17" font-weight="700" fill="#5a6572" text-anchor="middle">战斗</text>
+      <text x="964" y="492" font-size="11" fill="#3a4150" text-anchor="middle">005</text>
+    </g>
+
+    <!-- 返回弧线：选人 → 选关 -->
+    <path d="M660 538 Q540 600 400 530" stroke="#e8b33c" stroke-width="2.5" fill="none" marker-end="url(#chrA5)"/>
+    <text x="540" y="596" font-size="12.5" font-weight="700" fill="#e8b33c" text-anchor="middle">点「返回」→ 直接切回选关（不经过主城）</text>
+
+    <!-- 清空标注 -->
+    <path d="M760 538 L820 570" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#chrA5r)"/>
+    <rect x="820" y="546" width="300" height="26" rx="6" fill="#4a2e2e"/>
+    <text x="970" y="564" font-size="12" fill="#e0a3a3" text-anchor="middle">已选队伍会被清空（下次进来重新选人）</text>
+
+    <text x="76" y="410" font-size="11.5" fill="#8a93a5">白名单：选人屏只允许去 <tspan fill="#e2e6ee">选关</tspan> 和 <tspan fill="#e2e6ee">战斗</tspan> —— 回主城不是这条路</text>
+  </g>
+
+  <!-- ============ 行为条款 ============ -->
+  <g>
+    <text x="48" y="610" font-size="13" font-weight="700" fill="#e8b33c">D. 点下去之后</text>
+    <g font-size="12.5" fill="#cdd3de">
+      <text x="48" y="636">① 立刻切到选关（无转场动画） → ② 关卡列表<b>不重建</b>，位置也不变 → ③ 队伍名单下次进选人时是空的</text>
+      <text x="48" y="658">不变的：结晶、已解锁关数、关卡星级记录、本局关卡编号（除非重新点了别的关）</text>
+    </g>
+    <text x="48" y="680" font-size="12" fill="#5a6572">这是「换一关」的反悔键，不是「不打了」—— 不弹「确定放弃配队吗？」，配队 30 秒能重配好，弹框只会烦人。</text>
+  </g>
+
+  <!-- ============ 规格速查 ============ -->
+  <g>
+    <rect x="840" y="596" width="392" height="104" rx="10" fill="#0d1017" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="856" y="616" font-size="13" font-weight="700" fill="#e8b33c">规格速查</text>
+    <text x="856" y="638" font-size="11.5" fill="#cdd3de">尺寸 140 × 48　圆角 8　无边框　底色 #252a34</text>
+    <text x="856" y="658" font-size="11.5" fill="#cdd3de">文字「返回」20 号 #e2e6ee（不是金色）</text>
+    <text x="856" y="678" font-size="11.5" fill="#cdd3de">位置：底部行靠左，距面板左边 24</text>
+    <text x="856" y="694" font-size="11" fill="#5a6572">Esc 当前未绑定（建议补）</text>
+  </g>
+
+  <text x="1248" y="712" font-size="12" fill="#5a6572" text-anchor="end">B004-返回选关 / 1280×720 / v1.0</text>
+</svg>

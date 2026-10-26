@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B001 出征传送门 规格图（圈 4 态 + 读条环尺寸）</title>
+
+  <defs>
+    <linearGradient id="ctyBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <radialGradient id="ctyGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffd76a" stop-opacity="0.26"/>
+      <stop offset="0.55" stop-color="#ffd76a" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="#ffd76a" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="ctyShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="7" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <marker id="ctyArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#ctyBg)"/>
+  <g stroke="rgba(61,79,107,0.16)" stroke-width="1">
+    <path d="M0 64 H1280 M0 128 H1280 M0 192 H1280 M0 256 H1280 M0 320 H1280 M0 384 H1280 M0 448 H1280 M0 512 H1280 M0 576 H1280 M0 640 H1280 M0 704 H1280"/>
+    <path d="M64 0 V720 M128 0 V720 M192 0 V720 M256 0 V720 M320 0 V720 M640 0 V720 M704 0 V720 M768 0 V720 M832 0 V720 M896 0 V720 M960 0 V720 M1024 0 V720 M1088 0 V720 M1152 0 V720 M1216 0 V720"/>
+  </g>
+
+  <!-- 页眉 -->
+  <text x="32" y="40" font-size="13" fill="#5d6575" letter-spacing="3">002-主城 / 点位 01</text>
+  <text x="32" y="70" font-size="24" font-weight="700" fill="#ffd76a">出征传送门</text>
+  <text x="32" y="92" font-size="12" fill="#a6b2c7">地图坐标 (640, 180)　r 90　金色 #ffd76a　符号 &gt;&gt;　读条 2 秒</text>
+  <text x="32" y="110" font-size="12" fill="#8d95a5">主城里唯一一条「出门」的路：走进圈 → 站在圈里数 2 秒 → 弹出选关屏</text>
+
+  <text x="808" y="42" font-size="12" fill="#8d95a5" text-anchor="end">规格 v1.0　｜　读条环 = 圈外 12px · 粗 5px · 12 点起顺时针</text>
+  <line x1="32" y1="122" x2="1248" y2="122" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- ============ 状态 1 常态 ============ -->
+  <g id="ctyState1">
+    <text x="32" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">① 常态　玩家不在圈里</text>
+    <circle cx="180" cy="256" r="150" fill="url(#ctyGlow)" opacity="0.35"/>
+    <circle cx="180" cy="256" r="90" fill="none" stroke="#ffd76a" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="17 14"/>
+    <circle cx="180" cy="256" r="22" fill="rgba(18,28,46,0.9)" stroke="#ffd76a" stroke-width="2.5"/>
+    <text x="180" y="263" font-size="18" font-weight="700" fill="#ffd76a" text-anchor="middle">&gt;&gt;</text>
+    <text x="180" y="132" font-size="16" fill="#e8e2c8" text-anchor="middle">出征传送门</text>
+    <text x="180" y="150" font-size="12" fill="#a6b2c7" text-anchor="middle">进圈读条 2 秒 → 选择关卡出征</text>
+    <text x="180" y="396" font-size="11" fill="#5d6575" text-anchor="middle">虚线 2px · 透明度 70% · 无读条环</text>
+  </g>
+  <line x1="352" y1="150" x2="352" y2="404" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- ============ 状态 2 进圈 ============ -->
+  <g id="ctyState2">
+    <text x="380" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">② 玩家进圈（0 秒那一刻）</text>
+    <circle cx="528" cy="256" r="150" fill="url(#ctyGlow)"/>
+    <circle cx="528" cy="256" r="90" fill="none" stroke="#ffd76a" stroke-width="2" stroke-dasharray="17 14"/>
+    <circle cx="528" cy="256" r="22" fill="rgba(18,28,46,0.9)" stroke="#ffd76a" stroke-width="2.5"/>
+    <text x="528" y="263" font-size="18" font-weight="700" fill="#ffd76a" text-anchor="middle">&gt;&gt;</text>
+    <text x="528" y="132" font-size="16" fill="#e8e2c8" text-anchor="middle">出征传送门</text>
+    <text x="528" y="150" font-size="12" fill="#a6b2c7" text-anchor="middle">进圈读条 2 秒 → 选择关卡出征</text>
+    <!-- 读条环 0% -->
+    <circle cx="528" cy="256" r="102" fill="none" stroke="#ffd76a" stroke-opacity="0.18" stroke-width="5"/>
+    <circle cx="528" cy="256" r="102" fill="none" stroke="#ffd76a" stroke-width="5" stroke-linecap="round" stroke-dasharray="0 641"/>
+    <!-- 玩家 -->
+    <circle cx="528" cy="330" r="11" fill="#40e0c0"/>
+    <circle cx="528" cy="330" r="17" fill="none" stroke="#40e0c0" stroke-opacity="0.35" stroke-width="1.5"/>
+    <text x="528" y="396" font-size="11" fill="#5d6575" text-anchor="middle">圈变 100% 不透明 · 读条环从 12 点长出 0px</text>
+  </g>
+  <line x1="704" y1="150" x2="704" y2="404" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- ============ 状态 3 读条 60% ============ -->
+  <g id="ctyState3">
+    <text x="732" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">③ 读条中 60%（1.2 / 2.0 秒）</text>
+    <circle cx="880" cy="256" r="150" fill="url(#ctyGlow)"/>
+    <circle cx="880" cy="256" r="90" fill="none" stroke="#ffd76a" stroke-width="2" stroke-dasharray="17 14"/>
+    <circle cx="880" cy="256" r="22" fill="rgba(18,28,46,0.9)" stroke="#ffd76a" stroke-width="2.5"/>
+    <text x="880" y="263" font-size="18" font-weight="700" fill="#ffd76a" text-anchor="middle">&gt;&gt;</text>
+    <text x="880" y="132" font-size="16" fill="#e8e2c8" text-anchor="middle">出征传送门</text>
+    <text x="880" y="150" font-size="12" fill="#a6b2c7" text-anchor="middle">进圈读条 2 秒 → 选择关卡出征</text>
+    <circle cx="880" cy="256" r="102" fill="none" stroke="#ffd76a" stroke-opacity="0.18" stroke-width="5"/>
+    <path d="M880 154 A102 102 0 0 1 826.1 366.0" fill="none" stroke="#ffd76a" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="880" cy="330" r="11" fill="#40e0c0"/>
+    <text x="880" y="396" font-size="11" fill="#5d6575" text-anchor="middle">弧长 216° ≈ 60% · 从上往下顺时针</text>
+  </g>
+  <line x1="1056" y1="150" x2="1056" y2="404" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- ============ 状态 4 完成 ============ -->
+  <g id="ctyState4">
+    <text x="1084" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">④ 读条完成（闪光脉冲）</text>
+    <circle cx="1160" cy="256" r="150" fill="url(#ctyGlow)"/>
+    <circle cx="1160" cy="256" r="128" fill="none" stroke="#ffd76a" stroke-opacity="0.28" stroke-width="2"/>
+    <circle cx="1160" cy="256" r="112" fill="none" stroke="#ffd76a" stroke-opacity="0.5" stroke-width="3"/>
+    <circle cx="1160" cy="256" r="90" fill="#ffd76a" fill-opacity="0.14" stroke="#ffd76a" stroke-width="2.5"/>
+    <circle cx="1160" cy="256" r="22" fill="rgba(18,28,46,0.9)" stroke="#ffd76a" stroke-width="3"/>
+    <text x="1160" y="263" font-size="18" font-weight="700" fill="#ffd76a" text-anchor="middle">&gt;&gt;</text>
+    <text x="1160" y="132" font-size="16" fill="#e8e2c8" text-anchor="middle">出征传送门</text>
+    <text x="1160" y="150" font-size="12" fill="#a6b2c7" text-anchor="middle">进圈读条 2 秒 → 选择关卡出征</text>
+    <circle cx="1160" cy="330" r="11" fill="#40e0c0"/>
+    <text x="1160" y="396" font-size="11" fill="#5d6575" text-anchor="middle">环闭合 + 两层外扩 · 0.2 秒后弹选关屏</text>
+  </g>
+
+  <line x1="32" y1="418" x2="1248" y2="418" stroke="#2b3240" stroke-width="1" stroke-dasharray="6 6"/>
+
+  <!-- ============ 下半：读条环尺寸 + 流程 ============ -->
+  <text x="32" y="446" font-size="13" font-weight="700" fill="#ffd76a" letter-spacing="2">读 条 环 尺 寸</text>
+
+  <g id="ctyRingSpec">
+    <circle cx="256" cy="576" r="108" fill="none" stroke="#2b3440" stroke-width="1" stroke-dasharray="2 4"/>
+    <circle cx="256" cy="576" r="90" fill="none" stroke="#ffd76a" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="17 14"/>
+    <circle cx="256" cy="576" r="102" fill="none" stroke="#ffd76a" stroke-opacity="0.25" stroke-width="5"/>
+    <path d="M256 474 A102 102 0 1 1 167.2 627.4" fill="none" stroke="#ffd76a" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="256" cy="576" r="22" fill="rgba(18,28,46,0.9)" stroke="#ffd76a" stroke-width="2.5"/>
+    <text x="256" y="583" font-size="18" font-weight="700" fill="#ffd76a" text-anchor="middle">&gt;&gt;</text>
+
+    <!-- 半径 90 -->
+    <path d="M256 576 L346 576" stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3"/>
+    <circle cx="256" cy="576" r="2" fill="#e8b33c"/>
+    <text x="301" y="570" font-size="11" fill="#e8b33c" text-anchor="middle">r 90</text>
+
+    <!-- 外扩 12 -->
+    <path d="M346 576 L358 576" stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="352" y="598" font-size="10.5" fill="#e8b33c" text-anchor="middle">+12</text>
+
+    <!-- 粗 5 -->
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="3 3">
+      <path d="M352 468 H364 M352 478 H364 M364 468 V478"/>
+    </g>
+    <text x="370" y="476" font-size="10.5" fill="#e8b33c">5</text>
+
+    <!-- 12 点起 -->
+    <text x="266" y="464" font-size="10.5" fill="#8d95a5">起笔 12 点 · 顺时针</text>
+  </g>
+
+  <!-- 流程 -->
+  <g id="ctyFlow">
+    <text x="456" y="446" font-size="12" fill="#8d95a5">触发流程　（同一圈只触发一次，走出再进才重置）</text>
+    <g font-size="11.5" fill="#a6b2c7">
+      <rect x="456" y="458" width="150" height="30" rx="6" fill="#16233a" stroke="#2b3440"/>
+      <text x="531" y="478" text-anchor="middle" fill="#e8e2c8">走进圈 · r&gt;90 外→内</text>
+      <path d="M610 473 H636" stroke="#e8b33c" stroke-width="1.5" marker-end="url(#ctyArrow)"/>
+      <rect x="642" y="458" width="128" height="30" rx="6" fill="#16233a" stroke="#2b3440"/>
+      <text x="706" y="478" text-anchor="middle">圈变实 + 读条环</text>
+      <path d="M774 473 H800" stroke="#e8b33c" stroke-width="1.5" marker-end="url(#ctyArrow)"/>
+      <rect x="806" y="458" width="112" height="30" rx="6" fill="#16233a" stroke="#2b3440"/>
+      <text x="862" y="478" text-anchor="middle">站 2.0 秒</text>
+      <path d="M922 473 H948" stroke="#e8b33c" stroke-width="1.5" marker-end="url(#ctyArrow)"/>
+      <rect x="954" y="458" width="140" height="30" rx="6" fill="#16233a" stroke="#c9a84c"/>
+      <text x="1024" y="478" text-anchor="middle" fill="#ffd76a">广播「我要出征了」</text>
+      <path d="M1098 473 H1124" stroke="#e8b33c" stroke-width="1.5" marker-end="url(#ctyArrow)"/>
+      <rect x="1130" y="458" width="118" height="30" rx="6" fill="#16233a" stroke="#3a4150"/>
+      <text x="1189" y="478" text-anchor="middle">盖选关屏 0.2s</text>
+    </g>
+
+    <g font-size="11.5" fill="#8d95a5">
+      <text x="456" y="512">· 出圈立即清零，环消失，不弹任何提示</text>
+      <text x="456" y="532">· 读条完成后人还在圈里 → 不重复触发（防「打完又被弹回选关」）</text>
+      <text x="456" y="552">· 圈内同时踩到别的门不会发生：最近两道门相距 ≥ 200px</text>
+      <text x="456" y="572">· 圆形图章 r 22 · 底 rgba(18,28,46,0.9) · 金边 2.5px · 符号 &gt;&gt; 18 号</text>
+      <text x="456" y="592">· 圈外 70% 透明 → 圈内 100%；读条环只在圈内出现</text>
+    </g>
+
+    <!-- 兜底文案问题 -->
+    <rect x="456" y="608" width="560" height="44" rx="8" fill="#2a1b1b" stroke="#e2554f" stroke-opacity="0.55"/>
+    <text x="472" y="626" font-size="11.5" fill="#e2554f">⚠ cfg/city.json 的 desc 若丢失，会显示兜底乱码「游荡图签 2×9 · 凯觎关卡进程」</text>
+    <text x="472" y="644" font-size="11" fill="#b08a8a">现已确认：正常读到的是正确那句；乱码是埋着的雷，需改成「进圈读条 2 秒 · 选关出征」</text>
+  </g>
+
+  <!-- 规格速查 -->
+  <g>
+    <rect x="1040" y="500" width="208" height="152" rx="10" fill="#0d1017" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="1056" y="521" font-size="12.5" font-weight="700" fill="#e8b33c">规格速查</text>
+    <text x="1056" y="541" font-size="11" fill="#a6b2c7">位置 (640, 180)</text>
+    <text x="1056" y="558" font-size="11" fill="#a6b2c7">圈半径 90　虚线 2px</text>
+    <text x="1056" y="575" font-size="11" fill="#a6b2c7">环半径 102（外 12）</text>
+    <text x="1056" y="592" font-size="11" fill="#a6b2c7">环粗 5　色 #ffd76a</text>
+    <text x="1056" y="609" font-size="11" fill="#a6b2c7">印章 r 22　符号 &gt;&gt; 18</text>
+    <text x="1056" y="626" font-size="11" fill="#a6b2c7">名称 16 #e8e2c8 / 副 12</text>
+    <text x="1056" y="643" font-size="11" fill="#5d6575">虚线/标注游戏内不显示</text>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B001-出征传送门 / 1280×720 / v1.0</text>
+</svg>

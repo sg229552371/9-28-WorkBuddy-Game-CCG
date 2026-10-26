@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <desc>B003-设置 界面规格图</desc>
+
+  <rect width="1280" height="720" fill="#131c2c"/>
+
+  <g font-family="Noto Sans SC, Microsoft YaHei, sans-serif">
+    <rect x="24" y="16" width="88" height="40" rx="6" fill="#252a34" stroke="#3a4150"/>
+    <text x="68" y="42" font-size="16" fill="#e2e6ee" text-anchor="middle">← 返回</text>
+    <text x="640" y="44" font-size="24" font-weight="bold" fill="#e8b33c" text-anchor="middle" letter-spacing="4">设  置</text>
+    <line x1="24" y1="72" x2="1256" y2="72" stroke="#2a2f3a"/>
+
+    <text x="200" y="160" font-size="18" fill="#e2e6ee">音效音量</text>
+    <rect x="336" y="151" width="380" height="6" rx="3" fill="#2a2f3a"/>
+    <rect x="336" y="151" width="304" height="6" rx="3" fill="#e8b33c"/>
+    <circle cx="640" cy="154" r="10" fill="#e8b33c" stroke="#e2e6ee" stroke-width="2"/>
+    <text x="736" y="162" font-size="18" font-weight="bold" fill="#e8b33c">80%</text>
+
+    <text x="200" y="220" font-size="18" fill="#e2e6ee">音乐音量</text>
+    <rect x="336" y="211" width="380" height="6" rx="3" fill="#2a2f3a"/>
+    <rect x="336" y="211" width="266" height="6" rx="3" fill="#e8b33c"/>
+    <circle cx="602" cy="214" r="10" fill="#e8b33c" stroke="#e2e6ee" stroke-width="2"/>
+    <text x="736" y="222" font-size="18" font-weight="bold" fill="#e8b33c">70%</text>
+
+    <rect x="200" y="270" width="180" height="56" rx="8" fill="#252a34" stroke="#3a4150"/>
+    <text x="290" y="304" font-size="18" fill="#e2e6ee" text-anchor="middle">静音</text>
+
+    <rect x="412" y="270" width="180" height="56" rx="8" fill="#2e4a36" stroke="#4a7a56"/>
+    <text x="502" y="304" font-size="18" fill="#9fe0af" text-anchor="middle">画质：中</text>
+
+    <rect x="624" y="270" width="180" height="56" rx="8" fill="#2e4a36" stroke="#4a7a56"/>
+    <text x="714" y="304" font-size="18" fill="#9fe0af" text-anchor="middle">✓ 全屏</text>
+
+    <text x="200" y="368" font-size="13" fill="#5a6572">常态：底 #252a34　边框 #3a4150　文字 #e2e6ee</text>
+    <text x="200" y="390" font-size="13" fill="#5a6572">开启态：底 #2e4a36　边框 #4a7a56　文字 #9fe0af　前缀 ✓</text>
+
+    <rect x="500" y="560" width="280" height="48" rx="8" fill="#252a34" stroke="#3a4150"/>
+    <text x="640" y="590" font-size="20" fill="#e2e6ee" text-anchor="middle" letter-spacing="2">返 回</text>
+
+    <line x1="80" y1="440" x2="1200" y2="440" stroke="#2a2f3a"/>
+    <text x="80" y="472" font-size="15" font-weight="bold" fill="#e8b33c">滑杆规格（两项相同）</text>
+    <g font-size="13" fill="#8a93a5">
+      <text x="80" y="498">轨道：高 6　圆角 3　底 #2a2f3a　已填充 #e8b33c</text>
+      <text x="80" y="520">滑块：直径 20　填充 #e8b33c　描边 2px #e2e6ee</text>
+      <text x="80" y="542">悬停：直径 22 + 外发光 4px rgba(232,179,60,0.4)　拖动中：直径 24</text>
+    </g>
+
+    <text x="660" y="472" font-size="15" font-weight="bold" fill="#e8b33c">行为要求</text>
+    <g font-size="13" fill="#8a93a5">
+      <text x="660" y="498">拖动即刻生效（不许等退出重进）</text>
+      <text x="660" y="520">静音再取消时，恢复到玩家自己调过的音量，不是默认 80%</text>
+      <text x="660" y="542">改完自动存档，不需玩家点保存</text>
+    </g>
+  </g>
+</svg>

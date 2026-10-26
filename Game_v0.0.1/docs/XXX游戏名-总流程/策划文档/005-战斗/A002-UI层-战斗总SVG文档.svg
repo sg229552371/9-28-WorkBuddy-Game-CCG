@@ -1,0 +1,222 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>005-战斗 · 整屏总图（1280×720 实尺寸）</title>
+
+  <defs>
+    <linearGradient id="btlBg" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="0.55" stop-color="#12161f"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <radialGradient id="btlGround" cx="0.5" cy="0.62" r="0.55">
+      <stop offset="0" stop-color="#1d2a26" stop-opacity="0.9"/>
+      <stop offset="0.6" stop-color="#141b20" stop-opacity="0.6"/>
+    </radialGradient>
+    <radialGradient id="btlVig" cx="0.5" cy="0.5" r="0.62">
+      <stop offset="1" stop-color="#000000" stop-opacity="0.55"/>
+    </radialGradient>
+    <linearGradient id="btlGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd140"/>
+      <stop offset="1" stop-color="#e8b33c"/>
+    </linearGradient>
+    <filter id="btlBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3.5"/>
+    </filter>
+    <filter id="btlTextShadow" x="-20%" y="-40%" width="140%" height="180%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.7"/>
+    </filter>
+    <marker id="btlArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <!-- ============ L0 战场底：深色 + 网格 + 模糊怪物/弹幕剪影 ============ -->
+  <rect x="0" y="0" width="1280" height="720" fill="url(#btlBg)"/>
+  <rect x="0" y="0" width="1280" height="720" fill="url(#btlGround)"/>
+  <g stroke="#22302e" stroke-width="1" opacity="0.5">
+    <path d="M0 120 L1280 120 M0 240 L1280 240 M0 360 L1280 360 M0 480 L1280 480 M0 600 L1280 600"/>
+    <path d="M160 0 L160 720 M320 0 L320 720 M480 0 L480 720 M640 0 L640 720 M800 0 L800 720 M960 0 L960 720 M1120 0 L1120 720"/>
+  </g>
+
+  <!-- 模糊怪物剪影（简单圆形/三角，不抢 HUD） -->
+  <g filter="url(#btlBlur)" opacity="0.5">
+    <circle cx="210" cy="300" r="26" fill="#2a3a33"/>
+    <circle cx="210" cy="300" r="9" fill="#3d5a4a"/>
+    <circle cx="380" cy="470" r="20" fill="#26332e"/>
+    <circle cx="380" cy="470" r="7" fill="#3a5446"/>
+    <circle cx="880" cy="330" r="30" fill="#2c3a34"/>
+    <circle cx="880" cy="330" r="10" fill="#43604f"/>
+    <circle cx="1050" cy="440" r="22" fill="#26332e"/>
+    <circle cx="1050" cy="440" r="8" fill="#3a5446"/>
+    <path d="M700 250 l22 -34 l22 34 z" fill="#33282a"/>
+    <path d="M1140 250 l18 -28 l18 28 z" fill="#33282a"/>
+    <path d="M120 500 l16 -24 l16 24 z" fill="#33282a"/>
+    <path d="M560 560 l18 -27 l18 27 z" fill="#33282a"/>
+  </g>
+
+  <!-- 弹幕剪影：短线条 + 小圆点 -->
+  <g filter="url(#btlBlur)" stroke="#8a6b3a" stroke-width="2.5" opacity="0.35" stroke-linecap="round">
+    <path d="M760 420 L800 400"/><path d="M820 460 L860 436"/>
+    <path d="M960 380 L1000 362"/><path d="M300 380 L338 362"/>
+    <path d="M640 300 L676 286"/><path d="M1120 520 L1156 506"/>
+  </g>
+  <g filter="url(#btlBlur)" fill="#b07f3a" opacity="0.32">
+    <circle cx="700" cy="392" r="5"/><circle cx="835" cy="404" r="4"/>
+    <circle cx="905" cy="452" r="5"/><circle cx="452" cy="420" r="4"/>
+    <circle cx="1010" cy="404" r="4"/><circle cx="262" cy="452" r="4"/>
+  </g>
+
+  <!-- 玩家（队长）剪影 + 瞄准线 -->
+  <g opacity="0.75">
+    <circle cx="640" cy="392" r="18" fill="#31465a" stroke="#5f88a8" stroke-width="2"/>
+    <path d="M640 392 L712 372" stroke="#e8b33c" stroke-width="1.6" stroke-dasharray="6 4" opacity="0.8"/>
+    <circle cx="712" cy="372" r="6" fill="none" stroke="#e8b33c" stroke-width="1.6"/>
+  </g>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#btlVig)"/>
+
+  <!-- ============ L1 顶部：胶囊条 420×14 @ (430,8) ============ -->
+  <g>
+    <rect x="430" y="8" width="420" height="14" rx="7" fill="#0d0d14" fill-opacity="0.9"/>
+    <rect x="432" y="10" width="222" height="10" fill="url(#btlGold)"/>
+    <text x="640" y="41" font-size="18" fill="#ffffff" text-anchor="middle" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">击败精英 32 / 60 (剩余 96s)</text>
+  </g>
+
+  <!-- ============ L1 左上：HP 行 + READY 徽章 ============ -->
+  <g>
+    <text x="16" y="32" font-size="24" fill="#f2fafe" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">HP 94/94   Lv1   经验 0</text>
+    <g>
+      <circle cx="44" cy="70" r="28" fill="#1a331f" fill-opacity="0.85" stroke="#4de566" stroke-width="2"/>
+      <text x="44" y="75" font-size="14" fill="#4de566" text-anchor="middle">READY</text>
+      <rect x="18" y="100" width="52" height="16" fill="none"/>
+      <text x="44" y="112" font-size="12" fill="#8cd99a" text-anchor="middle">全场冻结</text>
+    </g>
+  </g>
+
+  <!-- ============ L1 右上：Lv 大字 + 资源两行 ============ -->
+  <g text-anchor="end" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">
+    <text x="1264" y="38" font-size="34" fill="#f2fafe">Lv 12</text>
+    <text x="1264" y="66" font-size="18" fill="#ffe073">✦金币 128 · ✦经验 240</text>
+    <text x="1264" y="88" font-size="18" fill="#ffe073">宝箱 2 · 波次 5 · 场上怪 27</text>
+  </g>
+
+  <!-- ============ L1 左中：信息行 ============ -->
+  <text x="16" y="140" font-size="20" fill="#bff2ff" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">撤离点已出现（读条 8s）：进圈读条撤离</text>
+
+  <!-- ============ L1 左下：负重 ============ -->
+  <text x="16" y="678" font-size="22" fill="#e6d9b3" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">负重 35 / 100</text>
+
+  <!-- ============ L1 底部技能栏组 Panel：y 530~660 ============ -->
+  <rect x="310" y="530" width="660" height="130" rx="10" fill="#0d0f1a" fill-opacity="0.62"/>
+  <!-- 组 1：猎手 · output（输出 #d97333） -->
+  <g>
+    <text x="334" y="562" font-size="14" fill="#f2fafe">猎手 · output</text>
+    <circle cx="356" cy="596" r="22" fill="#d97333"/>
+    <text x="356" y="604" font-size="20" fill="#ffffff" text-anchor="middle">猎</text>
+    <g fill="#1f222b" fill-opacity="0.9">
+      <rect x="388" y="582" width="28" height="28" rx="4"/>
+      <rect x="421" y="582" width="28" height="28" rx="4"/>
+      <rect x="454" y="582" width="28" height="28" rx="4"/>
+      <rect x="487" y="582" width="28" height="28" rx="4"/>
+    </g>
+    <g font-size="10" fill="#bfccd9" text-anchor="middle">
+      <text x="402" y="622">Lv1</text><text x="435" y="622">Lv1</text><text x="468" y="622">Lv1</text><text x="501" y="622">Lv1</text>
+    </g>
+  </g>
+  <!-- 组 2：守护者 · tank（防御 #4080d9） -->
+  <g>
+    <text x="550" y="562" font-size="14" fill="#f2fafe">守护者 · tank</text>
+    <circle cx="572" cy="596" r="22" fill="#4080d9"/>
+    <text x="572" y="604" font-size="20" fill="#ffffff" text-anchor="middle">守</text>
+    <g fill="#1f222b" fill-opacity="0.9">
+      <rect x="604" y="582" width="28" height="28" rx="4"/>
+      <rect x="637" y="582" width="28" height="28" rx="4"/>
+      <rect x="670" y="582" width="28" height="28" rx="4"/>
+      <rect x="703" y="582" width="28" height="28" rx="4"/>
+    </g>
+    <g font-size="10" fill="#bfccd9" text-anchor="middle">
+      <text x="618" y="622">Lv1</text><text x="651" y="622">Lv1</text><text x="684" y="622">Lv1</text><text x="717" y="622">Lv1</text>
+    </g>
+  </g>
+  <!-- 组 3：医疗兵 · aux（辅助 #4dbf73） -->
+  <g>
+    <text x="766" y="562" font-size="14" fill="#f2fafe">医疗兵 · aux</text>
+    <circle cx="788" cy="596" r="22" fill="#4dbf73"/>
+    <text x="788" y="604" font-size="20" fill="#ffffff" text-anchor="middle">医</text>
+    <g fill="#1f222b" fill-opacity="0.9">
+      <rect x="820" y="582" width="28" height="28" rx="4"/>
+      <rect x="853" y="582" width="28" height="28" rx="4"/>
+      <rect x="886" y="582" width="28" height="28" rx="4"/>
+      <rect x="919" y="582" width="28" height="28" rx="4"/>
+    </g>
+    <g font-size="10" fill="#bfccd9" text-anchor="middle">
+      <text x="834" y="622">Lv1</text><text x="867" y="622">Lv1</text><text x="900" y="622">Lv1</text><text x="933" y="622">Lv1</text>
+    </g>
+  </g>
+
+  <!-- ============ L1 右下：两按钮 + 操作提示 ============ -->
+  <g>
+    <rect x="1114" y="582" width="150" height="30" rx="4" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="1189" y="602" font-size="14" fill="#e2e6ee" text-anchor="middle">自动战斗 · 关</text>
+    <rect x="1114" y="616" width="150" height="30" rx="4" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="1189" y="636" font-size="14" fill="#e2e6ee" text-anchor="middle">背包 (Tab)</text>
+    <text x="1264" y="666" font-size="18" fill="#ccd9e6" fill-opacity="0.9" text-anchor="end" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">WASD移动 · 鼠标瞄准 · 左键/J射击 · Tab背包 · C水晶 · Esc暂停 · G自动战斗</text>
+  </g>
+
+  <!-- ============ L5 版面虚线标注 ============ -->
+  <g opacity="0.85">
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
+      <rect x="430" y="8" width="420" height="14" stroke-dasharray="0"/>
+      <circle cx="44" cy="70" r="28"/>
+      <rect x="310" y="530" width="660" height="130" rx="10"/>
+      <rect x="1114" y="582" width="150" height="30" rx="4"/>
+      <rect x="1114" y="616" width="150" height="30" rx="4"/>
+      <rect x="240" y="160" width="800" height="400" stroke-dasharray="8 6"/>
+    </g>
+    <g fill="#e8b33c" font-size="11">
+      <text x="852" y="60">420 × 14　rx 7　填充 #ffd140 宽 416</text>
+      <text x="852" y="76">条下文字 y=26　18 号 #ffffff</text>
+      <text x="80" y="60">HP 行 (16,10)　24 号 #f2fafe</text>
+      <text x="80" y="128">READY (16,42) 56×56 rx28　#4de566</text>
+      <text x="80" y="152">小字「全场冻结」12 号 #8cd99a</text>
+      <text x="1264" y="108" text-anchor="end">等级 34 号　资源 18 号 #ffe073</text>
+      <text x="1264" y="124" text-anchor="end">右对齐 x=1264（右退 16）</text>
+      <text x="16" y="164">信息行 (16,120)　20 号 #bff2ff</text>
+      <text x="180" y="678">(16, bottom-42)　22 号 #e6d9b3</text>
+      <text x="310" y="524">技能栏组 y 530~660　高 130　rx 10　底 rgba(13,15,26,0.62)</text>
+      <text x="310" y="684">组间 24 · 槽间 5 · 头像 44×44 · 槽 28×28 · 名字 14 · Lv 10</text>
+      <text x="1264" y="578" text-anchor="end">按钮 150×30 · 上边距底 108 / 74</text>
+      <text x="1090" y="672" text-anchor="end">提示 18 号 rgba(204,217,229,0.9) · 上边距底 40</text>
+      <text x="240" y="152">升级面板 240,160 → 1040,560　800×400（无遮罩）</text>
+    </g>
+    <!-- 底部宽度尺寸链 -->
+    <g stroke="#5d6575" stroke-width="1" stroke-dasharray="3 3">
+      <path d="M310 700 L310 712 M970 700 L970 712 M310 706 L970 706"/>
+      <path d="M430 22 L430 700" opacity="0.5"/>
+      <path d="M850 22 L850 700" opacity="0.5"/>
+    </g>
+    <text x="640" y="702" font-size="11" fill="#8d95a5" text-anchor="middle">技能栏组 660 宽</text>
+    <text x="866" y="120" font-size="11" fill="#8d95a5">430 ~ 850 水平居中</text>
+  </g>
+
+  <!-- ============ L6 红字重点提示 ============ -->
+  <g>
+    <rect x="248" y="196" width="300" height="46" rx="6" fill="#2a1013" fill-opacity="0.92" stroke="#e2554f" stroke-width="1.5"/>
+    <text x="262" y="216" font-size="14" font-weight="700" fill="#ff7b73">升级实际弹 4 个选项（4 选 1）</text>
+    <text x="262" y="234" font-size="12" fill="#f0a9a4">配置 choiceCount=4，文档叫「三选一」是旧名</text>
+    <path d="M548 219 L640 330" stroke="#e2554f" stroke-width="1.4" stroke-dasharray="5 4"/>
+
+    <rect x="100" y="86" width="268" height="30" rx="6" fill="#2a1013" fill-opacity="0.92" stroke="#e2554f" stroke-width="1.5"/>
+    <text x="112" y="106" font-size="13" font-weight="700" fill="#ff7b73">READY 一局只出现 3 秒</text>
+    <path d="M100 101 L76 92" stroke="#e2554f" stroke-width="1.4" stroke-dasharray="4 3"/>
+  </g>
+
+  <!-- 左上角图注 -->
+  <g opacity="0.9">
+    <rect x="16" y="176" width="252" height="58" rx="8" fill="#0d1017" fill-opacity="0.92" stroke="#2b3240"/>
+    <text x="30" y="198" font-size="12" font-weight="700" fill="#e8b33c">整屏总图 · 1:1 实尺寸</text>
+    <text x="30" y="215" font-size="11" fill="#8d95a5">1280 × 720　｜　虚线与金字为标注层</text>
+    <text x="30" y="229" font-size="11" fill="#5d6575">标注在游戏内不显示，仅供美术对位</text>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-战斗总SVG文档 / 1280×720 / v1.0</text>
+</svg>

@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B003 出战按钮 三态规格图</title>
+
+  <defs>
+    <linearGradient id="chrBg4" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <filter id="chrShadow4" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="4" stdDeviation="9" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="chrGlow4" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#e8b33c" flood-opacity="0.45"/>
+    </filter>
+    <marker id="chrA4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#chrBg4)"/>
+  <text x="48" y="46" font-size="18" font-weight="700" fill="#e8b33c" letter-spacing="3">出战按钮</text>
+  <text x="176" y="46" font-size="13" fill="#8a93a5">B003-出战按钮　｜　220 × 48　圆角 8　数字 (N/3) 里的 3 读 cfg/team.json 的 maxSize，不写死</text>
+  <path d="M48 60 L1232 60" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- ============ 竖向三态（2× 放大，上下排） ============ -->
+  <g transform="translate(56,86)">
+
+    <!-- ① 空队伍 禁用 -->
+    <g>
+        <rect x="-14" y="-8" width="470" height="196" rx="10" fill="#141922" stroke="#2b3240" stroke-width="0.9"/>
+        <text x="0" y="12" font-size="12.5" font-weight="700" fill="#8a93a5">① 空队伍 · 禁用（点不动）</text>
+        <path d="M0 24 L440 24" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 4"/>
+
+        <g filter="url(#chrShadow4)">
+          <rect x="0" y="40" width="440" height="96" rx="16" fill="#3a4150"/>
+        </g>
+        <text x="220" y="100" font-size="40" fill="#5a6572" text-anchor="middle">开始出战 (0/3)</text>
+
+        <text x="0" y="164" font-size="12" fill="#5a6572">底 #3a4150 · 字 #5a6572 · 无金边 · 按钮禁用（代码里还有第二层保险）</text>
+        <text x="0" y="182" font-size="11.5" fill="#5a6572">玩家看不出「为什么点不动」，建议按钮上直接写「先选 1~3 个英雄」</text>
+    </g>
+
+    <!-- ② 已选 2 人 常态 -->
+    <g transform="translate(0,210)">
+      <rect x="-14" y="-8" width="470" height="196" rx="10" fill="#141922" stroke="#2b3240" stroke-width="0.9"/>
+      <text x="0" y="12" font-size="12.5" font-weight="700" fill="#e8b33c">② 已选 1~3 人 · 常态（金边金字）</text>
+      <path d="M0 24 L440 24" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 4"/>
+
+      <g filter="url(#chrShadow4)">
+        <rect x="0" y="40" width="440" height="96" rx="16" fill="#252a34" stroke="#e8b33c" stroke-width="4"/>
+      </g>
+      <text x="220" y="100" font-size="40" font-weight="700" fill="#e8b33c" text-anchor="middle">开始出战 (2/3)</text>
+
+      <text x="0" y="164" font-size="12" fill="#8a93a5">底 #252a34 · 2px 金边 #e8b33c · 字 #e8b33c · 点击立刻切战斗（无二次确认）</text>
+      <text x="0" y="182" font-size="11.5" fill="#5a6572">点下去整屏立刻隐藏，没有「正在进入战斗…」提示 —— 看到的是加载黑屏</text>
+    </g>
+
+    <!-- ③ 满员 3 人 高亮 -->
+    <g transform="translate(0,420)">
+      <rect x="-14" y="-8" width="470" height="196" rx="10" fill="#141922" stroke="#2b3240" stroke-width="0.9"/>
+      <text x="0" y="12" font-size="12.5" font-weight="700" fill="#f2c352">③ 满员 3/3 · 金色 + 高亮边</text>
+      <path d="M0 24 L440 24" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 4"/>
+
+      <g filter="url(#chrGlow4)">
+        <rect x="0" y="40" width="440" height="96" rx="16" fill="#e8b33c"/>
+        <rect x="4" y="44" width="432" height="88" rx="13" fill="none" stroke="#f7d67e" stroke-width="2"/>
+      </g>
+      <text x="220" y="100" font-size="40" font-weight="700" fill="#1d2027" text-anchor="middle">开始出战 (3/3)</text>
+
+      <text x="0" y="164" font-size="12" fill="#8a93a5">金色实底 #e8b33c + 深色字 #1d2027 + 外发光 —— 建议态，代码里满员与常态一样</text>
+      <text x="0" y="182" font-size="11.5" fill="#5a6572">满员时的「高亮边」是本图建议，不是当前实现</text>
+    </g>
+  </g>
+
+  <!-- 右侧尺寸标注 -->
+  <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
+    <path d="M56 120 L496 120" marker-start="url(#chrA4)" marker-end="url(#chrA4)"/>
+    <path d="M56 114 L56 126 M496 114 L496 126"/>
+    <path d="M32 126 L32 222"/>
+    <path d="M26 126 L38 126 M26 222 L38 222"/>
+  </g>
+  <text x="276" y="116" font-size="12" fill="#e8b33c" text-anchor="middle">220 宽</text>
+  <text x="28" y="176" font-size="12" fill="#e8b33c" text-anchor="end" transform="rotate(-90 28 176)">48 高</text>
+
+  <!-- ============ 右侧分辨率表（2× 缩小对照） ============ -->
+  <g>
+    <rect x="600" y="86" width="632" height="300" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
+    <text x="620" y="112" font-size="13" font-weight="700" fill="#e8b33c">1:1 真实尺寸对照</text>
+
+    <!-- 0/3 -->
+    <text x="620" y="144" font-size="11.5" fill="#8a93a5">0 人 → 禁用</text>
+    <rect x="620" y="152" width="220" height="48" rx="8" fill="#3a4150"/>
+    <text x="730" y="182" font-size="20" fill="#5a6572" text-anchor="middle">开始出战 (0/3)</text>
+
+    <!-- 2/3 -->
+    <text x="620" y="232" font-size="11.5" fill="#8a93a5">2 人 → 常态</text>
+    <rect x="620" y="240" width="220" height="48" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="2"/>
+    <text x="730" y="270" font-size="20" fill="#e8b33c" text-anchor="middle">开始出战 (2/3)</text>
+
+    <!-- 3/3 -->
+    <text x="620" y="320" font-size="11.5" fill="#8a93a5">3 人 → 满编</text>
+    <rect x="620" y="328" width="220" height="48" rx="8" fill="#e8b33c"/>
+    <text x="730" y="358" font-size="20" font-weight="700" fill="#1d2027" text-anchor="middle">开始出战 (3/3)</text>
+
+    <!-- 说明列 -->
+    <g font-size="11.5" fill="#cdd3de">
+      <text x="872" y="176">禁用：代码第 1005 行整颗变灰，函数内第 1009~1011 行再挡一次</text>
+      <text x="872" y="264">常态：金边金字，一直可点，1 人也能进战斗（设计如此）</text>
+      <text x="872" y="352">满编：数字到 3，但当前样式和 (2/3) 完全一样</text>
+    </g>
+    <path d="M860 152 L860 376" stroke="#2b3240" stroke-width="1"/>
+  </g>
+
+  <!-- ============ 数字怎么变 ============ -->
+  <g>
+    <rect x="600" y="406" width="632" height="148" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
+    <text x="620" y="430" font-size="13" font-weight="700" fill="#e8b33c">数字怎么变</text>
+    <g font-size="12" fill="#cdd3de">
+      <text x="620" y="456">刚进屏 → (0/3) 灰　│　点第 1 个 → (1/3) 亮　│　点第 2 个 → (2/3)</text>
+      <text x="620" y="478">点第 3 个 → (3/3)　│　取消一个 → 数字 −1　│　取消到 0 → 又变灰</text>
+      <text x="620" y="500">每次进选人屏都先清空队伍（第 746 行），所以永远从 (0/3) 开始</text>
+      <text x="620" y="522">上限改成 1 就是 (0/1)，数字自动跟着配置走，别在代码里写 3</text>
+      <text x="620" y="544" fill="#5a6572">点下去先记「队长 = 名单第一个」→ 记整张名单 → 广播「队伍已确认」→ 切战斗</text>
+    </g>
+  </g>
+
+  <!-- ============ 灰字图角：静默失败 ============ -->
+  <g>
+    <text x="600" y="588" font-size="12.5" fill="#8a93a5">满员后再点第 4 个英雄，当前是静默失败，玩家看不到任何提示 —— 需要补一句「最多 3 人」。</text>
+    <text x="600" y="610" font-size="12" fill="#5a6572">来源：第 860~863 行只有内部警告直接 return，卡片不亮、详情不变、按钮不变、无音效。</text>
+    <text x="600" y="632" font-size="12" fill="#5a6572">玩家的第一反应是「点坏了」或者「游戏卡了」，这是这一屏最要紧的缺陷（待办 T1）。</text>
+  </g>
+
+  <!-- ============ 底部灰字说明 ============ -->
+  <g>
+    <text x="48" y="710" font-size="12" fill="#8a93a5">金边 = 正事：同一行左边的「返回」素色 140 宽，不抢主次　｜　当前缺：加载提示、出战音效、名单/关卡校验、加载失败兜底</text>
+  </g>
+
+  <!-- ============ 规格速查 ============ -->
+  <g>
+    <rect x="600" y="654" width="632" height="48" rx="10" fill="#0d1017" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="618" y="674" font-size="11.5" fill="#cdd3de">220 × 48　圆角 8　字号 20　位置：底部行靠右（距面板右边 24）</text>
+    <text x="618" y="692" font-size="11.5" fill="#5a6572">禁用 #3a4150 / #5a6572　常态 #252a34 + 2px #e8b33c　满编 #e8b33c 实底</text>
+  </g>
+
+  <text x="1248" y="712" font-size="12" fill="#5a6572" text-anchor="end">B003-出战按钮 / 1280×720 / v1.0</text>
+</svg>

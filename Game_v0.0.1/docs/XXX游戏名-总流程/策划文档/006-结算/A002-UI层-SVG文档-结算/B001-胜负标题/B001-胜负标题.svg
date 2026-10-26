@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B001-胜负标题 · 两版并排</title>
+
+  <defs>
+    <linearGradient id="stlBg" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#131c2c"/>
+      <stop offset="0.55" stop-color="#101725"/>
+      <stop offset="1" stop-color="#0b1119"/>
+    </linearGradient>
+    <radialGradient id="stlWinGlow" cx="0.5" cy="0.5" r="0.6">
+      <stop offset="0" stop-color="#e8b33c" stop-opacity="0.28"/>
+      <stop offset="0.55" stop-color="#e8b33c" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#e8b33c" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="stlFlag" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f0c257"/>
+      <stop offset="1" stop-color="#dcac33"/>
+    </linearGradient>
+    <filter id="stlShadow" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#stlBg)"/>
+
+  <!-- 左右状态分隔 -->
+  <line x1="640" y1="96" x2="640" y2="534" stroke="#2f3644" stroke-width="1" stroke-dasharray="6 6"/>
+
+  <!-- ================= 左：撤离成功 ================= -->
+  <text x="56" y="60" font-size="13" font-weight="700" fill="#9fe0af">状态 A · 撤离成功（won = true）</text>
+
+  <g filter="url(#stlShadow)">
+    <rect x="48" y="88" width="544" height="446" rx="10" fill="#1d2027" stroke="#252a34" stroke-width="2"/>
+  </g>
+  <rect x="48" y="88" width="544" height="446" rx="10" fill="url(#stlWinGlow)"/>
+
+  <!-- 面板标题 -->
+  <g>
+    <line x1="80" y1="146" x2="560" y2="146" stroke="#2a2f3a"/>
+    <text x="80" y="126" font-size="30" font-weight="700" fill="#e8b33c">战斗结算</text>
+    <text x="560" y="126" font-size="11" fill="#5a6572" text-anchor="end">30 号 · 金 #e8b33c</text>
+  </g>
+
+  <!-- 装饰：小旗 -->
+  <g>
+    <circle cx="86" cy="216" r="34" fill="#e8b33c" opacity="0.10"/>
+    <circle cx="86" cy="216" r="22" fill="#e8b33c" opacity="0.14"/>
+    <path d="M80 244 L80 188" stroke="#e8b33c" stroke-width="3" stroke-linecap="round"/>
+    <path d="M82 190 L120 200 L82 212 Z" fill="url(#stlFlag)"/>
+    <circle cx="80" cy="186" r="3.5" fill="#f0c257"/>
+  </g>
+  <!-- 光效射线 -->
+  <g stroke="#e8b33c" stroke-width="1.5" opacity="0.35" stroke-linecap="round">
+    <path d="M132 186 l14 -10"/><path d="M138 206 l16 -3"/><path d="M134 230 l14 9"/>
+    <path d="M44 190 l-12 -8"/><path d="M40 240 l-12 8"/>
+  </g>
+
+  <text x="140" y="216" font-size="32" font-weight="700" fill="#e8b33c" letter-spacing="2">撤离成功！</text>
+  <text x="140" y="240" font-size="11" fill="#5a6572">32 号 · 金 #e8b33c · 元素名 SettleOutcome</text>
+
+  <!-- 数据 / 收益预告 -->
+  <g font-size="15" fill="#8a93a5">
+    <text x="80" y="300">击杀 128 · 用时 04:35 · 拾取 12 件</text>
+    <text x="80" y="328" fill="#e8b33c">本关评级 ★★☆ · 结晶收益 ◆340</text>
+  </g>
+  <line x1="80" y1="350" x2="560" y2="350" stroke="#2a2f3a"/>
+
+  <!-- 尺寸标注（胜负行高） -->
+  <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
+    <path d="M310 104 L310 178 M310 104 L298 104 M310 178 L298 178"/>
+  </g>
+  <text x="316" y="145" font-size="11" fill="#e8b33c">与标题间距 10</text>
+
+  <g font-size="12" fill="#9fe0af">
+    <text x="80" y="380">要点：胜利有「光」——暖金光晕 + 小旗 + 射线</text>
+    <text x="80" y="402" fill="#8a93a5">出现方式：0.9→1.0 缩放 200ms 缓出 + 一声上扬短音</text>
+    <text x="80" y="424" fill="#8a93a5">文字不可点，不参与 Tab 焦点</text>
+  </g>
+  <g>
+    <rect x="80" y="444" width="480" height="66" rx="6" fill="#12201a" stroke="#2e4a36"/>
+    <text x="94" y="466" font-size="12" fill="#9fe0af">文案定稿：「撤离成功！」（感叹号，要短要响）</text>
+    <text x="94" y="488" font-size="12" fill="#8a93a5">禁用词：「恭喜通关」「挑战成功」——调子不对。</text>
+    <text x="94" y="504" font-size="11" fill="#5a6572">本图为「应该长这样」的设计口径。</text>
+  </g>
+
+  <!-- ================= 右：不幸阵亡 ================= -->
+  <text x="664" y="60" font-size="13" font-weight="700" fill="#e0a3a3">状态 B · 不幸阵亡（won = false）</text>
+
+  <g filter="url(#stlShadow)">
+    <rect x="656" y="88" width="576" height="446" rx="10" fill="#171b22" stroke="#252a34" stroke-width="2"/>
+  </g>
+  <rect x="656" y="88" width="576" height="446" rx="10" fill="#0b0e13" opacity="0.45"/>
+
+  <g>
+    <line x1="688" y1="146" x2="1200" y2="146" stroke="#232830"/>
+    <text x="688" y="126" font-size="30" font-weight="700" fill="#a88a4a">战斗结算</text>
+    <text x="1200" y="126" font-size="11" fill="#5a6572" text-anchor="end">30 号 · 金压暗 60%（建议）</text>
+  </g>
+
+  <!-- 装饰：暗掉的破碎光环 -->
+  <g>
+    <circle cx="694" cy="216" r="30" fill="none" stroke="#4a2e2e" stroke-width="3" stroke-dasharray="10 7" opacity="0.85"/>
+    <path d="M680 232 l-8 14" stroke="#4a2e2e" stroke-width="3" stroke-linecap="round"/>
+    <path d="M700 236 l4 12" stroke="#4a2e2e" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <text x="740" y="216" font-size="32" font-weight="700" fill="#e0a3a3" letter-spacing="2">不幸阵亡…</text>
+  <text x="740" y="240" font-size="11" fill="#5a6572">32 号 · 红 #e0a3a3（代码现在用的是金 #e8b33c）</text>
+
+  <g font-size="15" fill="#7d8798">
+    <text x="688" y="300">击杀 21 · 用时 03:10 · 拾取 12 件</text>
+    <text x="688" y="328" fill="#a88a4a">结晶收益 ◆38（死亡仅保留 30%）</text>
+  </g>
+  <line x1="688" y1="350" x2="1200" y2="350" stroke="#232830"/>
+
+  <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
+    <path d="M920 104 L920 178 M920 104 L908 104 M920 178 L908 178"/>
+  </g>
+  <text x="926" y="145" font-size="11" fill="#e8b33c">行高 30 · 基线对齐</text>
+
+  <g font-size="12">
+    <text x="688" y="380" fill="#e0a3a3">要点：失败要「沉」——无光晕、描边压暗、整体降饱和</text>
+    <text x="688" y="402" fill="#8a93a5">出现方式：不缩放，直接淡入 120ms + 一声低频下坠音</text>
+    <text x="688" y="424" fill="#8a93a5">不许灰到看不见：「输了」也得一眼读清</text>
+  </g>
+  <g>
+    <rect x="688" y="444" width="512" height="66" rx="6" fill="#1a1414" stroke="#4a2e2e"/>
+    <text x="702" y="466" font-size="12" fill="#e0a3a3">两版共享结构：面板标题（不变）+ 结论大字（变）</text>
+    <text x="702" y="488" font-size="12" fill="#8a93a5">颜色对比：#e8b33c（金） vs #e0a3a3（红）——扫一眼能分</text>
+    <text x="702" y="504" font-size="11" fill="#5a6572">设计口径：输版建议照此压暗，当前代码两版同色。</text>
+  </g>
+
+  <!-- ================= 底部红字警告 ================= -->
+  <g>
+    <rect x="48" y="556" width="814" height="94" rx="8" fill="#1a1414" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <rect x="48" y="556" width="6" height="94" rx="3" fill="#e2554f"/>
+    <text x="72" y="582" font-size="15" font-weight="700" fill="#ff8a84">⚠ 修：战斗内面板赢了也写「战斗结算（阵亡）」</text>
+    <g font-size="12.5" fill="#e0a3a3">
+      <text x="72" y="608">battle.gd 第 260 行标题写死「战斗结算（阵亡）」；而第 148 行只有 winner == "extract" 才进这个函数</text>
+      <text x="72" y="626">——也就是说这块板子只在赢时弹，偏偏写着「阵亡」。<tspan x="72" dy="18">玩家打赢看见「阵亡」＝ 游戏坏了。修法：甲只留「正在结算…」。</tspan></text>
+    </g>
+  </g>
+
+  <!-- 规格速查 -->
+  <g>
+    <rect x="880" y="644" width="368" height="58" rx="6" fill="#0d1017" stroke="#2b3240"/>
+    <text x="894" y="664" font-size="11" fill="#8d95a5">标题 30 金 / 结论 32 / 间距 10 / 短句不换行</text>
+    <text x="894" y="680" font-size="11" fill="#8d95a5">赢 <tspan fill="#e8b33c">#e8b33c</tspan>　输 <tspan fill="#e0a3a3">#e0a3a3</tspan>　压暗底 <tspan fill="#7d8798">#171b22</tspan></text>
+    <text x="894" y="696" font-size="11" fill="#5d6575">元素名 SettleOutcome · 数据先入账再出字</text>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B001-胜负标题 / 1280×720 / v1.0</text>
+</svg>

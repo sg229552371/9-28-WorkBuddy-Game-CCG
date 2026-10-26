@@ -1,0 +1,224 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>002-主城 · 整屏总图（屏幕 1280×720 / 地图 1280×960）</title>
+
+  <defs>
+    <linearGradient id="ctyBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <radialGradient id="ctyGlowVen" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffd76a" stop-opacity="0.22"/>
+      <stop offset="0.6" stop-color="#ffd76a" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#ffd76a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ctyGlowAbyss" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff7a3c" stop-opacity="0.20"/>
+      <stop offset="0.55" stop-color="#ff7a3c" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#ff7a3c" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="ctyShadow" x="-30%" y="-40%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="7" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <marker id="ctyArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <!-- ============ L0 背景（= 地图地面 #131c2c + 64px 网格） ============ -->
+  <rect x="0" y="0" width="1280" height="720" fill="#131c2c"/>
+  <g stroke="rgba(61,79,107,0.25)" stroke-width="1">
+    <path d="M0 0 V720 M64 0 V720 M128 0 V720 M192 0 V720 M256 0 V720 M320 0 V720 M384 0 V720 M448 0 V720 M512 0 V720 M576 0 V720 M640 0 V720 M704 0 V720 M768 0 V720 M832 0 V720 M896 0 V720 M960 0 V720 M1024 0 V720 M1088 0 V720 M1152 0 V720 M1216 0 V720 M1280 0 V720"/>
+    <path d="M0 0 H1280 M0 64 H1280 M0 128 H1280 M0 192 H1280 M0 256 H1280 M0 320 H1280 M0 384 H1280 M0 448 H1280 M0 512 H1280 M0 576 H1280 M0 640 H1280 M0 704 H1280"/>
+  </g>
+
+  <!-- ============ L1 地图层（镜头纵向跟随，此刻显示地图 y=0~720） ============ -->
+  <g id="ctyMapLayer">
+
+    <!-- 中央牌匾 100×30 圆角 6 -->
+    <rect x="590" y="465" width="100" height="30" rx="6" fill="rgba(7,11,18,0.92)" stroke="#2b3444" stroke-width="1"/>
+    <text x="640" y="485" font-size="12" fill="#5d6575" text-anchor="middle">（牌匾 · 无字）</text>
+
+    <!-- 出征传送门 640,180 r=90（屏内避让：顶边 y=0，名字上方无空间，故文字落在圈内上半部） -->
+    <circle cx="640" cy="180" r="150" fill="url(#ctyGlowVen)"/>
+    <circle cx="640" cy="180" r="90" fill="none" stroke="#ffd76a" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="17 14"/>
+    <circle cx="640" cy="180" r="22" fill="rgba(18,28,46,0.9)" stroke="#ffd76a" stroke-width="2.5"/>
+    <text x="640" y="187" font-size="18" font-weight="700" fill="#ffd76a" text-anchor="middle">&gt;&gt;</text>
+    <text x="640" y="72" font-size="16" fill="#e8e2c8" text-anchor="middle">出征传送门</text>
+    <text x="640" y="90" font-size="12" fill="#a6b2c7" text-anchor="middle">进圈读条 2 秒 → 选择关卡出征</text>
+
+    <!-- 武器匠 486,230 -->
+    <circle cx="486" cy="230" r="76" fill="none" stroke="#ffd76a" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="14 12"/>
+    <circle cx="486" cy="230" r="22" fill="rgba(18,28,46,0.9)" stroke="#ffd76a" stroke-width="2.5"/>
+    <text x="486" y="237" font-size="18" fill="#ffd76a" text-anchor="middle">⚔</text>
+    <text x="486" y="120" font-size="16" fill="#e8e2c8" text-anchor="middle">武器匠</text>
+    <text x="486" y="138" font-size="12" fill="#a6b2c7" text-anchor="middle">武器 / 技能等级</text>
+
+    <!-- 形象师 794,230 -->
+    <circle cx="794" cy="230" r="76" fill="none" stroke="#7de08a" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="14 12"/>
+    <circle cx="794" cy="230" r="22" fill="rgba(18,28,46,0.9)" stroke="#7de08a" stroke-width="2.5"/>
+    <text x="794" y="237" font-size="17" fill="#7de08a" text-anchor="middle">☺</text>
+    <text x="794" y="120" font-size="16" fill="#e8e2c8" text-anchor="middle">形象师</text>
+    <text x="794" y="138" font-size="12" fill="#a6b2c7" text-anchor="middle">头像 · 更名 · 称号 · 皮肤</text>
+
+    <!-- 强化导师 256,307 -->
+    <circle cx="256" cy="307" r="76" fill="none" stroke="#c79bff" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="14 12"/>
+    <circle cx="256" cy="307" r="22" fill="rgba(18,28,46,0.9)" stroke="#c79bff" stroke-width="2.5"/>
+    <text x="256" y="314" font-size="18" fill="#c79bff" text-anchor="middle">✦</text>
+    <text x="256" y="197" font-size="16" fill="#e8e2c8" text-anchor="middle">强化导师</text>
+    <text x="256" y="215" font-size="12" fill="#a6b2c7" text-anchor="middle">局外等级升级</text>
+
+    <!-- 图鉴学者 1024,307 -->
+    <circle cx="1024" cy="307" r="76" fill="none" stroke="#6cb2ff" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="14 12"/>
+    <circle cx="1024" cy="307" r="22" fill="rgba(18,28,46,0.9)" stroke="#6cb2ff" stroke-width="2.5"/>
+    <text x="1024" y="313" font-size="16" fill="#6cb2ff" text-anchor="middle">❖</text>
+    <text x="1024" y="197" font-size="16" fill="#e8e2c8" text-anchor="middle">图鉴学者</text>
+    <text x="1024" y="215" font-size="12" fill="#a6b2c7" text-anchor="middle">英雄 / 怪物图鉴</text>
+
+    <!-- 神秘商人 179,595 -->
+    <circle cx="179" cy="595" r="76" fill="none" stroke="#e5a04b" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="14 12"/>
+    <circle cx="179" cy="595" r="22" fill="rgba(18,28,46,0.9)" stroke="#e5a04b" stroke-width="2.5"/>
+    <text x="179" y="601" font-size="16" fill="#e5a04b" text-anchor="middle">◈</text>
+    <text x="179" y="485" font-size="16" fill="#e8e2c8" text-anchor="middle">神秘商人</text>
+    <text x="179" y="503" font-size="12" fill="#a6b2c7" text-anchor="middle">敬请期待</text>
+
+    <!-- 赛季使者 870,595 -->
+    <circle cx="870" cy="595" r="76" fill="none" stroke="#4da3ff" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="14 12"/>
+    <circle cx="870" cy="595" r="22" fill="rgba(18,28,46,0.9)" stroke="#4da3ff" stroke-width="2.5"/>
+    <text x="870" y="601" font-size="16" fill="#4da3ff" text-anchor="middle">◈</text>
+    <text x="870" y="485" font-size="16" fill="#e8e2c8" text-anchor="middle">赛季使者</text>
+    <text x="870" y="503" font-size="12" fill="#a6b2c7" text-anchor="middle">赛季挑战大厅</text>
+
+    <!-- 深渊之门 1101,576 r=84 -->
+    <circle cx="1101" cy="576" r="160" fill="url(#ctyGlowAbyss)"/>
+    <circle cx="1101" cy="576" r="84" fill="none" stroke="#ff7a3c" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="15 13"/>
+    <circle cx="1101" cy="576" r="22" fill="rgba(18,28,46,0.9)" stroke="#ff7a3c" stroke-width="2.5"/>
+    <text x="1101" y="582" font-size="17" font-weight="700" fill="#ff7a3c" text-anchor="middle">!!</text>
+    <text x="1101" y="458" font-size="16" fill="#e8e2c8" text-anchor="middle">深渊之门</text>
+    <text x="1101" y="476" font-size="12" fill="#a6b2c7" text-anchor="middle">进圈读条 2 秒 → 进入无尽深渊</text>
+
+    <!-- 出生图腾（装饰，r=14） -->
+    <circle cx="640" cy="749" r="14" fill="rgba(18,28,46,0.9)" stroke="#3a4150" stroke-width="2"/>
+
+    <!-- 玩家 640,749 r=11（屏幕内 y=749 处被裁切，此处示意镜头未跟随到出生点） -->
+    <g id="ctyPlayer" opacity="0.0"/>
+  </g>
+
+  <!-- ============ L2 屏幕层（不随镜头移动） ============ -->
+  <!-- 档案卡 (16,12) -->
+  <g filter="url(#ctyShadow)">
+    <rect x="16" y="12" width="196" height="48" rx="8" fill="rgba(18,28,46,0.9)" stroke="#2b3444" stroke-width="1"/>
+  </g>
+  <text x="30" y="44" font-size="18" fill="#ffd76a">✦</text>
+  <text x="52" y="36" font-size="16" fill="#ffffff">无名旅者</text>
+  <text x="52" y="52" font-size="12" fill="#a6b2c7">初出茅庐</text>
+  <text x="196" y="42" font-size="16" font-weight="700" fill="#ffd76a" text-anchor="end">✦330</text>
+
+  <!-- 右侧 NPC 面板示意（810,90 宽 420） -->
+  <g filter="url(#ctyShadow)" opacity="0.96">
+    <rect x="810" y="90" width="420" height="336" rx="10" fill="#16233a" stroke="#c9a84c" stroke-width="2"/>
+  </g>
+  <text x="828" y="128" font-size="22" font-weight="700" fill="#ffd76a">强化导师</text>
+  <text x="828" y="150" font-size="13" fill="#a6b2c7">消耗结晶提升局外等级</text>
+  <line x1="828" y1="162" x2="1212" y2="162" stroke="#c9a84c" stroke-opacity="0.45" stroke-width="1"/>
+  <g font-size="14" fill="#e8e2c8">
+    <text x="828" y="190">火铳手　Lv.3</text>
+    <text x="828" y="234">铁盾卫　Lv.1</text>
+    <text x="828" y="278">药师　Lv.5</text>
+    <text x="828" y="322">影刃　Lv.46</text>
+  </g>
+  <g>
+    <rect x="1084" y="172" width="128" height="28" rx="5" fill="#252a34" stroke="#c9a84c" stroke-width="1.5"/>
+    <text x="1148" y="191" font-size="13" fill="#ffd76a" text-anchor="middle">升级 ◆330</text>
+    <rect x="1084" y="216" width="128" height="28" rx="5" fill="#252a34" stroke="#c9a84c" stroke-width="1.5"/>
+    <text x="1148" y="235" font-size="13" fill="#ffd76a" text-anchor="middle">升级 ◆120</text>
+    <rect x="1084" y="260" width="128" height="28" rx="5" fill="#252a34" stroke="#c9a84c" stroke-width="1.5"/>
+    <text x="1148" y="279" font-size="13" fill="#ffd76a" text-anchor="middle">升级 ◆980</text>
+    <rect x="1084" y="304" width="128" height="28" rx="5" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="1148" y="323" font-size="13" fill="#5a6572" text-anchor="middle">已满级</text>
+  </g>
+  <g stroke="#232a36" stroke-width="1">
+    <path d="M828 204 H1212 M828 248 H1212 M828 292 H1212 M828 336 H1212"/>
+  </g>
+
+  <!-- ============ L3 版面标注（游戏内不显示） ============ -->
+  <g opacity="0.9">
+    <!-- 地图 960 vs 屏幕 720 -->
+    <g>
+      <path d="M14 640 H358" stroke="#e8b33c" stroke-width="1" stroke-dasharray="6 4"/>
+      <path d="M14 632 V648 M358 632 V648" stroke="#e8b33c" stroke-width="1"/>
+    </g>
+    <g opacity="0.9">
+      <rect x="14" y="596" width="344" height="50" rx="8" fill="#0d1017" fill-opacity="0.92" stroke="#e8b33c" stroke-opacity="0.5"/>
+      <text x="30" y="617" font-size="11.5" font-weight="700" fill="#e8b33c">地图 1280×960 比屏幕高 240px，镜头会上下跟随</text>
+      <text x="30" y="635" font-size="11" fill="#8d95a5">横向刚好装下（不左右晃）· 档案卡钉在屏幕层</text>
+    </g>
+
+    <!-- 面板宽度 -->
+    <path d="M810 76 H1230" stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" marker-start="url(#ctyArrow)" marker-end="url(#ctyArrow)"/>
+    <text x="1020" y="70" font-size="11.5" fill="#e8b33c" text-anchor="middle">面板宽 420　右边留白 50</text>
+
+    <!-- 中轴 -->
+    <g stroke="#5d6575" stroke-width="1" stroke-dasharray="4 4">
+      <path d="M640 44 V96 M640 226 V596"/>
+    </g>
+    <text x="648" y="592" font-size="11" fill="#8d95a5">X=640 中轴：出征门 / 牌匾 / 出生点同轴</text>
+
+    <!-- 出征门半径 -->
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="3 3">
+      <path d="M508 180 H640"/>
+      <path d="M508 174 V186 M640 174 V186"/>
+    </g>
+    <text x="574" y="172" font-size="11" fill="#e8b33c" text-anchor="middle">r 90</text>
+
+    <!-- 纵向间距链 -->
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="3 3">
+      <path d="M760 180 V230"/>
+      <path d="M756 180 H768 M756 230 H768"/>
+    </g>
+    <text x="774" y="209" font-size="11" fill="#e8b33c">50</text>
+
+    <g stroke="#5d6575" stroke-width="1" stroke-dasharray="3 3">
+      <path d="M700 230 V307 M696 230 H708 M696 307 H708"/>
+    </g>
+    <text x="714" y="272" font-size="11" fill="#8d95a5">77</text>
+
+    <!-- 牌匾尺寸 -->
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3">
+      <path d="M572 465 V495 M568 465 H578 M568 495 H578"/>
+      <path d="M590 512 H690 M590 508 V516 M690 508 V516"/>
+    </g>
+    <text x="560" y="484" font-size="11" fill="#e8b33c" text-anchor="end">30</text>
+    <text x="640" y="528" font-size="11" fill="#e8b33c" text-anchor="middle">100 × 30　rx 6</text>
+
+    <!-- 商人 y=595 -->
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="3 3">
+      <path d="M300 595 V648 M296 595 H304 M296 648 H304"/>
+    </g>
+    <text x="312" y="626" font-size="11" fill="#e8b33c">595</text>
+  </g>
+
+  <!-- 左上角图注卡 -->
+  <g opacity="0.95">
+    <rect x="16" y="72" width="272" height="86" rx="8" fill="#0d1017" fill-opacity="0.92" stroke="#2b3240"/>
+    <text x="32" y="94" font-size="12" font-weight="700" fill="#e8b33c">主城整屏总图 · 1:1 屏幕视野</text>
+    <text x="32" y="112" font-size="11" fill="#a6b2c7">屏幕 1280×720　地图 1280×960</text>
+    <text x="32" y="128" font-size="11" fill="#a6b2c7">此刻镜头在顶部：显示地图 y = 0 ~ 720</text>
+    <text x="32" y="144" font-size="11" fill="#a6b2c7">出生点 (640,749) 落在屏幕下沿之外</text>
+  </g>
+
+  <!-- 左下角规格速查 -->
+  <g opacity="0.95">
+    <rect x="14" y="404" width="330" height="180" rx="10" fill="#0d1017" fill-opacity="0.94" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="30" y="426" font-size="12.5" font-weight="700" fill="#e8b33c">规格速查</text>
+    <text x="30" y="446" font-size="11" fill="#a6b2c7">地图 1280×960　底色 #131c2c　网格 64px</text>
+    <text x="30" y="463" font-size="11" fill="#a6b2c7">NPC 圈 r 76　印章 r 22　虚线 55% 实线</text>
+    <text x="30" y="480" font-size="11" fill="#a6b2c7">出征门 r 90 (640,180·屏幕内)　深渊门 r 84</text>
+    <text x="30" y="497" font-size="11" fill="#a6b2c7">名称 16 #e8e2c8　副标题 12 #a6b2c7</text>
+    <text x="30" y="514" font-size="11" fill="#a6b2c7">名称在圈顶上方 34　副标题再下 18</text>
+    <text x="30" y="531" font-size="11" fill="#a6b2c7">玩家 #40e0c0 r 11　图腾 r 14</text>
+    <text x="30" y="548" font-size="11" fill="#a6b2c7">面板 420 @ (810,90) 底 #16233a 边 #c9a84c</text>
+    <text x="30" y="565" font-size="11" fill="#5d6575">灰字与虚线为规格标注，游戏内不显示</text>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-主城总SVG / 1280×720 / v1.0</text>
+</svg>

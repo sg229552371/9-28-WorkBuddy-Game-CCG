@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B001 顶部进度条 界面规格图（1280×720）</title>
+
+  <defs>
+    <linearGradient id="btlBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <linearGradient id="btlPanel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d2330"/>
+      <stop offset="1" stop-color="#141922"/>
+    </linearGradient>
+    <linearGradient id="btlGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd140"/>
+      <stop offset="1" stop-color="#e0a92b"/>
+    </linearGradient>
+    <marker id="btlArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="btlArrowS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#btlBg)"/>
+  <g stroke="#1a2130" stroke-width="1" opacity="0.55">
+    <path d="M0 180 L1280 180 M0 360 L1280 360 M0 540 L1280 540"/>
+    <path d="M320 0 L320 720 M640 0 L640 720 M960 0 L960 720"/>
+  </g>
+
+  <!-- 顶部栏 -->
+  <rect x="0" y="0" width="1280" height="64" fill="url(#btlPanel)"/>
+  <rect x="0" y="62" width="1280" height="2" fill="#2b3240"/>
+  <text x="32" y="40" font-size="22" font-weight="700" fill="#f2fafe">B001 · 顶部击杀进度胶囊条</text>
+  <text x="1248" y="40" font-size="13" fill="#8d95a5" text-anchor="end">420 × 14　｜　顶部居中　｜　条下 18 号白字</text>
+
+  <!-- ================= 状态一：0% y=120 ================= -->
+  <g>
+    <text x="80" y="112" font-size="13" font-weight="700" fill="#8d95a5" letter-spacing="2">状态 A · 0%（击杀 0 / 60）</text>
+    <rect x="80" y="140" width="840" height="28" rx="14" fill="#0d0d14" fill-opacity="0.9"/>
+    <rect x="84" y="144" width="0" height="20" fill="url(#btlGold)"/>
+    <text x="500" y="200" font-size="18" fill="#ffffff" text-anchor="middle">击败精英 0 / 60 (剩余 180s)</text>
+    <text x="960" y="162" font-size="12" fill="#5d6575">填充宽 0，只剩黑壳</text>
+  </g>
+  <line x1="80" y1="226" x2="1200" y2="226" stroke="#2b3240" stroke-width="1" stroke-dasharray="6 5"/>
+
+  <!-- ================= 状态二：50% ================= -->
+  <g>
+    <text x="80" y="262" font-size="13" font-weight="700" fill="#8d95a5" letter-spacing="2">状态 B · 50%（击杀 32 / 60）</text>
+    <rect x="80" y="290" width="840" height="28" rx="14" fill="#0d0d14" fill-opacity="0.9"/>
+    <rect x="84" y="294" width="416" height="20" fill="url(#btlGold)"/>
+    <text x="500" y="350" font-size="18" fill="#ffffff" text-anchor="middle">击败精英 32 / 60 (剩余 96s)</text>
+    <!-- 50% 标注 -->
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
+      <path d="M500 290 L500 250 M500 326 L500 360"/>
+    </g>
+    <text x="512" y="248" font-size="11" fill="#e8b33c">50% = 208 / 416</text>
+    <text x="960" y="312" font-size="12" fill="#5d6575">一跳一格，无过渡动画</text>
+  </g>
+  <line x1="80" y1="380" x2="1200" y2="380" stroke="#2b3240" stroke-width="1" stroke-dasharray="6 5"/>
+
+  <!-- ================= 状态三：100% 满 ================= -->
+  <g>
+    <text x="80" y="416" font-size="13" font-weight="700" fill="#8d95a5" letter-spacing="2">状态 C · 100% 满（击杀 60 / 60）→ 立即出 Boss</text>
+    <rect x="80" y="444" width="840" height="28" rx="14" fill="#0d0d14" fill-opacity="0.9"/>
+    <rect x="84" y="448" width="832" height="20" fill="url(#btlGold)"/>
+    <text x="500" y="504" font-size="18" fill="#ffffff" text-anchor="middle">击败精英 60 / 60</text>
+    <!-- 右侧 4px 呼吸缝 -->
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3" fill="none">
+      <path d="M900 444 L900 472 M920 444 L920 472"/>
+    </g>
+    <text x="1000" y="466" font-size="11" fill="#e8b33c">左右各留 2px 呼吸缝（416 满宽）</text>
+  </g>
+  <line x1="80" y1="530" x2="1200" y2="530" stroke="#2b3240" stroke-width="1" stroke-dasharray="6 5"/>
+
+  <!-- ================= 状态四：冻结 ================= -->
+  <g>
+    <text x="80" y="566" font-size="13" font-weight="700" fill="#8d95a5" letter-spacing="2">状态 D · 开局冻结 3s（条不动，文字被接管）</text>
+    <rect x="80" y="594" width="840" height="28" rx="14" fill="#0d0d14" fill-opacity="0.9"/>
+    <rect x="84" y="598" width="0" height="20" fill="url(#btlGold)"/>
+    <text x="500" y="654" font-size="18" fill="#4de566" text-anchor="middle">全场冻结中 · 准备战斗 2.4s</text>
+  </g>
+
+  <!-- ================= 右侧：尺寸与状态规则卡 ================= -->
+  <g>
+    <rect x="960" y="120" width="288" height="190" rx="10" fill="#0d1017" fill-opacity="0.96" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="978" y="144" font-size="13" font-weight="700" fill="#e8b33c">规格速查</text>
+    <g font-size="12" fill="#cdd3de">
+      <text x="978" y="166">胶囊底　420 × 14　圆角 7　#0d0d14 90%</text>
+      <text x="978" y="186">金色填充 内缩 2px　高 10　最大宽 416</text>
+      <text x="978" y="206">填充色　#ffd140（rgb 255,209,64）</text>
+      <text x="978" y="226">填充为方头，被圆壳裁成圆头</text>
+      <text x="978" y="246">条下文字 y=26　18 号　#ffffff　居中</text>
+      <text x="978" y="266">描边 6px 黑（所有 HUD 文字通用）</text>
+      <text x="978" y="286">进度 = 击杀 ÷ 目标，clamp 到 1.0</text>
+    </g>
+  </g>
+
+  <g>
+    <rect x="960" y="330" width="288" height="186" rx="10" fill="#0d1017" fill-opacity="0.96" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="978" y="354" font-size="13" font-weight="700" fill="#e8b33c">条下文字优先级</text>
+    <g font-size="12" fill="#cdd3de">
+      <text x="978" y="376"><tspan fill="#4de566" font-weight="700">1</tspan>　冻结中 → 全场冻结中 · 提示 X.Xs</text>
+      <text x="978" y="396"><tspan fill="#e2554f" font-weight="700">2</tspan>　阵亡 → 「阵亡」</text>
+      <text x="978" y="416"><tspan fill="#8d95a5" font-weight="700">3</tspan>　暂停 → 「已暂停」</text>
+      <text x="978" y="436"><tspan fill="#f2fafe" font-weight="700">4</tspan>　默认 → 击败 N / 目标（剩余 Xs）</text>
+      <text x="978" y="462" font-size="11" fill="#5d6575">同时满足时显示序号小的那条</text>
+      <text x="978" y="482" font-size="11" fill="#5d6575">暂停与冻结期间金条不涨，剩余秒不减</text>
+      <text x="978" y="502" font-size="11" fill="#5d6575">无「隐藏」态：全程常驻</text>
+    </g>
+  </g>
+
+  <g>
+    <rect x="960" y="520" width="288" height="128" rx="10" fill="#0d1017" fill-opacity="0.96" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="978" y="544" font-size="13" font-weight="700" fill="#e8b33c">形状与数值规则</text>
+    <g font-size="12" fill="#cdd3de">
+      <text x="978" y="566">金色块方头，被黑壳圆角裁成圆头</text>
+      <text x="978" y="586">涨一格无补间动画（一跳一格）</text>
+      <text x="978" y="606">打满即出 Boss，无「满了」闪光音效</text>
+      <text x="978" y="626">超 100% 卡满宽，文字不卡（会显 80/60）</text>
+    </g>
+  </g>
+
+  <!-- ================= 尺寸标注 ================= -->
+  <g stroke="#e8b33c" stroke-width="1" fill="none">
+    <path d="M84 462 L84 480 M916 462 L916 480 M84 474 L916 474" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
+    <path d="M80 136 L80 148 M920 136 L920 148 M80 130 L920 130" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
+  </g>
+  <text x="500" y="126" font-size="11" fill="#e8b33c" text-anchor="middle">宽 420（放大 2 倍显示，实尺寸为 420×14）</text>
+  <text x="500" y="492" font-size="11" fill="#e8b33c" text-anchor="middle">填充满宽 416</text>
+
+  <!-- 图角灰字规则 -->
+  <g>
+    <text x="80" y="690" font-size="12" fill="#6f7a88">进度 = 击杀数 ÷ 关卡目标（第 1 关 60，第 99 关 2336）</text>
+    <text x="80" y="708" font-size="11" fill="#5d6575">代码：battle.gd 第 460~487 行建条 / 第 692~707 行刷新；ratio = clamp(kills / progressGoal, 0, 1)</text>
+  </g>
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B001-顶部进度条 / 1280×720 / v1.0</text>
+</svg>

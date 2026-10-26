@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>006-结算 · 整屏总图（胜利版 1280×720 实尺寸）</title>
+
+  <defs>
+    <linearGradient id="stlBg" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#131c2c"/>
+      <stop offset="0.55" stop-color="#101725"/>
+      <stop offset="1" stop-color="#0b1119"/>
+    </linearGradient>
+    <linearGradient id="stlPanel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#212630"/>
+      <stop offset="1" stop-color="#1b1f27"/>
+    </linearGradient>
+    <radialGradient id="stlGlow" cx="0.5" cy="0.36" r="0.55">
+      <stop offset="0" stop-color="#e8b33c" stop-opacity="0.15"/>
+      <stop offset="0.55" stop-color="#e8b33c" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#e8b33c" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="stlGoldBtn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0c257"/>
+      <stop offset="1" stop-color="#dcac33"/>
+    </linearGradient>
+    <filter id="stlShadow" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    <filter id="stlShadowBig" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="6" stdDeviation="16" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- ============ L0 背景 ============ -->
+  <rect x="0" y="0" width="1280" height="720" fill="url(#stlBg)"/>
+  <rect x="0" y="0" width="1280" height="720" fill="url(#stlGlow)"/>
+  <g stroke="#e8b33c" stroke-width="1" opacity="0.06">
+    <path d="M240 720 L400 120"/><path d="M1040 720 L880 120"/>
+  </g>
+
+  <!-- ============ L1 整屏底板（代码是铺满屏的面板，这里画成居中面板便于标注） ============ -->
+  <g filter="url(#stlShadowBig)">
+    <rect x="380" y="64" width="520" height="596" rx="10" fill="url(#stlPanel)" stroke="#252a34" stroke-width="2"/>
+  </g>
+
+  <!-- 标题 -->
+  <text x="412" y="110" font-size="30" font-weight="700" fill="#e8b33c">战斗结算</text>
+  <line x1="412" y1="128" x2="868" y2="128" stroke="#2a2f3a" stroke-width="1"/>
+
+  <!-- 胜负大字：金色 32 -->
+  <text x="412" y="176" font-size="32" font-weight="700" fill="#e8b33c" letter-spacing="1">撤离成功！</text>
+
+  <!-- 数据行 -->
+  <text x="412" y="226" font-size="17" fill="#e2e6ee">击杀 128 <tspan fill="#5a6572">·</tspan> 用时 04:35 <tspan fill="#5a6572">·</tspan> 拾取 12 件</text>
+
+  <!-- 收益行 -->
+  <text x="412" y="264" font-size="17" font-weight="700" fill="#e8b33c">本关评级 ★★☆ <tspan fill="#b8892f">·</tspan> 结晶收益 ◆340</text>
+
+  <!-- 战利品 -->
+  <text x="412" y="308" font-size="16" fill="#e2e6ee">战利品</text>
+  <g font-size="15" fill="#8a93a5">
+    <text x="412" y="338"><tspan fill="#c9ced9">生锈的匕首</tspan><tspan fill="#5a6572">·白</tspan></text>
+    <text x="412" y="364"><tspan fill="#6fa8e0">火焰水晶</tspan><tspan fill="#5a6572">·蓝</tspan></text>
+    <text x="412" y="390"><tspan fill="#e8b33c">巨兽的犬齿</tspan><tspan fill="#5a6572">·金</tspan></text>
+  </g>
+  <g>
+    <circle cx="700" cy="333" r="4" fill="#c9ced9"/>
+    <circle cx="700" cy="359" r="4" fill="#6fa8e0"/>
+    <circle cx="700" cy="385" r="4" fill="#e8b33c"/>
+  </g>
+
+  <!-- 按钮 -->
+  <g filter="url(#stlShadow)">
+    <rect x="412" y="440" width="320" height="52" rx="8" fill="url(#stlGoldBtn)"/>
+  </g>
+  <text x="572" y="474" font-size="20" font-weight="700" fill="#131c2c" text-anchor="middle">返回主城</text>
+
+  <rect x="412" y="504" width="320" height="52" rx="8" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
+  <text x="572" y="538" font-size="20" fill="#e2e6ee" text-anchor="middle">回主菜单</text>
+
+  <!-- ============ L5 版面标注 ============ -->
+  <g opacity="0.85">
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
+      <path d="M372 64 L340 64 M372 660 L340 660"/>
+      <path d="M380 56 L380 40 M900 56 L900 40 M380 676 L380 692 M900 676 L900 692"/>
+      <rect x="412" y="440" width="320" height="52"/>
+    </g>
+    <g fill="#e8b33c" font-size="11">
+      <text x="340" y="362" text-anchor="middle" transform="rotate(-90 340 362)">面板高 596</text>
+      <text x="640" y="52" text-anchor="middle">面板宽 520　居中 X=640</text>
+      <text x="744" y="434">320 × 52　rx 8</text>
+    </g>
+    <g stroke="#5d6575" stroke-width="1" stroke-dasharray="3 3">
+      <path d="M900 440 L930 440 M900 492 L930 492 M900 504 L930 504 M900 556 L930 556"/>
+    </g>
+    <g fill="#8d95a5" font-size="10.5">
+      <text x="936" y="470">52</text>
+      <text x="936" y="498" fill="#e8b33c">间距 12</text>
+      <text x="936" y="534">52</text>
+    </g>
+  </g>
+
+  <!-- ============ 左上 规格速查 ============ -->
+  <g>
+    <rect x="32" y="32" width="300" height="150" rx="8" fill="#0d1017" stroke="#2b3240"/>
+    <text x="48" y="56" font-size="12" font-weight="700" fill="#e8b33c">规格速查 · 全局结算屏（flow_root.gd 1021~1097）</text>
+    <g font-size="11" fill="#8d95a5">
+      <text x="48" y="78">底 <tspan fill="#e2e6ee">#1d2027</tspan>　圆角 10　边框 <tspan fill="#e2e6ee">#252a34</tspan> 2px</text>
+      <text x="48" y="96">标题 30 金　胜负 32 金　正文 17 <tspan fill="#e2e6ee">#e2e6ee</tspan></text>
+      <text x="48" y="114">收益 <tspan fill="#e8b33c">#e8b33c</tspan>　清单 <tspan fill="#8a93a5">#8a93a5</tspan>　次要 <tspan fill="#5a6572">#5a6572</tspan></text>
+      <text x="48" y="132">按钮 320×52 rx8：金 <tspan fill="#e8b33c">#e8b33c</tspan> / 灰 <tspan fill="#e2e6ee">#252a34</tspan></text>
+      <text x="48" y="150">竖排间距 10　实际由容器顺排，无写死 Y</text>
+      <text x="48" y="168" fill="#5d6575">虚线为版面标注，游戏内不显示</text>
+    </g>
+  </g>
+
+  <!-- ============ 右侧 红字警告 ============ -->
+  <g>
+    <rect x="930" y="316" width="318" height="344" rx="8" fill="#1a1414" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <rect x="930" y="316" width="318" height="30" rx="8" fill="#e2554f"/>
+    <rect x="930" y="334" width="318" height="12" fill="#e2554f"/>
+    <text x="944" y="337" font-size="13" font-weight="700" fill="#ffffff">⚠ 两套结算必须合并</text>
+    <g font-size="12" fill="#e0a3a3">
+      <text x="944" y="370">战斗内还有第二个结算面板（battle.gd</text>
+      <text x="944" y="388">_show_death_settlement 238~281 行），</text>
+      <text x="944" y="406" font-weight="700" fill="#ff8a84">赢了标题也写「阵亡」</text>
+      <text x="944" y="424">——两套结算必须合并。</text>
+      <text x="944" y="452" fill="#c9ced9">板子甲：800×480，x240 y140，6 行 22 号</text>
+      <text x="944" y="470" fill="#c9ced9">（击杀/波次/金币/经验/暴击/技能）</text>
+      <text x="944" y="488" fill="#c9ced9">板子乙：本图，铺满屏面板</text>
+      <text x="944" y="516" fill="#8a93a5">玩家先看到甲、后看到乙；</text>
+      <text x="944" y="534" fill="#8a93a5">赢了要点 2 次「返回主城」，</text>
+      <text x="944" y="552" fill="#8a93a5">输了只按 1 次（见 B005）。</text>
+      <text x="944" y="580" fill="#e0a3a3">建议：甲只留「正在结算…」一行，</text>
+      <text x="944" y="598" fill="#e0a3a3">所有数据统一由乙屏展示。</text>
+    </g>
+  </g>
+
+  <!-- ============ 左下 小提示 ============ -->
+  <g>
+    <rect x="32" y="628" width="300" height="64" rx="8" fill="#0d1017" stroke="#2b3240"/>
+    <text x="48" y="650" font-size="11" fill="#8a93a5">上游：005-战斗（阵亡 / 撤离读条完成）</text>
+    <text x="48" y="668" font-size="11" fill="#8a93a5">下游：002-主城 / 001-主菜单</text>
+    <text x="48" y="686" font-size="11" fill="#5d6575">数据先入账再弹屏（166~186），屏只是回顾</text>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-结算总SVG文档 / 1280×720 / v1.0</text>
+</svg>

@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B005 形象师 规格图（更名框 + 三态）</title>
+
+  <defs>
+    <linearGradient id="ctyBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <linearGradient id="ctyField" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0f1a2a"/>
+      <stop offset="1" stop-color="#0c1521"/>
+    </linearGradient>
+    <linearGradient id="ctyBtn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3444"/>
+      <stop offset="1" stop-color="#222936"/>
+    </linearGradient>
+    <filter id="ctyShadow" x="-30%" y="-40%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="7" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <marker id="ctyArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#ctyBg)"/>
+  <g stroke="rgba(61,79,107,0.14)" stroke-width="1">
+    <path d="M0 64 H1280 M0 128 H1280 M0 192 H1280 M0 256 H1280 M0 320 H1280 M0 384 H1280 M0 448 H1280 M0 512 H1280 M0 576 H1280 M0 640 H1280 M0 704 H1280"/>
+    <path d="M64 0 V720 M128 0 V720 M192 0 V720 M256 0 V720 M320 0 V720 M384 0 V720 M448 0 V720 M512 0 V720 M576 0 V720 M640 0 V720 M704 0 V720 M768 0 V720 M832 0 V720 M896 0 V720 M960 0 V720 M1024 0 V720 M1088 0 V720 M1152 0 V720 M1216 0 V720"/>
+  </g>
+
+  <!-- 页眉 -->
+  <text x="32" y="40" font-size="13" fill="#5d6575" letter-spacing="3">002-主城 / 点位 04</text>
+  <text x="32" y="70" font-size="24" font-weight="700" fill="#ffd76a">形象师</text>
+  <text x="32" y="92" font-size="12" fill="#a6b2c7">圈 (794, 230) r 76 绿 #7de08a ☺　｜　面板 420 宽 @ (810, 90)　｜　名字 2~8 字</text>
+  <text x="32" y="110" font-size="12" fill="#8d95a5">现在只做了一件事：改名。副标题却吹了「头像 · 更名 · 称号 · 皮肤」四样 —— 承诺与实物差距最大的一处</text>
+  <line x1="32" y1="122" x2="1248" y2="122" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- ============ 左：NPC 圈（真实 + 建议） ============ -->
+  <g id="ctyNpc">
+    <text x="32" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">NPC 圈 · 现状</text>
+    <circle cx="196" cy="330" r="76" fill="none" stroke="#7de08a" stroke-width="2" stroke-dasharray="14 12"/>
+    <circle cx="196" cy="330" r="22" fill="rgba(18,28,46,0.9)" stroke="#7de08a" stroke-width="2.5"/>
+    <text x="196" y="336" font-size="17" fill="#7de08a" text-anchor="middle">☺</text>
+    <text x="196" y="222" font-size="16" fill="#e8e2c8" text-anchor="middle">形象师</text>
+    <text x="196" y="240" font-size="12" fill="#a6b2c7" text-anchor="middle">头像 · 更名 · 称号 · 皮肤</text>
+    <path d="M196 330 L272 330" stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="234" y="324" font-size="11" fill="#e8b33c" text-anchor="middle">r 76</text>
+
+    <!-- 建议改法 -->
+    <g opacity="0.95">
+      <circle cx="56" cy="470" r="34" fill="none" stroke="#7de08a" stroke-width="1.5" stroke-dasharray="7 6" opacity="0.6"/>
+      <circle cx="56" cy="470" r="11" fill="rgba(18,28,46,0.9)" stroke="#7de08a" stroke-width="1.5"/>
+      <text x="56" y="474" font-size="9" fill="#7de08a" text-anchor="middle">☺</text>
+      <text x="104" y="460" font-size="10.5" fill="#e8b33c">建议改为（1:2 小样）</text>
+      <text x="104" y="476" font-size="10.5" fill="#8d95a5">副标题只写「给自己改个名字」</text>
+      <text x="32" y="520" font-size="10.5" fill="#5d6575">圈的颜色和符号是全城识别度最好的一个：</text>
+      <text x="32" y="536" font-size="10.5" fill="#5d6575">绿 + 笑脸 = 「管你这人」的地方，别动它。</text>
+    </g>
+  </g>
+
+  <line x1="300" y1="140" x2="300" y2="628" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- ============ 中：面板基本结构（1:1） ============ -->
+  <g id="ctyPanel">
+    <text x="320" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">面板骨架（1:1，420 × 178）</text>
+    <g filter="url(#ctyShadow)">
+      <rect x="320" y="160" width="420" height="178" rx="10" fill="#16233a" stroke="#c9a84c" stroke-width="2"/>
+    </g>
+    <text x="338" y="192" font-size="22" font-weight="700" fill="#ffd76a">形象师</text>
+    <text x="338" y="214" font-size="13" fill="#a6b2c7">旅者名号</text>
+    <line x1="338" y1="226" x2="722" y2="226" stroke="#c9a84c" stroke-opacity="0.45" stroke-width="1"/>
+
+    <!-- 输入框 -->
+    <rect x="338" y="238" width="384" height="36" rx="6" fill="url(#ctyField)" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="350" y="261" font-size="14" fill="#e8e2c8">无名旅者</text>
+    <rect x="404" y="247" width="2" height="18" fill="#ffd76a"/>
+    <text x="722" y="261" font-size="10.5" fill="#5d6575" text-anchor="end">0 / 8</text>
+
+    <rect x="338" y="284" width="384" height="34" rx="5" fill="url(#ctyBtn)" stroke="#c9a84c" stroke-width="1.5"/>
+    <text x="530" y="306" font-size="14" fill="#ffd76a" text-anchor="middle">确定更名</text>
+
+    <text x="338" y="336" font-size="10.5" fill="#5d6575">提示行（常态为空，出现后才占位，2 秒后消失）</text>
+
+    <!-- 尺寸链 -->
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3">
+      <path d="M320 136 H740" marker-start="url(#ctyArrow)" marker-end="url(#ctyArrow)"/>
+      <path d="M338 228 V238"/>
+      <path d="M334 238 H342 M334 274 H342"/>
+    </g>
+    <text x="530" y="132" font-size="11" fill="#e8b33c" text-anchor="middle">420</text>
+    <text x="326" y="260" font-size="10" fill="#e8b33c" text-anchor="end">36</text>
+    <text x="756" y="256" font-size="10.5" fill="#8d95a5">输入框 384 × 36 rx 6</text>
+    <text x="756" y="274" font-size="10.5" fill="#8d95a5">按钮 384 × 34 rx 5</text>
+  </g>
+
+  <!-- ============ 中：三态 ============ -->
+  <g id="ctyStates">
+    <text x="320" y="378" font-size="12" fill="#e8b33c" letter-spacing="1">三种状态 · 输入框与按钮区（1:1 局部）</text>
+
+    <!-- 态 1 正常 -->
+    <text x="320" y="402" font-size="10.5" fill="#5d6575">① 正常</text>
+    <rect x="320" y="410" width="420" height="34" rx="6" fill="url(#ctyField)" stroke="#c9a84c" stroke-width="1.5"/>
+    <text x="334" y="432" font-size="13" fill="#e8e2c8">老张</text>
+    <rect x="366" y="419" width="2" height="16" fill="#ffd76a"/>
+    <text x="726" y="432" font-size="10" fill="#5d6575" text-anchor="end">2 / 8</text>
+    <rect x="320" y="450" width="420" height="30" rx="5" fill="url(#ctyBtn)" stroke="#c9a84c" stroke-width="1.5"/>
+    <text x="530" y="470" font-size="13" fill="#ffd76a" text-anchor="middle">确定更名</text>
+    <text x="750" y="432" font-size="10" fill="#8d95a5">框边金（已激活）</text>
+
+    <!-- 态 2 太短 -->
+    <text x="320" y="504" font-size="10.5" fill="#5d6575">② 名字太短（1 个字）</text>
+    <rect x="320" y="512" width="420" height="34" rx="6" fill="#1d1418" stroke="#e2554f" stroke-width="1.5"/>
+    <text x="334" y="534" font-size="13" fill="#e8e2c8">张</text>
+    <rect x="352" y="521" width="2" height="16" fill="#e2554f"/>
+    <text x="726" y="534" font-size="10" fill="#e2554f" text-anchor="end">1 / 8</text>
+    <rect x="320" y="552" width="420" height="30" rx="5" fill="#1c2431" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="530" y="572" font-size="13" fill="#5a6572" text-anchor="middle">确定更名</text>
+    <text x="334" y="598" font-size="11" fill="#e2554f">至少要 2 个字</text>
+    <text x="750" y="534" font-size="10" fill="#e2554f">红框 + 红字提示</text>
+    <text x="750" y="572" font-size="10" fill="#8d95a5">按钮变灰点不动</text>
+
+    <!-- 态 3 成功 -->
+    <text x="320" y="628" font-size="10.5" fill="#5d6575">③ 改名成功</text>
+    <rect x="320" y="636" width="420" height="34" rx="6" fill="url(#ctyField)" stroke="#7de08a" stroke-width="1.5"/>
+    <text x="334" y="658" font-size="13" fill="#e8e2c8">老张</text>
+    <text x="726" y="658" font-size="10" fill="#7de08a" text-anchor="end">2 / 8</text>
+    <text x="334" y="690" font-size="11" fill="#7de08a">✓ 已更名，档案卡同步更新</text>
+    <text x="750" y="658" font-size="10" fill="#8d95a5">绿框 · 面板不关</text>
+  </g>
+
+  <line x1="802" y1="140" x2="802" y2="628" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- ============ 右：规则 ============ -->
+  <g id="ctyRules">
+    <text x="822" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">名字规则</text>
+    <g font-size="11">
+      <text x="822" y="172" fill="#a6b2c7">最少 2 个字　→ 例：「张」被拒</text>
+      <text x="822" y="190" fill="#a6b2c7">最多 8 个字　→ 第 9 个打不进去</text>
+      <text x="822" y="208" fill="#a6b2c7">前后空格自动去掉</text>
+      <text x="822" y="226" fill="#a6b2c7">只有空格 → 去完变 0 字，拒</text>
+      <text x="822" y="244" fill="#a6b2c7">和原名字一样 → 也算成功，落盘</text>
+      <text x="822" y="262" fill="#a6b2c7">改名免费、不限次数、不弹确认框</text>
+    </g>
+
+    <line x1="822" y1="276" x2="1248" y2="276" stroke="#2b3240"/>
+
+    <text x="822" y="298" font-size="12" fill="#e8b33c" letter-spacing="1">写入链路（两处都要写）</text>
+    <g font-size="10.5">
+      <rect x="822" y="308" width="120" height="26" rx="4" fill="#16233a" stroke="#2b3440"/>
+      <text x="882" y="325" fill="#e8e2c8" text-anchor="middle">点「确定更名」</text>
+      <path d="M946 321 H964" stroke="#e8b33c" stroke-width="1.2" marker-end="url(#ctyArrow)"/>
+      <rect x="968" y="308" width="86" height="26" rx="4" fill="#16233a" stroke="#2b3440"/>
+      <text x="1011" y="325" fill="#e8e2c8" text-anchor="middle">去空格查字数</text>
+      <path d="M1058 321 H1076" stroke="#e8b33c" stroke-width="1.2" marker-end="url(#ctyArrow)"/>
+      <rect x="1080" y="308" width="168" height="26" rx="4" fill="#16233a" stroke="#c9a84c"/>
+      <text x="1164" y="325" fill="#ffd76a" text-anchor="middle">内存档案 + 存档文件（当场落盘）</text>
+    </g>
+    <text x="822" y="352" font-size="10.5" fill="#a6b2c7">少写一处 = 「这一把是新名，重开又变回旧名」的经典 bug。现在两处都写了。</text>
+    <text x="822" y="368" font-size="10.5" fill="#a6b2c7">写入成功后通知档案卡刷新：左上角名字立刻变。</text>
+
+    <line x1="822" y1="384" x2="1248" y2="384" stroke="#2b3240"/>
+
+    <text x="822" y="406" font-size="12" fill="#e8b33c" letter-spacing="1">输入框 / 按钮 四态（参考）</text>
+    <g font-size="10.5" fill="#8d95a5">
+      <text x="822" y="424">输入框：常态（深底灰边）· 悬停（边微亮 + 文字光标）</text>
+      <text x="822" y="440">输入框：激活（金边 + 闪烁光标）· 禁用（不会出现）</text>
+      <text x="822" y="456">按钮：常态 / 悬停（提亮 + 手形）/ 按下（压暗）/ 字数不足（灰）</text>
+    </g>
+
+    <!-- 已知问题 -->
+    <rect x="822" y="472" width="426" height="108" rx="8" fill="#2a1b1b" stroke="#e2554f" stroke-opacity="0.5"/>
+    <text x="838" y="492" font-size="11.5" font-weight="700" fill="#e2554f">⚠ 真实状况</text>
+    <text x="838" y="510" font-size="10.5" fill="#b08a8a">· 字数不够时按钮仍能按，按了什么都不发生（只记日志）</text>
+    <text x="838" y="527" font-size="10.5" fill="#b08a8a">· 副标题承诺的头像 / 称号 / 皮肤：一个都没做，面板里连位置都没有</text>
+    <text x="838" y="544" font-size="10.5" fill="#b08a8a">· 输入框不过滤表情与特殊符号 → 部分字会变成方块</text>
+    <text x="838" y="561" font-size="10.5" fill="#b08a8a">· 无音效；改名对玩家是「认领角色」，值得一声盖章「嗯——」</text>
+    <text x="838" y="576" font-size="10.5" fill="#5d6575">建议：字数不足按钮变灰 + 红字；副标题改成实话</text>
+
+    <g>
+      <rect x="822" y="592" width="426" height="36" rx="6" fill="#101823" stroke="#2b3440"/>
+      <text x="838" y="615" font-size="10.5" fill="#a6b2c7">面板开着走出圈 → 自动关，没按「确定」的名字不生效（符合预期）</text>
+    </g>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B005-形象师 / 1280×720 / v1.0</text>
+</svg>

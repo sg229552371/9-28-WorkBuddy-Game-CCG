@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B005 操作说明 界面规格图（1280×720）</title>
+
+  <defs>
+    <linearGradient id="gBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <linearGradient id="gTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d2330"/>
+      <stop offset="1" stop-color="#141922"/>
+    </linearGradient>
+    <filter id="fShadow" x="-20%" y="-40%" width="140%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <marker id="mArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <!-- ============ L0 背景 ============ -->
+  <rect x="0" y="0" width="1280" height="720" fill="url(#gBg)"/>
+  <path d="M0 470 L1280 400 L1280 720 L0 720 Z" fill="#11151d"/>
+  <g stroke="#1e2532" stroke-width="1" opacity="0.55">
+    <path d="M0 560 L1280 500"/><path d="M0 630 L1280 575"/>
+    <path d="M160 470 L120 720"/><path d="M520 452 L500 720"/>
+    <path d="M900 430 L920 720"/><path d="M1180 410 L1240 720"/>
+  </g>
+
+  <!-- ============ L1 顶部栏 ============ -->
+  <rect x="0" y="0" width="1280" height="72" fill="url(#gTop)"/>
+  <rect x="0" y="70" width="1280" height="2" fill="#2b3240"/>
+  <rect x="0" y="70" width="1280" height="1" fill="#e8b33c" opacity="0.35"/>
+
+  <!-- 返回按钮（返回首页 / Esc） -->
+  <g filter="url(#fShadow)">
+    <rect x="32" y="16" width="132" height="40" rx="8" fill="#232a36" stroke="#3a4150" stroke-width="1.5"/>
+  </g>
+  <path d="M60 36 L74 36 M60 36 L66 30 M60 36 L66 42" stroke="#e2e6ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <text x="84" y="42" font-size="17" fill="#e2e6ee">返回首页</text>
+
+  <!-- 标题 -->
+  <text x="640" y="44" font-size="26" font-weight="700" fill="#f4f6fa" text-anchor="middle" letter-spacing="6">操作说明</text>
+
+  <!-- 右上角 Esc 提示 -->
+  <text x="1248" y="42" font-size="14" fill="#8d95a5" text-anchor="end">按 <tspan fill="#e8b33c" font-weight="700">Esc</tspan> 也能返回</text>
+
+  <!-- ============ L2 内容面板 ============ -->
+  <rect x="80" y="96" width="1120" height="536" rx="14" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
+  <rect x="80" y="96" width="1120" height="3" rx="1.5" fill="#e8b33c" opacity="0.5"/>
+
+  <!-- 面板小标题 -->
+  <text x="120" y="136" font-size="15" fill="#8d95a5" letter-spacing="2">五 条 就 够</text>
+  <text x="1160" y="136" font-size="13" fill="#5d6575" text-anchor="end">每条不超过 15 字 · 都配图 · 不认字也能猜出来</text>
+
+  <!-- ============ L3 五行条目 ============ -->
+  <!-- 行模板：图标框 x=120 y=row_y 尺寸 56×56 圆角 10；文字 x=196；行高 80；首行 y=120 -->
+
+  <!-- 行 1  走路  y=120 -->
+  <g>
+    <rect x="120" y="160" width="56" height="56" rx="10" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
+    <!-- 图标：WASD 键盘方块 -->
+    <g fill="#e2e6ee">
+      <rect x="131" y="176" width="12" height="11" rx="2.5"/>
+      <rect x="146" y="176" width="12" height="11" rx="2.5"/>
+      <rect x="161" y="176" width="12" height="11" rx="2.5"/>
+      <rect x="131" y="190" width="12" height="11" rx="2.5"/>
+      <rect x="146" y="190" width="12" height="11" rx="2.5" fill="#e8b33c"/>
+      <rect x="161" y="190" width="12" height="11" rx="2.5"/>
+    </g>
+    <text x="196" y="180" font-size="20" font-weight="700" fill="#e8b33c">走路</text>
+    <text x="196" y="205" font-size="18" fill="#cdd3de">按住 <tspan font-weight="700" fill="#f4f6fa">W A S D</tspan> 四个方向键走</text>
+    <text x="1160" y="196" font-size="13" fill="#5d6575" text-anchor="end">方向键 ←↑↓→ 也行</text>
+    <line x1="120" y1="238" x2="1160" y2="238" stroke="#232a36" stroke-width="1"/>
+  </g>
+
+  <!-- 行 2  打怪  y=200 -->
+  <g>
+    <rect x="120" y="240" width="56" height="56" rx="10" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
+    <!-- 图标：准星 -->
+    <circle cx="148" cy="268" r="12" fill="none" stroke="#e2e6ee" stroke-width="2"/>
+    <circle cx="148" cy="268" r="2.5" fill="#e8b33c"/>
+    <path d="M148 252 L148 259 M148 277 L148 284 M132 268 L139 268 M157 268 L164 268" stroke="#e2e6ee" stroke-width="2" stroke-linecap="round"/>
+    <text x="196" y="260" font-size="20" font-weight="700" fill="#e8b33c">打怪</text>
+    <text x="196" y="285" font-size="18" fill="#cdd3de">枪自动开火，<tspan font-weight="700" fill="#f4f6fa">鼠标指哪打哪</tspan></text>
+    <text x="1160" y="276" font-size="13" fill="#5d6575" text-anchor="end">不用点鼠标</text>
+    <line x1="120" y1="318" x2="1160" y2="318" stroke="#232a36" stroke-width="1"/>
+  </g>
+
+  <!-- 行 3  捡东西  y=280 -->
+  <g>
+    <rect x="120" y="320" width="56" height="56" rx="10" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
+    <!-- 图标：背包 -->
+    <path d="M136 338 h24 a4 4 0 0 1 4 4 v14 a4 4 0 0 1 -4 4 h-24 a4 4 0 0 1 -4 -4 v-14 a4 4 0 0 1 4 -4 z" fill="none" stroke="#e2e6ee" stroke-width="2"/>
+    <path d="M141 338 v-4 a7 7 0 0 1 14 0 v4" fill="none" stroke="#e2e6ee" stroke-width="2"/>
+    <line x1="132" y1="347" x2="164" y2="347" stroke="#e8b33c" stroke-width="2"/>
+    <text x="196" y="340" font-size="20" font-weight="700" fill="#e8b33c">捡东西</text>
+    <text x="196" y="365" font-size="18" fill="#cdd3de">按 <tspan font-weight="700" fill="#f4f6fa">Tab</tspan> 打开背包，把东西拖进格子</text>
+    <text x="1160" y="356" font-size="13" fill="#5d6575" text-anchor="end">格子里有位置才装得下</text>
+    <line x1="120" y1="398" x2="1160" y2="398" stroke="#232a36" stroke-width="1"/>
+  </g>
+
+  <!-- 行 4  过关  y=360 -->
+  <g>
+    <rect x="120" y="400" width="56" height="56" rx="10" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
+    <!-- 图标：Boss 骷髅 -->
+    <path d="M148 414 a13 13 0 0 1 13 13 v5 h-26 v-5 a13 13 0 0 1 13 -13 z" fill="none" stroke="#e2e6ee" stroke-width="2"/>
+    <rect x="142" y="422" width="5" height="6" rx="2" fill="#e2e6ee"/>
+    <rect x="151" y="422" width="5" height="6" rx="2" fill="#e2e6ee"/>
+    <path d="M140 434 v6 M145 434 v6 M152 434 v6 M157 434 v6" stroke="#e2e6ee" stroke-width="2" stroke-linecap="round"/>
+    <text x="196" y="420" font-size="20" font-weight="700" fill="#e8b33c">过关</text>
+    <text x="196" y="445" font-size="18" fill="#cdd3de">把 <tspan font-weight="700" fill="#f4f6fa">Boss 打死</tspan> 就过关</text>
+    <text x="1160" y="436" font-size="13" fill="#5d6575" text-anchor="end">不用跑到出口</text>
+    <line x1="120" y1="478" x2="1160" y2="478" stroke="#232a36" stroke-width="1"/>
+  </g>
+
+  <!-- 行 5  代价  y=440 -->
+  <g>
+    <rect x="120" y="480" width="56" height="56" rx="10" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
+    <!-- 图标：警告三角形 -->
+    <path d="M148 496 L162 520 L134 520 Z" fill="none" stroke="#e2554f" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M148 505 v7" stroke="#e2554f" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="148" cy="516" r="1.6" fill="#e2554f"/>
+    <text x="196" y="500" font-size="20" font-weight="700" fill="#e8b33c">代价</text>
+    <text x="196" y="525" font-size="18" fill="#cdd3de">活着回来东西全是你的；<tspan font-weight="700" fill="#e2554f">死了，这局捡的全丢</tspan></text>
+    <text x="1160" y="516" font-size="13" fill="#5d6575" text-anchor="end">等级和已解锁的不会丢</text>
+  </g>
+
+  <!-- ============ L4 底部按钮 ============ -->
+  <g filter="url(#fShadow)">
+    <rect x="500" y="580" width="280" height="48" rx="10" fill="#e8b33c"/>
+    <rect x="500" y="580" width="280" height="48" rx="10" fill="#f2c352" opacity="0.0"/>
+  </g>
+  <text x="640" y="611" font-size="19" font-weight="700" fill="#141922" text-anchor="middle" letter-spacing="2">返回首页</text>
+
+  <!-- ============ L5 右侧规格标注 ============ -->
+  <g stroke="#5d6575" stroke-width="1" stroke-dasharray="4 3" fill="none">
+    <!-- 图标框 -->
+    <rect x="120" y="160" width="56" height="56" rx="10" stroke="#e8b33c" stroke-dasharray="0"/>
+    <!-- 行高示意 -->
+    <path d="M92 160 L92 216" stroke="#e8b33c" stroke-dasharray="0"/>
+    <path d="M92 238 L92 294" stroke="#e8b33c" stroke-dasharray="0"/>
+  </g>
+  <text x="64" y="192" font-size="12" fill="#e8b33c" transform="rotate(-90 64 192)" text-anchor="middle">56</text>
+  <text x="64" y="270" font-size="12" fill="#e8b33c" transform="rotate(-90 64 270)" text-anchor="middle">80 行高</text>
+
+  <!-- 右下角规格说明卡片 -->
+  <g opacity="0.92">
+    <rect x="900" y="588" width="300" height="106" rx="10" fill="#0d1017" stroke="#3a4150" stroke-width="1.5" opacity="0.96"/>
+    <text x="916" y="610" font-size="13" font-weight="700" fill="#e8b33c">规格速查</text>
+    <text x="916" y="632" font-size="12" fill="#cdd3de">图标框　56 × 56　圆角 10　底 #252a34　边 #3a4150</text>
+    <text x="916" y="652" font-size="12" fill="#cdd3de">文字起点 x=196　字号 18（关键词 18 粗体金）</text>
+    <text x="916" y="672" font-size="12" fill="#cdd3de">行高 80　首行 y=160　分隔线 1px #232a36</text>
+    <text x="916" y="688" font-size="12" fill="#5d6575">右对齐备注 x=1160　字号 13　#5d6575</text>
+  </g>
+
+  <!-- 顶部尺寸标尺 -->
+  <g stroke="#e8b33c" stroke-width="1" opacity="0.75">
+    <path d="M80 84 L1200 84" marker-start="url(#mArrow)" marker-end="url(#mArrow)"/>
+    <path d="M80 78 L80 90 M1200 78 L1200 90"/>
+  </g>
+  <text x="640" y="80" font-size="12" fill="#e8b33c" text-anchor="middle">内容面板 1120 宽</text>
+
+  <text x="1248" y="708" font-size="12" fill="#5d6575" text-anchor="end">B005-操作说明 / 1280×720 / v1.0</text>
+</svg>

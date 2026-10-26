@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B009 深渊之门 规格图（常规 / 读条 / 点了没反应）</title>
+
+  <defs>
+    <linearGradient id="ctyBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <radialGradient id="ctyGlowAbyss" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff7a3c" stop-opacity="0.24"/>
+      <stop offset="0.5" stop-color="#ffd76a" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#ff7a3c" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="ctyShadow" x="-30%" y="-40%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="7" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <marker id="ctyArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="ctyArrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e2554f"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#ctyBg)"/>
+  <g stroke="rgba(61,79,107,0.14)" stroke-width="1">
+    <path d="M0 64 H1280 M0 128 H1280 M0 192 H1280 M0 256 H1280 M0 320 H1280 M0 384 H1280 M0 448 H1280 M0 512 H1280 M0 576 H1280 M0 640 H1280 M0 704 H1280"/>
+    <path d="M64 0 V720 M128 0 V720 M192 0 V720 M256 0 V720 M320 0 V720 M384 0 V720 M448 0 V720 M512 0 V720 M576 0 V720 M640 0 V720 M704 0 V720 M768 0 V720 M832 0 V720 M896 0 V720 M960 0 V720 M1024 0 V720 M1088 0 V720 M1152 0 V720 M1216 0 V720"/>
+  </g>
+
+  <!-- 页眉 -->
+  <text x="32" y="40" font-size="13" fill="#5d6575" letter-spacing="3">002-主城 / 点位 08</text>
+  <text x="32" y="70" font-size="24" font-weight="700" fill="#ffd76a">深渊之门</text>
+  <text x="32" y="92" font-size="12" fill="#a6b2c7">圈 (1101, 576) r 84 橙红 #ff7a3c !!　｜　光晕 #ffd76a　｜　读条环 r 96（外 12）粗 5</text>
+  <text x="32" y="110" font-size="12" fill="#8d95a5">设计上是「没有尽头的出口」；现在读条能走完 2 秒，然后什么都没有 —— 主城最伤人的一处</text>
+  <line x1="32" y1="122" x2="1248" y2="122" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- ============ 状态 1 常态 ============ -->
+  <g id="ctyS1">
+    <text x="32" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">① 常态　玩家不在圈里</text>
+    <circle cx="180" cy="272" r="150" fill="url(#ctyGlowAbyss)" opacity="0.75"/>
+    <circle cx="180" cy="272" r="84" fill="none" stroke="#ff7a3c" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="15 13"/>
+    <circle cx="180" cy="272" r="22" fill="rgba(18,28,46,0.9)" stroke="#ff7a3c" stroke-width="2.5"/>
+    <text x="180" y="279" font-size="17" font-weight="700" fill="#ff7a3c" text-anchor="middle">!!</text>
+    <text x="180" y="146" font-size="16" fill="#e8e2c8" text-anchor="middle">深渊之门</text>
+    <text x="180" y="164" font-size="12" fill="#a6b2c7" text-anchor="middle">进圈读条 2 秒 → 进入无尽深渊</text>
+    <text x="180" y="404" font-size="11" fill="#5d6575" text-anchor="middle">橙色虚线 2px · 70% 透明 · 外圈金色光晕</text>
+    <text x="180" y="422" font-size="11" fill="#5d6575" text-anchor="middle">光晕配置里有（#ffd76a），代码尚未使用</text>
+  </g>
+  <line x1="352" y1="150" x2="352" y2="432" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- ============ 状态 2 读条中 ============ -->
+  <g id="ctyS2">
+    <text x="380" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">② 读条中 60%（1.2 / 2.0 秒）</text>
+    <circle cx="528" cy="272" r="150" fill="url(#ctyGlowAbyss)"/>
+    <circle cx="528" cy="272" r="84" fill="none" stroke="#ff7a3c" stroke-width="2" stroke-dasharray="15 13"/>
+    <circle cx="528" cy="272" r="22" fill="rgba(18,28,46,0.9)" stroke="#ff7a3c" stroke-width="2.5"/>
+    <text x="528" y="279" font-size="17" font-weight="700" fill="#ff7a3c" text-anchor="middle">!!</text>
+    <text x="528" y="146" font-size="16" fill="#e8e2c8" text-anchor="middle">深渊之门</text>
+    <text x="528" y="164" font-size="12" fill="#a6b2c7" text-anchor="middle">进圈读条 2 秒 → 进入无尽深渊</text>
+    <circle cx="528" cy="272" r="96" fill="none" stroke="#ffd76a" stroke-opacity="0.16" stroke-width="5"/>
+    <path d="M528 176 A96 96 0 0 1 477.3 375.5" fill="none" stroke="#ffd76a" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="528" cy="330" r="11" fill="#40e0c0"/>
+    <text x="528" y="404" font-size="11" fill="#5d6575" text-anchor="middle">金色环从 12 点顺时针 · 60% 弧长 216°</text>
+    <text x="528" y="422" font-size="11" fill="#5d6575" text-anchor="middle">出圈即清零；读满前无任何提示文字</text>
+  </g>
+  <line x1="704" y1="150" x2="704" y2="432" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- ============ 状态 3 读完没反应（红） ============ -->
+  <g id="ctyS3">
+    <text x="732" y="150" font-size="12" fill="#e2554f" letter-spacing="1">③ 读条满了 —— 点了没反应</text>
+    <circle cx="880" cy="272" r="150" fill="url(#ctyGlowAbyss)"/>
+    <circle cx="880" cy="272" r="84" fill="none" stroke="#ff7a3c" stroke-width="2" stroke-dasharray="15 13"/>
+    <circle cx="880" cy="272" r="96" fill="none" stroke="#ffd76a" stroke-width="5"/>
+    <circle cx="880" cy="272" r="22" fill="rgba(18,28,46,0.9)" stroke="#ff7a3c" stroke-width="2.5"/>
+    <text x="880" y="279" font-size="17" font-weight="700" fill="#ff7a3c" text-anchor="middle">!!</text>
+    <text x="880" y="146" font-size="16" fill="#e8e2c8" text-anchor="middle">深渊之门</text>
+    <text x="880" y="164" font-size="12" fill="#a6b2c7" text-anchor="middle">进圈读条 2 秒 → 进入无尽深渊</text>
+    <circle cx="880" cy="330" r="11" fill="#40e0c0"/>
+    <!-- 断链 -->
+    <path d="M880 376 V412" stroke="#e2554f" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#ctyArrowRed)"/>
+    <text x="880" y="430" font-size="11" fill="#e2554f" text-anchor="middle">读条闭合 · 广播 enter_abyss · 无人接收</text>
+  </g>
+
+  <!-- 状态 3 说明卡（右上） -->
+  <g id="ctyBugCard">
+    <rect x="1040" y="150" width="208" height="132" rx="8" fill="#2a1b1b" stroke="#e2554f" stroke-opacity="0.65"/>
+    <text x="1056" y="172" font-size="12" font-weight="700" fill="#e2554f">⚠ 当前只发事件，没有接收方</text>
+    <text x="1056" y="192" font-size="10.5" fill="#b08a8a">点了不会发生任何事。</text>
+    <text x="1056" y="210" font-size="10.5" fill="#b08a8a">全项目搜 enter_abyss：</text>
+    <text x="1056" y="226" font-size="10.5" fill="#b08a8a">只有发出的一处，</text>
+    <text x="1056" y="242" font-size="10.5" fill="#b08a8a">没有接收的一处。</text>
+    <text x="1056" y="264" font-size="10" fill="#5d6575">玩家会以为「我站歪了」，原地反复进出</text>
+  </g>
+
+  <line x1="32" y1="452" x2="1248" y2="452" stroke="#2b3240" stroke-width="1" stroke-dasharray="6 6"/>
+
+  <!-- ============ 下半：尺寸 + 对比 + 流程 ============ -->
+  <text x="32" y="480" font-size="13" font-weight="700" fill="#ffd76a" letter-spacing="2">圈 与 环 的 尺 寸</text>
+
+  <g id="ctySize">
+    <circle cx="240" cy="580" r="96" fill="none" stroke="#2b3440" stroke-width="1" stroke-dasharray="2 4"/>
+    <circle cx="240" cy="580" r="84" fill="none" stroke="#ff7a3c" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="15 13"/>
+    <circle cx="240" cy="580" r="96" fill="none" stroke="#ffd76a" stroke-opacity="0.25" stroke-width="5"/>
+    <path d="M240 484 A96 96 0 1 1 156.4 628.1" fill="none" stroke="#ffd76a" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="240" cy="580" r="22" fill="rgba(18,28,46,0.9)" stroke="#ff7a3c" stroke-width="2.5"/>
+    <text x="240" y="587" font-size="17" font-weight="700" fill="#ff7a3c" text-anchor="middle">!!</text>
+
+    <path d="M240 580 L324 580" stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="282" y="574" font-size="11" fill="#e8b33c" text-anchor="middle">r 84</text>
+    <path d="M324 580 L336 580" stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="330" y="602" font-size="10.5" fill="#e8b33c" text-anchor="middle">+12</text>
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="3 3">
+      <path d="M334 476 H346 M334 486 H346 M346 476 V486"/>
+    </g>
+    <text x="352" y="486" font-size="10.5" fill="#e8b33c">5</text>
+    <text x="248" y="476" font-size="10.5" fill="#8d95a5">12 点起 · 顺时针</text>
+  </g>
+
+  <!-- 配置里有但没用上的三样 -->
+  <g>
+    <text x="420" y="480" font-size="12" fill="#8d95a5">配置里配了 4 样，实际生效 1.5 样</text>
+    <g font-size="10.5">
+      <rect x="420" y="492" width="330" height="26" rx="4" fill="#16233a" stroke="#3a4150"/>
+      <text x="434" y="509" fill="#7de08a">radius 84　　　　　✓ 用于判断进圈</text>
+      <rect x="420" y="524" width="330" height="26" rx="4" fill="#16233a" stroke="#3a4150"/>
+      <text x="434" y="541" fill="#7de08a">color #ff7a3c　　　✓ 用于画圈与符号</text>
+      <rect x="420" y="556" width="330" height="26" rx="4" fill="#1a1a22" stroke="#3a4150"/>
+      <text x="434" y="573" fill="#5d6575">hintRadius 104　　　✗ 想做的「靠近提示」没写</text>
+      <rect x="420" y="588" width="330" height="26" rx="4" fill="#1a1a22" stroke="#3a4150"/>
+      <text x="434" y="605" fill="#5d6575">tapRadius 116　　　 ✗ 想做的「点击也能进」没写</text>
+      <rect x="420" y="620" width="330" height="26" rx="4" fill="#1a1a22" stroke="#3a4150"/>
+      <text x="434" y="637" fill="#5d6575">glow #ffd76a　　　　✗ 外发光没写（本图已补画）</text>
+    </g>
+  </g>
+
+  <!-- 与出征门对比 -->
+  <g>
+    <text x="784" y="480" font-size="12" fill="#8d95a5">和出征门怎么分清（玩家真正要辨的）</text>
+    <rect x="784" y="492" width="464" height="154" rx="8" fill="#101823" stroke="#2b3440"/>
+    <line x1="784" y1="516" x2="1248" y2="516" stroke="#2b3240"/>
+    <g font-size="10.5" fill="#8d95a5">
+      <text x="798" y="510">　　　　　出征传送门　　　　深渊之门</text>
+    </g>
+    <g font-size="10.5" fill="#a6b2c7">
+      <text x="798" y="536">位置</text><text x="898" y="536">顶部正中 640,180</text><text x="1082" y="536">右侧偏下 1101,576</text>
+      <text x="798" y="556">半径</text><text x="898" y="556">90</text><text x="1082" y="556">84</text>
+      <text x="798" y="576">颜色</text><text x="898" y="576" fill="#ffd76a">金 #ffd76a</text><text x="1082" y="576" fill="#ff7a3c">橙红 #ff7a3c</text>
+      <text x="798" y="596">符号</text><text x="898" y="596">&gt;&gt;</text><text x="1082" y="596">!!</text>
+      <text x="798" y="616">读条</text><text x="898" y="616">2 秒 → 弹选关屏</text><text x="1082" y="616">2 秒 → 无下文</text>
+      <text x="798" y="636">心情</text><text x="898" y="636">出门干活</text><text x="1082" y="636">往深处走</text>
+    </g>
+  </g>
+
+  <!-- 流程 + 修法 -->
+  <g>
+    <text x="32" y="676" font-size="10.5" fill="#8d95a5">进圈 → 圈变实 + 环起 → 站 2 秒 → 广播「我要进深渊」→（断）　｜　</text>
+    <text x="470" y="676" font-size="10.5" fill="#e2554f">短期止血：ready 改 false（门消失），或读满时给一句「深渊还在打地基」</text>
+    <text x="880" y="676" font-size="10.5" fill="#5d6575">长期：接住消息 + 深渊模式本身（层数/难度/掉落）先存在</text>
+    <text x="32" y="696" font-size="10.5" fill="#5d6575">同圈只触发一次，走出再进才重置；读条走完人仍在圈里 → 不会重复触发，所以玩家会一直等，永远等不到</text>
+  </g>
+
+  <text x="1248" y="706" font-size="11" fill="#5d6575" text-anchor="end">B009-深渊之门 / 1280×720 / v1.0</text>
+</svg>

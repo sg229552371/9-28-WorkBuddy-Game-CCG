@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B002 进度与解锁 规则示意图</title>
+
+  <defs>
+    <linearGradient id="lvlBg3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <linearGradient id="lvlUnlockBand" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6bd88a" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#6bd88a" stop-opacity="0.02"/>
+    </linearGradient>
+    <marker id="lvlA4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="lvlA4g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#6bd88a"/>
+    </marker>
+    <marker id="lvlA4d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5a6572"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#lvlBg3)"/>
+  <text x="48" y="46" font-size="18" font-weight="700" fill="#e8b33c" letter-spacing="3">进度与解锁</text>
+  <text x="212" y="46" font-size="13" fill="#8a93a5">B002-进度与解锁　｜　99 关按 3 列排成楼梯，按顺序一级一级开放</text>
+  <path d="M48 60 L1232 60" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- ============ 区 A：关卡序列 1→5 ============ -->
+  <g>
+    <text x="48" y="96" font-size="13" font-weight="700" fill="#e8b33c">A. 关卡序列（已解锁数 = 3 的情况）</text>
+    <rect x="48" y="106" width="1184" height="196" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
+
+    <!-- 已解锁区间背景 -->
+    <rect x="72" y="124" width="606" height="130" rx="8" fill="url(#lvlUnlockBand)"/>
+    <text x="76" y="140" font-size="11" fill="#6bd88a">已解锁区间 · 绿色</text>
+    <text x="1000" y="140" font-size="11" fill="#5a6572" text-anchor="end">锁定区间 · 灰色</text>
+
+    <!-- 卡片 1..5，宽 180 高 96，间距 30，起点 x=84 y=150 -->
+    <!-- 1 -->
+    <g>
+      <rect x="84" y="150" width="180" height="96" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="2"/>
+      <text x="94" y="178" font-size="18" font-weight="700" fill="#e8b33c">第 1 关</text>
+      <text x="94" y="199" font-size="12" fill="#8a93a5">荒地哨站</text>
+      <text x="94" y="222" font-size="12" fill="#e8b33c">✓ 已通关 · 3★</text>
+      <text x="248" y="160" font-size="10" fill="#e8b33c" text-anchor="end">序号 0</text>
+    </g>
+    <path d="M270 198 L292 198" stroke="#6bd88a" stroke-width="2" marker-end="url(#lvlA4g)"/>
+
+    <!-- 2 -->
+    <g>
+      <rect x="300" y="150" width="180" height="96" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="2"/>
+      <text x="310" y="178" font-size="18" font-weight="700" fill="#e8b33c">第 2 关</text>
+      <text x="310" y="199" font-size="12" fill="#8a93a5">腐朽林地</text>
+      <text x="310" y="222" font-size="12" fill="#e8b33c">✓ 已通关 · 2★</text>
+      <text x="464" y="160" font-size="10" fill="#e8b33c" text-anchor="end">序号 1</text>
+    </g>
+    <path d="M486 198 L508 198" stroke="#6bd88a" stroke-width="2" marker-end="url(#lvlA4g)"/>
+
+    <!-- 3 -->
+    <g>
+      <rect x="516" y="150" width="180" height="96" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="2"/>
+      <text x="526" y="178" font-size="18" font-weight="700" fill="#e8b33c">第 3 关</text>
+      <text x="526" y="199" font-size="12" fill="#8a93a5">深渊回廊</text>
+      <text x="526" y="222" font-size="12" fill="#e8b33c">可挑战（最新）</text>
+      <text x="680" y="160" font-size="10" fill="#e8b33c" text-anchor="end">序号 2</text>
+    </g>
+    <path d="M702 198 L724 198" stroke="#5a6572" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#lvlA4d)"/>
+    <text x="713" y="190" font-size="10" fill="#5a6572" text-anchor="middle">关</text>
+
+    <!-- 4 -->
+    <g>
+      <rect x="732" y="150" width="180" height="96" rx="8" fill="#1e222a"/>
+      <text x="742" y="178" font-size="18" font-weight="700" fill="#5a6572">第 4 关</text>
+      <text x="742" y="199" font-size="12" fill="#4b5462">熔岩裂谷</text>
+      <text x="742" y="222" font-size="12" fill="#4b5462">锁定</text>
+      <text x="896" y="160" font-size="10" fill="#5a6572" text-anchor="end">序号 3</text>
+    </g>
+    <path d="M918 198 L940 198" stroke="#5a6572" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#lvlA4d)"/>
+
+    <!-- 5 -->
+    <g>
+      <rect x="948" y="150" width="180" height="96" rx="8" fill="#1e222a"/>
+      <text x="958" y="178" font-size="18" font-weight="700" fill="#5a6572">第 5 关</text>
+      <text x="958" y="199" font-size="12" fill="#4b5462">熔核哨塔</text>
+      <text x="958" y="222" font-size="12" fill="#4b5462">锁定</text>
+      <text x="1112" y="160" font-size="10" fill="#5a6572" text-anchor="end">序号 4</text>
+    </g>
+
+    <!-- 解锁线 -->
+    <path d="M706 168 L706 268" stroke="#6bd88a" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="716" y="282" font-size="11" fill="#6bd88a">← 解锁边界：这里之后全灰</text>
+  </g>
+
+  <!-- ============ 区 B：判定条 ============ -->
+  <g>
+    <text x="48" y="336" font-size="13" font-weight="700" fill="#e8b33c">B. 解锁判定：索引 &lt; max(1, 已解锁数) 就解锁</text>
+    <rect x="48" y="346" width="1184" height="186" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
+
+    <!-- 已解锁数 = N -->
+    <g>
+      <rect x="72" y="366" width="300" height="60" rx="8" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
+      <text x="88" y="392" font-size="13" fill="#8a93a5">已解锁关数 = N（存档里读，进屏读一次）</text>
+      <text x="88" y="414" font-size="17" font-weight="700" fill="#e2e6ee">N = 3</text>
+      <text x="356" y="414" font-size="12" fill="#5a6572" text-anchor="end">读不到 → 当 1</text>
+    </g>
+
+    <path d="M384 396 L416 396" stroke="#e8b33c" stroke-width="1.5" marker-end="url(#lvlA4)"/>
+
+    <!-- max(1, N) -->
+    <g>
+      <rect x="424" y="366" width="236" height="60" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="1.5"/>
+      <text x="440" y="392" font-size="13" fill="#8a93a5">取大的那个，兜底</text>
+      <text x="440" y="416" font-size="17" font-weight="700" fill="#e8b33c">max(1, 3) = 3</text>
+    </g>
+
+    <path d="M668 396 L700 396" stroke="#e8b33c" stroke-width="1.5" marker-end="url(#lvlA4)"/>
+
+    <!-- 表达式 -->
+    <g>
+      <rect x="708" y="366" width="500" height="60" rx="8" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
+      <text x="724" y="392" font-size="13" fill="#8a93a5">每张卡：卡片序号（从 0 数）与 3 比较</text>
+      <text x="724" y="416" font-size="16" font-weight="700" fill="#e2e6ee">index &lt; 3　→ <tspan fill="#6bd88a">金边可点</tspan>　｜　否则 <tspan fill="#5a6572">灰卡锁定</tspan></text>
+    </g>
+
+    <!-- 判定表 -->
+    <g>
+      <rect x="72" y="440" width="1136" height="78" rx="8" fill="#1b2029" stroke="#2b3240" stroke-width="1"/>
+      <g font-size="12">
+        <text x="92" y="462" fill="#8a93a5">第 1 关 · 序号 0</text>
+        <text x="92" y="486" fill="#6bd88a" font-weight="700">0 &lt; 3 ✓ 解锁</text>
+        <text x="92" y="506" fill="#e8b33c">金边</text>
+
+        <text x="330" y="462" fill="#8a93a5">第 2 关 · 序号 1</text>
+        <text x="330" y="486" fill="#6bd88a" font-weight="700">1 &lt; 3 ✓ 解锁</text>
+        <text x="330" y="506" fill="#e8b33c">金边</text>
+
+        <text x="568" y="462" fill="#8a93a5">第 3 关 · 序号 2</text>
+        <text x="568" y="486" fill="#6bd88a" font-weight="700">2 &lt; 3 ✓ 解锁</text>
+        <text x="568" y="506" fill="#e8b33c">金边</text>
+
+        <text x="806" y="462" fill="#8a93a5">第 4 关 · 序号 3</text>
+        <text x="806" y="486" fill="#5a6572" font-weight="700">3 &lt; 3 ✗ 锁定</text>
+        <text x="806" y="506" fill="#5a6572">灰卡</text>
+
+        <text x="1044" y="462" fill="#8a93a5">第 99 关 · 序号 98</text>
+        <text x="1044" y="486" fill="#5a6572" font-weight="700">98 &lt; 3 ✗ 锁定</text>
+        <text x="1044" y="506" fill="#5a6572">灰卡</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ============ 区 C：状态表 ============ -->
+  <g>
+    <text x="48" y="562" font-size="13" font-weight="700" fill="#e8b33c">C. 四种典型存档</text>
+    <g font-size="12.5">
+      <rect x="48" y="572" width="288" height="76" rx="8" fill="#1b2029" stroke="#2b3240" stroke-width="1"/>
+      <text x="64" y="594" fill="#8a93a5">刚开局 / 存档 0 或负数</text>
+      <text x="64" y="618" fill="#e2e6ee">N 按 1 算</text>
+      <text x="64" y="638" fill="#e8b33c">只有第 1 关金边</text>
+
+      <rect x="348" y="572" width="288" height="76" rx="8" fill="#1b2029" stroke="#2b3240" stroke-width="1"/>
+      <text x="364" y="594" fill="#8a93a5">打通第 3 关</text>
+      <text x="364" y="618" fill="#e2e6ee">N = 4</text>
+      <text x="364" y="638" fill="#e8b33c">第 1~4 关金边</text>
+
+      <rect x="648" y="572" width="288" height="76" rx="8" fill="#1b2029" stroke="#2b3240" stroke-width="1"/>
+      <text x="664" y="594" fill="#8a93a5">打通全部</text>
+      <text x="664" y="618" fill="#e2e6ee">N ≥ 99</text>
+      <text x="664" y="638" fill="#e8b33c">99 张全金边</text>
+
+      <rect x="948" y="572" width="284" height="76" rx="8" fill="#1b2029" stroke="#2b3240" stroke-width="1"/>
+      <text x="964" y="594" fill="#8a93a5">谁改这个数</text>
+      <text x="964" y="618" fill="#e2e6ee">只有 006-结算 在赢时 +1</text>
+      <text x="964" y="638" fill="#5a6572">选关屏只读，绝不自己改</text>
+    </g>
+  </g>
+
+  <!-- ============ 大白话 / 灰字 ============ -->
+  <g>
+    <text x="48" y="678" font-size="14" fill="#8a93a5">通关第 1 关，第 2 关就开了。</text>
+    <text x="48" y="700" font-size="12" fill="#5a6572">换句话说：你能打的关，永远是「从头开始连着的那一串」，不可能跳过中间那一关去打后面的。</text>
+  </g>
+
+  <!-- ============ 规格速查 ============ -->
+  <g>
+    <rect x="760" y="664" width="472" height="44" rx="8" fill="#0d1017" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="774" y="682" font-size="11.5" fill="#cdd3de">网格 3 列 × 33 排　卡片 200×96　间距 10　99 关 = 33 排整</text>
+    <text x="774" y="700" font-size="11" fill="#5a6572">已解锁 #e8b33c 金边　锁定无边框 + #5a6572 名字</text>
+  </g>
+
+  <text x="1248" y="712" font-size="12" fill="#5a6572" text-anchor="end">B002-进度与解锁 / 1280×720 / v1.0</text>
+</svg>

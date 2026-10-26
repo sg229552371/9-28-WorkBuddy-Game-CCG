@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B002 英雄详情 面板逐行规格图（横向拉宽）</title>
+
+  <defs>
+    <linearGradient id="chrBg3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <marker id="chrA3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="chrA3r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e2554f"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#chrBg3)"/>
+  <text x="48" y="42" font-size="18" font-weight="700" fill="#e8b33c" letter-spacing="3">英雄详情</text>
+  <text x="176" y="42" font-size="13" fill="#8a93a5">B002-英雄详情　｜　真实高度 190（宽铺满），本图横向拉宽到 1100 便于看清每一行</text>
+  <path d="M48 56 L1232 56" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- ============ 面板本体 ============ -->
+  <g>
+    <rect x="48" y="74" width="1100" height="280" rx="8" fill="#252a34"/>
+    <text x="48" y="68" font-size="11" fill="#e8b33c">详情面板 · 底 #252a34 · 圆角 8 · 内边距 左右 12 / 上下 8 · 行间距 4</text>
+
+    <!-- 行 1 名字行 -->
+    <g>
+      <rect x="60" y="82" width="1076" height="34" rx="4" fill="#ffffff" opacity="0.02"/>
+      <text x="60" y="106" font-size="20" font-weight="700" fill="#e8b33c">猎手</text>
+      <rect x="108" y="88" width="44" height="22" rx="4" fill="#2a3a5a"/>
+      <text x="130" y="104" font-size="13" fill="#e2e6ee" text-anchor="middle">输出</text>
+      <text x="164" y="106" font-size="15" fill="#8a93a5">HOPS</text>
+      <text x="216" y="106" font-size="15" font-weight="700" fill="#e2e6ee">Lv1</text>
+      <!-- HOPS 红圈 -->
+      <rect x="158" y="88" width="48" height="22" rx="4" fill="none" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="1140" y="100" font-size="10" fill="#e2554f" text-anchor="end">① HOPS = 笔误占位串</text>
+      <!-- 字号标注 -->
+      <text x="1156" y="106" font-size="12" fill="#e8b33c">20 / 13 / 15 / 15</text>
+    </g>
+
+    <!-- 行 2 属性行 -->
+    <g>
+      <rect x="60" y="120" width="1076" height="30" rx="4" fill="#ffffff" opacity="0.02"/>
+      <text x="60" y="141" font-size="15" fill="#e2e6ee">生命 94 · 攻击 16 · 速度 306 · 防御 2 · 力量 6 · 敏捷 8 · 智力 4</text>
+      <text x="1156" y="141" font-size="12" fill="#e8b33c">15</text>
+      <!-- 挖掘缺失位置标（速度 与 防御 之间） -->
+      <path d="M404 117 L404 127" stroke="#e2554f" stroke-width="1.5"/>
+      <text x="406" y="114" font-size="10" fill="#e2554f">「挖掘」应该插在这（永远没有）</text>
+    </g>
+
+    <!-- 行 3 优点行 -->
+    <g>
+      <rect x="60" y="154" width="1076" height="30" rx="4" fill="#ffffff" opacity="0.02"/>
+      <rect x="60" y="157" width="44" height="22" rx="4" fill="#2e4a36"/>
+      <text x="82" y="173" font-size="13" fill="#9fe0af" text-anchor="middle">优点</text>
+      <rect x="112" y="157" width="44" height="22" rx="4" fill="#2e4a36"/>
+      <text x="134" y="173" font-size="13" fill="#9fe0af" text-anchor="middle">敏捷</text>
+      <text x="1156" y="173" font-size="12" fill="#e8b33c">13</text>
+      <text x="1140" y="168" font-size="10" fill="#9fe0af" text-anchor="end">底 #2e4a36 / 字 #9fe0af</text>
+    </g>
+
+    <!-- 行 4 缺点行 -->
+    <g>
+      <rect x="60" y="188" width="1076" height="30" rx="4" fill="#ffffff" opacity="0.02"/>
+      <rect x="60" y="191" width="44" height="22" rx="4" fill="#4a2e2e"/>
+      <text x="82" y="207" font-size="13" fill="#e0a3a3" text-anchor="middle">缺点</text>
+      <rect x="112" y="191" width="62" height="22" rx="4" fill="#3a3f4a"/>
+      <text x="143" y="207" font-size="13" fill="#8a93a5" text-anchor="middle">待配置</text>
+      <text x="1156" y="207" font-size="12" fill="#e8b33c">13</text>
+      <text x="1140" y="202" font-size="10" fill="#e0a3a3" text-anchor="end">底 #4a2e2e / 字 #e0a3a3</text>
+    </g>
+
+    <!-- 行 5 羁绊行 -->
+    <g>
+      <rect x="60" y="222" width="1076" height="30" rx="4" fill="#ffffff" opacity="0.02"/>
+      <text x="60" y="243" font-size="15" fill="#8a93a5">羁绊：待配置</text>
+      <text x="1156" y="243" font-size="12" fill="#e8b33c">15</text>
+      <path d="M108 226 L108 248" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="3 3"/>
+    </g>
+
+    <!-- 行 6 进化结晶行 -->
+    <g>
+      <rect x="60" y="256" width="1076" height="30" rx="4" fill="#ffffff" opacity="0.02"/>
+      <text x="60" y="277" font-size="15" fill="#8a93a5">进化结晶：击败小怪 ✦1 / 首领 ✦60，撤离后用于局外升级</text>
+      <text x="1156" y="277" font-size="12" fill="#e8b33c">15</text>
+    </g>
+
+    <!-- 行分隔标注 -->
+    <g stroke="#e8b33c" stroke-width="0.8" stroke-dasharray="4 3" fill="none">
+      <path d="M62 82 L62 286"/>
+      <path d="M56 82 L68 82 M56 116 L68 116 M56 150 L68 150 M56 184 L68 184 M56 218 L68 218 M56 252 L68 252 M56 286 L68 286"/>
+    </g>
+    <g font-size="10" fill="#e8b33c">
+      <text x="70" y="98" text-anchor="end">B002-英雄详情 / 1280×720 / v1.0</text>
+    </g>
+  </g>
+
+  <!-- 右侧行高数字 -->
+  <g font-size="10" fill="#8a93a5">
+    <text x="1196" y="103">34 名字行</text>
+    <text x="1196" y="140">30 属性行</text>
+    <text x="1196" y="174">30 优点行</text>
+    <text x="1196" y="208">30 缺点行</text>
+    <text x="1196" y="242">30 羁绊行</text>
+    <text x="1196" y="276">30 结晶行</text>
+  </g>
+
+  <!-- 190 高标注 -->
+  <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
+    <path d="M24 74 L24 354"/>
+    <path d="M18 74 L30 74 M18 354 L30 354"/>
+    <path d="M48 370 L1148 370"/>
+  </g>
+  <text x="20" y="214" font-size="12" fill="#e8b33c" text-anchor="end" transform="rotate(-90 20 214)">真实高度 190</text>
+  <text x="598" y="386" font-size="12" fill="#e8b33c" text-anchor="middle">宽铺满（min 190 高，内容超出可上下滚）</text>
+
+  <!-- ============ 红字：三个真实问题 ============ -->
+  <g>
+    <rect x="48" y="400" width="560" height="196" rx="10" fill="#1a1215" stroke="#e2554f" stroke-width="1.5"/>
+    <text x="68" y="426" font-size="14" font-weight="700" fill="#e2554f">⚠ 这块面板现在有三个真问题</text>
+
+    <text x="68" y="452" font-size="12.5" font-weight="700" fill="#f0b3b0">① 「HOPS」是笔误占位串，界面上真的会出现</text>
+    <text x="68" y="473" font-size="11.5" fill="#c99a98">玩家看到的是「猎手 [输出] HOPS Lv1」，第三个谁都看不懂。</text>
+    <text x="68" y="492" font-size="11.5" fill="#c99a98">来源：第 934~938 行，本意是职业缩写/攻击方式，没做，字串没删。</text>
+
+    <text x="68" y="518" font-size="12.5" font-weight="700" fill="#f0b3b0">② 羁绊永远显示「待配置」</text>
+    <text x="68" y="539" font-size="11.5" fill="#c99a98">英雄表根本没有羁绊字段（第 971~982 行），12 个英雄全都一样。</text>
+
+    <text x="68" y="565" font-size="12.5" font-weight="700" fill="#f0b3b0">③ 12 个英雄都没有「挖掘」字段，所以挖掘属性永不显示</text>
+    <text x="68" y="584" font-size="11.5" fill="#c99a98">属性行只出 7 项：生命 / 攻击 / 速度 / 防御 / 力量 / 敏捷 / 智力。</text>
+  </g>
+
+  <!-- ============ 状态说明 ============ -->
+  <g>
+    <rect x="632" y="400" width="600" height="188" rx="10" fill="#121722" stroke="#2b3240" stroke-width="1.5"/>
+    <text x="652" y="426" font-size="13" font-weight="700" fill="#e8b33c">什么时候换内容</text>
+    <g font-size="12" fill="#cdd3de">
+      <text x="652" y="450">进屏没点人 → <tspan fill="#5a6572">一块空框</tspan>（没有默认英雄）</text>
+      <text x="652" y="470">点一个没选过的 → 整体清空重画成他 ✅</text>
+      <text x="652" y="490">点一个已选中的（取消）→ <tspan fill="#e0a3a3">仍然画他</tspan> ❌ 玩家会以为没取消</text>
+      <text x="652" y="510">点未解锁的 → 面板不变（因为点不到）</text>
+      <text x="652" y="530">右侧另一个人对比（散弹手）：优点 = 攻击 / 生命，缺点 = 速度 / 敏捷</text>
+    </g>
+    <path d="M652 542 L1212 542" stroke="#2b3240" stroke-width="1"/>
+    <g font-size="11.5" fill="#8a93a5">
+      <text x="652" y="562">散弹手　生命 116 · 攻击 23 · 速度 290 · 防御 2 · 力量 7 · 敏捷 5 · 智力 3</text>
+      <text x="652" y="582">只看标签也能读懂：又猛又慢的胖子 —— 这就是这块面板的价值</text>
+    </g>
+  </g>
+
+  <!-- ============ 灰字图角 ============ -->
+  <g>
+    <text x="48" y="628" font-size="12" fill="#8a93a5">「进化结晶：击败小怪 ✦1 / 首领 ✦60」是写给玩家的承诺，结算屏必须按这个数给，不能少给。</text>
+    <text x="48" y="650" font-size="12" fill="#5a6572">缺点行在「没有缺点」时显示灰底「待配置」——猎手、医疗兵、圣歌者、灵能者 4 个英雄都是这样。</text>
+    <text x="48" y="672" font-size="12" fill="#5a6572">属性名来自 cfg/statNames.json；这张表缺失的话，界面会直接露出 hp / atk 这种英文键名。</text>
+  </g>
+
+  <!-- ============ 规格速查 ============ -->
+  <g>
+    <rect x="748" y="606" width="484" height="98" rx="10" fill="#0d1017" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="764" y="626" font-size="13" font-weight="700" fill="#e8b33c">规格速查</text>
+    <text x="764" y="648" font-size="11.5" fill="#cdd3de">面板 min 190 高 · 圆角 8 · 底 #252a34 · 内边距 12/8 · 行距 4</text>
+    <text x="764" y="668" font-size="11.5" fill="#cdd3de">名字 20 金 · 职业标签 13（底 #2a3a5a）· Lv 15 白</text>
+    <text x="764" y="688" font-size="11.5" fill="#cdd3de">属性/羁绊/结晶 15 #8a93a5~#e2e6ee · 优缺点标签 13</text>
+  </g>
+
+  <text x="1248" y="712" font-size="12" fill="#5a6572" text-anchor="end">B002-英雄详情 / 1280×720 / v1.0</text>
+</svg>

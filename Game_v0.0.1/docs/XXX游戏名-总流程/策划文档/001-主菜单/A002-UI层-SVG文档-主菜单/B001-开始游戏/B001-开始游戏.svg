@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <desc>B001-开始游戏 按钮四态规格图</desc>
+
+  <rect width="1280" height="720" fill="#0f1622"/>
+
+  <text x="640" y="52" font-family="Noto Sans SC, Microsoft YaHei, sans-serif" font-size="24"
+        font-weight="bold" fill="#e8b33c" text-anchor="middle" letter-spacing="2">B001-开始游戏 · 按钮四态规格</text>
+  <text x="640" y="78" font-family="Noto Sans SC, Microsoft YaHei, sans-serif" font-size="13"
+        fill="#5a6572" text-anchor="middle">320 × 56 · 圆角 6 · 位于主菜单 X=480 Y=320</text>
+
+  <g font-family="Noto Sans SC, Microsoft YaHei, sans-serif">
+    <text x="280" y="140" font-size="16" fill="#8a93a5" text-anchor="middle">① 常态 NORMAL</text>
+    <rect x="120" y="152" width="320" height="56" rx="6" fill="#e8b33c"/>
+    <text x="280" y="188" font-size="24" font-weight="bold" fill="#131c2c" text-anchor="middle">开始游戏</text>
+    <text x="280" y="240" font-size="13" fill="#5a6572" text-anchor="middle" font-family="monospace">fill #e8b33c · scale 1.00 · shadow y+3 blur8</text>
+
+    <text x="1000" y="140" font-size="16" fill="#8a93a5" text-anchor="middle">② 悬停 HOVER</text>
+    <rect x="840" y="152" width="320" height="56" rx="6" fill="#f2c352"/>
+    <rect x="834" y="147" width="332" height="66" rx="9" fill="none" stroke="#f2c352" stroke-width="1" stroke-dasharray="4 4" opacity="0.6"/>
+    <text x="1000" y="188" font-size="24" font-weight="bold" fill="#131c2c" text-anchor="middle">开始游戏</text>
+    <text x="1000" y="240" font-size="13" fill="#5a6572" text-anchor="middle" font-family="monospace">fill #f2c352 · scale 1.03 · shadow y+5 blur12</text>
+
+    <text x="280" y="340" font-size="16" fill="#8a93a5" text-anchor="middle">③ 按下 PRESSED</text>
+    <rect x="123" y="354" width="314" height="52" rx="6" fill="#c99a2e"/>
+    <text x="280" y="387" font-size="23" font-weight="bold" fill="#131c2c" text-anchor="middle">开始游戏</text>
+    <text x="280" y="436" font-size="13" fill="#5a6572" text-anchor="middle" font-family="monospace">fill #c99a2e · scale 0.97 · shadow y+1 blur4</text>
+
+    <text x="1000" y="340" font-size="16" fill="#8a93a5" text-anchor="middle">④ 键盘焦点 FOCUS</text>
+    <rect x="840" y="352" width="320" height="56" rx="6" fill="#e8b33c"/>
+    <rect x="835" y="347" width="330" height="66" rx="9" fill="none" stroke="#e2e6ee" stroke-width="2"/>
+    <text x="1000" y="388" font-size="24" font-weight="bold" fill="#131c2c" text-anchor="middle">开始游戏</text>
+    <text x="1000" y="446" font-size="13" fill="#5a6572" text-anchor="middle" font-family="monospace">外框 2px #e2e6ee · 距按钮边 3px</text>
+  </g>
+
+  <line x1="80" y1="500" x2="1200" y2="500" stroke="#2a2f3a"/>
+
+  <g font-family="Noto Sans SC, Microsoft YaHei, sans-serif">
+    <text x="80" y="536" font-size="16" font-weight="bold" fill="#e2e6ee">配色与尺寸</text>
+    <g font-size="13" fill="#8a93a5">
+      <text x="80" y="566">背景 #131c2c　│　主色 #e8b33c　│　文字 #131c2c　│　圆角 6px</text>
+      <text x="80" y="592">宽度 320　│　高度 56　│　字号 24 粗体　│　字距 1</text>
+      <text x="80" y="618">文字基线 = 中心 y + 8（按钮 y=320+56/2=348 → 基线 356）</text>
+    </g>
+
+    <text x="80" y="662" font-size="16" font-weight="bold" fill="#e2e6ee">三态动画时长</text>
+    <g font-size="13" fill="#8a93a5">
+      <text x="80" y="688">悬停 120ms 缓出　│　按下 60ms　│　松开复位 100ms</text>
+    </g>
+  </g>
+
+  <g font-family="Noto Sans SC, Microsoft YaHei, sans-serif">
+    <text x="660" y="536" font-size="16" font-weight="bold" fill="#e2e6ee">可选图标（推荐 B 方案）</text>
+    <rect x="660" y="556" width="240" height="48" rx="6" fill="#e8b33c"/>
+    <path d="M 726 580 L 736 580 M 732 576 L 736 580 L 732 584" stroke="#131c2c" stroke-width="2.5" fill="none"/>
+    <text x="758" y="587" font-size="20" font-weight="bold" fill="#131c2c">开始游戏</text>
+    <text x="920" y="587" font-size="13" fill="#5a6572">◀ 箭头 16×16，距文字 12</text>
+  </g>
+</svg>

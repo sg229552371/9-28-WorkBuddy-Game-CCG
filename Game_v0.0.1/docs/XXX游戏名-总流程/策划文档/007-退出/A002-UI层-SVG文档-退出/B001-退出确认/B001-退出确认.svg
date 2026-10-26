@@ -1,0 +1,191 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B001-退出确认 · 420×200 弹窗设计图（目标态）+ 按钮三态</title>
+
+  <defs>
+    <linearGradient id="qtBg" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#131c2c"/>
+      <stop offset="0.55" stop-color="#101725"/>
+      <stop offset="1" stop-color="#0b1119"/>
+    </linearGradient>
+    <linearGradient id="qtMenuFade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e8b33c" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#e8b33c" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="qtDangerN" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e8605a"/>
+      <stop offset="1" stop-color="#d04a43"/>
+    </linearGradient>
+    <linearGradient id="qtDangerH" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f88a83"/>
+      <stop offset="1" stop-color="#e2554f"/>
+    </linearGradient>
+    <linearGradient id="qtDangerP" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b83a34"/>
+      <stop offset="1" stop-color="#9e2f29"/>
+    </linearGradient>
+    <filter id="qtShadowBig" x="-40%" y="-70%" width="180%" height="260%">
+      <feDropShadow dx="0" dy="8" stdDeviation="24" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <filter id="qtShadow" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    <filter id="qtRing" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#e8b33c" flood-opacity="0.85"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#qtBg)"/>
+
+  <!-- ================= 背景：被遮住的主菜单（整屏 1:1） ================= -->
+  <g opacity="0.5">
+    <text x="640" y="248" font-size="32" font-weight="700" fill="#e8b33c" text-anchor="middle" letter-spacing="2">弹幕射击 × 背包肉鸽</text>
+    <text x="640" y="284" font-size="16" fill="#8a93a5" text-anchor="middle">组队下矿 · 撤离拿结晶 · 局外养成</text>
+    <rect x="480" y="320" width="320" height="56" rx="6" fill="#e8b33c"/>
+    <text x="640" y="356" font-size="24" font-weight="700" fill="#131c2c" text-anchor="middle">开始游戏</text>
+    <g font-size="20" fill="#e2e6ee" text-anchor="middle">
+      <rect x="480" y="392" width="320" height="44" rx="6" fill="#252a34" stroke="#3a4150"/><text x="640" y="420">操作说明</text>
+      <rect x="480" y="452" width="320" height="44" rx="6" fill="#252a34" stroke="#3a4150"/><text x="640" y="480">设置</text>
+      <rect x="480" y="512" width="320" height="44" rx="6" fill="#252a34" stroke="#3a4150"/><text x="640" y="540">图鉴</text>
+      <rect x="480" y="572" width="320" height="44" rx="6" fill="#252a34" stroke="#3a4150"/><text x="640" y="600">退出游戏</text>
+    </g>
+    <rect x="500" y="644" width="280" height="26" rx="13" fill="#161d29" stroke="#242d3c"/>
+    <text x="640" y="661" font-size="14" fill="#e2e6ee" text-anchor="middle">无名旅者 ·「初出茅庐」· <tspan fill="#e8b33c">✦330</tspan></text>
+  </g>
+
+  <!-- 60% 黑幕 -->
+  <rect x="0" y="0" width="1280" height="720" fill="#000000" opacity="0.6"/>
+
+  <!-- ================= 弹窗 420×200 居中 ================= -->
+  <g filter="url(#qtShadowBig)">
+    <rect x="430" y="260" width="420" height="200" rx="12" fill="#1d2027" stroke="#3a4150" stroke-width="1.5"/>
+  </g>
+  <!-- 顶部 1px 高光 -->
+  <path d="M442 260.8 H838" stroke="#3a4150" stroke-width="1" opacity="0.7"/>
+
+  <!-- ✕ -->
+  <g>
+    <circle cx="814" cy="286" r="14" fill="#252a34" stroke="#3a4150"/>
+    <path d="M808 280 L820 292 M820 280 L808 292" stroke="#8a93a5" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+
+  <!-- 提示行：20 号白 -->
+  <text x="640" y="336" font-size="20" fill="#e2e6ee" text-anchor="middle">确定要退出游戏吗？</text>
+  <text x="640" y="356" font-size="11" fill="#5a6572" text-anchor="middle">20 号 · #e2e6ee · 单行不换行</text>
+
+  <!-- 左：退出 红 -->
+  <rect x="470" y="380" width="160" height="48" rx="8" fill="url(#qtDangerN)"/>
+  <text x="550" y="411" font-size="20" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="2">退 出</text>
+
+  <!-- 右：继续 灰 -->
+  <rect x="650" y="380" width="160" height="48" rx="8" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
+  <text x="730" y="411" font-size="20" fill="#e2e6ee" text-anchor="middle" letter-spacing="2">继 续</text>
+
+  <!-- 默认焦点环（在「继续」上） -->
+  <rect x="656" y="386" width="148" height="36" rx="5" fill="none" stroke="#e8b33c" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.85"/>
+  <text x="730" y="442" font-size="10.5" fill="#e8b33c" text-anchor="middle">默认焦点在这里（回车 = 继续）</text>
+
+  <!-- ================= 尺寸标注 ================= -->
+  <g opacity="0.95">
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
+      <path d="M430 260 L430 214 M850 260 L850 214 M430 220 L850 220"/>
+      <path d="M850 260 L896 260 M850 460 L896 460 M890 260 L890 460"/>
+      <path d="M430 460 L430 500 M850 460 L850 500"/>
+      <path d="M470 380 L470 372 M630 380 L630 372 M470 376 L630 376"/>
+      <path d="M650 436 L650 452 M810 436 L810 452 M650 448 L810 448"/>
+      <path d="M630 404 L650 404"/>
+    </g>
+    <text x="640" y="212" font-size="11.5" fill="#e8b33c" text-anchor="middle">420</text>
+    <text x="902" y="362" font-size="11.5" fill="#e8b33c">200</text>
+    <text x="640" y="496" font-size="10.5" fill="#e8b33c" text-anchor="middle">x=430 → 850（水平居中）　y=260 → 460（垂直居中）</text>
+    <text x="550" y="370" font-size="10.5" fill="#e8b33c" text-anchor="middle">160</text>
+    <text x="730" y="466" font-size="10.5" fill="#e8b33c" text-anchor="middle">160</text>
+    <text x="640" y="400" font-size="10" fill="#e8b33c" text-anchor="middle">间距 20</text>
+  </g>
+
+  <!-- 左下：规格速查 -->
+  <g>
+    <rect x="56" y="176" width="286" height="120" rx="8" fill="#0d1017" stroke="#2b3240" opacity="0.96"/>
+    <text x="72" y="200" font-size="12" font-weight="700" fill="#e8b33c">规格速查</text>
+    <g font-size="11" fill="#8d95a5">
+      <text x="72" y="220">弹窗 420×200 rx12　底 <tspan fill="#e2e6ee">#1d2027</tspan> 边 <tspan fill="#e2e6ee">#3a4150</tspan> 1.5</text>
+      <text x="72" y="238">黑幕 #000 opacity 0.6（纯黑 60%）</text>
+      <text x="72" y="256">提示 20 <tspan fill="#e2e6ee">#e2e6ee</tspan>　按钮 160×48 rx8 间距 20</text>
+      <text x="72" y="274">退出底 <tspan fill="#e2554f">#e2554f</tspan>　继续底 <tspan fill="#e2e6ee">#252a34</tspan></text>
+      <text x="72" y="292">✕ 28 直径，距右上 16</text>
+    </g>
+  </g>
+
+  <!-- 右下：与代码差异（红线） -->
+  <g>
+    <rect x="938" y="200" width="286" height="200" rx="8" fill="#1a1414" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <rect x="938" y="200" width="286" height="6" rx="3" fill="#e2554f"/>
+    <text x="954" y="228" font-size="12" font-weight="700" fill="#ff8a84">⚠ 与现状的差异（必须统一）</text>
+    <g font-size="11" fill="#e0a3a3">
+      <text x="954" y="250">现状：整屏换屏，无黑幕、无弹窗</text>
+      <text x="954" y="268">现状按钮文字：确认退出 / 返回首页</text>
+      <text x="954" y="286">设计稿：退出 / 继续（左右并排）</text>
+      <text x="954" y="304">「返回首页」会让玩家以为是网站首页</text>
+      <text x="954" y="328" fill="#9fe0af">口径：以本图（001/B004）长相为准；</text>
+      <text x="954" y="346" fill="#9fe0af">规则细节见 007/B001、B002。</text>
+      <text x="954" y="372" fill="#8a93a5">动画：黑幕淡入 120ms + 弹窗 0.9→1.0</text>
+      <text x="954" y="390" fill="#8a93a5">缩放 150ms 缓出；关闭反向 100ms。</text>
+    </g>
+  </g>
+
+  <!-- ================= 底部：按钮三态 ================= -->
+  <g>
+    <line x1="56" y1="530" x2="1224" y2="530" stroke="#2a2f3a"/>
+    <text x="56" y="558" font-size="14" font-weight="700" fill="#e8b33c">按钮三态（常态 / 悬停 / 按下 + 焦点）</text>
+    <text x="1224" y="558" font-size="11" fill="#e2554f" text-anchor="end">当前 _make_button() 只设 normal，三态全部缺失；命中区需 ≥ 48 高</text>
+  </g>
+
+  <!-- 退出三态 -->
+  <g>
+    <text x="56" y="586" font-size="11" fill="#8a93a5">退出（危险）</text>
+    <g filter="url(#qtShadow)">
+      <rect x="56" y="596" width="160" height="48" rx="8" fill="url(#qtDangerN)"/>
+    </g>
+    <text x="136" y="627" font-size="18" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="2">退 出</text>
+    <text x="136" y="664" font-size="10.5" fill="#5a6572" text-anchor="middle">常态 #e2554f</text>
+
+    <g filter="url(#qtShadow)">
+      <rect x="240" y="596" width="160" height="48" rx="8" fill="url(#qtDangerH)"/>
+      <rect x="240" y="596" width="160" height="48" rx="8" fill="none" stroke="#ffb3ad" stroke-width="1"/>
+    </g>
+    <text x="320" y="627" font-size="18" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="2">退 出</text>
+    <text x="320" y="664" font-size="10.5" fill="#5a6572" text-anchor="middle">悬停 #f0706a + 描边提亮</text>
+
+    <rect x="424" y="596" width="160" height="48" rx="8" fill="url(#qtDangerP)"/>
+    <text x="504" y="628" font-size="18" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="2">退 出</text>
+    <text x="504" y="664" font-size="10.5" fill="#5a6572" text-anchor="middle">按下 #a8302a · 下沉 2px</text>
+    <text x="504" y="680" font-size="10" fill="#8a93a5" text-anchor="middle">文字随之下移 2px</text>
+  </g>
+
+  <!-- 继续三态 -->
+  <g>
+    <text x="650" y="586" font-size="11" fill="#8a93a5">继续（安全）</text>
+    <g filter="url(#qtShadow)">
+      <rect x="650" y="596" width="160" height="48" rx="8" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
+    </g>
+    <text x="730" y="627" font-size="18" fill="#e2e6ee" text-anchor="middle" letter-spacing="2">继 续</text>
+    <text x="730" y="664" font-size="10.5" fill="#5a6572" text-anchor="middle">常态 #252a34 / #3a4150</text>
+
+    <rect x="834" y="596" width="160" height="48" rx="8" fill="#313746" stroke="#5a6572" stroke-width="1.5"/>
+    <text x="914" y="627" font-size="18" fill="#e2e6ee" text-anchor="middle" letter-spacing="2">继 续</text>
+    <text x="914" y="664" font-size="10.5" fill="#5a6572" text-anchor="middle">悬停 #313746 / #5a6572</text>
+
+    <rect x="1018" y="596" width="160" height="48" rx="8" fill="#1c202a" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="1098" y="628" font-size="18" fill="#c9ced9" text-anchor="middle" letter-spacing="2">继 续</text>
+    <text x="1098" y="664" font-size="10.5" fill="#5a6572" text-anchor="middle">按下 #1c202a · 下沉 2px</text>
+
+    <!-- 焦点态单独一行 -->
+    <g filter="url(#qtRing)">
+      <rect x="1254" y="596" width="46" height="48" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="2"/>
+    </g>
+    <text x="1272" y="627" font-size="15" fill="#e8b33c" text-anchor="middle">⌨</text>
+    <text x="1244" y="664" font-size="10.5" fill="#e8b33c" text-anchor="middle">焦点态：金外圈 2px</text>
+    <text x="1244" y="680" font-size="10" fill="#8a93a5" text-anchor="middle">默认落在「继续」</text>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B001-退出确认 / 1280×720 / v1.0</text>
+</svg>

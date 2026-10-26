@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B003 返回主城 按钮三态 + 流程</title>
+
+  <defs>
+    <linearGradient id="lvlBg4" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <filter id="lvlShadow4" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="4" stdDeviation="9" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <marker id="lvlA5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="lvlA5w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e2e6ee"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#lvlBg4)"/>
+  <text x="48" y="46" font-size="18" font-weight="700" fill="#e8b33c" letter-spacing="3">返回主城</text>
+  <text x="212" y="46" font-size="13" fill="#8a93a5">B003-返回主城　｜　选关屏唯一一条退路：180 × 48，永远可点，永远不许禁用</text>
+  <path d="M48 60 L1232 60" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- ============ 三态并排（2× 放大） ============ -->
+  <text x="48" y="96" font-size="13" font-weight="700" fill="#e8b33c">A. 按钮三态（2× 放大 · 360 × 96 示意）</text>
+
+  <g transform="translate(40,116)">
+    <!-- 常态 -->
+    <g>
+      <text x="8" y="0" font-size="12" fill="#8a93a5">常态　#252a34 · 无边框</text>
+      <path d="M8 14 L368 14" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 4"/>
+      <g filter="url(#lvlShadow4)">
+        <rect x="4" y="30" width="360" height="96" rx="16" fill="#252a34"/>
+      </g>
+      <text x="184" y="90" font-size="40" fill="#e2e6ee" text-anchor="middle">返回主城</text>
+    </g>
+
+    <!-- 悬停 -->
+    <g transform="translate(400,0)">
+      <text x="8" y="0" font-size="12" fill="#8a93a5">悬停　#313746 · 系统默认提亮</text>
+      <path d="M8 14 L368 14" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 4"/>
+      <g filter="url(#lvlShadow4)">
+        <rect x="4" y="30" width="360" height="96" rx="16" fill="#313746"/>
+      </g>
+      <text x="184" y="90" font-size="40" fill="#f0f3f8" text-anchor="middle">返回主城</text>
+    </g>
+
+    <!-- 按下 -->
+    <g transform="translate(800,0)">
+      <text x="8" y="0" font-size="12" fill="#8a93a5">按下　#1c202a · 下沉</text>
+      <path d="M8 14 L368 14" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 4"/>
+      <g filter="url(#lvlShadow4)">
+        <rect x="4" y="30" width="360" height="96" rx="16" fill="#1c202a"/>
+      </g>
+      <text x="184" y="90" font-size="40" fill="#c8cedb" text-anchor="middle">返回主城</text>
+      <text x="352" y="146" font-size="10" fill="#5a6572" text-anchor="end">y+2 偏移（示意）</text>
+    </g>
+  </g>
+
+  <!-- 尺寸标注 -->
+  <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
+    <path d="M44 256 L404 256" marker-start="url(#lvlA5)" marker-end="url(#lvlA5)"/>
+    <path d="M44 250 L44 262 M404 250 L404 262"/>
+    <path d="M30 146 L30 242"/>
+    <path d="M24 146 L36 146 M24 242 L36 242"/>
+  </g>
+  <text x="224" y="250" font-size="12" fill="#e8b33c" text-anchor="middle">180 宽</text>
+  <text x="26" y="198" font-size="12" fill="#e8b33c" text-anchor="end" transform="rotate(-90 26 198)">48 高</text>
+  <text x="1244" y="160" font-size="11" fill="#e8b33c" text-anchor="end">圆角 8</text>
+
+  <!-- 文字规格 -->
+  <g>
+    <text x="48" y="278" font-size="13" fill="#cdd3de">文字「返回主城」20 号 <tspan fill="#8a93a5">#e2e6ee</tspan>　｜　圆角 8　｜　无边框（次要按钮，金色只留给「能打的关卡」和「开始出战」）</text>
+    <text x="48" y="302" font-size="13" fill="#cdd3de">位置：面板最底一行、<tspan fill="#e8b33c">靠右对齐</tspan>（左边留一整段空白把按钮顶到右边）　｜　面板内边距左右 24</text>
+    <text x="48" y="326" font-size="13" fill="#5a6572">禁用态：不存在。任何时刻都能点 —— 不管有没有解锁、配置表有没有读错。</text>
+  </g>
+
+  <!-- ============ 流程小球图 ============ -->
+  <g>
+    <text x="48" y="368" font-size="13" font-weight="700" fill="#e8b33c">B. 点了之后去哪</text>
+    <rect x="48" y="380" width="1184" height="170" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
+
+    <!-- 主城 -->
+    <g>
+      <circle cx="200" cy="470" r="44" fill="#252a34" stroke="#5a6572" stroke-width="1.5"/>
+      <text x="200" y="466" font-size="17" font-weight="700" fill="#e2e6ee" text-anchor="middle">主城</text>
+      <text x="200" y="486" font-size="11" fill="#8a93a5" text-anchor="middle">002</text>
+    </g>
+    <!-- 选关（高亮） -->
+    <g>
+      <circle cx="640" cy="470" r="52" fill="#252a34" stroke="#e8b33c" stroke-width="2.5"/>
+      <text x="640" y="466" font-size="17" font-weight="700" fill="#e8b33c" text-anchor="middle">选关</text>
+      <text x="640" y="486" font-size="11" fill="#8a93a5" text-anchor="middle">003 · 你在这</text>
+    </g>
+    <!-- 选人（灰，去不了） -->
+    <g>
+      <circle cx="1000" cy="470" r="44" fill="#1b2029" stroke="#3a4150" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="1000" y="466" font-size="17" font-weight="700" fill="#5a6572" text-anchor="middle">选人</text>
+      <text x="1000" y="486" font-size="11" fill="#3a4150" text-anchor="middle">004</text>
+    </g>
+
+    <!-- 箭头：主城 → 选关（粗底） -->
+    <path d="M248 470 L566 470" stroke="#3a4150" stroke-width="6" stroke-linecap="round"/>
+    <path d="M248 470 L566 470" stroke="#5a6572" stroke-width="1.5" stroke-dasharray="7 6"/>
+    <text x="404" y="456" font-size="12" fill="#8a93a5" text-anchor="middle">进传送门 · 站满 2 秒</text>
+
+    <!-- 箭头：选关 → 主城（返回主城） -->
+    <path d="M600 522 Q420 590 260 518" stroke="#e8b33c" stroke-width="2.5" fill="none" marker-end="url(#lvlA5)"/>
+    <text x="432" y="586" font-size="13" font-weight="700" fill="#e8b33c" text-anchor="middle">点「返回主城」→ 立刻切回主城</text>
+
+    <!-- 选关 → 选人 -->
+    <path d="M696 470 L948 470" stroke="#e8b33c" stroke-width="2" marker-end="url(#lvlA5)"/>
+    <text x="822" y="456" font-size="12" fill="#e8b33c" text-anchor="middle">点一张金边关卡</text>
+
+    <text x="1000" y="534" font-size="11" fill="#5a6572" text-anchor="middle">去不了（返回主城不走这条路）</text>
+
+    <!-- 特点 -->
+    <text x="80" y="408" font-size="12" fill="#8a93a5">白名单：选关屏只允许去 <tspan fill="#e2e6ee">选人</tspan> 和 <tspan fill="#e2e6ee">主城</tspan></text>
+  </g>
+
+  <!-- ============ 行为条款 ============ -->
+  <g>
+    <text x="48" y="584" font-size="13" font-weight="700" fill="#e8b33c">C. 点下去之后发生了什么</text>
+    <g font-size="12.5" fill="#cdd3de">
+      <text x="48" y="610">① 立即隐藏选关屏 → ② 切主城场景 → ③ 屏幕状态记为「主菜单」</text>
+      <text x="48" y="632">不扣任何东西：结晶不变、已解锁关数不变、星级记录不变（玩家还没出门，没东西可丢）</text>
+      <text x="48" y="654">不弹「确定要放弃出征吗？」——本来就没出征，多一句确认纯属添堵</text>
+    </g>
+    <text x="48" y="680" font-size="12" fill="#8a93a5">回主城后若玩家立刻又走进传送门，2 秒后会正常再开一次选关（选关屏有防重入守卫，不会叠两层）</text>
+  </g>
+
+  <!-- ============ 规格速查 ============ -->
+  <g>
+    <rect x="840" y="576" width="392" height="124" rx="10" fill="#0d1017" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="856" y="598" font-size="13" font-weight="700" fill="#e8b33c">规格速查</text>
+    <text x="856" y="620" font-size="11.5" fill="#cdd3de">尺寸 180 × 48　圆角 8　无边框</text>
+    <text x="856" y="640" font-size="11.5" fill="#cdd3de">常态 #252a34 · 悬停 #313746 · 按下 #1c202a</text>
+    <text x="856" y="660" font-size="11.5" fill="#cdd3de">文字「返回主城」20 号 #e2e6ee</text>
+    <text x="856" y="680" font-size="11.5" fill="#cdd3de">靠右对齐，距面板右边 24</text>
+    <text x="856" y="696" font-size="11" fill="#5a6572">Esc 当前未绑定（建议补）</text>
+  </g>
+
+  <text x="1248" y="712" font-size="12" fill="#5a6572" text-anchor="end">B003-返回主城 / 1280×720 / v1.0</text>
+</svg>

@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B007 撤离点 界面规格图（1280×720）</title>
+
+  <defs>
+    <linearGradient id="btlBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <linearGradient id="btlPanel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d2330"/>
+      <stop offset="1" stop-color="#141922"/>
+    </linearGradient>
+    <radialGradient id="btlRing" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0.55" stop-color="#ffd140" stop-opacity="0.16"/>
+    </radialGradient>
+    <linearGradient id="btlStone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e8c573"/>
+      <stop offset="1" stop-color="#9c7a38"/>
+    </linearGradient>
+    <filter id="btlGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="btlArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="btlArrowS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#btlBg)"/>
+  <g stroke="#1a2130" stroke-width="1" opacity="0.55">
+    <path d="M0 120 L1280 120 M0 330 L1280 330 M0 560 L1280 560"/>
+    <path d="M200 0 L200 720 M480 0 L480 720 M800 0 L800 720 M1080 0 L1080 720"/>
+  </g>
+
+  <rect x="0" y="0" width="1280" height="64" fill="url(#btlPanel)"/>
+  <rect x="0" y="62" width="1280" height="2" fill="#2b3240"/>
+  <text x="32" y="40" font-size="22" font-weight="700" fill="#f2fafe">B007 · 撤离点（金圈 + 绿弧读条 + 左中提示）</text>
+  <text x="1248" y="40" font-size="13" fill="#8d95a5" text-anchor="end">金圈 r=100 粗 4　｜　判定 r=120　｜　读条 8s</text>
+
+  <!-- ================= 左：三种圈状态（1:1 实尺寸） ================= -->
+  <text x="32" y="96" font-size="12" fill="#5d6575" letter-spacing="2">圈的三种状态 · 1:1 实尺寸（正上方 12 点起顺时针长弧）</text>
+
+  <!-- 状态 A：未读条 -->
+  <g>
+    <text x="36" y="128" font-size="12" fill="#8d95a5">A · 已出现，未进圈</text>
+    <!-- 外圈虚线 = 判定 120 -->
+    <circle cx="200" cy="250" r="120" fill="none" stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 6" opacity="0.45"/>
+    <circle cx="200" cy="250" r="100" fill="url(#btlRing)" stroke="#ffd947" stroke-width="4"/>
+    <!-- 雕像剪影 -->
+    <path d="M200 196 l14 22 l0 40 l-28 0 l0 -40 z" fill="url(#btlStone)" opacity="0.9"/>
+    <path d="M186 258 l-12 26 l52 0 l-12 -26 z" fill="#b8934a" opacity="0.85"/>
+    <circle cx="200" cy="250" r="12" fill="#ffd140"/>
+    <text x="200" y="396" font-size="11" fill="#5d6575" text-anchor="middle">金圈 r100 粗4 #ffd140 · 中心金点 r12</text>
+  </g>
+
+  <!-- 状态 B：读条 50% -->
+  <g>
+    <text x="356" y="128" font-size="12" fill="#8d95a5">B · 读条中 50%</text>
+    <circle cx="520" cy="250" r="110" fill="none" stroke="#1d2a22" stroke-width="6"/>
+    <!-- 半圈弧：从 12 点顺时针 180° -->
+    <path d="M520 140 A110 110 0 0 1 520 360" fill="none" stroke="#66ff80" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="520" cy="250" r="100" fill="url(#btlRing)" stroke="#ffd947" stroke-width="4"/>
+    <path d="M520 196 l14 22 l0 40 l-28 0 l0 -40 z" fill="url(#btlStone)" opacity="0.9"/>
+    <circle cx="520" cy="250" r="12" fill="#ffd140"/>
+    <text x="520" y="396" font-size="11" fill="#5d6575" text-anchor="middle">绿弧 r110 粗6 #66ff80，弧长 = 已读 ÷ 8s</text>
+  </g>
+
+  <!-- 状态 C：读条满 -->
+  <g>
+    <text x="676" y="128" font-size="12" fill="#8cd99a">C · 读满 → 撤离成功</text>
+    <circle cx="840" cy="250" r="110" fill="none" stroke="#66ff80" stroke-width="6" filter="url(#btlGlow)"/>
+    <circle cx="840" cy="250" r="100" fill="url(#btlRing)" stroke="#ffd947" stroke-width="4"/>
+    <path d="M840 196 l14 22 l0 40 l-28 0 l0 -40 z" fill="url(#btlStone)"/>
+    <circle cx="840" cy="250" r="12" fill="#ffffff"/>
+    <text x="840" y="396" font-size="11" fill="#8d95a5" text-anchor="middle">整圈读满，立刻发 extract 结算</text>
+  </g>
+
+  <!-- 状态 D：死亡消散 -->
+  <g>
+    <text x="996" y="128" font-size="12" fill="#ff7b73">D · 读条中死亡 → 雕像消散</text>
+    <circle cx="1160" cy="250" r="100" fill="none" stroke="#5a6572" stroke-width="2" stroke-dasharray="8 8" opacity="0.6"/>
+    <!-- 虚影雕像 -->
+    <path d="M1160 196 l14 22 l0 40 l-28 0 l0 -40 z" fill="none" stroke="#8d95a5" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <path d="M1146 258 l-12 26 l52 0 l-12 -26 z" fill="none" stroke="#8d95a5" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <!-- 叉 -->
+    <path d="M1130 220 L1190 280 M1190 220 L1130 280" stroke="#e2554f" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+    <text x="1160" y="396" font-size="11" fill="#8a93a5" text-anchor="middle">圈与雕像一起消失，弹「阵亡」结算</text>
+  </g>
+
+  <!-- ================= 中：判定半径对比（放大 1.2 倍） ================= -->
+  <line x1="32" y1="424" x2="1248" y2="424" stroke="#2b3240" stroke-width="1" stroke-dasharray="6 5"/>
+  <text x="32" y="450" font-size="12" fill="#5d6575" letter-spacing="2">判定半径对比（放大 1.2 倍显示）</text>
+
+  <g>
+    <!-- 画出的金圈 r120（100×1.2），判定 r144（120×1.2） -->
+    <circle cx="230" cy="570" r="144" fill="none" stroke="#e8b33c" stroke-width="1.6" stroke-dasharray="8 7"/>
+    <circle cx="230" cy="570" r="120" fill="none" stroke="#ffd947" stroke-width="4.8"/>
+    <circle cx="230" cy="570" r="132" fill="none" stroke="#66ff80" stroke-width="7.2" stroke-dasharray="0" opacity="0.35"/>
+    <circle cx="230" cy="570" r="14" fill="#ffd140"/>
+
+    <!-- 标注：金圈直径 -->
+    <g stroke="#e8b33c" stroke-width="1" fill="none">
+      <path d="M110 570 L350 570" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
+    </g>
+    <text x="230" y="600" font-size="12" fill="#e8b33c" text-anchor="middle" stroke="#0d1017" stroke-width="3" paint-order="stroke">画出 r=100</text>
+
+    <!-- 标注：判定直径 -->
+    <g stroke="#ff7b73" stroke-width="1" fill="none">
+      <path d="M86 470 L374 470" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
+    </g>
+    <text x="230" y="464" font-size="12" fill="#ff7b73" text-anchor="middle" stroke="#0d1017" stroke-width="3" paint-order="stroke">实际判定 r=120（100 × 1.2）</text>
+  </g>
+
+  <g>
+    <rect x="420" y="452" width="290" height="118" rx="10" fill="#0d1017" fill-opacity="0.96" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="436" y="474" font-size="12.5" font-weight="700" fill="#e8b33c">读数对照</text>
+    <g font-size="11.5" fill="#cdd3de">
+      <text x="436" y="496">画出的金圈半径　100（半径 100，直径 200）</text>
+      <text x="436" y="516">绿弧半径　110（金圈外扩 10，粗 6）</text>
+      <text x="436" y="536" fill="#ff7b73">实际判定半径　120（altarJudgeMul = 1.2）</text>
+      <text x="436" y="556" fill="#8a93a5">判定 > 可见：贴圈外侧约 20px 也算在圈内</text>
+    </g>
+  </g>
+
+  <!-- ================= 左中提示文字三种文案 ================= -->
+  <g>
+    <rect x="728" y="452" width="520" height="118" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
+    <text x="744" y="474" font-size="12.5" font-weight="700" fill="#bff2ff">左中信息行 (16,120) · 20 号 #bff2ff · 最多三行</text>
+    <g font-size="15" fill="#bff2ff" stroke="#000000" stroke-width="3" paint-order="stroke">
+      <text x="744" y="500">撤离点已出现（读条 8s）：进圈读条撤离</text>
+      <text x="744" y="528">撤离点已出现（读条 10s）（读条中 62%）</text>
+      <text x="744" y="556" fill="#8a93a5" font-size="11" stroke="none">「读条 Ns」是算过负重后的实际时长，背包重会变成 10s / 12s / 16s</text>
+    </g>
+  </g>
+
+  <!-- ================= 核心矛盾红字 ================= -->
+  <g>
+    <rect x="32" y="590" width="800" height="62" rx="8" fill="#2a1013" fill-opacity="0.95" stroke="#e2554f" stroke-width="1.5"/>
+    <text x="48" y="614" font-size="14" font-weight="700" fill="#ff7b73">核心矛盾：设计定的是「打死 Boss 就赢」，但代码是打完 Boss 才出现撤离点，</text>
+    <text x="48" y="636" font-size="14" font-weight="700" fill="#ff7b73">还要站圈读条 8 秒才算赢——两个口径必须二选一</text>
+    <text x="844" y="614" font-size="11" fill="#8a93a5">出处：combat.gd _settle("extract") 第 326~328 行</text>
+    <text x="844" y="632" font-size="11" fill="#8a93a5">cfg/extract.json note 只写「死亡时雕像消散」</text>
+    <text x="844" y="650" font-size="11" fill="#5d6575">（总纲 T7 / 拍板项一）</text>
+  </g>
+
+  <!-- 规格速查 -->
+  <g>
+    <rect x="32" y="660" width="800" height="44" rx="8" fill="#0d1017" fill-opacity="0.96" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="48" y="680" font-size="11.5" fill="#cdd3de">金圈 r100 粗4 #ffd140　｜　中心点 r12　｜　绿弧 r110 粗6 #66ff80 从 12 点顺时针　｜　读条 channel=8s</text>
+    <text x="48" y="697" font-size="11" fill="#8a93a5">出圈每秒倒退 1.2s　｜　只认队长一人，多人不加速　｜　读条时每 2.5s 从 420 半径刷一波压力怪</text>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B007-撤离点 / 1280×720 / v1.0</text>
+</svg>

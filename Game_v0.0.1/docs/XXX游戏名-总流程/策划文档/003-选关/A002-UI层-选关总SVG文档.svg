@@ -1,0 +1,208 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>003-选关 · 整屏总图（1280×720 实尺寸）</title>
+
+  <defs>
+    <linearGradient id="lvlBg" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#131c2c"/>
+      <stop offset="1" stop-color="#0d1017"/>
+    </linearGradient>
+    <radialGradient id="lvlGlow" cx="0.5" cy="0.45" r="0.6">
+      <stop offset="0" stop-color="#e8b33c" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#e8b33c" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="lvlFadeCut" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.85"/>
+    </linearGradient>
+    <filter id="lvlShadow" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <marker id="lvlArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="lvlArrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e2554f"/>
+    </marker>
+  </defs>
+
+  <!-- ============ L0 背景 ============ -->
+  <rect x="0" y="0" width="1280" height="720" fill="url(#lvlBg)"/>
+  <rect x="0" y="0" width="1280" height="720" fill="url(#lvlGlow)"/>
+  <g stroke="#1b2637" stroke-width="1" opacity="0.5">
+    <path d="M0 640 L1280 620"/><path d="M0 690 L1280 675"/>
+    <path d="M180 720 L240 560"/><path d="M1100 720 L1040 560"/>
+  </g>
+
+  <!-- ============ L1 屏幕边界（720 高） ============ -->
+  <rect x="0" y="0" width="1280" height="720" fill="none" stroke="#3a4150" stroke-width="1"/>
+  <text x="6" y="16" font-size="11" fill="#5a6572">屏幕顶 y=0</text>
+  <text x="6" y="714" font-size="11" fill="#5a6572">屏幕底 y=720</text>
+
+  <!-- ============ L2 超屏示意：面板 680×760 从 y=-20 开始 ============ -->
+  <g filter="url(#lvlShadow)">
+    <rect x="300" y="-20" width="680" height="760" rx="10" fill="#1d2027" stroke="#252a34" stroke-width="2"/>
+  </g>
+  <rect x="300" y="0" width="680" height="3" fill="#e8b33c" opacity="0.35"/>
+
+  <!-- 面板内容区（内边距 上下16 / 左右24 → x=324，宽 632） -->
+  <g>
+    <!-- 标题 30 号金（真实 y≈26，被切掉上半截 → 画在 y=6 部分可见） -->
+    <text x="324" y="24" font-size="30" font-weight="700" fill="#e8b33c" letter-spacing="2">选择出发关卡</text>
+    <text x="324" y="56" font-size="14" fill="#8a93a5">按顺序解锁 · 目标进度 → 时限 → 星级 → 奖励</text>
+    <text x="956" y="56" font-size="12" fill="#5a6572" text-anchor="end">共 99 关 · 33 排</text>
+
+    <!-- 滚动区（最小高 560）：y=72 → 632 -->
+    <rect x="324" y="72" width="608" height="560" rx="6" fill="#171b22" stroke="#252a34" stroke-width="1"/>
+
+    <!-- 网格 3 列 × 间距 10：卡片 200×96，起点 x=324 y=82 -->
+    <!-- 第 1 排 y=82 -->
+    <g>
+      <rect x="324" y="82" width="200" height="96" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="2"/>
+      <text x="334" y="110" font-size="20" font-weight="700" fill="#e8b33c">第 1 关 · 荒地哨站</text>
+      <text x="334" y="134" font-size="15" fill="#8a93a5">目标进度 60 · 时限 180s</text>
+      <text x="334" y="156" font-size="14" fill="#e8b33c">✦奖励 0</text>
+      <text x="514" y="110" font-size="11" fill="#e8b33c" text-anchor="end">可挑战</text>
+    </g>
+    <g>
+      <rect x="534" y="82" width="200" height="96" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="2"/>
+      <text x="544" y="110" font-size="20" font-weight="700" fill="#e8b33c">第 2 关 · 腐朽林地</text>
+      <text x="544" y="134" font-size="15" fill="#8a93a5">目标进度 72 · 时限 200s</text>
+      <text x="544" y="156" font-size="14" fill="#e8b33c">✦奖励 0</text>
+      <text x="724" y="110" font-size="11" fill="#e8b33c" text-anchor="end">可挑战</text>
+    </g>
+    <g>
+      <rect x="744" y="82" width="200" height="96" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="2"/>
+      <text x="754" y="110" font-size="20" font-weight="700" fill="#e8b33c">第 3 关 · 深渊回廊</text>
+      <text x="754" y="134" font-size="15" fill="#8a93a5">目标进度 85 · 时限 220s</text>
+      <text x="754" y="156" font-size="14" fill="#e8b33c">✦奖励 0</text>
+      <text x="934" y="110" font-size="11" fill="#e8b33c" text-anchor="end">可挑战</text>
+    </g>
+
+    <!-- 第 2 排 y=188 -->
+    <g>
+      <rect x="324" y="188" width="200" height="96" rx="8" fill="#252a34"/>
+      <text x="334" y="216" font-size="20" font-weight="700" fill="#5a6572">第 4 关 · 熔岩裂谷</text>
+      <text x="334" y="240" font-size="15" fill="#8a93a5">目标进度 — · 时限 —</text>
+      <text x="334" y="262" font-size="14" fill="#5a6572">✦奖励 0</text>
+      <path d="M496 186 v14" stroke="#5a6572" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <g>
+      <rect x="534" y="188" width="200" height="96" rx="8" fill="#252a34"/>
+      <text x="544" y="216" font-size="20" font-weight="700" fill="#5a6572">第 5 关 · 熔核哨塔</text>
+      <text x="544" y="240" font-size="15" fill="#8a93a5">目标进度 — · 时限 —</text>
+      <text x="544" y="262" font-size="14" fill="#5a6572">✦奖励 0</text>
+      <path d="M706 186 v14" stroke="#5a6572" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <g>
+      <rect x="744" y="188" width="200" height="96" rx="8" fill="#252a34"/>
+      <text x="754" y="216" font-size="20" font-weight="700" fill="#5a6572">第 6 关 · ？？？</text>
+      <text x="754" y="240" font-size="15" fill="#8a93a5">目标进度 — · 时限 —</text>
+      <text x="754" y="262" font-size="14" fill="#5a6572">✦奖励 0</text>
+      <path d="M916 186 v14" stroke="#5a6572" stroke-width="2" stroke-linecap="round"/>
+    </g>
+
+    <!-- 第 3 排 y=294 -->
+    <g>
+      <rect x="324" y="294" width="200" height="96" rx="8" fill="#252a34"/>
+      <text x="334" y="322" font-size="20" font-weight="700" fill="#5a6572">第 7 关 · ？？？</text>
+      <text x="334" y="346" font-size="15" fill="#8a93a5">目标进度 — · 时限 —</text>
+      <text x="334" y="368" font-size="14" fill="#5a6572">✦奖励 0</text>
+      <path d="M496 292 v14" stroke="#5a6572" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <g>
+      <rect x="534" y="294" width="200" height="96" rx="8" fill="#252a34"/>
+      <text x="544" y="322" font-size="20" font-weight="700" fill="#5a6572">第 8 关 · ？？？</text>
+      <text x="544" y="346" font-size="15" fill="#8a93a5">目标进度 — · 时限 —</text>
+      <text x="544" y="368" font-size="14" fill="#5a6572">✦奖励 0</text>
+      <path d="M706 292 v14" stroke="#5a6572" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <g>
+      <rect x="744" y="294" width="200" height="96" rx="8" fill="#252a34"/>
+      <text x="754" y="322" font-size="20" font-weight="700" fill="#5a6572">第 9 关 · ？？？</text>
+      <text x="754" y="346" font-size="15" fill="#8a93a5">目标进度 — · 时限 —</text>
+      <text x="754" y="368" font-size="14" fill="#5a6572">✦奖励 0</text>
+      <path d="M916 292 v14" stroke="#5a6572" stroke-width="2" stroke-linecap="round"/>
+    </g>
+
+    <!-- 后续排示意（淡出，表示"还有 30 排"） -->
+    <g opacity="0.55">
+      <rect x="324" y="400" width="608" height="1" fill="#2b3240"/>
+      <text x="628" y="424" font-size="13" fill="#5a6572" text-anchor="middle">…… 往下还有 30 排，一共 99 关（第 99 关叫「神罚之眼 9」）……</text>
+      <rect x="324" y="440" width="200" height="96" rx="8" fill="#20242d"/>
+      <rect x="534" y="440" width="200" height="96" rx="8" fill="#20242d"/>
+      <rect x="744" y="440" width="200" height="96" rx="8" fill="#20242d"/>
+      <rect x="324" y="546" width="200" height="90" rx="8" fill="#1c2028"/>
+      <rect x="534" y="546" width="200" height="90" rx="8" fill="#1c2028"/>
+      <rect x="744" y="546" width="200" height="90" rx="8" fill="#1c2028"/>
+    </g>
+    <rect x="324" y="540" width="608" height="92" fill="url(#lvlFadeCut)" opacity="0.6"/>
+
+    <!-- 滚动条（右侧细条） -->
+    <rect x="938" y="76" width="5" height="470" rx="2.5" fill="#2b3240"/>
+    <rect x="938" y="76" width="5" height="62" rx="2.5" fill="#4a5464"/>
+  </g>
+
+  <!-- ============ L3 底部按钮行（真实位置 y=676..724 → 下半截在屏幕外） ============ -->
+  <g>
+    <rect x="776" y="676" width="180" height="48" rx="8" fill="#252a34"/>
+    <text x="866" y="706" font-size="20" fill="#e2e6ee" text-anchor="middle">返回主城</text>
+  </g>
+
+  <!-- 屏幕底 y=720 处把 720 以下的内容裁掉（演示真实剪切） -->
+  <rect x="0" y="720" width="1280" height="40" fill="#0a0d12"/>
+  <path d="M0 720 H1280" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="8 5"/>
+
+  <!-- 按钮被切的示意：一条红色虚线横切按钮中段 -->
+  <path d="M760 712 L972 712" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="6 4"/>
+
+  <!-- ============ L4 红色缺陷标注 ============ -->
+  <g>
+    <path d="M986 700 L1000 700" stroke="#e2554f" stroke-width="1.5" marker-end="url(#lvlArrowRed)"/>
+    <rect x="1004" y="590" width="256" height="100" rx="8" fill="#1a1215" stroke="#e2554f" stroke-width="1.5"/>
+    <text x="1018" y="614" font-size="14" font-weight="700" fill="#e2554f">⚠ 超出屏幕 40px</text>
+    <text x="1018" y="636" font-size="13" fill="#f0b3b0">面板 680 × 760 &gt; 屏幕 720</text>
+    <text x="1018" y="656" font-size="13" fill="#e2554f">底部「返回主城」按钮会被切掉</text>
+    <text x="1018" y="676" font-size="11" fill="#a0797a">面板顶 y=-20，底 y=740</text>
+    <text x="1018" y="688" font-size="11" fill="#a0797a">待办 T1：面板高度自适应 ≤ 720</text>
+  </g>
+
+  <!-- 顶部被切标注 -->
+  <g>
+    <rect x="300" y="10" width="44" height="0" fill="none"/>
+    <path d="M992 8 L1006 8" stroke="#e2554f" stroke-width="1.5" marker-end="url(#lvlArrowRed)"/>
+    <text x="1012" y="12" font-size="12" fill="#e2554f">标题顶被切 20px</text>
+  </g>
+
+  <!-- ============ L5 尺寸标注（左侧，金色虚线） ============ -->
+  <g>
+    <!-- 面板宽 680（屏幕内只能标到按钮左侧，两端刻度仍是面板真实边缘） -->
+    <path d="M300 712 L776 712" stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" marker-start="url(#lvlArrow)"/>
+    <path d="M300 706 L300 718 M980 706 L980 718" stroke="#e8b33c" stroke-width="1"/>
+    <text x="538" y="706" font-size="12" fill="#e8b33c" text-anchor="middle">面板 680 宽（300 → 980，居中 X=640）</text>
+    <!-- 面板高 760 -->
+    <path d="M268 -20 L268 740" stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4"/>
+    <path d="M262 -20 L274 -20 M262 740 L274 740 M262 0 L274 0 M262 720 L274 720" stroke="#e8b33c" stroke-width="1"/>
+    <text x="256" y="360" font-size="12" fill="#e8b33c" text-anchor="end">面板 760 高</text>
+    <text x="256" y="378" font-size="12" fill="#e2554f" text-anchor="end">↑ 每侧多 20</text>
+    <!-- 卡片 200×96 -->
+    <path d="M324 84 L524 84" stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="424" y="78" font-size="11" fill="#e8b33c" text-anchor="middle">卡片 200 宽</text>
+    <path d="M286 82 L286 178" stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="280" y="134" font-size="11" fill="#e8b33c" text-anchor="end">96</text>
+    <!-- 间距 10 -->
+    <path d="M524 172 L534 172" stroke="#e8b33c" stroke-width="1"/>
+    <text x="529" y="188" font-size="10" fill="#e8b33c" text-anchor="middle">10</text>
+  </g>
+
+  <!-- ============ L6 图注卡 ============ -->
+  <g opacity="0.96">
+    <rect x="20" y="40" width="240" height="96" rx="8" fill="#0d1017" stroke="#2b3240" stroke-width="1.5"/>
+    <text x="36" y="62" font-size="12" font-weight="700" fill="#e8b33c">整屏总图 · 1:1 实尺寸</text>
+    <text x="36" y="82" font-size="11" fill="#8a93a5">1280 × 720　｜　面板 680 × 760</text>
+    <text x="36" y="100" font-size="11" fill="#8a93a5">网格 3 列　间距 10　卡片 200 × 96</text>
+    <text x="36" y="118" font-size="11" fill="#5a6572">虚线为标注，游戏内不显示</text>
+  </g>
+
+  <!-- ============ 右下角版本 ============ -->
+  <text x="1248" y="708" font-size="12" fill="#5a6572" text-anchor="end">A002-UI层-选关总SVG文档 / 1280×720 / v1.0</text>
+</svg>

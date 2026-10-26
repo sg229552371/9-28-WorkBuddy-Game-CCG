@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B001 英雄卡片 四态规格图（1.4× 放大）</title>
+
+  <defs>
+    <linearGradient id="chrBg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <filter id="chrShadow2" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="chrGlow2" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#e8b33c" flood-opacity="0.4"/>
+    </filter>
+    <marker id="chrA2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#chrBg2)"/>
+  <text x="48" y="46" font-size="18" font-weight="700" fill="#e8b33c" letter-spacing="3">英雄卡片 · 四态</text>
+  <text x="248" y="46" font-size="13" fill="#8a93a5">B001-英雄卡片　｜　原尺寸 150 × 150，本图 1.3× 放大（195 × 195 示意）</text>
+  <path d="M48 60 L1232 60" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- 1.4 倍缩放 -->
+  <g transform="translate(64,110) scale(1.3)">
+
+    <!-- ===== ① 未解锁 ===== -->
+    <g>
+      <rect x="-12" y="-24" width="224" height="272" rx="10" fill="#141922" stroke="#2b3240" stroke-width="0.8"/>
+      <text x="-4" y="-10" font-size="8.5" fill="#8a93a5" font-weight="700">① 未解锁 · 点不动</text>
+
+      <g filter="url(#chrShadow2)">
+        <rect x="0" y="0" width="150" height="150" rx="8" fill="#1f232b"/>
+      </g>
+      <rect x="51" y="12" width="48" height="48" rx="6" fill="#2a3a5a"/>
+      <text x="75" y="44" font-size="24" font-weight="700" fill="#5a6572" text-anchor="middle">守</text>
+      <text x="75" y="84" font-size="17" fill="#5a6572" text-anchor="middle">守护者</text>
+      <text x="75" y="105" font-size="14" fill="#4b5462" text-anchor="middle">☆☆</text>
+      <text x="75" y="126" font-size="13" fill="#4b5462" text-anchor="middle">局外 LV1</text>
+
+      <!-- 行高标注 -->
+      <g stroke="#e8b33c" stroke-width="0.6" stroke-dasharray="3 2" fill="none">
+        <path d="M-6 0 L-6 150"/>
+        <path d="M-10 0 L-2 0 M-10 60 L-2 60 M-10 90 L-2 90 M-10 113 L-2 113 M-10 150 L-2 150"/>
+        <path d="M156 12 L156 60"/>
+      </g>
+      <g font-size="5.5" fill="#e8b33c">
+        <text x="-44" y="34">头像区 60</text>
+        <text x="-44" y="78">名字区 30</text>
+        <text x="-44" y="104">星级 23</text>
+        <text x="-44" y="136">等级 37</text>
+        <text x="159" y="38">48</text>
+      </g>
+    </g>
+
+    <!-- ===== ② 可用未选 ===== -->
+    <g transform="translate(224,0)">
+      <rect x="-12" y="-24" width="224" height="272" rx="10" fill="#141922" stroke="#2b3240" stroke-width="0.8"/>
+      <text x="-4" y="-10" font-size="8.5" fill="#e2e6ee" font-weight="700">② 可用 · 未选中</text>
+
+      <g filter="url(#chrShadow2)">
+        <rect x="0" y="0" width="150" height="150" rx="8" fill="#252a34"/>
+      </g>
+      <rect x="51" y="12" width="48" height="48" rx="6" fill="#ff6b6b"/>
+      <text x="75" y="44" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">猎</text>
+      <text x="75" y="84" font-size="17" fill="#e2e6ee" text-anchor="middle">猎手</text>
+      <text x="75" y="105" font-size="14" fill="#e8b33c" text-anchor="middle">★</text>
+      <text x="75" y="126" font-size="13" fill="#8a93a5" text-anchor="middle">局外 LV1</text>
+
+      <text x="0" y="170" font-size="6.5" fill="#5a6572">无边框 · 头像用职业色 · 星实心金</text>
+    </g>
+
+    <!-- ===== ③ 已选中 ===== -->
+    <g transform="translate(448,0)">
+      <rect x="-12" y="-24" width="224" height="272" rx="10" fill="#141922" stroke="#2b3240" stroke-width="0.8"/>
+      <text x="-4" y="-10" font-size="8.5" fill="#e8b33c" font-weight="700">③ 已选中 · 2px 金边</text>
+
+      <g filter="url(#chrGlow2)">
+        <rect x="0" y="0" width="150" height="150" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="2"/>
+      </g>
+      <rect x="51" y="12" width="48" height="48" rx="6" fill="#6cb2ff"/>
+      <text x="75" y="44" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">守</text>
+      <text x="75" y="84" font-size="17" fill="#e2e6ee" text-anchor="middle">守护者</text>
+      <text x="75" y="105" font-size="14" fill="#e8b33c" text-anchor="middle">★</text>
+      <text x="75" y="126" font-size="13" fill="#8a93a5" text-anchor="middle">局外 LV1</text>
+
+      <!-- 金边放大标注 -->
+      <g stroke="#e8b33c" stroke-width="0.6" fill="none">
+        <path d="M150 4 L164 4 L164 16"/>
+        <path d="M164 10 L164 16"/>
+      </g>
+      <text x="158" y="26" font-size="5.8" fill="#e8b33c">2px</text>
+    </g>
+
+    <!-- ===== ④ 已达上限（不可再选） ===== -->
+    <g transform="translate(672,0)">
+      <rect x="-12" y="-24" width="224" height="272" rx="10" fill="#141922" stroke="#2b3240" stroke-width="0.8"/>
+      <text x="-4" y="-10" font-size="8.5" fill="#e0a3a3" font-weight="700">④ 队伍已满 · 不可再选</text>
+
+      <g filter="url(#chrShadow2)">
+        <rect x="0" y="0" width="150" height="150" rx="8" fill="#252a34" stroke="#5a6572" stroke-width="2"/>
+      </g>
+      <rect x="51" y="12" width="48" height="48" rx="6" fill="#6bd88a"/>
+      <text x="75" y="44" font-size="24" font-weight="700" fill="#ffffff" text-anchor="middle">医</text>
+      <text x="75" y="84" font-size="17" fill="#e2e6ee" text-anchor="middle">医疗兵</text>
+      <text x="75" y="105" font-size="14" fill="#e8b33c" text-anchor="middle">★</text>
+      <text x="75" y="126" font-size="13" fill="#8a93a5" text-anchor="middle">局外 LV1</text>
+
+      <!-- 半透明遮罩 -->
+      <rect x="1" y="1" width="148" height="148" rx="8" fill="#0d1017" opacity="0.45"/>
+      <rect x="30" y="66" width="90" height="16" rx="4" fill="#4a2e2e"/>
+      <text x="75" y="77" font-size="8" font-weight="700" fill="#e0a3a3" text-anchor="middle">队伍已满 · 最多 3 人</text>
+
+      <text x="0" y="170" font-size="6.5" fill="#5a6572">当前代码没有这个态 → 点了静默失败</text>
+    </g>
+
+  </g>
+
+  <!-- ============ 说明区 ============ -->
+  <g>
+    <text x="48" y="436" font-size="13" font-weight="700" fill="#e8b33c">卡内四行怎么排</text>
+    <rect x="48" y="440" width="592" height="128" rx="10" fill="#121722" stroke="#2b3240" stroke-width="1.5"/>
+    <g font-size="12.5" fill="#cdd3de">
+      <text x="68" y="466">① 头像 48×48（圆角 6）居中，叠名字首字 24 号 —— 四边内边距 8</text>
+      <text x="68" y="492">② 名字 17 号居中：已解锁 <tspan fill="#e2e6ee">#e2e6ee</tspan> / 未解锁 <tspan fill="#5a6572">#5a6572</tspan></text>
+      <text x="68" y="518">③ 星级 14 号：实心 <tspan fill="#e8b33c">★</tspan> 个数 = 英雄「难度」，未解锁一律空心 <tspan fill="#5a6572">☆</tspan></text>
+      <text x="68" y="544">④ 「局外 LV%d」13 号 <tspan fill="#8a93a5">#8a93a5</tspan> 居中 —— 注意这不是星级，星级是「上手难度」</text>
+      <text x="68" y="564" font-size="11.5" fill="#5a6572">星色不是等级：H001 猎手 1★、H003 穿甲者 2★、H002 散弹手 3★，1 星最好上手</text>
+    </g>
+  </g>
+
+  <g>
+    <text x="664" y="436" font-size="13" font-weight="700" fill="#e8b33c">点击行为</text>
+    <rect x="664" y="440" width="568" height="128" rx="10" fill="#121722" stroke="#2b3240" stroke-width="1.5"/>
+    <g font-size="12.5" fill="#cdd3de">
+      <text x="684" y="466">点未选中的可用英雄 → 金边亮起 + 详情面板换成他 + 按钮 (N+1)/3</text>
+      <text x="684" y="492">再点同一个 → 金边消失 + 按钮 (N−1)/3；详情<b>仍然显示他</b>（待办 T4）</text>
+      <text x="684" y="518">点未解锁 → 连按钮都没加，<tspan fill="#e0a3a3">完全静默</tspan>（待办 T3）</text>
+      <text x="684" y="544">已满 3 人再点第 4 个 → <tspan fill="#e0a3a3">完全静默</tspan>（待办 T1，见 B003）</text>
+      <text x="684" y="564" font-size="11.5" fill="#5a6572">本屏无音效；按下无任何缩放/凹陷反馈</text>
+    </g>
+  </g>
+
+  <!-- ============ 灰字图角 ============ -->
+  <g>
+    <text x="48" y="606" font-size="13" fill="#8a93a5">网格 6 列 × 2 排，横竖间距 8 —— 12 个英雄正好两排，不会出现半排空位。</text>
+    <text x="48" y="628" font-size="12" fill="#5a6572">未解锁卡片只靠「头像变蓝灰 + 字变灰 + 空心星」区分，低亮度屏上几乎看不出，也没写怎么解锁。</text>
+    <text x="48" y="650" font-size="12" fill="#5a6572">详情面板在「刚进屏」时是空框（不默认展示任何英雄），玩家得先点一张卡才有内容。</text>
+  </g>
+
+  <!-- ============ 规格速查 ============ -->
+  <g>
+    <rect x="688" y="584" width="544" height="120" rx="10" fill="#0d1017" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="704" y="606" font-size="13" font-weight="700" fill="#e8b33c">规格速查</text>
+    <text x="704" y="628" font-size="11.5" fill="#cdd3de">卡片 150 × 150　圆角 8　底 #252a34　内边距 8　间距 8</text>
+    <text x="704" y="648" font-size="11.5" fill="#cdd3de">头像 48 × 48 圆角 6　首字 24 号　名字 17　星级 14　等级 13</text>
+    <text x="704" y="668" font-size="11.5" fill="#cdd3de">选中 2px #e8b33c · 未解锁头像 #2a3a5a · 职业色 红/蓝/绿</text>
+    <text x="704" y="688" font-size="11.5" fill="#cdd3de">输出 #ff6b6b　防御 #6cb2ff　辅助 #6bd88a</text>
+  </g>
+
+  <text x="1248" y="712" font-size="12" fill="#5a6572" text-anchor="end">B001-英雄卡片 / 1280×720 / v1.0</text>
+</svg>

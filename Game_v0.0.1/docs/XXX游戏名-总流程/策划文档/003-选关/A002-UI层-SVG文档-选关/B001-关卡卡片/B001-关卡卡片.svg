@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B001 关卡卡片 三态规格图（1.5× 放大）</title>
+
+  <defs>
+    <linearGradient id="lvlBg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <filter id="lvlShadow2" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="lvlGlowCard" x="-30%" y="-60%" width="160%" height="240%">
+      <feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="#e8b33c" flood-opacity="0.35"/>
+    </filter>
+    <marker id="lvlA3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#lvlBg2)"/>
+  <text x="48" y="46" font-size="18" font-weight="700" fill="#e8b33c" letter-spacing="3">关卡卡片 · 三态</text>
+  <text x="248" y="46" font-size="13" fill="#8a93a5">B001-关卡卡片　｜　原尺寸 200 × 96，本图 1.35× 放大（270 × 130 示意）</text>
+  <path d="M48 60 L1232 60" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- 全局缩放：1.5 -->
+  <g transform="translate(56,96) scale(1.35)">
+
+    <!-- ===== 状态 1 可挑战 ===== -->
+    <g>
+      <rect x="-16" y="-26" width="248" height="196" rx="10" fill="#141922" stroke="#2b3240" stroke-width="0.8"/>
+      <text x="-4" y="-10" font-size="9" fill="#e8b33c" font-weight="700">① 可挑战（已解锁 · 未通关）</text>
+
+      <g filter="url(#lvlShadow2)">
+        <rect x="0" y="0" width="200" height="96" rx="8" fill="#252a34" stroke="#e8b33c" stroke-width="2"/>
+      </g>
+      <text x="10" y="29" font-size="20" font-weight="700" fill="#e8b33c">第 1 关 · 荒地哨站</text>
+      <text x="10" y="53" font-size="15" fill="#8a93a5">目标进度 60 · 时限 180s</text>
+      <text x="10" y="75" font-size="14" fill="#e8b33c">✦奖励 0</text>
+
+      <!-- 内部尺寸标注 -->
+      <g stroke="#e8b33c" stroke-width="0.7" stroke-dasharray="3 2" fill="none">
+        <path d="M0 -8 L200 -8"/>
+        <path d="M-8 0 L-8 96"/>
+        <path d="M206 10 L206 30"/><path d="M206 34 L206 54"/><path d="M206 58 L206 76"/>
+        <path d="M200 0 L206 0 M200 96 L206 96"/>
+        <path d="M0 96 L200 96"/>
+      </g>
+      <g font-size="7" fill="#e8b33c">
+        <text x="100" y="-13" text-anchor="middle">200</text>
+        <text x="-40" y="52" font-size="7.5">96</text>
+        <text x="209" y="22">20</text>
+        <text x="209" y="46">15</text>
+        <text x="209" y="70">14</text>
+        <text x="4" y="106">pad 左 10</text>
+      </g>
+    </g>
+
+    <!-- ===== 状态 2 已通关 ===== -->
+    <g transform="translate(316,0)">
+      <rect x="-16" y="-26" width="248" height="196" rx="10" fill="#141922" stroke="#2b3240" stroke-width="0.8"/>
+      <text x="-4" y="-10" font-size="9" fill="#e2e6ee" font-weight="700">② 已通关（亮度更高 + 3 星）</text>
+
+      <g filter="url(#lvlGlowCard)">
+        <rect x="0" y="0" width="200" height="96" rx="8" fill="#2e3441" stroke="#e8b33c" stroke-width="2"/>
+      </g>
+      <text x="10" y="29" font-size="20" font-weight="700" fill="#f2c352">第 1 关 · 荒地哨站</text>
+      <text x="10" y="53" font-size="15" fill="#a9b1c1">目标进度 60 · 时限 180s</text>
+      <text x="10" y="75" font-size="14" fill="#f2c352">✦奖励 0</text>
+      <!-- 3 星（右上） -->
+      <g font-size="12" fill="#e8b33c">
+        <text x="192" y="16" text-anchor="end">★★★</text>
+      </g>
+
+      <g font-size="7" fill="#e8b33c">
+        <text x="192" y="-2" text-anchor="end" font-size="6.5">右上角 3 星 13 号</text>
+        <text x="4" y="106">底色提亮 #252a34 → #2e3441</text>
+      </g>
+    </g>
+
+    <!-- ===== 状态 3 锁定 ===== -->
+    <g transform="translate(632,0)">
+      <rect x="-16" y="-26" width="248" height="196" rx="10" fill="#141922" stroke="#2b3240" stroke-width="0.8"/>
+      <text x="-4" y="-10" font-size="9" fill="#8a93a5" font-weight="700">③ 锁定（无边框 · 暗名 · 灰底）</text>
+
+      <g filter="url(#lvlShadow2)">
+        <rect x="0" y="0" width="200" height="96" rx="8" fill="#1e222a"/>
+      </g>
+      <text x="10" y="29" font-size="20" font-weight="700" fill="#5a6572">第 4 关 · 熔岩裂谷</text>
+      <text x="10" y="53" font-size="15" fill="#8a93a5">目标进度 — · 时限 —</text>
+      <text x="10" y="75" font-size="14" fill="#5a6572">✦奖励 0</text>
+      <!-- 锁图标（建议补） -->
+      <g stroke="#5a6572" stroke-width="1.6" fill="none">
+        <rect x="176" y="12" width="14" height="11" rx="2" fill="#2a2f39"/>
+        <path d="M179 12 v-3 a4 4 0 0 1 8 0 v3"/>
+      </g>
+
+      <g font-size="7" fill="#8a93a5">
+        <text x="183" y="34" text-anchor="middle">锁</text>
+        <text x="4" y="106">无边框（不画 stroke）· 点下去当前无任何反应</text>
+      </g>
+    </g>
+
+  </g>
+
+  <!-- ============ 说明条 ============ -->
+  <g transform="translate(48,428)">
+    <rect x="0" y="0" width="1184" height="128" rx="10" fill="#121722" stroke="#2b3240" stroke-width="1.5"/>
+    <text x="20" y="26" font-size="13" font-weight="700" fill="#e8b33c">三种状态只差三件事</text>
+    <text x="20" y="50" font-size="13" fill="#cdd3de">① 外圈：可挑战/已通关 = 2px <tspan fill="#e8b33c">#e8b33c</tspan> 金边；锁定 = 无边框</text>
+    <text x="20" y="72" font-size="13" fill="#cdd3de">② 关名：可挑战 <tspan fill="#e8b33c">20 号 #e8b33c</tspan>；已通关 <tspan fill="#f2c352">20 号 #f2c352</tspan>；锁定 <tspan fill="#5a6572">20 号 #5a6572</tspan></text>
+    <text x="20" y="94" font-size="13" fill="#cdd3de">③ 副行恒为 <tspan fill="#8a93a5">15 号 #8a93a5</tspan>（解锁与否一样）；奖励行已解锁金 / 未解锁 #5a6572</text>
+    <text x="20" y="116" font-size="13" fill="#cdd3de">点击：已解锁 = 立刻进选人（无二次确认、无按下反馈）；锁定 = 连按钮都不加，点了完全静默</text>
+  </g>
+
+  <!-- ============ 图角灰字缺陷 ============ -->
+  <g>
+    <text x="48" y="588" font-size="13" fill="#8a93a5">奖励行当前永远显示 ✦0，因为关卡表没有奖励字段。</text>
+    <text x="48" y="610" font-size="12" fill="#5a6572">副标题承诺了「星级」，但现在卡片上画不出星级 —— 存档里有星级记录，选关屏没读（待办 T4）。</text>
+    <text x="48" y="632" font-size="12" fill="#5a6572">未解锁卡片当前没有锁头、没有提示（本图 ③ 中的锁为「建议补」示意，代码里还没有）。</text>
+  </g>
+
+  <!-- ============ 规格速查卡 ============ -->
+  <g>
+    <rect x="700" y="576" width="532" height="128" rx="10" fill="#0d1017" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="716" y="598" font-size="13" font-weight="700" fill="#e8b33c">规格速查</text>
+    <text x="716" y="620" font-size="11.5" fill="#cdd3de">卡片 200 × 96　圆角 8　底 #252a34　内边距 左右10 / 上下8</text>
+    <text x="716" y="640" font-size="11.5" fill="#cdd3de">关名 20 · 副行 15（#8a93a5）· 奖励 14　行基线 +29 / +53 / +75</text>
+    <text x="716" y="660" font-size="11.5" fill="#cdd3de">已解锁 2px #e8b33c 边；未解锁 0px 边；锁定名 #5a6572</text>
+    <text x="716" y="680" font-size="11.5" fill="#cdd3de">网格 3 列 × 33 排，横竖间距 10</text>
+    <text x="716" y="698" font-size="11" fill="#5a6572">悬停：灰黑小气泡显示关卡全名（系统 tooltip，非自绘）</text>
+  </g>
+
+  <text x="1248" y="712" font-size="12" fill="#5a6572" text-anchor="end">B001-关卡卡片 / 1280×720 / v1.0</text>
+</svg>

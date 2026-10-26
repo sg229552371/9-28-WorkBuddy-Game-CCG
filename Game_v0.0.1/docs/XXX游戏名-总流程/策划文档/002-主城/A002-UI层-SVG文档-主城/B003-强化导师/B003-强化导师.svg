@@ -1,0 +1,221 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B003 强化导师 规格图（NPC 圈 + 420 面板 + 按钮三态）</title>
+
+  <defs>
+    <linearGradient id="ctyBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <linearGradient id="ctyBtn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3444"/>
+      <stop offset="1" stop-color="#222936"/>
+    </linearGradient>
+    <linearGradient id="ctyBtnHot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a4457"/>
+      <stop offset="1" stop-color="#2b3444"/>
+    </linearGradient>
+    <filter id="ctyShadow" x="-30%" y="-40%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="7" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <marker id="ctyArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#ctyBg)"/>
+  <g stroke="rgba(61,79,107,0.14)" stroke-width="1">
+    <path d="M0 64 H1280 M0 128 H1280 M0 192 H1280 M0 256 H1280 M0 320 H1280 M0 384 H1280 M0 448 H1280 M0 512 H1280 M0 576 H1280 M0 640 H1280 M0 704 H1280"/>
+    <path d="M64 0 V720 M128 0 V720 M192 0 V720 M256 0 V720 M320 0 V720 M384 0 V720 M448 0 V720 M512 0 V720 M576 0 V720 M640 0 V720 M704 0 V720 M768 0 V720 M832 0 V720 M896 0 V720 M960 0 V720 M1024 0 V720 M1088 0 V720 M1152 0 V720 M1216 0 V720"/>
+  </g>
+
+  <!-- 页眉 -->
+  <text x="32" y="40" font-size="13" fill="#5d6575" letter-spacing="3">002-主城 / 点位 02</text>
+  <text x="32" y="70" font-size="24" font-weight="700" fill="#ffd76a">强化导师</text>
+  <text x="32" y="92" font-size="12" fill="#a6b2c7">圈 (256, 307) r 76 紫 #c79bff ✦　｜　面板 420 宽 @ (810, 90)　｜　最高 Lv.46</text>
+  <text x="32" y="110" font-size="12" fill="#8d95a5">花结晶买「局外等级」：死掉也不掉的那部分底子。主城的心脏，这一下点击是整款游戏的奖励兑现点</text>
+  <line x1="32" y1="122" x2="1248" y2="122" stroke="#2b3240" stroke-width="1"/>
+
+  <!-- ============ 左：NPC 圈 + 玩家 ============ -->
+  <g id="ctyNpc">
+    <text x="32" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">NPC 圈 · 圈内（面板已弹出）</text>
+    <circle cx="196" cy="330" r="76" fill="none" stroke="#c79bff" stroke-width="2" stroke-dasharray="14 12"/>
+    <circle cx="196" cy="330" r="76" fill="#c79bff" fill-opacity="0.05"/>
+    <circle cx="196" cy="330" r="22" fill="rgba(18,28,46,0.9)" stroke="#c79bff" stroke-width="2.5"/>
+    <text x="196" y="337" font-size="18" fill="#c79bff" text-anchor="middle">✦</text>
+    <text x="196" y="222" font-size="16" fill="#e8e2c8" text-anchor="middle">强化导师</text>
+    <text x="196" y="240" font-size="12" fill="#a6b2c7" text-anchor="middle">局外等级升级</text>
+
+    <circle cx="236" cy="384" r="11" fill="#40e0c0"/>
+    <text x="252" y="389" font-size="10.5" fill="#5d6575">玩家</text>
+
+    <!-- 半径标注 -->
+    <path d="M196 330 L272 330" stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="234" y="324" font-size="11" fill="#e8b33c" text-anchor="middle">r 76</text>
+    <path d="M196 330 L196 254" stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="204" y="296" font-size="10.5" fill="#e8b33c">76</text>
+
+    <!-- 名称相对位置 -->
+    <g stroke="#5d6575" stroke-width="1" stroke-dasharray="3 3">
+      <path d="M292 254 H312"/>
+    </g>
+    <text x="316" y="248" font-size="10.5" fill="#8d95a5">名称 = 圈顶上方 34</text>
+    <text x="316" y="264" font-size="10.5" fill="#8d95a5">副标题 = 名称下 18</text>
+
+    <text x="32" y="440" font-size="11" fill="#8d95a5">圈：36 段虚线，实线占 55%，粗 2px</text>
+    <text x="32" y="458" font-size="11" fill="#8d95a5">圈外 70% 透明 → 进圈 100% 不透明</text>
+    <text x="32" y="476" font-size="11" fill="#8d95a5">进圈即弹面板，出圈即关面板，无「关闭」按钮</text>
+    <text x="32" y="494" font-size="11" fill="#8d95a5">圆心也放一个 22px 印章，方便远处认人</text>
+
+    <text x="32" y="536" font-size="12" fill="#e8b33c" letter-spacing="1">圈子帧示意（小样本 · 1:4）</text>
+    <circle cx="60" cy="576" r="19" fill="none" stroke="#c79bff" stroke-opacity="0.7" stroke-width="1" stroke-dasharray="3.5 3"/>
+    <text x="60" y="580" font-size="7" fill="#c79bff" text-anchor="middle">✦</text>
+    <circle cx="120" cy="576" r="19" fill="none" stroke="#c79bff" stroke-width="1" stroke-dasharray="3.5 3"/>
+    <text x="120" y="580" font-size="7" fill="#c79bff" text-anchor="middle">✦</text>
+    <text x="60" y="608" font-size="9.5" fill="#5d6575" text-anchor="middle">常态 70%</text>
+    <text x="120" y="608" font-size="9.5" fill="#5d6575" text-anchor="middle">圈内 100%</text>
+  </g>
+
+  <line x1="372" y1="140" x2="372" y2="628" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 5"/>
+
+  <!-- ============ 中：面板 1:1 ============ -->
+  <g id="ctyPanel">
+    <text x="392" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">面板（1:1，420 × 252）</text>
+    <g filter="url(#ctyShadow)">
+      <rect x="392" y="160" width="420" height="252" rx="10" fill="#16233a" stroke="#c9a84c" stroke-width="2"/>
+    </g>
+    <g opacity="0.25">
+      <rect x="392" y="160" width="420" height="28" rx="10" fill="#1d2d4a"/>
+    </g>
+    <text x="410" y="192" font-size="22" font-weight="700" fill="#ffd76a">强化导师</text>
+    <text x="410" y="214" font-size="13" fill="#a6b2c7">消耗结晶提升局外等级</text>
+    <line x1="410" y1="226" x2="794" y2="226" stroke="#c9a84c" stroke-opacity="0.45" stroke-width="1"/>
+
+    <!-- 行 1 -->
+    <text x="410" y="254" font-size="14" fill="#e8e2c8">火铳手</text>
+    <text x="470" y="254" font-size="13" fill="#a6b2c7">Lv.3</text>
+    <rect x="648" y="236" width="146" height="30" rx="5" fill="url(#ctyBtn)" stroke="#c9a84c" stroke-width="1.5"/>
+    <text x="721" y="256" font-size="13" fill="#ffd76a" text-anchor="middle">升级 ◆330</text>
+    <line x1="410" y1="280" x2="794" y2="280" stroke="#232a36" stroke-width="1"/>
+
+    <!-- 行 2 -->
+    <text x="410" y="302" font-size="14" fill="#e8e2c8">铁盾卫</text>
+    <text x="470" y="302" font-size="13" fill="#a6b2c7">Lv.1</text>
+    <rect x="648" y="284" width="146" height="30" rx="5" fill="url(#ctyBtn)" stroke="#c9a84c" stroke-width="1.5"/>
+    <text x="721" y="304" font-size="13" fill="#ffd76a" text-anchor="middle">升级 ◆120</text>
+    <line x1="410" y1="328" x2="794" y2="328" stroke="#232a36" stroke-width="1"/>
+
+    <!-- 行 3 -->
+    <text x="410" y="350" font-size="14" fill="#e8e2c8">药师</text>
+    <text x="464" y="350" font-size="13" fill="#a6b2c7">Lv.5</text>
+    <rect x="648" y="332" width="146" height="30" rx="5" fill="url(#ctyBtn)" stroke="#c9a84c" stroke-width="1.5"/>
+    <text x="721" y="352" font-size="13" fill="#ffd76a" text-anchor="middle">升级 ◆980</text>
+    <line x1="410" y1="376" x2="794" y2="376" stroke="#232a36" stroke-width="1"/>
+
+    <!-- 行 4 -->
+    <text x="410" y="398" font-size="14" fill="#e8e2c8">影刃</text>
+    <text x="464" y="398" font-size="13" fill="#a6b2c7">Lv.46</text>
+    <rect x="648" y="384" width="146" height="30" rx="5" fill="#1c2431" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="721" y="404" font-size="13" fill="#5a6572" text-anchor="middle">已满级</text>
+
+    <!-- 内边距标注 -->
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="3 3">
+      <path d="M828 160 H812 M828 174 V160"/>
+      <path d="M792 412 H804"/>
+    </g>
+    <text x="822" y="178" font-size="10" fill="#e8b33c">18 / 14</text>
+    <text x="806" y="416" font-size="10" fill="#e8b33c">18</text>
+
+    <!-- 面板尺寸链 -->
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3">
+      <path d="M392 136 H812" marker-start="url(#ctyArrow)" marker-end="url(#ctyArrow)"/>
+      <path d="M832 160 V412" marker-start="url(#ctyArrow)" marker-end="url(#ctyArrow)"/>
+    </g>
+    <text x="602" y="132" font-size="11" fill="#e8b33c" text-anchor="middle">420</text>
+    <text x="846" y="290" font-size="11" fill="#e8b33c" transform="rotate(90 846 290)" text-anchor="middle">高随内容</text>
+  </g>
+
+  <!-- 圈与面板的关系 -->
+  <g>
+    <rect x="392" y="432" width="420" height="60" rx="8" fill="#101823" stroke="#2b3440"/>
+    <text x="408" y="452" font-size="11.5" fill="#e8b33c">为什么面板固定右侧</text>
+    <text x="408" y="470" font-size="11" fill="#a6b2c7">玩家注意力在左边（自己青点），面板 810 起不挡路；再宽就压到地图正中。</text>
+    <text x="408" y="484" font-size="11" fill="#a6b2c7">面板不锁移动：可以边看边走出圈，出圈自动关。</text>
+  </g>
+
+  <!-- ============ 右：按钮三态 ============ -->
+  <g id="ctyBtnStates">
+    <text x="1000" y="150" font-size="12" fill="#e8b33c" letter-spacing="1">升级按钮 · 三态（1:1）</text>
+
+    <rect x="852" y="162" width="140" height="30" rx="5" fill="url(#ctyBtn)" stroke="#c9a84c" stroke-width="1.5"/>
+    <text x="922" y="182" font-size="13" fill="#ffd76a" text-anchor="middle">升级 ◆330</text>
+    <text x="1004" y="176" font-size="11.5" fill="#e8e2c8">可升级</text>
+    <text x="1004" y="191" font-size="10.5" fill="#5d6575">金边 · 金字 · 可点</text>
+
+    <rect x="852" y="212" width="140" height="30" rx="5" fill="#1f1a14" stroke="#7a5f22" stroke-width="1.5"/>
+    <text x="922" y="232" font-size="13" fill="#a5873f" text-anchor="middle">升级 ◆330</text>
+    <text x="1004" y="226" font-size="11.5" fill="#e2554f">结晶不足</text>
+    <text x="1004" y="241" font-size="10.5" fill="#5d6575">成本变红 · 点了抖一下</text>
+
+    <rect x="852" y="262" width="140" height="30" rx="5" fill="#1c2431" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="922" y="282" font-size="13" fill="#5a6572" text-anchor="middle">已满级</text>
+    <text x="1004" y="276" font-size="11.5" fill="#8d95a5">已满级</text>
+    <text x="1004" y="291" font-size="10.5" fill="#5d6575">灰底灰字 · 点不动 · 静默</text>
+
+    <rect x="852" y="312" width="140" height="30" rx="5" fill="url(#ctyBtnHot)" stroke="#ffd76a" stroke-width="1.5"/>
+    <rect x="852" y="312" width="140" height="30" rx="5" fill="#ffd76a" fill-opacity="0.07"/>
+    <text x="922" y="332" font-size="13" fill="#ffe9a8" text-anchor="middle">升级 ◆330</text>
+    <text x="1004" y="326" font-size="11.5" fill="#8d95a5">悬停（参考）</text>
+    <text x="1004" y="341" font-size="10.5" fill="#5d6575">提亮 · 手形光标</text>
+
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="3 3">
+      <path d="M836 162 V192 M832 162 H840 M832 192 H840"/>
+    </g>
+    <text x="842" y="181" font-size="9.5" fill="#e8b33c" transform="rotate(-90 842 181)" text-anchor="middle">30</text>
+  </g>
+
+  <!-- 已知问题 -->
+  <g>
+    <rect x="1000" y="380" width="248" height="112" rx="8" fill="#2a1b1b" stroke="#e2554f" stroke-opacity="0.5"/>
+    <text x="1014" y="400" font-size="11.5" font-weight="700" fill="#e2554f">⚠ 当前实现的问题</text>
+    <text x="1014" y="418" font-size="10.5" fill="#b08a8a">结晶不足时按钮看起来仍能点，</text>
+    <text x="1014" y="433" font-size="10.5" fill="#b08a8a">只记一条后台日志 → 玩家狂点。</text>
+    <text x="1014" y="450" font-size="10.5" fill="#b08a8a">无防连点：连点三下升三级扣三次。</text>
+    <text x="1014" y="467" font-size="10.5" fill="#b08a8a">无音效、无数字跳动动画。</text>
+    <text x="1014" y="484" font-size="10.5" fill="#b08a8a">英雄表读空时只剩标题和横线。</text>
+  </g>
+
+  <!-- 交互流程 -->
+  <g>
+    <rect x="392" y="508" width="420" height="112" rx="8" fill="#101823" stroke="#2b3440"/>
+    <text x="408" y="528" font-size="11.5" fill="#e8b33c">点击「升级 ◆N」以后</text>
+    <g font-size="10.5">
+      <rect x="408" y="538" width="88" height="22" rx="4" fill="#16233a" stroke="#2b3440"/>
+      <text x="452" y="553" fill="#e8e2c8" text-anchor="middle">查钱 / 查满级</text>
+      <path d="M500 549 H516" stroke="#e8b33c" stroke-width="1.2" marker-end="url(#ctyArrow)"/>
+      <rect x="520" y="538" width="80" height="22" rx="4" fill="#16233a" stroke="#2b3440"/>
+      <text x="560" y="553" fill="#e8e2c8" text-anchor="middle">扣 ◆ / Lv+1</text>
+      <path d="M604 549 H620" stroke="#e8b33c" stroke-width="1.2" marker-end="url(#ctyArrow)"/>
+      <rect x="624" y="538" width="98" height="22" rx="4" fill="#16233a" stroke="#2b3440"/>
+      <text x="673" y="553" fill="#e8e2c8" text-anchor="middle">档案卡结晶变少</text>
+      <path d="M726 549 H742" stroke="#e8b33c" stroke-width="1.2" marker-end="url(#ctyArrow)"/>
+      <rect x="746" y="538" width="50" height="22" rx="4" fill="#16233a" stroke="#c9a84c"/>
+      <text x="771" y="553" fill="#ffd76a" text-anchor="middle">整板重画</text>
+    </g>
+    <text x="408" y="580" font-size="10.5" fill="#8d95a5">整板重画是必须的：升级后下一级更贵，只改等级不改成本会让玩家乱点</text>
+    <text x="408" y="596" font-size="10.5" fill="#8d95a5">全程 &lt; 0.1 秒，不许转圈等待；升级后不关面板（玩家通常连升好几级）</text>
+    <text x="408" y="612" font-size="10.5" fill="#8d95a5">主城不设确认框：价格必须写在按钮上，而不是弹窗里</text>
+  </g>
+
+  <!-- 规格速查 -->
+  <g>
+    <rect x="1000" y="508" width="248" height="112" rx="10" fill="#0d1017" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="1014" y="528" font-size="12.5" font-weight="700" fill="#e8b33c">规格速查</text>
+    <text x="1014" y="546" font-size="10.5" fill="#a6b2c7">面板 420 × 自动 @ (810,90)</text>
+    <text x="1014" y="562" font-size="10.5" fill="#a6b2c7">底 #16233a / 边 #c9a84c 2px / rx 10</text>
+    <text x="1014" y="578" font-size="10.5" fill="#a6b2c7">内边距 18 / 14　标题 22 #ffd76a</text>
+    <text x="1014" y="594" font-size="10.5" fill="#a6b2c7">行高 46　按钮 146 × 30　rx 5</text>
+    <text x="1014" y="610" font-size="10.5" fill="#a6b2c7">圈 r 76 / 印章 r 22 / 名称 16</text>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B003-强化导师 / 1280×720 / v1.0</text>
+</svg>

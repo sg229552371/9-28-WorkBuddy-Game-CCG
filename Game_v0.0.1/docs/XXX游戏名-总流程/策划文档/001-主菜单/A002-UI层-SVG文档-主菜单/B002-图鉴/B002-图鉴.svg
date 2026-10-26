@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <desc>B002-图鉴 界面与卡片规格图</desc>
+
+  <rect width="1280" height="720" fill="#131c2c"/>
+
+  <g font-family="Noto Sans SC, Microsoft YaHei, sans-serif">
+    <rect x="24" y="16" width="88" height="40" rx="6" fill="#252a34" stroke="#3a4150"/>
+    <text x="68" y="42" font-size="16" fill="#e2e6ee" text-anchor="middle">← 返回</text>
+    <text x="640" y="44" font-size="24" font-weight="bold" fill="#e8b33c" text-anchor="middle" letter-spacing="4">图  鉴</text>
+
+    <text x="32" y="104" font-size="20" font-weight="bold" fill="#e2e6ee">英雄图鉴</text>
+    <text x="1232" y="104" font-size="20" font-weight="bold" fill="#e8b33c" text-anchor="end">8/12</text>
+    <line x1="32" y1="116" x2="1248" y2="116" stroke="#2a2f3a"/>
+
+    <g>
+      <rect x="32" y="136" width="280" height="104" rx="8" fill="#252a34" stroke="#3a4150"/>
+      <rect x="44" y="148" width="72" height="80" rx="6" fill="#c63d2f"/>
+      <text x="80" y="196" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">烬</text>
+      <text x="128" y="176" font-size="18" font-weight="bold" fill="#e2e6ee">焚香者·烬</text>
+      <text x="128" y="202" font-size="13" fill="#8a93a5">火系输出 · 高爆发</text>
+      <rect x="128" y="212" width="34" height="18" rx="4" fill="#4a2e2e"/>
+      <text x="145" y="225" font-size="11" fill="#e8a0a0" text-anchor="middle">输出</text>
+    </g>
+
+    <g>
+      <rect x="328" y="136" width="280" height="104" rx="8" fill="#252a34" stroke="#3a4150"/>
+      <rect x="340" y="148" width="72" height="80" rx="6" fill="#2f5a6b"/>
+      <text x="376" y="196" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">瞳</text>
+      <text x="424" y="176" font-size="18" font-weight="bold" fill="#e2e6ee">观星者·瞳</text>
+      <text x="424" y="202" font-size="13" fill="#8a93a5">远程法术 · 控场</text>
+      <rect x="424" y="212" width="34" height="18" rx="4" fill="#4a2e2e"/>
+      <text x="441" y="225" font-size="11" fill="#e8a0a0" text-anchor="middle">输出</text>
+    </g>
+
+    <g>
+      <rect x="624" y="136" width="280" height="104" rx="8" fill="#252a34" stroke="#3a4150"/>
+      <rect x="636" y="148" width="72" height="80" rx="6" fill="#2e4a36"/>
+      <text x="672" y="196" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">磐</text>
+      <text x="720" y="176" font-size="18" font-weight="bold" fill="#e2e6ee">承棺者·磐</text>
+      <text x="720" y="202" font-size="13" fill="#8a93a5">近战坦克 · 护盾</text>
+      <rect x="720" y="212" width="34" height="18" rx="4" fill="#2e4a36"/>
+      <text x="737" y="225" font-size="11" fill="#9fe0af" text-anchor="middle">防御</text>
+    </g>
+
+    <g>
+      <rect x="920" y="136" width="280" height="104" rx="8" fill="#1d2027" stroke="#2a2f3a"/>
+      <rect x="932" y="148" width="72" height="80" rx="6" fill="#3a4150"/>
+      <text x="968" y="198" font-size="32" fill="#5a6572" text-anchor="middle">?</text>
+      <text x="1016" y="176" font-size="18" font-weight="bold" fill="#5a6572">???</text>
+      <text x="1016" y="202" font-size="13" fill="#4a5260">尚未遇到</text>
+    </g>
+
+    <g>
+      <rect x="32" y="256" width="280" height="104" rx="8" fill="#252a34" stroke="#3a4150"/>
+      <rect x="44" y="268" width="72" height="80" rx="6" fill="#6b4a2f"/>
+      <text x="80" y="316" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">汐</text>
+      <text x="128" y="296" font-size="18" font-weight="bold" fill="#e2e6ee">唤雨者·汐</text>
+      <text x="128" y="322" font-size="13" fill="#8a93a5">治疗辅助 · 群疗</text>
+      <rect x="128" y="332" width="34" height="18" rx="4" fill="#2e4a36"/>
+      <text x="145" y="345" font-size="11" fill="#9fe0af" text-anchor="middle">辅助</text>
+    </g>
+
+    <g opacity="0.55">
+      <rect x="328" y="256" width="280" height="104" rx="8" fill="#1d2027" stroke="#2a2f3a"/>
+      <rect x="340" y="268" width="72" height="80" rx="6" fill="#3a4150"/>
+      <text x="376" y="318" font-size="32" fill="#5a6572" text-anchor="middle">?</text>
+      <text x="424" y="296" font-size="18" font-weight="bold" fill="#5a6572">???</text>
+      <text x="424" y="322" font-size="13" fill="#4a5260">尚未遇到</text>
+    </g>
+    <g opacity="0.4">
+      <rect x="624" y="256" width="280" height="104" rx="8" fill="#1d2027" stroke="#2a2f3a"/>
+      <rect x="636" y="268" width="72" height="80" rx="6" fill="#3a4150"/>
+      <text x="672" y="318" font-size="32" fill="#5a6572" text-anchor="middle">?</text>
+      <text x="720" y="296" font-size="18" font-weight="bold" fill="#5a6572">???</text>
+      <text x="720" y="322" font-size="13" fill="#4a5260">尚未遇到</text>
+    </g>
+    <g opacity="0.3">
+      <rect x="920" y="256" width="280" height="104" rx="8" fill="#1d2027" stroke="#2a2f3a"/>
+      <rect x="932" y="268" width="72" height="80" rx="6" fill="#3a4150"/>
+      <text x="968" y="318" font-size="32" fill="#5a6572" text-anchor="middle">?</text>
+      <text x="1016" y="296" font-size="18" font-weight="bold" fill="#5a6572">???</text>
+      <text x="1016" y="322" font-size="13" fill="#4a5260">尚未遇到</text>
+    </g>
+
+    <text x="32" y="404" font-size="20" font-weight="bold" fill="#e2e6ee">怪物图鉴</text>
+    <text x="1232" y="404" font-size="20" font-weight="bold" fill="#e8b33c" text-anchor="end">21/34</text>
+    <line x1="32" y1="416" x2="1248" y2="416" stroke="#2a2f3a"/>
+
+    <g>
+      <rect x="32" y="432" width="224" height="88" rx="8" fill="#252a34" stroke="#3a4150"/>
+      <rect x="42" y="444" width="56" height="56" rx="6" fill="#6b6b6b"/>
+      <text x="70" y="482" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">泥</text>
+      <text x="110" y="466" font-size="16" font-weight="bold" fill="#e2e6ee">泥塑俑</text>
+      <text x="110" y="488" font-size="12" fill="#8a93a5">灰泥人形 · 缓慢</text>
+    </g>
+    <g>
+      <rect x="272" y="432" width="224" height="88" rx="8" fill="#252a34" stroke="#3a4150"/>
+      <rect x="282" y="444" width="56" height="56" rx="6" fill="#8a7a5a"/>
+      <text x="310" y="482" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">环</text>
+      <text x="350" y="466" font-size="16" font-weight="bold" fill="#e2e6ee">环祭司</text>
+      <text x="350" y="488" font-size="12" fill="#8a93a5">骨白祭司 · 远程</text>
+    </g>
+    <g opacity="0.55">
+      <rect x="512" y="432" width="224" height="88" rx="8" fill="#1d2027" stroke="#2a2f3a"/>
+      <rect x="522" y="444" width="56" height="56" rx="6" fill="#3a4150"/>
+      <text x="550" y="482" font-size="26" fill="#5a6572" text-anchor="middle">?</text>
+      <text x="590" y="466" font-size="16" font-weight="bold" fill="#5a6572">???</text>
+      <text x="590" y="488" font-size="12" fill="#4a5260">尚未遇到</text>
+    </g>
+    <g opacity="0.4">
+      <rect x="752" y="432" width="224" height="88" rx="8" fill="#1d2027" stroke="#2a2f3a"/>
+      <rect x="762" y="444" width="56" height="56" rx="6" fill="#3a4150"/>
+      <text x="790" y="482" font-size="26" fill="#5a6572" text-anchor="middle">?</text>
+      <text x="830" y="466" font-size="16" font-weight="bold" fill="#5a6572">???</text>
+      <text x="830" y="488" font-size="12" fill="#4a5260">尚未遇到</text>
+    </g>
+    <g opacity="0.3">
+      <rect x="992" y="432" width="224" height="88" rx="8" fill="#1d2027" stroke="#2a2f3a"/>
+      <rect x="1002" y="444" width="56" height="56" rx="6" fill="#3a4150"/>
+      <text x="1030" y="482" font-size="26" fill="#5a6572" text-anchor="middle">?</text>
+      <text x="1070" y="466" font-size="16" font-weight="bold" fill="#5a6572">???</text>
+      <text x="1070" y="488" font-size="12" fill="#4a5260">尚未遇到</text>
+    </g>
+
+    <g opacity="0.9">
+      <rect x="32" y="544" width="1216" height="132" rx="10" fill="#1d2027" stroke="#3a4150"/>
+      <text x="52" y="570" font-size="14" fill="#e8b33c">↓ 点击任意已解锁卡片 → 详情弹窗</text>
+      <rect x="52" y="584" width="560" height="76" rx="8" fill="#252a34"/>
+      <rect x="64" y="594" width="56" height="56" rx="6" fill="#c63d2f"/>
+      <text x="92" y="632" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">烬</text>
+      <text x="132" y="614" font-size="16" font-weight="bold" fill="#e2e6ee">焚香者·烬</text>
+      <text x="132" y="636" font-size="12" fill="#8a93a5">HP 94 · 攻击 12 · 移速 210</text>
+      <text x="132" y="654" font-size="12" fill="#9fe0af">优点：高爆发 / 范围伤害</text>
+      <text x="356" y="636" font-size="12" fill="#e8a0a0">缺点：脆皮 / 依赖走位</text>
+
+      <rect x="628" y="584" width="600" height="76" rx="8" fill="#252a34"/>
+      <text x="648" y="612" font-size="13" fill="#8a93a5">卡片尺寸规格</text>
+      <text x="648" y="634" font-size="12" fill="#e2e6ee">英雄卡 280×104　圆角 8　4 列　横竖间距 16　首卡 X=32</text>
+      <text x="648" y="652" font-size="12" fill="#e2e6ee">怪物卡 224×88　圆角 8　5 列　横竖间距 16　首卡 X=32</text>
+    </g>
+  </g>
+</svg>

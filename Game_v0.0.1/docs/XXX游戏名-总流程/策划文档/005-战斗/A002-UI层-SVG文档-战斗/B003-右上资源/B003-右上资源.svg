@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
+  <title>B003 右上资源 界面规格图（1280×720）</title>
+
+  <defs>
+    <linearGradient id="btlBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1017"/>
+      <stop offset="1" stop-color="#161b26"/>
+    </linearGradient>
+    <linearGradient id="btlPanel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d2330"/>
+      <stop offset="1" stop-color="#141922"/>
+    </linearGradient>
+    <linearGradient id="btlGoldFade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="1" stop-color="#ffe073" stop-opacity="0.9"/>
+    </linearGradient>
+    <marker id="btlArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+    <marker id="btlArrowS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="url(#btlBg)"/>
+  <g stroke="#1a2130" stroke-width="1" opacity="0.55">
+    <path d="M0 140 L1280 140 M0 360 L1280 360 M0 560 L1280 560"/>
+    <path d="M320 0 L320 720 M640 0 L640 720 M960 0 L960 720"/>
+  </g>
+
+  <rect x="0" y="0" width="1280" height="64" fill="url(#btlPanel)"/>
+  <rect x="0" y="62" width="1280" height="2" fill="#2b3240"/>
+  <text x="32" y="40" font-size="22" font-weight="700" fill="#f2fafe">B003 · 右上资源（等级大字 + 金币 / 经验 / 宝箱 / 波次 / 场上怪）</text>
+  <text x="1248" y="40" font-size="13" fill="#8d95a5" text-anchor="end">右对齐 x=1264（右退 16）　｜　34 号 / 18 号</text>
+
+  <!-- ================= 放大展示：右上角组件群 ================= -->
+  <g>
+    <rect x="40" y="88" width="560" height="300" rx="12" fill="#12161f" fill-opacity="0.85" stroke="#2b3240" stroke-width="1.5"/>
+    <text x="62" y="114" font-size="12" fill="#5d6575" letter-spacing="2">放大 2 倍展示（右边缘 = 屏幕右边缘）</text>
+
+    <!-- 右边缘参考线 -->
+    <path d="M552 130 L552 372" stroke="#e2554f" stroke-width="1" stroke-dasharray="5 4"/>
+    <text x="546" y="368" font-size="11" fill="#ff7b73" text-anchor="end">屏幕右边缘 x=1280</text>
+    <path d="M520 130 L520 372" stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 4" opacity="0.6"/>
+    <text x="514" y="386" font-size="11" fill="#e8b33c" text-anchor="end">内容右对齐线 x=1264（退 16）</text>
+
+    <g text-anchor="end" stroke="#000000" stroke-width="8" paint-order="stroke" stroke-linejoin="round">
+      <text x="520" y="196" font-size="68" fill="#f2fafe">Lv 12</text>
+      <text x="520" y="252" font-size="36" fill="#ffe073">✦金币 128 · ✦经验 240</text>
+      <text x="520" y="300" font-size="36" fill="#ffe073">宝箱 2 · 波次 5 · 场上怪 27</text>
+    </g>
+
+    <!-- 尺寸标注 -->
+    <g stroke="#e8b33c" stroke-width="1.2" fill="none">
+      <path d="M60 132 L60 200 M52 132 L68 132 M52 200 L68 200" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
+      <path d="M420 132 L420 232 M412 232 L428 232 M412 240 L428 240"/>
+    </g>
+    <text x="64" y="196" font-size="11" fill="#e8b33c" transform="rotate(-90 64 196)" text-anchor="middle">34 号</text>
+    <text x="440" y="150" font-size="12" fill="#e8b33c">top 6 → 基线 38</text>
+    <text x="440" y="248" font-size="12" fill="#e8b33c">18 号两行 · 行距 22</text>
+    <text x="440" y="266" font-size="11" fill="#8a93a5">top 48 起，紧接大字下方</text>
+  </g>
+
+  <!-- ================= 三种状态（1:1 实尺寸） ================= -->
+  <g>
+    <rect x="620" y="88" width="620" height="300" rx="12" fill="#12161f" fill-opacity="0.85" stroke="#2b3240" stroke-width="1.5"/>
+    <text x="642" y="114" font-size="12" fill="#5d6575" letter-spacing="2">1:1 实尺寸 · 三种状态（右上角对齐）</text>
+
+    <!-- 状态 1 常态 -->
+    <g>
+      <text x="642" y="146" font-size="12" fill="#8d95a5">状态 1 · 常态（1 局 12 级）</text>
+      <text x="1080" y="180" font-size="34" fill="#f2fafe" text-anchor="end" stroke="#000000" stroke-width="4" paint-order="stroke">Lv 12</text>
+      <text x="1080" y="208" font-size="18" fill="#ffe073" text-anchor="end" stroke="#000000" stroke-width="4" paint-order="stroke">✦金币 128 · ✦经验 240</text>
+      <text x="1080" y="230" font-size="18" fill="#ffe073" text-anchor="end" stroke="#000000" stroke-width="4" paint-order="stroke">宝箱 2 · 波次 5 · 场上怪 27</text>
+    </g>
+    <line x1="642" y1="250" x2="1218" y2="250" stroke="#2b3240" stroke-width="1" stroke-dasharray="5 4"/>
+
+    <!-- 状态 2 升级 -->
+    <g>
+      <text x="642" y="276" font-size="12" fill="#4de566">状态 2 · 升级瞬间（现状：只有数字跳）</text>
+      <text x="1080" y="318" font-size="34" fill="#f2fafe" text-anchor="end" stroke="#000000" stroke-width="4" paint-order="stroke">Lv 13</text>
+      <text x="1080" y="346" font-size="18" fill="#ffe073" text-anchor="end" stroke="#000000" stroke-width="4" paint-order="stroke">✦金币 128 · ✦经验 612</text>
+      <g stroke="#4de566" stroke-width="1" stroke-dasharray="4 4">
+        <path d="M880 286 L900 286 M1040 286 L1060 286 M880 324 L900 324 M1040 324 L1060 324"/>
+      </g>
+      <text x="642" y="318" font-size="12" fill="#ff7b73">建议：放大 1.3× 弹回 +「叮咚」</text>
+      <text x="642" y="336" font-size="12" fill="#ff7b73">现状：无放大、无声、无闪</text>
+    </g>
+    <line x1="642" y1="360" x2="1218" y2="360" stroke="#2b3240" stroke-width="1" stroke-dasharray="5 4"/>
+
+    <text x="642" y="378" font-size="11" fill="#5d6575">位置：大字 top 6 / 资源两行 top 48；右对齐锚点 offset_right = -16（即 x=1264 起往左长）</text>
+  </g>
+
+  <!-- ================= 资源增长规则示意 ================= -->
+  <line x1="40" y1="410" x2="1240" y2="410" stroke="#2b3240" stroke-width="1" stroke-dasharray="6 5"/>
+  <text x="40" y="440" font-size="13" font-weight="700" fill="#e8b33c">资源怎么涨（规则示意，非游戏内画面）</text>
+
+  <!-- 节点：杀怪 -->
+  <g>
+    <rect x="40" y="460" width="150" height="76" rx="10" fill="#1d2330" stroke="#3a4150" stroke-width="1.5"/>
+    <circle cx="76" cy="498" r="14" fill="#33282a" stroke="#8a6b3a" stroke-width="1"/>
+    <text x="76" y="503" font-size="14" fill="#ffd140" text-anchor="middle">●</text>
+    <text x="100" y="490" font-size="13" fill="#f2fafe">击杀怪物</text>
+    <text x="100" y="510" font-size="11" fill="#8a93a5">普通怪 +2 金币</text>
+    <text x="52" y="528" font-size="11" fill="#8a93a5">精英/Boss 给更多</text>
+  </g>
+  <path d="M196 498 L246 498" stroke="#e8b33c" stroke-width="1.4" marker-end="url(#btlArrow)"/>
+
+  <g>
+    <rect x="256" y="460" width="150" height="76" rx="10" fill="#1d2330" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="331" y="490" font-size="13" fill="#ffe073" text-anchor="middle">✦金币 +2</text>
+    <text x="331" y="512" font-size="13" fill="#ffe073" text-anchor="middle">✦经验 +3</text>
+    <text x="331" y="530" font-size="10.5" fill="#5d6575" text-anchor="middle">数值取自怪配置 coin / exp</text>
+  </g>
+  <path d="M412 498 L462 498" stroke="#e8b33c" stroke-width="1.4" marker-end="url(#btlArrow)"/>
+
+  <g>
+    <rect x="472" y="460" width="150" height="76" rx="10" fill="#1d2330" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="547" y="490" font-size="13" fill="#f2fafe" text-anchor="middle">经验累计 → 升级</text>
+    <text x="547" y="512" font-size="11" fill="#8a93a5" text-anchor="middle">需求 8 × 1.32^(Lv-1)</text>
+    <text x="547" y="530" font-size="10.5" fill="#5d6575" text-anchor="middle">Lv 变大（34 号）</text>
+  </g>
+  <path d="M628 498 L678 498" stroke="#e8b33c" stroke-width="1.4" marker-end="url(#btlArrow)"/>
+
+  <g>
+    <rect x="688" y="460" width="150" height="76" rx="10" fill="#1d2330" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="763" y="490" font-size="13" fill="#ffd140" text-anchor="middle">精英 / Boss 掉落</text>
+    <text x="763" y="512" font-size="11" fill="#8a93a5" text-anchor="middle">必掉一个宝箱</text>
+    <text x="763" y="530" font-size="10.5" fill="#5d6575" text-anchor="middle">宝箱 N 计数</text>
+  </g>
+  <path d="M844 498 L894 498" stroke="#e8b33c" stroke-width="1.4" marker-end="url(#btlArrow)"/>
+
+  <g>
+    <rect x="904" y="460" width="150" height="76" rx="10" fill="#1d2330" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="979" y="490" font-size="13" fill="#f2fafe" text-anchor="middle">每 2.5s 刷一波</text>
+    <text x="979" y="512" font-size="11" fill="#8a93a5" text-anchor="middle">放一批怪进场</text>
+    <text x="979" y="530" font-size="10.5" fill="#5d6575" text-anchor="middle">waveInterval = 2.5</text>
+  </g>
+  <path d="M1060 498 L1110 498" stroke="#e8b33c" stroke-width="1.4" marker-end="url(#btlArrow)"/>
+
+  <g>
+    <rect x="1120" y="460" width="120" height="76" rx="10" fill="#1d2330" stroke="#e8b33c" stroke-width="1.5"/>
+    <text x="1180" y="490" font-size="13" fill="#ffe073" text-anchor="middle">波次 +1</text>
+    <text x="1180" y="512" font-size="11" fill="#8a93a5" text-anchor="middle">不是关卡数</text>
+    <text x="1180" y="530" font-size="10.5" fill="#5d6575" text-anchor="middle">只是刷了几批</text>
+  </g>
+
+  <g>
+    <path d="M979 552 L979 570" stroke="#5d6575" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="979" y="586" font-size="11" fill="#5d6575" text-anchor="middle">场上怪 = 刷怪数 − 已清怪数，实时变化</text>
+  </g>
+
+  <!-- ================= 图角灰字 + 速查 ================= -->
+  <g>
+    <rect x="40" y="612" width="470" height="92" rx="10" fill="#0d1017" fill-opacity="0.96" stroke="#3a4150" stroke-width="1.5"/>
+    <text x="56" y="634" font-size="12.5" font-weight="700" fill="#e8b33c">规格速查</text>
+    <g font-size="11.5" fill="#cdd3de">
+      <text x="56" y="654">等级大字　右退 16（x=1264）　top 6　34 号　#f2fafe</text>
+      <text x="56" y="672">资源两行　top 48 起　18 号　#ffe073　行距 22　右对齐</text>
+      <text x="56" y="690">第一行「✦金币 N · ✦经验 N」，第二行「宝箱 N · 波次 N · 场上怪 N」</text>
+    </g>
+  </g>
+
+  <g font-size="11.5" fill="#6f7a88">
+    <text x="534" y="640">灰字规则：金币取整数不用小数；金币/经验=本局总收获，不等于「离升级还差多少」</text>
+    <text x="534" y="660">等级满 46 显示「Lv MAX」；数字过 1000 缩写为 1.2k；区块无「警告」态，永不隐藏</text>
+    <text x="534" y="680">与 B002 重复：左上「Lv1 经验0」与右上重复，建议左上只留 HP（总纲 T10）</text>
+  </g>
+
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B003-右上资源 / 1280×720 / v1.0</text>
+</svg>
