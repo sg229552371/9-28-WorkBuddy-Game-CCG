@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
-  <title>001-主菜单 · 整屏总图 v2.0（参考同类游戏主菜单：大 Logo 左上 + 左侧竖排图标按钮列 + 开始游戏特大 + 底部信息胶囊 + 右下扩展位）</title>
+  <title>001-主菜单 · 整屏总图 v3.0（次按钮缩窄 30% 至 210 宽 · 操作说明并入设置 · 次按钮剩三颗）</title>
 
   <defs>
     <linearGradient id="mnBg" x1="0" y1="0" x2="0.6" y2="1">
@@ -27,7 +27,6 @@
   <!-- ============ L0 背景 ============ -->
   <rect x="0" y="0" width="1280" height="720" fill="url(#mnBg)"/>
   <rect x="0" y="0" width="1280" height="720" fill="url(#mnGlow)"/>
-  <!-- 场景氛围：结晶光点（占位，正式美术后续替换） -->
   <g opacity="0.5">
     <circle cx="880" cy="470" r="3" fill="#7fd8ef"/><circle cx="930" cy="430" r="2" fill="#bff2ff"/>
     <circle cx="1060" cy="500" r="2.5" fill="#7fd8ef"/><circle cx="1010" cy="380" r="2" fill="#e8b33c"/>
@@ -50,7 +49,7 @@
   <text x="66" y="172" font-size="15" fill="#8a93a5">组队下矿 · 撤离拿结晶 · 局外养成</text>
 
   <!-- ============ L3 左侧竖排按钮列 ============ -->
-  <!-- 主按钮：开始游戏（特大） -->
+  <!-- 主按钮：开始游戏（300 宽不变，与次按钮拉开层级） -->
   <g filter="url(#mnShadowBig)">
     <rect x="64" y="216" width="300" height="68" rx="16" fill="url(#mnGoldBtn)" stroke="#ffe073" stroke-width="1.5"/>
   </g>
@@ -58,33 +57,31 @@
   <path d="M94 238 l16 12 -16 12 z" fill="#131c2c"/>
   <text x="226" y="260" font-size="28" font-weight="800" fill="#131c2c" text-anchor="middle" letter-spacing="6">开始游戏</text>
 
-  <!-- 次按钮 ×4（图标 + 文字，左对齐） -->
+  <!-- 次按钮 ×3（v3.0：宽度 300 → 210 缩小 30%；操作说明已并入设置） -->
   <g filter="url(#mnShadow)">
-    <rect x="64" y="300" width="300" height="52" rx="12" fill="#1d2432" stroke="#3a4150" stroke-width="1.5"/>
-    <rect x="64" y="368" width="300" height="52" rx="12" fill="#1d2432" stroke="#3a4150" stroke-width="1.5"/>
-    <rect x="64" y="436" width="300" height="52" rx="12" fill="#1d2432" stroke="#3a4150" stroke-width="1.5"/>
-    <rect x="64" y="504" width="300" height="52" rx="12" fill="#1d2432" stroke="#3a4150" stroke-width="1.5"/>
+    <rect x="64" y="300" width="210" height="52" rx="12" fill="#1d2432" stroke="#3a4150" stroke-width="1.5"/>
+    <rect x="64" y="368" width="210" height="52" rx="12" fill="#1d2432" stroke="#3a4150" stroke-width="1.5"/>
+    <rect x="64" y="436" width="210" height="52" rx="12" fill="#1d2432" stroke="#3a4150" stroke-width="1.5"/>
   </g>
   <!-- 图标座 + 图标 -->
   <g>
     <circle cx="96" cy="326" r="17" fill="#252e40" stroke="#4a5568"/>
-    <text x="96" y="332" font-size="15" fill="#e2e6ee" text-anchor="middle">?</text>
+    <circle cx="96" cy="326" r="7" fill="none" stroke="#e2e6ee" stroke-width="2"/>
+    <path d="M96 316 v-3 M96 339 v3 M86 326 h-3 M109 326 h3" stroke="#e2e6ee" stroke-width="2" stroke-linecap="round"/>
     <circle cx="96" cy="394" r="17" fill="#252e40" stroke="#4a5568"/>
-    <circle cx="96" cy="394" r="7" fill="none" stroke="#e2e6ee" stroke-width="2"/>
-    <path d="M96 384 v-3 M96 407 v3 M86 394 h-3 M109 394 h3" stroke="#e2e6ee" stroke-width="2" stroke-linecap="round"/>
+    <rect x="88" y="384" width="16" height="20" rx="2" fill="none" stroke="#e2e6ee" stroke-width="1.8"/>
+    <path d="M92 390 h8 M92 396 h8" stroke="#e2e6ee" stroke-width="1.6"/>
     <circle cx="96" cy="462" r="17" fill="#252e40" stroke="#4a5568"/>
-    <rect x="88" y="452" width="16" height="20" rx="2" fill="none" stroke="#e2e6ee" stroke-width="1.8"/>
-    <path d="M92 458 h8 M92 464 h8" stroke="#e2e6ee" stroke-width="1.6"/>
-    <circle cx="96" cy="530" r="17" fill="#252e40" stroke="#4a5568"/>
-    <rect x="88" y="522" width="11" height="16" rx="2" fill="none" stroke="#e2e6ee" stroke-width="1.8"/>
-    <path d="M99 526 h9 v8 h-9 M104 530 h4" fill="none" stroke="#e2e6ee" stroke-width="1.8"/>
+    <rect x="88" y="454" width="11" height="16" rx="2" fill="none" stroke="#e2e6ee" stroke-width="1.8"/>
+    <path d="M99 458 h9 v8 h-9 M104 462 h4" fill="none" stroke="#e2e6ee" stroke-width="1.8"/>
   </g>
-  <g font-size="20" fill="#e2e6ee">
-    <text x="130" y="333">操作说明</text>
-    <text x="130" y="401">设置</text>
-    <text x="130" y="469">图鉴</text>
-    <text x="130" y="537">退出游戏</text>
+  <g font-size="19" fill="#e2e6ee">
+    <text x="128" y="333">设置</text>
+    <text x="128" y="401">图鉴</text>
+    <text x="128" y="469">退出游戏</text>
   </g>
+  <!-- 设置按钮补充注：点开 = 设置窗口（含操作说明标签页），见 B003 -->
+  <text x="128" y="352" font-size="10.5" fill="#5d6575" opacity="0.9">含「操作说明」标签页 ›</text>
 
   <!-- ============ L4 底部信息胶囊行（左下） ============ -->
   <g filter="url(#mnShadow)">
@@ -106,32 +103,33 @@
   <g opacity="0.55">
     <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
       <rect x="64" y="216" width="300" height="68"/>
-      <rect x="64" y="300" width="300" height="52"/>
+      <rect x="64" y="300" width="210" height="52"/>
     </g>
     <g fill="#e8b33c" font-size="11">
       <text x="372" y="248">300 × 68　rx 16</text>
       <text x="372" y="272" fill="#8d95a5">主按钮：金渐变 + 播放图标 + 28 号</text>
-      <text x="372" y="324">次按钮 300 × 52　rx 12 · 图标座 r17</text>
+      <text x="372" y="324">次按钮 210 × 52（v3.0 由 300 缩窄 30%）</text>
+      <text x="372" y="344" fill="#8d95a5">「操作说明」按钮已取消，并入设置窗口</text>
     </g>
     <g stroke="#5d6575" stroke-width="1" stroke-dasharray="3 3">
-      <path d="M384 300 L384 556"/>
-      <path d="M380 300 L408 300 M380 352 L408 352 M380 368 L408 368 M380 420 L408 420 M380 436 L408 436 M380 488 L408 488 M380 504 L408 504 M380 556 L408 556"/>
+      <path d="M286 300 L286 488"/>
+      <path d="M282 300 L310 300 M282 352 L310 352 M282 368 L310 368 M282 420 L310 420 M282 436 L310 436 M282 488 L310 488"/>
     </g>
     <g fill="#8d95a5" font-size="10.5">
-      <text x="414" y="330">52</text>
-      <text x="414" y="364" fill="#e8b33c">间距 16</text>
-      <text x="414" y="466" fill="#e8b33c">间距 16</text>
-      <text x="414" y="534" fill="#e8b33c">间距 16</text>
+      <text x="314" y="330">52</text>
+      <text x="314" y="364" fill="#e8b33c">间距 16</text>
+      <text x="314" y="466" fill="#e8b33c">间距 16</text>
     </g>
   </g>
 
   <!-- 左上角图注 -->
   <g opacity="0.85">
-    <rect x="920" y="32" width="328" height="66" rx="8" fill="#0d1017" stroke="#2b3240"/>
-    <text x="936" y="55" font-size="12" font-weight="700" fill="#e8b33c">整屏总图 v2.0 · 1:1 实尺寸</text>
-    <text x="936" y="74" font-size="11" fill="#8d95a5">参考「鬼野之踪」主菜单：Logo 左上 + 左列竖排按钮</text>
-    <text x="936" y="90" font-size="11" fill="#5d6575">虚线为版面标注，游戏内不显示；右下虚线框=扩展位</text>
+    <rect x="920" y="32" width="328" height="82" rx="8" fill="#0d1017" stroke="#2b3240"/>
+    <text x="936" y="55" font-size="12" font-weight="700" fill="#e8b33c">整屏总图 v3.0 · 1:1 实尺寸</text>
+    <text x="936" y="74" font-size="11" fill="#8d95a5">v3.0：次按钮缩窄 30%（210 宽）· 移除操作说明</text>
+    <text x="936" y="92" font-size="11" fill="#5d6575">虚线为版面标注，游戏内不显示；右下虚线框=扩展位</text>
+    <text x="936" y="108" font-size="11" fill="#5d6575">设置窗口细化图见 B003-设置.svg</text>
   </g>
 
-  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-主菜单总SVG文档 / v2.0</text>
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-主菜单总SVG文档 / v3.0</text>
 </svg>
