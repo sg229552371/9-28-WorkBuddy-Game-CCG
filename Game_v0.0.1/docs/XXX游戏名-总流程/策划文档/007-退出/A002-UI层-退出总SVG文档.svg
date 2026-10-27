@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
-  <title>007-退出 · 整屏总图（现状 + 设计稿对照）</title>
+  <title>007-退出 · 整屏总图（现状 + 设计定稿对照 · v1.1）</title>
 
   <defs>
     <linearGradient id="qtBg" x1="0" y1="0" x2="0.6" y2="1">
@@ -86,7 +86,7 @@
   <!-- ===================================================== -->
   <!-- 右：设计稿要的样子                                      -->
   <!-- ===================================================== -->
-  <text x="664" y="48" font-size="13" font-weight="700" fill="#9fe0af">设计稿要求 · 60% 黑幕 + 420×200 弹窗（001/B004 第二节，目标态）</text>
+  <text x="664" y="48" font-size="13" font-weight="700" fill="#9fe0af">设计定稿 · 60% 黑幕 + 420×200 弹窗（001/B004 第二节 · 2026-10-27 反馈拍板）</text>
 
   <!-- 假主菜单（被遮） -->
   <g>
@@ -146,7 +146,7 @@
     <g fill="#8a93a5">
       <text x="56" y="540">项目</text>
       <text x="160" y="540" fill="#e0a3a3">现状（代码）</text>
-      <text x="500" y="540" fill="#9fe0af">设计稿（目标态）</text>
+      <text x="500" y="540" fill="#9fe0af">设计稿（已定稿）</text>
     </g>
     <line x1="56" y1="550" x2="840" y2="550" stroke="#2b3240"/>
     <g fill="#c9ced9">
@@ -158,16 +158,16 @@
     </g>
   </g>
 
-  <!-- 右侧红字：差异结论 -->
+  <!-- 右侧定稿结论 -->
   <g>
-    <rect x="860" y="508" width="364" height="152" rx="8" fill="#1a1414" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="6 4"/>
-    <rect x="860" y="508" width="364" height="6" rx="3" fill="#e2554f"/>
-    <text x="876" y="536" font-size="13" font-weight="700" fill="#ff8a84">⚠ 差异结论</text>
-    <g font-size="11.5" fill="#e0a3a3">
-      <text x="876" y="558">现状是整屏换屏；设计稿要求半透明弹窗</text>
-      <text x="876" y="576">盖在主菜单上——建议改成弹窗。</text>
-      <text x="876" y="600" fill="#c9ced9">改一个地方动三条：面板缩到 420×200、</text>
-      <text x="876" y="618" fill="#c9ced9">背后加黑幕、按钮文字与排布一起改。</text>
+    <rect x="860" y="508" width="364" height="152" rx="8" fill="#12181f" stroke="#e8b33c" stroke-width="1.5"/>
+    <rect x="860" y="508" width="364" height="6" rx="3" fill="#e8b33c"/>
+    <text x="876" y="536" font-size="13" font-weight="700" fill="#e8b33c">✓ 已按设计稿定稿（2026-10-27）</text>
+    <g font-size="11.5" fill="#e2e6ee">
+      <text x="876" y="558">采用右图：420×200 居中弹窗 + 60% 黑幕，</text>
+      <text x="876" y="576">盖在主菜单上；按钮「退出 / 继续」并排。</text>
+      <text x="876" y="600" fill="#c9ced9">代码按此改：面板缩到 420×200、背后加黑幕、</text>
+      <text x="876" y="618" fill="#c9ced9">按钮文字与排布一起改（待办 T1~T4）。</text>
       <text x="876" y="642" fill="#8a93a5">弹窗长相以 001/B004 为准（007 总纲 分-1），</text>
       <text x="876" y="660" fill="#8a93a5">口径细节见 B001-退出确认。</text>
     </g>
@@ -179,5 +179,5 @@
     <text x="70" y="691" font-size="11" fill="#8d95a5">规格速查：面板 <tspan fill="#e2e6ee">#1d2027</tspan> rx10 边 <tspan fill="#e2e6ee">#252a34</tspan> 2px　标题 30/32 金 <tspan fill="#e8b33c">#e8b33c</tspan>　危险 <tspan fill="#e2554f">#e2554f</tspan>　灰按钮 <tspan fill="#e2e6ee">#252a34</tspan>　文字 <tspan fill="#e2e6ee">#e2e6ee</tspan> / 次要 <tspan fill="#8a93a5">#8a93a5</tspan></text>
   </g>
 
-  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-退出总SVG文档 / 1280×720 / v1.0</text>
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-退出总SVG文档 / 1280×720 / v1.1 设计稿定稿</text>
 </svg>
