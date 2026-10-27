@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
-  <title>006-结算 · 两套界面总图（成功 / 失败 · v2.0）</title>
+  <title>006-结算 · 两套界面总图 v3.0（参考同类游戏胜利结算：菱形徽章 + 左标签右数值 + 奖励图标格 + 双按钮/倒计时）</title>
 
   <defs>
     <linearGradient id="stlBg" x1="0" y1="0" x2="0.6" y2="1">
@@ -8,13 +8,27 @@
       <stop offset="1" stop-color="#0b1119"/>
     </linearGradient>
     <linearGradient id="stlPanel" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#212630"/>
-      <stop offset="1" stop-color="#1b1f27"/>
+      <stop offset="0" stop-color="#1c2230"/>
+      <stop offset="1" stop-color="#151a24"/>
     </linearGradient>
     <linearGradient id="stlGoldBtn" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#f0c257"/>
       <stop offset="1" stop-color="#dcac33"/>
     </linearGradient>
+    <linearGradient id="stlBlueBtn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4d7fc4"/>
+      <stop offset="1" stop-color="#3a63a0"/>
+    </linearGradient>
+    <radialGradient id="stlWinGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#e8b33c" stop-opacity="0.35"/>
+      <stop offset="0.7" stop-color="#e8b33c" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#e8b33c" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="stlLoseGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#e2554f" stop-opacity="0.30"/>
+      <stop offset="0.7" stop-color="#e2554f" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="#e2554f" stop-opacity="0"/>
+    </radialGradient>
     <filter id="stlShadow" x="-30%" y="-60%" width="160%" height="240%">
       <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#000000" flood-opacity="0.25"/>
     </filter>
@@ -27,109 +41,135 @@
   <rect x="0" y="0" width="1280" height="720" fill="url(#stlBg)"/>
 
   <!-- ============ L1 页头 ============ -->
-  <text x="32" y="44" font-size="20" font-weight="700" fill="#e8b33c">006-结算 · 两套界面：成功 / 失败</text>
-  <text x="32" y="68" font-size="12" fill="#8a93a5">设计定稿（2026-10-27）：一套全局结算屏 × 两种状态；每套实际铺满 1280×720 整屏，此处并排示意（非 1:1）</text>
+  <text x="32" y="40" font-size="20" font-weight="700" fill="#e8b33c">006-结算 · 两套界面 v3.0（视觉参考同类游戏「战斗胜利」结算）</text>
+  <text x="32" y="62" font-size="12" fill="#8a93a5">结构定稿不变（一套全局结算屏 × 成功/失败两态）；本轮重构视觉：菱形徽章标题 + 左标签右数值 + 奖励图标格 + 双按钮；每套实际铺满整屏，此处并排示意</text>
 
   <!-- ============ L2 界面 A：成功结算 ============ -->
   <g filter="url(#stlShadowBig)">
-    <rect x="60" y="96" width="540" height="560" rx="10" fill="url(#stlPanel)" stroke="#2e4a36" stroke-width="2"/>
+    <rect x="60" y="84" width="540" height="586" rx="12" fill="url(#stlPanel)" stroke="#e8b33c" stroke-width="1.5"/>
   </g>
-  <rect x="60" y="96" width="540" height="30" rx="10" fill="#2e4a36"/>
-  <rect x="60" y="116" width="540" height="10" fill="#2e4a36"/>
-  <text x="76" y="117" font-size="13" font-weight="700" fill="#9fe0af">界面 A · 成功结算（撤离成功）</text>
 
-  <text x="92" y="168" font-size="26" font-weight="700" fill="#e8b33c">战斗结算</text>
-  <line x1="92" y1="184" x2="568" y2="184" stroke="#2a2f3a" stroke-width="1"/>
-
-  <!-- 胜负大字：绿 -->
-  <rect x="92" y="206" width="220" height="46" rx="8" fill="#2e4a36"/>
-  <text x="202" y="237" font-size="24" font-weight="700" fill="#9fe0af" text-anchor="middle">撤离成功！</text>
-
-  <!-- 数据行 -->
-  <text x="92" y="290" font-size="16" fill="#e2e6ee">击杀 128 <tspan fill="#5a6572">·</tspan> 用时 04:35 <tspan fill="#5a6572">·</tspan> 拾取 12 件</text>
-
-  <!-- 收益行 -->
-  <text x="92" y="324" font-size="16" font-weight="700" fill="#e8b33c">本关评级 ★★☆ <tspan fill="#b8892f">·</tspan> 结晶收益 ◆340</text>
-  <text x="92" y="350" font-size="14" fill="#9fe0af">✓ 已解锁：第 4 关（新关卡开启）</text>
-
-  <!-- 战利品 -->
-  <text x="92" y="392" font-size="15" fill="#e2e6ee">战利品</text>
-  <g font-size="14" fill="#8a93a5">
-    <text x="92" y="420"><tspan fill="#c9ced9">生锈的匕首</tspan><tspan fill="#5a6572">·白</tspan></text>
-    <text x="92" y="446"><tspan fill="#6fa8e0">火焰水晶</tspan><tspan fill="#5a6572">·蓝</tspan></text>
-    <text x="92" y="472"><tspan fill="#e8b33c">巨兽的犬齿</tspan><tspan fill="#5a6572">·金</tspan></text>
-  </g>
+  <!-- 菱形胜利徽章 -->
+  <circle cx="330" cy="212" r="118" fill="url(#stlWinGlow)"/>
   <g>
-    <circle cx="340" cy="415" r="4" fill="#c9ced9"/>
-    <circle cx="340" cy="441" r="4" fill="#6fa8e0"/>
-    <circle cx="340" cy="467" r="4" fill="#e8b33c"/>
+    <rect x="270" y="152" width="120" height="120" rx="10" transform="rotate(45 330 212)" fill="#221d10" stroke="#e8b33c" stroke-width="3"/>
+    <rect x="284" y="166" width="92" height="92" rx="7" transform="rotate(45 330 212)" fill="none" stroke="#b8892f" stroke-width="1"/>
+    <path d="M330 148 l10 12 -10 12 -10 -12 z" fill="#ffd140"/>
+    <text x="330" y="216" font-size="34" font-weight="800" fill="#ffd140" text-anchor="middle" letter-spacing="3">战斗胜利</text>
+    <text x="330" y="240" font-size="11" fill="#b8892f" text-anchor="middle" letter-spacing="6">VICTORY</text>
   </g>
 
-  <!-- 按钮 -->
-  <g filter="url(#stlShadow)">
-    <rect x="92" y="520" width="320" height="52" rx="8" fill="url(#stlGoldBtn)"/>
+  <!-- 数据区：左标签右数值 -->
+  <g font-size="15">
+    <text x="240" y="372" fill="#8a93a5" text-anchor="end">挑战到达：</text>
+    <text x="258" y="372" font-size="19" font-weight="700" fill="#e2e6ee">第 3 关</text>
+    <text x="240" y="404" fill="#8a93a5" text-anchor="end">关卡评价：</text>
+    <text x="258" y="404" font-size="19" fill="#ffd140" letter-spacing="2">★★<tspan fill="#5a4a22">☆</tspan></text>
+    <text x="240" y="440" fill="#8a93a5" text-anchor="end">获得结晶：</text>
+    <text x="258" y="442" font-size="24" font-weight="800" fill="#ffd140">◆ 340</text>
+    <text x="356" y="440" font-size="13" fill="#9fe0af">✓ 已解锁 第 4 关</text>
   </g>
-  <text x="252" y="554" font-size="19" font-weight="700" fill="#131c2c" text-anchor="middle">返回主城</text>
-  <rect x="92" y="584" width="320" height="52" rx="8" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
-  <text x="252" y="618" font-size="19" fill="#e2e6ee" text-anchor="middle">回主菜单</text>
+  <text x="576" y="372" font-size="12" fill="#5d6575" text-anchor="end">击杀 128 · 用时 04:35</text>
+
+  <!-- 获得奖励 分隔标题 -->
+  <g>
+    <path d="M170 482 h92 M398 482 h92" stroke="#3a4150" stroke-width="1"/>
+    <path d="M282 482 h10 M368 482 h10" stroke="#e8b33c" stroke-width="1" opacity="0.7"/>
+    <text x="330" y="487" font-size="16" font-weight="700" fill="#e2e6ee" text-anchor="middle">✦ 获得奖励 ✦</text>
+  </g>
+
+  <!-- 奖励图标格（品质描边 + 数量角标） -->
+  <g filter="url(#stlShadow)">
+    <rect x="184" y="502" width="64" height="64" rx="8" fill="#20273a" stroke="#c9ced9" stroke-width="1.5"/>
+    <rect x="260" y="502" width="64" height="64" rx="8" fill="#20273a" stroke="#6fa8e0" stroke-width="1.5"/>
+    <rect x="336" y="502" width="64" height="64" rx="8" fill="#2a2340" stroke="#a86fe0" stroke-width="1.5"/>
+    <rect x="412" y="502" width="64" height="64" rx="8" fill="#2b2416" stroke="#e8b33c" stroke-width="2"/>
+  </g>
+  <g text-anchor="middle">
+    <text x="216" y="542" font-size="22" fill="#e2e6ee">◆</text>
+    <rect x="222" y="500" width="24" height="16" rx="8" fill="#12181f" stroke="#3a4150"/>
+    <text x="234" y="512" font-size="11" fill="#c9d4e2" font-weight="700">×2</text>
+    <path d="M292 546 l-12 -14 h8 v-12 h8 v12 h8 z" fill="#6fa8e0"/>
+    <rect x="298" y="500" width="24" height="16" rx="8" fill="#12181f" stroke="#3a4150"/>
+    <text x="310" y="512" font-size="11" fill="#c9d4e2" font-weight="700">×3</text>
+    <rect x="358" y="524" width="20" height="20" rx="4" transform="rotate(45 368 534)" fill="#43306a" stroke="#a86fe0" stroke-width="1.5"/>
+    <rect x="362" y="528" width="12" height="12" transform="rotate(45 368 534)" fill="#a86fe0" opacity="0.6"/>
+    <rect x="374" y="500" width="24" height="16" rx="8" fill="#12181f" stroke="#3a4150"/>
+    <text x="386" y="512" font-size="11" fill="#c9d4e2" font-weight="700">×15</text>
+    <rect x="432" y="518" width="24" height="20" rx="3" fill="#8a6b3a" stroke="#ffd140" stroke-width="1.5"/>
+    <path d="M432 524 h24" stroke="#ffd140" stroke-width="1"/>
+    <rect x="450" y="500" width="24" height="16" rx="8" fill="#12181f" stroke="#3a4150"/>
+    <text x="462" y="512" font-size="11" fill="#c9d4e2" font-weight="700">×1</text>
+  </g>
+  <text x="330" y="586" font-size="12" fill="#5d6575" text-anchor="middle">品质描边：白 / 蓝 / 紫 / 金（与战利品品质色一致）</text>
+
+  <!-- 双按钮：返回主城（蓝） + 下一关（金大 + 倒计时） -->
+  <g filter="url(#stlShadow)">
+    <rect x="118" y="606" width="160" height="50" rx="10" fill="url(#stlBlueBtn)"/>
+  </g>
+  <text x="198" y="638" font-size="18" font-weight="700" fill="#ffffff" text-anchor="middle">返回主城</text>
+  <g filter="url(#stlShadow)">
+    <rect x="298" y="602" width="244" height="58" rx="10" fill="url(#stlGoldBtn)" stroke="#ffe073" stroke-width="1.5"/>
+  </g>
+  <text x="420" y="638" font-size="21" font-weight="800" fill="#131c2c" text-anchor="middle">下一关 ▶</text>
+  <text x="420" y="676" font-size="13" fill="#e8b33c" text-anchor="middle">00:06 后自动进入（可点「返回主城」取消）</text>
 
   <!-- ============ L3 界面 B：失败结算 ============ -->
   <g filter="url(#stlShadowBig)">
-    <rect x="680" y="96" width="540" height="560" rx="10" fill="url(#stlPanel)" stroke="#4a2e2e" stroke-width="2"/>
+    <rect x="680" y="84" width="540" height="586" rx="12" fill="url(#stlPanel)" stroke="#5a3a3a" stroke-width="1.5"/>
   </g>
-  <rect x="680" y="96" width="540" height="30" rx="10" fill="#4a2e2e"/>
-  <rect x="680" y="116" width="540" height="10" fill="#4a2e2e"/>
-  <text x="696" y="117" font-size="13" font-weight="700" fill="#e0a3a3">界面 B · 失败结算（不幸阵亡）</text>
 
-  <text x="712" y="168" font-size="26" font-weight="700" fill="#e8b33c">战斗结算</text>
-  <line x1="712" y1="184" x2="1188" y2="184" stroke="#2a2f3a" stroke-width="1"/>
+  <!-- 菱形失败徽章 -->
+  <circle cx="950" cy="212" r="118" fill="url(#stlLoseGlow)"/>
+  <g>
+    <rect x="890" y="152" width="120" height="120" rx="10" transform="rotate(45 950 212)" fill="#241416" stroke="#e0a3a3" stroke-width="3"/>
+    <rect x="904" y="166" width="92" height="92" rx="7" transform="rotate(45 950 212)" fill="none" stroke="#a06a6a" stroke-width="1"/>
+    <path d="M950 148 l10 12 -10 12 -10 -12 z" fill="#e0a3a3"/>
+    <text x="950" y="216" font-size="34" font-weight="800" fill="#e0a3a3" text-anchor="middle" letter-spacing="3">不幸阵亡</text>
+    <text x="950" y="240" font-size="11" fill="#a06a6a" text-anchor="middle" letter-spacing="6">DEFEAT</text>
+  </g>
 
-  <!-- 胜负大字：红 -->
-  <rect x="712" y="206" width="220" height="46" rx="8" fill="#4a2e2e"/>
-  <text x="822" y="237" font-size="24" font-weight="700" fill="#e0a3a3" text-anchor="middle">不幸阵亡…</text>
+  <!-- 数据区 -->
+  <g font-size="15">
+    <text x="860" y="372" fill="#8a93a5" text-anchor="end">本局收获：</text>
+    <text x="878" y="372" font-size="19" font-weight="700" fill="#e0a3a3">全部丢失</text>
+    <text x="860" y="404" fill="#8a93a5" text-anchor="end">击杀辛苦钱：</text>
+    <text x="878" y="404" font-size="19" font-weight="700" fill="#ffd140">◆ 11</text>
+    <text x="948" y="404" font-size="13" fill="#8a93a5">已入账（按 30% 折算）</text>
+    <text x="860" y="436" fill="#8a93a5" text-anchor="end">局外等级：</text>
+    <text x="878" y="436" font-size="17" font-weight="700" fill="#9fe0af">已保住 ✓</text>
+  </g>
+  <text x="1196" y="372" font-size="12" fill="#5d6575" text-anchor="end">击杀 37 · 用时 02:18</text>
 
-  <!-- 数据行 -->
-  <text x="712" y="290" font-size="16" fill="#e2e6ee">击杀 37 <tspan fill="#5a6572">·</tspan> 用时 02:18 <tspan fill="#5a6572">·</tspan> 拾取 5 件</text>
+  <!-- 战利品遗失 分隔标题 -->
+  <g>
+    <path d="M790 482 h92 M1018 482 h92" stroke="#3a4150" stroke-width="1"/>
+    <text x="950" y="487" font-size="16" font-weight="700" fill="#e2e6ee" text-anchor="middle">✦ 战利品 ✦</text>
+  </g>
+  <text x="950" y="540" font-size="15" fill="#5a6572" text-anchor="middle">本局收获未带出 · 全数遗失</text>
 
-  <!-- 收益行（失败口径，两条） -->
-  <text x="712" y="324" font-size="16" font-weight="700" fill="#e0a3a3">本局收获：全部丢失</text>
-  <text x="712" y="350" font-size="14" fill="#8a93a5">击杀辛苦钱 ◆11 已入账（按 30% 折算）· 局外等级保住</text>
-
-  <!-- 战利品（失败无清单） -->
-  <text x="712" y="392" font-size="15" fill="#e2e6ee">战利品</text>
-  <text x="712" y="420" font-size="14" fill="#5a6572">本局收获未带出 · 全数遗失</text>
-
-  <!-- 按钮 -->
+  <!-- 单按钮：返回主城（金） -->
   <g filter="url(#stlShadow)">
-    <rect x="712" y="520" width="320" height="52" rx="8" fill="url(#stlGoldBtn)"/>
+    <rect x="828" y="606" width="244" height="58" rx="10" fill="url(#stlGoldBtn)" stroke="#ffe073" stroke-width="1.5"/>
   </g>
-  <text x="872" y="554" font-size="19" font-weight="700" fill="#131c2c" text-anchor="middle">返回主城</text>
-  <rect x="712" y="584" width="320" height="52" rx="8" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
-  <text x="872" y="618" font-size="19" fill="#e2e6ee" text-anchor="middle">回主菜单</text>
+  <text x="950" y="642" font-size="21" font-weight="800" fill="#131c2c" text-anchor="middle">返回主城</text>
 
   <!-- ============ L4 中缝差异标注 ============ -->
   <g>
-    <path d="M640 96 L640 656" stroke="#3a4150" stroke-width="1" stroke-dasharray="6 5"/>
+    <path d="M640 84 L640 670" stroke="#3a4150" stroke-width="1" stroke-dasharray="6 5"/>
     <g font-size="11" fill="#8a93a5">
-      <text x="640" y="230" text-anchor="middle" fill="#9fe0af">绿 ← 胜负大字 → 红</text>
-      <text x="640" y="324" text-anchor="middle">全额收益 ← 收益行 → 全丢+三成</text>
-      <text x="640" y="350" text-anchor="middle">有解锁行 ← 差异 → 无解锁行</text>
-      <text x="640" y="440" text-anchor="middle">品质清单 ← 战利品 → 遗失说明</text>
-      <text x="640" y="560" text-anchor="middle" fill="#e8b33c">按钮两套一致</text>
+      <text x="640" y="216" text-anchor="middle" fill="#9fe0af">金徽章+VICTORY ← 徽章 → 红徽章+DEFEAT</text>
+      <text x="640" y="380" text-anchor="middle">全额+解锁 ← 数据区 → 全丢+三成入账</text>
+      <text x="640" y="484" text-anchor="middle">奖励图标格 ← 分隔区 → 遗失说明</text>
+      <text x="640" y="620" text-anchor="middle" fill="#e8b33c">成功=双按钮（下一关+倒计时） / 失败=单按钮</text>
     </g>
   </g>
 
-  <!-- ============ L5 底部说明 ============ -->
+  <!-- ============ L5 底部规格速查 ============ -->
   <g>
-    <rect x="32" y="668" width="760" height="40" rx="8" fill="#0d1017" stroke="#2b3240"/>
-    <text x="48" y="686" font-size="11" fill="#8a93a5">规格速查：面板底 #1d2027　标题 30 金　胜负大字 24 号（成功 #9fe0af / 失败 #e0a3a3，底 #2e4a36 / #4a2e2e）</text>
-    <text x="48" y="702" font-size="11" fill="#8a93a5">正文 16 #e2e6ee　清单 #8a93a5　按钮 320×52 rx8（金 #e8b33c / 灰 #252a34）　色值均来自代码常量，未新增颜色</text>
-  </g>
-  <g>
-    <rect x="812" y="668" width="436" height="40" rx="8" fill="#12181f" stroke="#e8b33c" stroke-width="1"/>
-    <text x="828" y="686" font-size="11" font-weight="700" fill="#e8b33c">v2.0 变更（2026-10-27 反馈）</text>
-    <text x="828" y="702" font-size="11" fill="#e2e6ee">由单张胜利图改为成功/失败两套界面；代码板子甲/乙合并仍是待办 T1</text>
+    <rect x="32" y="680" width="1216" height="30" rx="6" fill="#0d1017" stroke="#2b3240"/>
+    <text x="48" y="700" font-size="11" fill="#8a93a5">v3.0 规格：菱形徽章 120×120 rotate45（成功金 #ffd140/#e8b33c · 失败红 #e0a3a3，发光晕 r118）｜数据行＝左标签 15 灰右对齐 + 右数值 19~24 白/金｜奖励格 64×64 品质描边白蓝紫金 + ×N 角标｜按钮：次 160×50 蓝 / 主 244×58 金 rx10；「下一关」倒计时自动进关 = T21 待拍板</text>
   </g>
 
-  <text x="1248" y="714" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-结算总SVG文档 / 1280×720 / v2.0 两套界面</text>
+  <text x="1248" y="714" font-size="11" fill="#5d6575" text-anchor="end" opacity="0.8">A002-UI层-结算总SVG文档 / 1280×720 / v3.0</text>
 </svg>
