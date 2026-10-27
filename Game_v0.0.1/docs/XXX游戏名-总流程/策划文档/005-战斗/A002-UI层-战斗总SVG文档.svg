@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
-  <title>005-战斗 · 整屏总图 v4.0（升级窗口改卡片式：竖卡并排+职业顶带+星级+数值高亮+归属徽章+刷新机制）</title>
+  <title>005-战斗 · 整屏总图 v5.0（HUD 血条删除 / 经验条+等级落底 / 圆形图标按钮 / 强化入口按钮+次数 / 强化面板可关闭可点击 / 删小字）</title>
 
   <defs>
     <linearGradient id="btlBg" x1="0" y1="0" x2="0.4" y2="1">
@@ -17,10 +17,6 @@
     <linearGradient id="btlXp" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#bff2ff"/>
       <stop offset="1" stop-color="#7fd8ef"/>
-    </linearGradient>
-    <linearGradient id="btlHp" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#66e08a"/>
-      <stop offset="1" stop-color="#3fae62"/>
     </linearGradient>
     <filter id="btlBlur" x="-20%" y="-20%" width="140%" height="140%">
       <feGaussianBlur stdDeviation="3.5"/>
@@ -50,63 +46,85 @@
   </g>
   <rect x="0" y="0" width="1280" height="720" fill="url(#btlVig)"/>
 
-  <!-- ============ HUD（弹出升级窗口时被黑幕压暗） ============ -->
+  <!-- ============ HUD v5.0（弹出升级窗口时被黑幕压暗） ============ -->
   <g>
-    <rect x="32" y="8" width="1216" height="14" rx="7" fill="#0d0d14" fill-opacity="0.92"/>
-    <rect x="34" y="10" width="730" height="10" rx="5" fill="url(#btlXp)"/>
-    <text x="640" y="46" font-size="17" fill="#ffffff" text-anchor="middle" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">Lv 12　·　击败 32/60　·　波次 5　·　剩余 96s</text>
-    <rect x="440" y="60" width="400" height="30" rx="6" fill="#1a1710" fill-opacity="0.88" stroke="#e8b33c" stroke-width="1.5"/>
-    <text x="640" y="80" font-size="15" fill="#ffe073" text-anchor="middle" stroke="#000000" stroke-width="3" paint-order="stroke" stroke-linejoin="round">撤离点已出现：进圈读条 8 秒撤离</text>
-    <path d="M20 30 c0 -4 4 -6 7 -3 c3 -3 7 -1 7 3 c0 4 -7 9 -7 9 c0 0 -7 -5 -7 -9 z" fill="#e2554f" stroke="#000000" stroke-width="2.5" paint-order="stroke"/>
-    <rect x="42" y="22" width="180" height="12" rx="6" fill="#0d0d14" fill-opacity="0.88"/>
-    <rect x="43.5" y="23.5" width="169" height="9" rx="4.5" fill="url(#btlHp)"/>
-    <text x="232" y="33" font-size="13" fill="#cfe8d6" stroke="#000000" stroke-width="3" paint-order="stroke">94/94</text>
+    <!-- 顶部合并文案（等级已移至底部经验条旁） -->
+    <text x="640" y="34" font-size="17" fill="#ffffff" text-anchor="middle" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">击败 32/60　·　波次 5　·　剩余 96s</text>
+    <!-- Z7 事件 Banner -->
+    <rect x="440" y="48" width="400" height="30" rx="6" fill="#1a1710" fill-opacity="0.88" stroke="#e8b33c" stroke-width="1.5"/>
+    <text x="640" y="68" font-size="15" fill="#ffe073" text-anchor="middle" stroke="#000000" stroke-width="3" paint-order="stroke" stroke-linejoin="round">撤离点已出现：进圈读条 8 秒撤离</text>
+    <!-- 右上资源（上移；HP 已删：角色头顶自带血条） -->
     <g text-anchor="end" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">
-      <text x="1264" y="100" font-size="18" fill="#ffe073">✦ 金币 128</text>
-      <text x="1264" y="126" font-size="16" fill="#c9d4e2">宝箱 2　·　场上怪 27</text>
+      <text x="1264" y="40" font-size="18" fill="#ffe073">✦ 金币 128</text>
+      <text x="1264" y="66" font-size="16" fill="#c9d4e2">宝箱 2　·　场上怪 27</text>
     </g>
-    <path d="M22 614 h9 v8 h8 v5 h-17 z" fill="#e6d9b3" stroke="#000000" stroke-width="2" paint-order="stroke"/>
-    <path d="M14 616 h6 M12 621 h7 M14 626 h6" stroke="#e6d9b3" stroke-width="1.8" stroke-linecap="round"/>
-    <text x="52" y="630" font-size="18" fill="#e6d9b3" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">移速 -50%</text>
-    <rect x="16" y="646" width="168" height="40" rx="8" fill="#0d0f1a" fill-opacity="0.85" stroke="#3a4150" stroke-width="1.5"/>
-    <rect x="30" y="656" width="18" height="14" rx="2" fill="none" stroke="#e2e6ee" stroke-width="1.8"/>
-    <path d="M33 656 v-3 a6 5 0 0 1 12 0 v3" fill="none" stroke="#e2e6ee" stroke-width="1.8"/>
-    <text x="58" y="672" font-size="15" fill="#e2e6ee">背包 (Tab)</text>
-    <rect x="290" y="596" width="700" height="96" rx="10" fill="#0d0f1a" fill-opacity="0.68"/>
-    <circle cx="334" cy="644" r="24" fill="#d97333" stroke="#ffd140" stroke-width="2"/>
-    <text x="334" y="652" font-size="20" fill="#ffffff" text-anchor="middle">猎</text>
-    <rect x="368" y="622" width="44" height="44" rx="6" fill="#232a38" stroke="#e8b33c" stroke-width="1.5"/>
-    <text x="390" y="650" font-size="17" fill="#ffe073" text-anchor="middle">✦</text>
-    <circle cx="407" cy="624" r="9" fill="#e8b33c"/>
-    <text x="407" y="628" font-size="11" fill="#141414" text-anchor="middle" font-weight="700">3</text>
-    <circle cx="580" cy="644" r="24" fill="#4080d9" stroke="#3a4150" stroke-width="2"/>
-    <text x="580" y="652" font-size="20" fill="#ffffff" text-anchor="middle">守</text>
-    <rect x="614" y="622" width="44" height="44" rx="6" fill="#232a38" stroke="#3a4150" stroke-width="1.5"/>
-    <circle cx="653" cy="624" r="9" fill="#5d6575"/>
-    <text x="653" y="628" font-size="11" fill="#141414" text-anchor="middle" font-weight="700">2</text>
-    <circle cx="826" cy="644" r="24" fill="#4dbf73" stroke="#3a4150" stroke-width="2"/>
-    <text x="826" y="652" font-size="20" fill="#ffffff" text-anchor="middle">医</text>
-    <rect x="860" y="622" width="44" height="44" rx="6" fill="#232a38" stroke="#3a4150" stroke-width="1.5"/>
-    <circle cx="899" cy="624" r="9" fill="#e8b33c"/>
-    <text x="899" y="628" font-size="11" fill="#141414" text-anchor="middle" font-weight="700">4</text>
-    <text x="1264" y="592" font-size="13" fill="#ccd9e6" fill-opacity="0.85" text-anchor="end" stroke="#000000" stroke-width="3" paint-order="stroke">WASD移动 · 左键/J射击 · H帮助</text>
-    <rect x="1096" y="630" width="168" height="40" rx="8" fill="#1a331f" stroke="#4de666" stroke-width="2"/>
-    <path d="M1120 640 l-6 10 h5 l-3 9 l9 -12 h-5 z" fill="#8cd99a"/>
-    <text x="1134" y="656" font-size="15" fill="#8cd99a">自动战斗 · 开</text>
+    <!-- 移速负重 -->
+    <path d="M22 582 h9 v8 h8 v5 h-17 z" fill="#e6d9b3" stroke="#000000" stroke-width="2" paint-order="stroke"/>
+    <path d="M14 584 h6 M12 589 h7 M14 594 h6" stroke="#e6d9b3" stroke-width="1.8" stroke-linecap="round"/>
+    <text x="52" y="598" font-size="18" fill="#e6d9b3" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">移速 -50%</text>
+    <!-- 左下：背包 = 圆形图标按钮（纯图标 + Tab 角标） -->
+    <g>
+      <circle cx="44" cy="648" r="26" fill="#0d0f1a" fill-opacity="0.9" stroke="#5d6575" stroke-width="2"/>
+      <rect x="33" y="642" width="22" height="16" rx="3" fill="none" stroke="#e2e6ee" stroke-width="2"/>
+      <path d="M37 642 v-4 a7 6 0 0 1 14 0 v4" fill="none" stroke="#e2e6ee" stroke-width="2"/>
+      <path d="M33 650 h22" stroke="#e2e6ee" stroke-width="1.6" opacity="0.7"/>
+      <rect x="48" y="662" width="30" height="14" rx="7" fill="#232a38" stroke="#5d6575" stroke-width="1"/>
+      <text x="63" y="672" font-size="9.5" fill="#c9d4e2" text-anchor="middle" font-weight="700">Tab</text>
+    </g>
+    <!-- 左下：强化入口 = 圆形图标按钮 + 剩余次数角标（点击打开 Z8 面板） -->
+    <g>
+      <circle cx="114" cy="648" r="26" fill="#0d0f1a" fill-opacity="0.9" stroke="#e8b33c" stroke-width="2"/>
+      <rect x="104" y="638" width="20" height="20" rx="4" transform="rotate(45 114 648)" fill="#2a2410" stroke="#ffd140" stroke-width="2"/>
+      <path d="M114 641 v14 M107 648 h14" stroke="#ffe073" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="132" cy="630" r="11" fill="#ffd140" stroke="#141414" stroke-width="2"/>
+      <text x="132" y="635" font-size="12" fill="#141414" text-anchor="middle" font-weight="700">3</text>
+    </g>
+    <!-- 底部技能栏（上移，给底部经验条让位） -->
+    <rect x="290" y="598" width="700" height="82" rx="10" fill="#0d0f1a" fill-opacity="0.68"/>
+    <circle cx="334" cy="640" r="22" fill="#d97333" stroke="#ffd140" stroke-width="2"/>
+    <text x="334" y="647" font-size="18" fill="#ffffff" text-anchor="middle">猎</text>
+    <rect x="368" y="618" width="44" height="44" rx="6" fill="#232a38" stroke="#e8b33c" stroke-width="1.5"/>
+    <text x="390" y="646" font-size="17" fill="#ffe073" text-anchor="middle">✦</text>
+    <circle cx="407" cy="620" r="9" fill="#e8b33c"/>
+    <text x="407" y="624" font-size="11" fill="#141414" text-anchor="middle" font-weight="700">3</text>
+    <circle cx="580" cy="640" r="22" fill="#4080d9" stroke="#3a4150" stroke-width="2"/>
+    <text x="580" y="647" font-size="18" fill="#ffffff" text-anchor="middle">守</text>
+    <rect x="614" y="618" width="44" height="44" rx="6" fill="#232a38" stroke="#3a4150" stroke-width="1.5"/>
+    <circle cx="653" cy="620" r="9" fill="#5d6575"/>
+    <text x="653" y="624" font-size="11" fill="#141414" text-anchor="middle" font-weight="700">2</text>
+    <circle cx="826" cy="640" r="22" fill="#4dbf73" stroke="#3a4150" stroke-width="2"/>
+    <text x="826" y="647" font-size="18" fill="#ffffff" text-anchor="middle">医</text>
+    <rect x="860" y="618" width="44" height="44" rx="6" fill="#232a38" stroke="#3a4150" stroke-width="1.5"/>
+    <circle cx="899" cy="620" r="9" fill="#e8b33c"/>
+    <text x="899" y="624" font-size="11" fill="#141414" text-anchor="middle" font-weight="700">4</text>
+    <!-- 右下：自动战斗 = 圆形图标按钮（开=翡翠绿环 + 绿闪电；关=灰环）+ G 角标 -->
+    <g>
+      <circle cx="1216" cy="648" r="26" fill="#12241a" fill-opacity="0.92" stroke="#4de666" stroke-width="2.5"/>
+      <path d="M1219 632 l-11 15 h7 l-4 15 l13 -18 h-7 z" fill="#8cd99a"/>
+      <rect x="1220" y="662" width="26" height="14" rx="7" fill="#232a38" stroke="#5d6575" stroke-width="1"/>
+      <text x="1233" y="672" font-size="9.5" fill="#c9d4e2" text-anchor="middle" font-weight="700">G</text>
+    </g>
+    <!-- 底部通栏：共享经验条 + 等级（全屏唯一出处，落屏最底） -->
+    <rect x="16" y="697" width="52" height="17" rx="8" fill="#1a2430" stroke="#7fd8ef" stroke-width="1"/>
+    <text x="42" y="709" font-size="11.5" fill="#bff2ff" text-anchor="middle" font-weight="700">Lv 12</text>
+    <rect x="78" y="701" width="1186" height="11" rx="5.5" fill="#0d0d14" fill-opacity="0.92"/>
+    <rect x="80" y="703" width="710" height="7" rx="3.5" fill="url(#btlXp)"/>
   </g>
 
   <!-- ============ 45% 黑幕 ============ -->
   <rect x="0" y="0" width="1280" height="720" fill="#000000" fill-opacity="0.45"/>
 
-  <!-- ============ Z8 升级强化窗口 v4.0（卡片式，参考同类手游技能选择） ============ -->
+  <!-- ============ Z8 升级强化窗口 v5.0（卡片式：可点击 / 可关闭 / 删小字） ============ -->
   <g>
-    <!-- 面板本体 -->
     <rect x="190" y="76" width="900" height="560" rx="14" fill="#131722" fill-opacity="0.97" stroke="#e8b33c" stroke-width="2"/>
     <rect x="198" y="84" width="884" height="544" rx="10" fill="none" stroke="#2b3240" stroke-width="1"/>
     <text x="640" y="124" font-size="26" font-weight="700" fill="#ffe073" text-anchor="middle">✦ 选择一项强化 ✦</text>
     <path d="M340 138 h210 M730 138 h210" stroke="#e8b33c" stroke-width="1" opacity="0.55"/>
+    <!-- 关闭按钮：✕（Esc 同效，次数保留） -->
+    <circle cx="1058" cy="104" r="14" fill="#2a2f3d" stroke="#5d6575" stroke-width="1.5"/>
+    <path d="M1052 98 l12 12 M1064 98 l-12 12" stroke="#c9d4e2" stroke-width="2" stroke-linecap="round"/>
 
-    <!-- 卡1 猎手·输出（红顶带，可选中高亮态） -->
+    <!-- 卡1 猎手·输出（红顶带，可选中/悬停高亮态） -->
     <g>
       <rect x="216" y="152" width="200" height="320" rx="12" fill="#1c2230" stroke="#ffd140" stroke-width="2"/>
       <path d="M216 164 a12 12 0 0 1 12 -12 h176 a12 12 0 0 1 12 12 v18 h-200 z" fill="#ff6b6b"/>
@@ -182,13 +200,12 @@
       <text x="964" y="430" font-size="14" fill="#ffffff" text-anchor="middle">医</text>
     </g>
 
-    <!-- 刷新剩余次数 + 刷新按钮 -->
-    <text x="640" y="498" font-size="16" fill="#f2fafe" text-anchor="middle">本局强化刷新剩余次数：<tspan fill="#ffe073" font-weight="700">3</tspan></text>
-    <rect x="540" y="512" width="200" height="46" rx="10" fill="#25314a" stroke="#6cb2ff" stroke-width="2"/>
-    <path d="M574 535 a10 10 0 1 1 3 7 M576 528 v7 h7" fill="none" stroke="#bfd9ff" stroke-width="2.2" stroke-linecap="round"/>
-    <text x="654" y="541" font-size="16" fill="#bfd9ff" text-anchor="middle" font-weight="700">刷 新 (R)</text>
-    <text x="640" y="584" font-size="13" fill="#8d95a5" text-anchor="middle">按 1~4 或点击卡片选择　·　选择期间世界暂停　·　Esc 不可跳过（必须选一项）</text>
-    <text x="640" y="604" font-size="12" fill="#5d6575" text-anchor="middle">扩展位：右下角预留小圆钮（跳过 / 广告刷新，局外解锁后开放）</text>
+    <!-- 刷新按钮（剩余次数并入按钮角标，不再单独一行小字） -->
+    <rect x="540" y="500" width="200" height="46" rx="10" fill="#25314a" stroke="#6cb2ff" stroke-width="2"/>
+    <path d="M574 523 a10 10 0 1 1 3 7 M576 516 v7 h7" fill="none" stroke="#bfd9ff" stroke-width="2.2" stroke-linecap="round"/>
+    <text x="648" y="529" font-size="16" fill="#bfd9ff" text-anchor="middle" font-weight="700">刷 新 (R)</text>
+    <circle cx="744" cy="500" r="12" fill="#6cb2ff" stroke="#141414" stroke-width="2"/>
+    <text x="744" y="505" font-size="12" fill="#141414" text-anchor="middle" font-weight="700">3</text>
   </g>
 
   <!-- ============ 标注层 ============ -->
@@ -198,30 +215,31 @@
       <rect x="432" y="152" width="200" height="320" rx="12"/>
       <rect x="648" y="152" width="200" height="320" rx="12"/>
       <rect x="864" y="152" width="200" height="320" rx="12"/>
-      <rect x="540" y="512" width="200" height="46" rx="10"/>
+      <rect x="540" y="500" width="200" height="46" rx="10"/>
     </g>
     <g font-size="11" fill="#8d95a5">
-      <text x="1104" y="180">Z8 卡片式选项卡</text>
-      <text x="1104" y="196">卡 200×320 ×4</text>
-      <text x="1104" y="212">间距 16 · 圆角 12</text>
-      <text x="1104" y="228">顶带 30 = 类别色</text>
-      <text x="1104" y="244">（输出红/全局金/</text>
-      <text x="1104" y="260">防御蓝/辅助绿）</text>
-      <text x="1104" y="276">宝石座 56 旋转 45°</text>
-      <text x="1104" y="292">+Lv 增量角标</text>
-      <text x="1104" y="308">★ 等级/稀有度</text>
-      <text x="1104" y="324">描述数值高亮：</text>
-      <text x="1104" y="340">增益绿 #8cd99a</text>
-      <text x="1104" y="356">负面红 #ff8a84</text>
-      <text x="1104" y="372">底部徽章=归属</text>
-      <text x="1104" y="388">（英雄头像/全局）</text>
-      <text x="1104" y="416">刷新按钮 200×46</text>
-      <text x="1104" y="432">R 键 · 剩余次数</text>
-      <text x="1104" y="448">面板 900×560</text>
-      <text x="1104" y="464">45% 黑幕 · 暂停</text>
+      <text x="1104" y="180">Z8 卡片式 ×4 · 可点击</text>
+      <text x="1104" y="196">卡 200×320 · 间距 16</text>
+      <text x="1104" y="212">顶带=类别色</text>
+      <text x="1104" y="228">宝石座 56 旋转 45°</text>
+      <text x="1104" y="244">★ 等级 · 数值高亮</text>
+      <text x="1104" y="260">（增益绿/负面红）</text>
+      <text x="1104" y="276">徽章=归属</text>
+      <text x="1104" y="304">✕ / Esc 关闭面板</text>
+      <text x="1104" y="320">（次数保留可再开）</text>
+      <text x="1104" y="336">刷新 200×46 · R 键</text>
+      <text x="1104" y="352">次数并入按钮角标</text>
+      <text x="1104" y="368">底部两行小字已删</text>
+      <text x="1104" y="408">HUD：血条已删</text>
+      <text x="1104" y="424">（角色头顶自带）</text>
+      <text x="1104" y="440">经验条+Lv 落屏最底</text>
+      <text x="1104" y="456">强化入口：左下圆钮</text>
+      <text x="1104" y="472">+次数角标，点开 Z8</text>
+      <text x="1104" y="488">背包/自动战斗 =</text>
+      <text x="1104" y="504">圆形图标按钮 r26</text>
     </g>
   </g>
 
-  <text x="16" y="712" font-size="11" fill="#5d6575">虚线金字为标注层，游戏内不显示</text>
-  <text x="1264" y="712" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-战斗总SVG文档 / 1280×720 / v4.0（升级窗口改卡片式）</text>
+  <text x="16" y="30" font-size="11" fill="#5d6575" opacity="0.85">虚线金字为标注层，游戏内不显示</text>
+  <text x="1264" y="690" font-size="11" fill="#5d6575" text-anchor="end" opacity="0.85">A002-UI层-战斗总SVG文档 / 1280×720 / v5.0</text>
 </svg>
