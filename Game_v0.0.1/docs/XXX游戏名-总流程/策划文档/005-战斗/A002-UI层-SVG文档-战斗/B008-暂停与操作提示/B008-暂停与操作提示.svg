@@ -1,172 +1,63 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
-  <title>B008 暂停与操作提示 界面规格图（1280×720）</title>
-
-  <defs>
-    <linearGradient id="btlBg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0d1017"/>
-      <stop offset="1" stop-color="#161b26"/>
-    </linearGradient>
-    <linearGradient id="btlPanel" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1d2330"/>
-      <stop offset="1" stop-color="#141922"/>
-    </linearGradient>
-    <marker id="btlArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
-    </marker>
-    <marker id="btlArrowS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
-    </marker>
-  </defs>
-
-  <rect x="0" y="0" width="1280" height="720" fill="url(#btlBg)"/>
-  <g stroke="#1a2130" stroke-width="1" opacity="0.55">
-    <path d="M0 120 L1280 120 M0 300 L1280 300 M0 500 L1280 500"/>
-    <path d="M320 0 L320 720 M640 0 L640 720 M960 0 L960 720"/>
+  <title>B008 暂停与操作提示 · v5.0 定稿（圆形纯图标按钮 r26：背包左下 / 强化入口左下 / 自动战斗右下；提示两行精简）</title>
+  <rect width="1280" height="720" fill="#10151d"/>
+  <g opacity="0.15">
+    <rect x="0" y="0" width="1280" height="720" fill="#1a2230"/>
   </g>
 
-  <rect x="0" y="0" width="1280" height="64" fill="url(#btlPanel)"/>
-  <rect x="0" y="62" width="1280" height="2" fill="#2b3240"/>
-  <text x="32" y="40" font-size="22" font-weight="700" fill="#f2fafe">B008 · 右下按钮组 + 操作提示（Esc 暂停）</text>
-  <text x="1248" y="40" font-size="13" fill="#8d95a5" text-anchor="end">按钮 150 × 30　｜　提示 18 号右对齐</text>
+  <!-- 左下：移速（其上，见 B005） + 两颗圆形按钮 -->
+  <text x="52" y="560" font-size="14" fill="#5d6575">▲ 移速 -50%（B005）</text>
 
-  <!-- ================= 放大 2 倍：右下组件群 ================= -->
-  <g>
-    <rect x="32" y="84" width="700" height="300" rx="12" fill="#12161f" fill-opacity="0.88" stroke="#2b3240" stroke-width="1.5"/>
-    <text x="52" y="110" font-size="12" fill="#5d6575" letter-spacing="2">放大 2 倍 · 右下角组件群（右下角贴屏幕右下）</text>
+  <!-- 背包（圆形 r26 + 箱子图标 + Tab 角标） -->
+  <circle cx="44" cy="648" r="26" fill="#1d2432" stroke="#4a5568" stroke-width="2"/>
+  <rect x="34" y="640" width="20" height="16" rx="3" fill="none" stroke="#e2e6ee" stroke-width="2"/>
+  <path d="M34 646 h20 M44 640 v-3" stroke="#e2e6ee" stroke-width="2"/>
+  <rect x="54" y="630" width="30" height="16" rx="4" fill="#131c2c" stroke="#4a5568"/>
+  <text x="69" y="642" font-size="10" fill="#c9ced9" text-anchor="middle" font-weight="700">Tab</text>
+  <text x="44" y="694" font-size="11" fill="#8a93a5" text-anchor="middle">背包</text>
 
-    <!-- 屏幕右边缘参考 -->
-    <path d="M700 128 L700 366" stroke="#e2554f" stroke-width="1" stroke-dasharray="5 4"/>
-    <text x="694" y="378" font-size="11" fill="#ff7b73" text-anchor="end">右边缘 x=1280</text>
+  <!-- 强化入口（圆形 r26 + 菱形图标 + 剩余次数角标） -->
+  <circle cx="110" cy="648" r="26" fill="#1d2432" stroke="#e8b33c" stroke-width="2"/>
+  <rect x="100" y="638" width="20" height="20" rx="3" fill="none" stroke="#e8b33c" stroke-width="2" transform="rotate(45 110 648)"/>
+  <circle cx="128" cy="630" r="10" fill="#e8b33c"/>
+  <text x="128" y="634" font-size="11" fill="#131c2c" text-anchor="middle" font-weight="700">2</text>
+  <text x="110" y="694" font-size="11" fill="#8a93a5" text-anchor="middle">强化</text>
 
-    <!-- 自动战斗按钮 300×60 -->
-    <rect x="396" y="146" width="300" height="60" rx="8" fill="#252a34" stroke="#3a4150" stroke-width="3"/>
-    <text x="546" y="185" font-size="30" fill="#e2e6ee" text-anchor="middle">自动战斗 · 关</text>
+  <!-- 右下：自动战斗（圆形 r26 + 闪电；开=翡翠绿环） -->
+  <circle cx="1216" cy="648" r="26" fill="#1a331f" stroke="#2e7d4f" stroke-width="2.5"/>
+  <path d="M1220 634 l-10 16 h7 l-3 12 12 -17 h-7 z" fill="#6bd88a"/>
+  <rect x="1226" y="630" width="24" height="16" rx="4" fill="#131c2c" stroke="#4a5568"/>
+  <text x="1238" y="642" font-size="10" fill="#c9ced9" text-anchor="middle" font-weight="700">G</text>
+  <text x="1216" y="694" font-size="11" fill="#6bd88a" text-anchor="middle">自动战斗 · 开</text>
 
-    <!-- 背包按钮 -->
-    <rect x="396" y="214" width="300" height="60" rx="8" fill="#252a34" stroke="#3a4150" stroke-width="3"/>
-    <text x="546" y="253" font-size="30" fill="#e2e6ee" text-anchor="middle">背包 (Tab)</text>
+  <!-- 对比：关态 -->
+  <circle cx="1120" cy="648" r="26" fill="#1d2432" stroke="#4a5568" stroke-width="2"/>
+  <path d="M1124 634 l-10 16 h7 l-3 12 12 -17 h-7 z" fill="#8a93a5"/>
+  <text x="1120" y="694" font-size="11" fill="#8a93a5" text-anchor="middle">自动战斗 · 关</text>
 
-    <!-- 操作提示 36 号 -->
-    <text x="696" y="322" font-size="36" fill="#ccd9e6" fill-opacity="0.9" text-anchor="end" stroke="#000000" stroke-width="7" paint-order="stroke" stroke-linejoin="round">WASD移动 · 鼠标瞄准 · 左键/J射击 · Tab背包 · C水晶 · Esc暂停 · G自动战斗</text>
+  <!-- 操作提示两行（精简） -->
+  <text x="1080" y="588" font-size="13" fill="#8a93a5" text-anchor="end">WASD 移动 · J 攻击 · K 技能</text>
+  <text x="1080" y="608" font-size="13" fill="#5d6575" text-anchor="end">按 H 展开全部提示 ▸</text>
 
-    <!-- 尺寸标注 -->
-    <g stroke="#e8b33c" stroke-width="1.2" fill="none">
-      <path d="M396 132 L696 132" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
-      <path d="M376 146 L376 206 M368 146 L384 146 M368 206 L384 206" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
-      <path d="M352 146 L352 214 M344 146 L360 146 M344 214 L360 214" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
-      <path d="M352 214 L352 274 M344 214 L360 214 M344 274 L360 274" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
+  <!-- 标注 -->
+  <g opacity="0.55">
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3" fill="none">
+      <circle cx="44" cy="648" r="26"/><circle cx="1216" cy="648" r="26"/>
     </g>
-    <text x="546" y="126" font-size="12" fill="#e8b33c" text-anchor="middle">150（2×）</text>
-    <text x="388" y="180" font-size="12" fill="#e8b33c">30</text>
-    <text x="338" y="184" font-size="11" fill="#8a93a5" text-anchor="end">距底 108</text>
-    <text x="338" y="250" font-size="11" fill="#8a93a5" text-anchor="end">距底 74</text>
-
-    <text x="52" y="360" font-size="11" fill="#5d6575">按钮右退 16；提示右退 16，上边距底 40</text>
-  </g>
-
-  <!-- ================= 按钮三态 ================= -->
-  <g>
-    <rect x="752" y="84" width="496" height="300" rx="12" fill="#12161f" fill-opacity="0.88" stroke="#2b3240" stroke-width="1.5"/>
-    <text x="772" y="110" font-size="12" fill="#5d6575" letter-spacing="2">自动战斗按钮三态（150×30 实尺寸）</text>
-
-    <!-- 关 -->
-    <g>
-      <text x="772" y="148" font-size="12" fill="#8d95a5">① 关（默认）</text>
-      <rect x="772" y="158" width="150" height="30" rx="4" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
-      <text x="847" y="178" font-size="14" fill="#e2e6ee" text-anchor="middle">自动战斗 · 关</text>
-      <text x="776" y="204" font-size="10.5" fill="#5d6575">灰底灰边，现状就是这态</text>
+    <g fill="#e8b33c" font-size="10.5">
+      <text x="180" y="642">圆钮 r26 · 形状即图标（v5.0：长条图标+文字钮判差评）</text>
+      <text x="180" y="658" fill="#8d95a5">背包 @ (44,648) 箱子+Tab 角标 · 强化 @ (110,648) 菱形+次数角标</text>
+      <text x="180" y="674" fill="#8d95a5">自动战斗 @ (1216,648) 闪电+G 角标，开=翡翠绿环 / 关=灰环</text>
     </g>
-    <!-- 开 -->
-    <g>
-      <text x="960" y="148" font-size="12" fill="#8d95a5">② 开（建议加绿底）</text>
-      <rect x="960" y="158" width="150" height="30" rx="4" fill="#25361f" stroke="#4de566" stroke-width="1.5"/>
-      <text x="1035" y="178" font-size="14" fill="#8cd99a" text-anchor="middle">自动战斗 · 开</text>
-      <text x="964" y="204" font-size="10.5" fill="#5d6575">现状只变字不变色 → 认不出</text>
-    </g>
-    <!-- 悬停 -->
-    <g>
-      <text x="1148" y="148" font-size="12" fill="#8d95a5">③ 悬停（描边提亮）</text>
-      <rect x="1148" y="158" width="92" height="30" rx="4" fill="#2f3648" stroke="#8a94a6" stroke-width="1.5"/>
-      <text x="1194" y="178" font-size="12" fill="#f2fafe" text-anchor="middle">自动战斗…</text>
-      <text x="1152" y="204" font-size="10.5" fill="#5d6575">放大示意（超出面板）</text>
-    </g>
-
-    <!-- 背包按钮 -->
-    <text x="772" y="248" font-size="12" fill="#8d95a5">背包按钮（常态 / 已打开）</text>
-    <rect x="772" y="258" width="150" height="30" rx="4" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
-    <text x="847" y="278" font-size="14" fill="#e2e6ee" text-anchor="middle">背包 (Tab)</text>
-    <rect x="960" y="258" width="150" height="30" rx="4" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
-    <text x="1035" y="278" font-size="14" fill="#e2e6ee" text-anchor="middle">背包 (Tab)</text>
-    <text x="776" y="306" font-size="10.5" fill="#ff7b73">已打开时按钮毫无变化（无「已打开」态）</text>
-
-    <text x="772" y="344" font-size="11" fill="#5d6575">代码：auto_btn / bag_btn 均为默认 Button，未改 normal / hover / pressed 样式</text>
-    <text x="772" y="362" font-size="11" fill="#5d6575">文字随 auto_fight 切换（第 734 行），底色不随状态变（总纲 T9）</text>
   </g>
 
-  <!-- ================= Esc 暂停四态 ================= -->
-  <line x1="32" y1="406" x2="1248" y2="406" stroke="#2b3240" stroke-width="1" stroke-dasharray="6 5"/>
-  <text x="32" y="434" font-size="13" font-weight="700" fill="#e8b33c">Esc 相关状态</text>
-
-  <g>
-    <rect x="32" y="448" width="290" height="106" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
-    <text x="48" y="470" font-size="12" fill="#8d95a5">① 游戏中</text>
-    <text x="48" y="500" font-size="18" fill="#ffffff">击败精英 32 / 60 (剩余 96s)</text>
-    <text x="48" y="530" font-size="11" fill="#5d6575">条下文字 = 击杀进度（默认态）</text>
+  <!-- 版本注记 -->
+  <g opacity="0.9">
+    <rect x="64" y="64" width="328" height="82" rx="8" fill="#0d1017" stroke="#2b3240"/>
+    <text x="80" y="87" font-size="12" font-weight="700" fill="#e8b33c">B008 · v5.0 定稿（2026-10-27）</text>
+    <text x="80" y="106" font-size="11" fill="#8d95a5">v5.0：按钮改圆形纯图标钮；WASD 常驻小字删除（H 键展开）</text>
+    <text x="80" y="124" font-size="11" fill="#5d6575">v3.0：背包移左下、自动战斗留右下；提示精简两行</text>
+    <text x="80" y="140" font-size="11" fill="#5d6575">旧图（170×32 长条按钮 + 7 段一行提示）作废</text>
   </g>
-
-  <g>
-    <rect x="338" y="448" width="290" height="106" rx="10" fill="#141922" stroke="#e8b33c" stroke-width="1.5"/>
-    <text x="354" y="470" font-size="12" fill="#e8b33c">② 暂停（Esc）</text>
-    <text x="354" y="500" font-size="18" fill="#ffffff">已暂停</text>
-    <text x="354" y="530" font-size="11" fill="#5d6575">世界停住，无遮罩、无大字；再按 Esc 继续</text>
-  </g>
-
-  <g>
-    <rect x="644" y="448" width="290" height="106" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
-    <text x="660" y="470" font-size="12" fill="#8d95a5">③ 升级弹窗中</text>
-    <text x="660" y="500" font-size="18" fill="#ffffff">已暂停</text>
-    <text x="660" y="530" font-size="11" fill="#ff7b73">Esc 与升级闸门打架，状态会错乱</text>
-  </g>
-
-  <g>
-    <rect x="950" y="448" width="298" height="106" rx="10" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
-    <text x="966" y="470" font-size="12" fill="#8d95a5">④ 阵亡</text>
-    <text x="966" y="500" font-size="18" fill="#e2554f">阵亡</text>
-    <text x="966" y="530" font-size="11" fill="#5d6575">画面停住，立刻弹结算面板</text>
-  </g>
-
-  <!-- ================= 操作提示拆段 ================= -->
-  <text x="32" y="584" font-size="13" font-weight="700" fill="#e8b33c">操作提示原文 7 段（18 号 · rgba(204,217,229,0.9) · 右对齐 · 永不淡出）</text>
-  <g>
-    <rect x="32" y="596" width="1000" height="30" rx="15" fill="#141922" stroke="#2b3240" stroke-width="1"/>
-    <text x="44" y="616" font-size="14" fill="#ccd9e6">WASD移动</text>
-    <text x="122" y="616" font-size="14" fill="#4a5260">·</text>
-    <text x="136" y="616" font-size="14" fill="#ccd9e6">鼠标瞄准</text>
-    <text x="212" y="616" font-size="14" fill="#4a5260">·</text>
-    <text x="226" y="616" font-size="14" fill="#ccd9e6">左键/J射击</text>
-    <text x="318" y="616" font-size="14" fill="#4a5260">·</text>
-    <text x="332" y="616" font-size="14" fill="#ccd9e6">Tab背包</text>
-    <text x="404" y="616" font-size="14" fill="#4a5260">·</text>
-    <text x="418" y="616" font-size="14" fill="#ccd9e6">C水晶</text>
-    <text x="472" y="616" font-size="14" fill="#4a5260">·</text>
-    <text x="486" y="616" font-size="14" fill="#ccd9e6">Esc暂停</text>
-    <text x="560" y="616" font-size="14" fill="#4a5260">·</text>
-    <text x="574" y="616" font-size="14" fill="#ccd9e6">G自动战斗</text>
-    <text x="660" y="616" font-size="13" fill="#5d6575">共 7 段 · 一行塞满，窄屏必被切</text>
-  </g>
-
-  <!-- 缺失的 M 键 -->
-  <g>
-    <rect x="1044" y="596" width="204" height="30" rx="15" fill="none" stroke="#e8b33c" stroke-width="1.4" stroke-dasharray="5 4"/>
-    <text x="1146" y="616" font-size="14" fill="#8a93a5" text-anchor="middle">（缺）· M三合一界面</text>
-  </g>
-
-  <!-- ================= 图角灰字 ================= -->
-  <g>
-    <rect x="32" y="640" width="880" height="48" rx="8" fill="#0d1017" fill-opacity="0.96" stroke="#e8b33c" stroke-width="1.2" stroke-dasharray="6 4"/>
-    <text x="46" y="660" font-size="11.5" fill="#8a93a5">操作提示里写了 C水晶，但没写 M键（按 M 能开三合一界面）——要么补提示要么删功能</text>
-    <text x="46" y="678" font-size="11" fill="#5d6575">M 键由 screens_controller.gd 第 30~31 行接管（主城 / 选人 / 结算三合一屏），键能用但玩家不知道</text>
-  </g>
-
-  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B008-暂停与操作提示 / 1280×720 / v1.0</text>
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-SVG文档-战斗 / B008-暂停与操作提示 / v5.0</text>
 </svg>

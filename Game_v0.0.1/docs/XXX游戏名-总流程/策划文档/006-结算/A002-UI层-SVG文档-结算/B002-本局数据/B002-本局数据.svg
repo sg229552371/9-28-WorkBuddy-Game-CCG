@@ -1,161 +1,48 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
-  <title>B002-本局数据 · 击杀 / 用时 / 拾取 三段式</title>
+  <title>B002-本局数据 · v3.0 定稿（左标签右数值两栏大字，替代旧三段式挤行）</title>
+  <rect width="1280" height="720" fill="#10151d"/>
+  <g opacity="0.12"><rect width="1280" height="720" fill="#1a2230"/></g>
 
-  <defs>
-    <linearGradient id="stlBg" x1="0" y1="0" x2="0.6" y2="1">
-      <stop offset="0" stop-color="#131c2c"/>
-      <stop offset="0.55" stop-color="#101725"/>
-      <stop offset="1" stop-color="#0b1119"/>
-    </linearGradient>
-    <linearGradient id="stlSep" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#5a6572" stop-opacity="0"/>
-      <stop offset="0.5" stop-color="#5a6572" stop-opacity="0.8"/>
-      <stop offset="1" stop-color="#5a6572" stop-opacity="0"/>
-    </linearGradient>
-    <filter id="stlShadow" x="-30%" y="-60%" width="160%" height="240%">
-      <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#000000" flood-opacity="0.25"/>
-    </filter>
-  </defs>
-
-  <rect x="0" y="0" width="1280" height="720" fill="url(#stlBg)"/>
-
-  <!-- ============ 上半：真实一行（1:1 放大 2× 展示） ============ -->
-  <text x="56" y="56" font-size="13" font-weight="700" fill="#e8b33c">真实一行（代码原样 · 元素名 SettleStats · 16 号 #e2e6ee）</text>
-
-  <g filter="url(#stlShadow)">
-    <rect x="56" y="72" width="1168" height="56" rx="8" fill="#1d2027" stroke="#252a34" stroke-width="2"/>
-  </g>
-  <text x="80" y="107" font-size="17" fill="#e2e6ee">击杀 128 <tspan fill="#5a6572">·</tspan> 用时 04:35 <tspan fill="#5a6572">·</tspan> 拾取 12 件</text>
-  <text x="1200" y="107" font-size="11" fill="#5a6572" text-anchor="end">格式：击杀 %d · 用时 %02d:%02d · 拾取 %d 件</text>
-
-  <!-- 分隔 -->
-  <line x1="56" y1="152" x2="1224" y2="152" stroke="#2a2f3a"/>
-
-  <!-- ============ 下半：三段式放大（2×） ============ -->
-  <text x="56" y="184" font-size="13" font-weight="700" fill="#e8b33c">放大 2× · 三段式结构（图标 + 标签 + 数字右对齐）</text>
-
-  <text x="856" y="196" font-size="10.5" fill="#e8b33c">卡 368 × 140　rx 10　间距 32</text>
-  <g filter="url(#stlShadow)">
-    <rect x="56" y="204" width="368" height="140" rx="10" fill="#1d2027" stroke="#252a34" stroke-width="2"/>
-    <rect x="456" y="204" width="368" height="140" rx="10" fill="#1d2027" stroke="#252a34" stroke-width="2"/>
-    <rect x="856" y="204" width="368" height="140" rx="10" fill="#1d2027" stroke="#252a34" stroke-width="2"/>
-  </g>
-
-  <!-- 段1 击杀：剑图标 -->
+  <!-- 数据区样例（结算面板内，居中列） -->
   <g>
-    <rect x="76" y="228" width="56" height="56" rx="10" fill="#252a34" stroke="#3a4150"/>
-    <!-- 剑 -->
-    <g transform="translate(104 256)" stroke="#e8b33c" stroke-width="2.4" stroke-linecap="round" fill="none">
-      <path d="M-13 13 L-4 4"/>
-      <path d="M-16 16 L-11 11"/>
-      <path d="M-9 9 L12 -12 L15 -15 L15 -9 L-3 9 Z" fill="#e8b33c" fill-opacity="0.18"/>
-      <path d="M-7 3 L1 11"/>
-    </g>
-    <text x="148" y="246" font-size="13" fill="#8a93a5">击杀</text>
-    <text x="148" y="284" font-size="30" font-weight="700" fill="#e2e6ee">128</text>
-    <text x="404" y="292" font-size="11" fill="#5a6572" text-anchor="end">kills</text>
-    <text x="76" y="330" font-size="11" fill="#5a6572">整数 · 右对齐 · 万级不缩写成 k</text>
+    <!-- 行1 挑战到达 -->
+    <text x="470" y="150" font-size="15" fill="#8a93a5" text-anchor="end">挑战到达</text>
+    <text x="510" y="154" font-size="24" fill="#e2e6ee" font-weight="800">第 3 关</text>
+    <path d="M380 172 H900" stroke="#2b3240"/>
+
+    <!-- 行2 用时 / 击杀 两列 -->
+    <text x="470" y="222" font-size="15" fill="#8a93a5" text-anchor="end">用时</text>
+    <text x="510" y="226" font-size="19" fill="#e2e6ee" font-weight="700">06:42</text>
+    <text x="680" y="222" font-size="15" fill="#8a93a5" text-anchor="end">击杀</text>
+    <text x="720" y="226" font-size="19" fill="#e2e6ee" font-weight="700">412</text>
+    <path d="M380 244 H900" stroke="#2b3240"/>
+
+    <!-- 行3 拾取 -->
+    <text x="470" y="292" font-size="15" fill="#8a93a5" text-anchor="end">拾取</text>
+    <text x="510" y="296" font-size="19" fill="#e2e6ee" font-weight="700">38 件</text>
+    <path d="M380 314 H900" stroke="#2b3240"/>
   </g>
 
-  <!-- 段2 用时：时钟图标 -->
-  <g>
-    <rect x="476" y="228" width="56" height="56" rx="10" fill="#252a34" stroke="#3a4150"/>
-    <g transform="translate(504 256)" stroke="#e8b33c" stroke-width="2.2" fill="none" stroke-linecap="round">
-      <circle r="13" cx="0" cy="0"/>
-      <path d="M0 -8 L0 0 L6 4"/>
+  <!-- 标注 -->
+  <g opacity="0.6">
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3" fill="none">
+      <rect x="360" y="120" width="560" height="210"/>
     </g>
-    <text x="548" y="246" font-size="13" fill="#8a93a5">用时</text>
-    <text x="548" y="284" font-size="30" font-weight="700" fill="#e2e6ee" letter-spacing="1">04:35</text>
-    <text x="804" y="292" font-size="11" fill="#5a6572" text-anchor="end">mm:ss</text>
-    <text x="476" y="330" font-size="11" fill="#5a6572">超过 1 小时 → 见下方红字</text>
+    <g fill="#e8b33c" font-size="10.5">
+      <text x="930" y="140">标签 15 号灰 · 右对齐（锚 x=470/680）</text>
+      <text x="930" y="156" fill="#8d95a5">数值 19~24 号白 · 左对齐（锚 x=510/720）</text>
+      <text x="930" y="172" fill="#8d95a5">行距分隔线 #2b3240</text>
+      <text x="930" y="188" fill="#8d95a5">「挑战到达」为关键行，数值最大 24 号</text>
+    </g>
   </g>
 
-  <!-- 段3 拾取：箱子图标 -->
-  <g>
-    <rect x="876" y="228" width="56" height="56" rx="10" fill="#252a34" stroke="#3a4150"/>
-    <g transform="translate(904 256)" stroke="#e8b33c" stroke-width="2.2" fill="none" stroke-linecap="round">
-      <rect x="-13" y="-6" width="26" height="18" rx="3"/>
-      <path d="M-13 -6 L-13 -11 L13 -11 L13 -6"/>
-      <path d="M-4 4 L4 4"/>
-    </g>
-    <text x="948" y="246" font-size="13" fill="#8a93a5">拾取</text>
-    <text x="948" y="284" font-size="30" font-weight="700" fill="#e2e6ee">12<tspan font-size="16" fill="#8a93a5" font-weight="400"> 件</tspan></text>
-    <text x="1204" y="292" font-size="11" fill="#5a6572" text-anchor="end">pickups</text>
-    <text x="876" y="330" font-size="11" fill="#e0a3a3">现在永远 0（战斗侧没发）</text>
-  </g>
-
-  <!-- 段的尺寸标注 -->
+  <!-- 新旧对照 + 注记 -->
   <g opacity="0.9">
-    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
-    </g>
+    <rect x="200" y="400" width="880" height="120" rx="10" fill="#0d1017" stroke="#2b3240"/>
+    <text x="224" y="432" font-size="13" font-weight="700" fill="#e8b33c">v3.0 变更（2026-10-27，同步总图 v3.0）</text>
+    <text x="224" y="460" font-size="12.5" fill="#8d95a5">· 旧「三段式」一行挤 3 个数据 → 改左标签右数值两栏，逐行分隔，一眼一行</text>
+    <text x="224" y="482" font-size="12.5" fill="#8d95a5">· 关键数据（到达关卡）24 号特大白字，次要数据 19 号</text>
+    <text x="224" y="504" font-size="12.5" fill="#5d6575">· 结晶收益行独立成 B003（v3.0 单列 24 号金色）</text>
   </g>
-
-  <!-- ============ 图标规格小卡 ============ -->
-  <g>
-    <rect x="56" y="368" width="560" height="128" rx="8" fill="#0d1017" stroke="#2b3240"/>
-    <text x="72" y="392" font-size="12" font-weight="700" fill="#e8b33c">图标规格（三个同款）</text>
-    <g font-size="11.5" fill="#8d95a5">
-      <text x="72" y="412">底：56×56　rx 10　#252a34　描边 1.5 #3a4150</text>
-      <text x="72" y="434">图形：28×28 线性图标，描边 2.2，色 <tspan fill="#e8b33c">#e8b33c</tspan></text>
-      <text x="72" y="454">剑=击杀　钟=用时　木箱=拾取（不用 emoji 💀🕐📦）</text>
-      <text x="72" y="474">图标与标签 20 间距；标签 13 号 #8a93a5；数字 30 号</text>
-    </g>
-  </g>
-
-  <!-- ============ 右侧 红字：用时格式 ============ -->
-  <g>
-    <rect x="640" y="368" width="584" height="128" rx="8" fill="#1a1414" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="6 4"/>
-    <rect x="640" y="368" width="6" height="128" rx="3" fill="#e2554f"/>
-    <text x="664" y="392" font-size="13" font-weight="700" fill="#ff8a84">⚠ 用时格式缺陷</text>
-    <g font-size="12" fill="#e0a3a3">
-      <text x="664" y="416">现在是 floori(t/60) : t%60（flow_root.gd 1073~1074 行）</text>
-      <text x="664" y="436">→ 3665 秒显示成 <tspan font-weight="700" fill="#ffffff">"61:05"</tspan>，像 61 分钟的怪数</text>
-      <text x="664" y="456">建议：用 %02d:%02d，超过 1 小时改显示 <tspan font-weight="700" fill="#9fe0af">1:01:05</tspan></text>
-      <text x="664" y="476" fill="#8a93a5">无尽模式（cfg/endless.json）真能打超 1 小时；负数/超大值也要夹。</text>
-    </g>
-  </g>
-
-  <!-- ============ 两套数据对比 ============ -->
-  <g>
-    <line x1="56" y1="520" x2="1224" y2="520" stroke="#2a2f3a"/>
-    <text x="56" y="548" font-size="13" font-weight="700" fill="#e8b33c">与大屏 / 小板的数据分工（两个屏各说一半）</text>
-  </g>
-
-  <!-- 大屏列 -->
-  <g>
-    <rect x="56" y="562" width="374" height="120" rx="8" fill="#1d2027" stroke="#252a34" stroke-width="1.5"/>
-    <text x="72" y="586" font-size="12" font-weight="700" fill="#e2e6ee">全局屏（本图）· 一行三段</text>
-    <g font-size="12" fill="#8a93a5">
-      <text x="72" y="610">击杀 · 用时 · 拾取件数</text>
-      <text x="72" y="630">字号没单独设，随默认</text>
-      <text x="72" y="650" fill="#e0a3a3">拾取现在永远 0（没人发 pickups）</text>
-      <text x="72" y="670" fill="#5a6572">自动换行 AUTOWRAP_WORD_SMART</text>
-    </g>
-  </g>
-
-  <!-- 小板列 -->
-  <g>
-    <rect x="452" y="562" width="374" height="120" rx="8" fill="#1d2027" stroke="#252a34" stroke-width="1.5"/>
-    <text x="468" y="586" font-size="12" font-weight="700" fill="#e2e6ee">战斗内面板 · 竖排六行 22 号</text>
-    <g font-size="12" fill="#8a93a5">
-      <text x="468" y="610">击杀：37 ／ 波次：6 ／ 金币：128</text>
-      <text x="468" y="630">经验：410 ／ 暴击：92</text>
-      <text x="468" y="650">技能：SK001（水晶 3 颗）</text>
-      <text x="468" y="670" fill="#e0a3a3">SK001 是内部编号，玩家看不懂</text>
-    </g>
-  </g>
-
-  <!-- 结论列 -->
-  <g>
-    <rect x="848" y="562" width="376" height="120" rx="8" fill="#12201a" stroke="#2e4a36" stroke-width="1.5"/>
-    <text x="864" y="586" font-size="12" font-weight="700" fill="#9fe0af">合并后的建议一行（不要塞七项）</text>
-    <g font-size="12" fill="#8a93a5">
-      <text x="864" y="612" fill="#e2e6ee">击杀 128 · 波次 6 · 用时 04:35 · 拾取 12 件</text>
-      <text x="864" y="634">金币 / 经验 / 暴击归局外成长，不在这屏</text>
-      <text x="864" y="656">技能写中文名，不写 SK001</text>
-      <text x="864" y="674" fill="#5a6572">一行放三到四项为上限</text>
-    </g>
-  </g>
-
-  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B002-本局数据 / 1280×720 / v1.0</text>
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-SVG文档-结算 / B002-本局数据 / v3.0 · 旧「三段式」图作废</text>
 </svg>

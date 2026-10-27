@@ -1,165 +1,68 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
-  <title>B004 技能栏 界面规格图（1280×720）</title>
-
-  <defs>
-    <linearGradient id="btlBg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0d1017"/>
-      <stop offset="1" stop-color="#161b26"/>
-    </linearGradient>
-    <linearGradient id="btlPanel" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1d2330"/>
-      <stop offset="1" stop-color="#141922"/>
-    </linearGradient>
-    <marker id="btlArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
-    </marker>
-    <marker id="btlArrowS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
-    </marker>
-  </defs>
-
-  <rect x="0" y="0" width="1280" height="720" fill="url(#btlBg)"/>
-  <g stroke="#1a2130" stroke-width="1" opacity="0.55">
-    <path d="M0 120 L1280 120 M0 260 L1280 260 M0 480 L1280 480 M0 620 L1280 620"/>
-    <path d="M320 0 L320 720 M640 0 L640 720 M960 0 L960 720"/>
+  <title>B004 技能栏 · v5.0 定稿（头像48 + 主槽44带等级角标 + 辅助槽28×3；组下 Lv 字与回退文字删除）</title>
+  <rect width="1280" height="720" fill="#10151d"/>
+  <g opacity="0.15">
+    <rect x="0" y="0" width="1280" height="720" fill="#1a2230"/>
+    <circle cx="640" cy="340" r="14" fill="#e2e6ee"/>
   </g>
 
-  <rect x="0" y="0" width="1280" height="64" fill="url(#btlPanel)"/>
-  <rect x="0" y="62" width="1280" height="2" fill="#2b3240"/>
-  <text x="32" y="40" font-size="22" font-weight="700" fill="#f2fafe">B004 · 底部英雄技能栏组（三人）</text>
-  <text x="1248" y="40" font-size="13" fill="#8d95a5" text-anchor="end">底板 660 × 130 rx10　｜　头像 44 · 槽 28 · 组间 24 · 槽间 5</text>
+  <!-- Z5 底部技能栏 700×96 @ (290,596) -->
+  <rect x="290" y="596" width="700" height="96" rx="10" fill="#161d29" stroke="#2b3240" stroke-width="1.5"/>
 
-  <!-- ================= 放大展示（1.6 倍） ================= -->
-  <g>
-    <rect x="32" y="84" width="1216" height="332" rx="12" fill="#12161f" fill-opacity="0.9" stroke="#2b3240" stroke-width="1.5"/>
-    <text x="52" y="110" font-size="12" fill="#5d6575" letter-spacing="2">放大展示 · 一组拆解（头像 2 倍 / 槽 2 倍）</text>
+  <!-- 组1：英雄1 -->
+  <circle cx="332" cy="644" r="24" fill="#252e40" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="332" y="650" font-size="11" fill="#8a93a5" text-anchor="middle">头像</text>
+  <rect x="366" y="622" width="44" height="44" rx="8" fill="#232a38" stroke="#e8b33c" stroke-width="1.6"/>
+  <text x="388" y="650" font-size="18" fill="#e8b33c" text-anchor="middle" font-weight="700">技</text>
+  <circle cx="410" cy="622" r="9" fill="#e8b33c"/>
+  <text x="410" y="626" font-size="10" fill="#131c2c" text-anchor="middle" font-weight="700">2</text>
+  <rect x="416" y="630" width="28" height="28" rx="6" fill="#1d2432" stroke="#3a4150"/>
+  <rect x="448" y="630" width="28" height="28" rx="6" fill="#1d2432" stroke="#3a4150"/>
+  <rect x="480" y="630" width="28" height="28" rx="6" fill="#1d2432" stroke="#3a4150"/>
 
-    <!-- 英雄组：猎手 · output -->
-    <text x="60" y="146" font-size="28" fill="#f2fafe">猎手 · output</text>
-    <circle cx="116" cy="220" r="44" fill="#d97333"/>
-    <text x="116" y="236" font-size="40" fill="#ffffff" text-anchor="middle">猎</text>
+  <!-- 组2：英雄2 -->
+  <circle cx="548" cy="644" r="24" fill="#252e40" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="548" y="650" font-size="11" fill="#8a93a5" text-anchor="middle">头像</text>
+  <rect x="582" y="622" width="44" height="44" rx="8" fill="#232a38" stroke="#5a6575" stroke-width="1.4"/>
+  <text x="604" y="650" font-size="18" fill="#8a93a5" text-anchor="middle">技</text>
+  <circle cx="626" cy="622" r="9" fill="#3a4150"/>
+  <text x="626" y="626" font-size="10" fill="#8a93a5" text-anchor="middle">1</text>
+  <rect x="632" y="630" width="28" height="28" rx="6" fill="#1d2432" stroke="#3a4150"/>
+  <rect x="664" y="630" width="28" height="28" rx="6" fill="#1d2432" stroke="#3a4150"/>
+  <rect x="696" y="630" width="28" height="28" rx="6" fill="#1d2432" stroke="#3a4150"/>
 
-    <g fill="#1f222b" fill-opacity="0.9" stroke="#333846" stroke-width="1.2">
-      <rect x="196" y="192" width="56" height="56" rx="8"/>
-      <rect x="262" y="192" width="56" height="56" rx="8"/>
-      <rect x="328" y="192" width="56" height="56" rx="8"/>
-      <rect x="394" y="192" width="56" height="56" rx="8"/>
+  <!-- 组3：英雄3 -->
+  <circle cx="764" cy="644" r="24" fill="#252e40" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="764" y="650" font-size="11" fill="#8a93a5" text-anchor="middle">头像</text>
+  <rect x="798" y="622" width="44" height="44" rx="8" fill="#232a38" stroke="#5a6575" stroke-width="1.4"/>
+  <text x="820" y="650" font-size="18" fill="#8a93a5" text-anchor="middle">技</text>
+  <circle cx="842" cy="622" r="9" fill="#3a4150"/>
+  <text x="842" y="626" font-size="10" fill="#8a93a5" text-anchor="middle">1</text>
+  <rect x="848" y="630" width="28" height="28" rx="6" fill="#1d2432" stroke="#3a4150"/>
+  <rect x="880" y="630" width="28" height="28" rx="6" fill="#1d2432" stroke="#3a4150"/>
+  <rect x="912" y="630" width="28" height="28" rx="6" fill="#1d2432" stroke="#3a4150"/>
+
+  <!-- 标注 -->
+  <g opacity="0.55">
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3" fill="none">
+      <rect x="290" y="596" width="700" height="96"/>
+      <rect x="366" y="622" width="44" height="44"/>
     </g>
-    <text x="224" y="226" font-size="20" fill="#4a5260" text-anchor="middle">空</text>
-    <text x="290" y="226" font-size="20" fill="#4a5260" text-anchor="middle">空</text>
-    <text x="356" y="226" font-size="20" fill="#4a5260" text-anchor="middle">空</text>
-    <text x="422" y="226" font-size="20" fill="#4a5260" text-anchor="middle">空</text>
-    <g font-size="20" fill="#bfccd9" text-anchor="middle">
-      <text x="224" y="272">Lv1</text><text x="290" y="272">Lv1</text><text x="356" y="272">Lv1</text><text x="422" y="272">Lv1</text>
-    </g>
-
-    <!-- 尺寸标注 -->
-    <g stroke="#e8b33c" stroke-width="1.2" fill="none">
-      <path d="M72 220 L72 264 M64 220 L80 220 M64 264 L80 264" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
-      <path d="M524 192 L524 248 M516 192 L532 192 M516 248 L532 248" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
-      <path d="M196 166 L252 166 M262 166 L318 166" marker-start="url(#btlArrowS)" marker-end="url(#btlArrow)"/>
-    </g>
-    <text x="88" y="250" font-size="13" fill="#e8b33c">44（2×）</text>
-    <text x="538" y="226" font-size="13" fill="#e8b33c">28（2×）</text>
-    <text x="259" y="160" font-size="12" fill="#e8b33c">5（2×）</text>
-    <text x="196" y="304" font-size="12" fill="#8a93a5">每格下 10 号灰 #bfccd9，重复同一 lv（读 hero_out_level）</text>
-
-    <!-- 三组并排（实尺寸示意，1:1） -->
-    <text x="660" y="146" font-size="13" fill="#e8b33c">1:1 实尺寸 · 三组并排（组间距 24）</text>
-    <rect x="660" y="162" width="560" height="130" rx="10" fill="#0d0f1a" fill-opacity="0.62" stroke="#2b3240" stroke-width="1"/>
-    <g>
-      <text x="672" y="184" font-size="14" fill="#f2fafe">猎手 · output</text>
-      <circle cx="694" cy="216" r="22" fill="#d97333"/>
-      <text x="694" y="223" font-size="20" fill="#ffffff" text-anchor="middle">猎</text>
-      <g fill="#1f222b" fill-opacity="0.9">
-        <rect x="726" y="202" width="28" height="28" rx="4"/>
-        <rect x="759" y="202" width="28" height="28" rx="4"/>
-        <rect x="792" y="202" width="28" height="28" rx="4"/>
-        <rect x="825" y="202" width="28" height="28" rx="4"/>
-      </g>
-      <g font-size="10" fill="#bfccd9" text-anchor="middle">
-        <text x="740" y="244">Lv1</text><text x="773" y="244">Lv1</text><text x="806" y="244">Lv1</text><text x="839" y="244">Lv1</text>
-      </g>
-    </g>
-    <g>
-      <text x="873" y="184" font-size="14" fill="#f2fafe">守护者 · defense</text>
-      <circle cx="895" cy="216" r="22" fill="#4080d9"/>
-      <text x="895" y="223" font-size="20" fill="#ffffff" text-anchor="middle">守</text>
-      <g fill="#1f222b" fill-opacity="0.9">
-        <rect x="927" y="202" width="28" height="28" rx="4"/>
-        <rect x="960" y="202" width="28" height="28" rx="4"/>
-        <rect x="993" y="202" width="28" height="28" rx="4"/>
-        <rect x="1026" y="202" width="28" height="28" rx="4"/>
-      </g>
-      <g font-size="10" fill="#bfccd9" text-anchor="middle">
-        <text x="941" y="244">Lv1</text><text x="974" y="244">Lv1</text><text x="1007" y="244">Lv1</text><text x="1040" y="244">Lv1</text>
-      </g>
-    </g>
-    <g>
-      <text x="1074" y="184" font-size="14" fill="#f2fafe">医疗兵 · aux</text>
-      <circle cx="1096" cy="216" r="22" fill="#4dbf73"/>
-      <text x="1096" y="223" font-size="20" fill="#ffffff" text-anchor="middle">医</text>
-      <g fill="#1f222b" fill-opacity="0.9">
-        <rect x="1128" y="202" width="28" height="28" rx="4"/>
-        <rect x="1161" y="202" width="28" height="28" rx="4"/>
-      </g>
-      <g font-size="10" fill="#bfccd9" text-anchor="middle">
-        <text x="1142" y="244">Lv1</text><text x="1175" y="244">Lv1</text>
-      </g>
-      <text x="1196" y="244" font-size="10" fill="#5d6575">…被截断</text>
-    </g>
-    <text x="672" y="278" font-size="11" fill="#5d6575">底板高 130，内容垂直居中；3 组实测约 750 宽，1280 屏够放</text>
-
-    <!-- 职业色对照 -->
-    <text x="660" y="316" font-size="13" fill="#e8b33c">职业色（avatar 圆形底色）</text>
-    <g>
-      <circle cx="680" cy="344" r="12" fill="#d97333"/>
-      <text x="700" y="349" font-size="12" fill="#cdd3de">输出 #d97333（代码 rgb 0.85,0.45,0.2）</text>
-      <circle cx="940" cy="344" r="12" fill="#4080d9"/>
-      <text x="960" y="349" font-size="12" fill="#cdd3de">防御 #4080d9</text>
-      <circle cx="1080" cy="344" r="12" fill="#4dbf73"/>
-      <text x="1100" y="349" font-size="12" fill="#cdd3de">辅助 #4dbf73</text>
-      <circle cx="1190" cy="344" r="12" fill="#738099"/>
-      <text x="1210" y="349" font-size="12" fill="#cdd3de">未知</text>
-    </g>
-    <text x="660" y="380" font-size="11" fill="#5d6575">注：cfg/heroRoles.json 配置色为 #ff6b6b / #6cb2ff / #6bd88a，与代码画出来的色不一致（总纲 T6）</text>
-  </g>
-
-  <!-- ================= 图角红字：真实问题 ================= -->
-  <g>
-    <rect x="32" y="432" width="1216" height="62" rx="8" fill="#2a1013" fill-opacity="0.94" stroke="#e2554f" stroke-width="1.5"/>
-    <text x="48" y="458" font-size="15" font-weight="700" fill="#ff7b73">真实问题：4 个格子永远显示同一个 Lv 数字，视觉上没意义；格子是空框，没有技能图标</text>
-    <text x="48" y="480" font-size="12" fill="#f0a9a4">代码第 646~659 行：for i in range(4) 里 lv_lb.text = "Lv%d" % lv，lv 是英雄等级 → 12 格共 4 个不同数字，每组内 4 个完全相同</text>
-  </g>
-
-  <!-- ================= 结构规格卡 ================= -->
-  <g>
-    <rect x="32" y="512" width="600" height="176" rx="10" fill="#0d1017" fill-opacity="0.96" stroke="#3a4150" stroke-width="1.5"/>
-    <text x="48" y="536" font-size="13" font-weight="700" fill="#e8b33c">结构规格</text>
-    <g font-size="12" fill="#cdd3de">
-      <text x="48" y="558">底板　居中 bottom-190 → bottom-60（y 530~660）　高 130　rx 10</text>
-      <text x="48" y="576">底色　rgba(13,15,26,0.62)　无边框（半透，透出底下战场）</text>
-      <text x="48" y="594">组间 24　组内列间距 6　槽间 5　槽与 Lv 间距 2</text>
-      <text x="48" y="612">名字行 14 号 #f2fafe，格式「名字 · role 原字段」</text>
-      <text x="48" y="630">头像 44×44 正圆 rx22，内字 20 号取英雄名首字</text>
-      <text x="48" y="648">槽 28×28 rx4　底 rgba(31,34,43,0.9)　无图标 / 无快捷键 / 无冷却</text>
-      <text x="48" y="666">槽下 Lv 10 号 #bfccd9　→ 每格都有，但值相同</text>
+    <g fill="#e8b33c" font-size="10.5">
+      <text x="1000" y="612">技能栏 700 × 96 @ (290,596)</text>
+      <text x="1000" y="628" fill="#8d95a5">头像 r24 · 主槽 44 × 44 · 辅助槽 28 × 3</text>
+      <text x="1000" y="644">组间 24 · 槽间 5</text>
+      <text x="1000" y="660">等级角标 r9 @ 主槽右上：金=可升级 / 灰=不可</text>
     </g>
   </g>
 
-  <g>
-    <rect x="648" y="512" width="600" height="176" rx="10" fill="#0d1017" fill-opacity="0.96" stroke="#3a4150" stroke-width="1.5"/>
-    <text x="664" y="536" font-size="13" font-weight="700" fill="#e8b33c">行为规则（灰字）</text>
-    <g font-size="11.5" fill="#8a93a5">
-      <text x="664" y="558">· 只在开局建一次，进战斗后不再刷新：头像 / 名字 / 槽 / Lv 全是死的</text>
-      <text x="664" y="576">· 队员阵亡无任何表现（头像不变灰、不打叉）——与「三人同场」卖点冲突</text>
-      <text x="664" y="594">· 头像可点但点了没有反馈（Button 未接任何回调）</text>
-      <text x="664" y="612">· 队伍读取失败 → 整条隐藏，回退到 hud_skill 一行文字</text>
-      <text x="664" y="630">· 底板不挡中部战场：底边 y=660，与左下负重 y=678 不重叠</text>
-      <text x="664" y="648">· 待办 T5：4 个空框填真技能 / 缩成 1 个大图标 / 去掉整条，三选一</text>
-      <text x="664" y="666">· 代码：battle.gd _build_skill_bar() 第 586~669 行</text>
-    </g>
+  <!-- 版本注记 -->
+  <g opacity="0.9">
+    <rect x="64" y="64" width="328" height="82" rx="8" fill="#0d1017" stroke="#2b3240"/>
+    <text x="80" y="87" font-size="12" font-weight="700" fill="#e8b33c">B004 · v5.0 定稿（2026-10-27）</text>
+    <text x="80" y="106" font-size="11" fill="#8d95a5">v3.0：组下重复的 Lv 字与「自动战斗·赛季Lv」回退文字删除</text>
+    <text x="80" y="124" font-size="11" fill="#5d6575">v5.0：等级信息收进主槽右上角标（只显数字）</text>
+    <text x="80" y="140" font-size="11" fill="#5d6575">旧图（4 空槽 + 12 个 Lv1 小字）作废</text>
   </g>
-
-  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B004-技能栏 / 1280×720 / v1.0</text>
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-SVG文档-战斗 / B004-技能栏 / v5.0</text>
 </svg>

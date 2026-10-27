@@ -1,158 +1,59 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
-  <title>B004-战利品 · 有货版 / 空版</title>
+  <title>B004-战利品 · v3.0 定稿（「获得奖励」装饰分隔 + 奖励图标格 64×64 品质描边 + ×N 角标；替代旧灰字清单）</title>
+  <rect width="1280" height="720" fill="#10151d"/>
+  <g opacity="0.12"><rect width="1280" height="720" fill="#1a2230"/></g>
 
-  <defs>
-    <linearGradient id="stlBg" x1="0" y1="0" x2="0.6" y2="1">
-      <stop offset="0" stop-color="#131c2c"/>
-      <stop offset="0.55" stop-color="#101725"/>
-      <stop offset="1" stop-color="#0b1119"/>
-    </linearGradient>
-    <filter id="stlShadow" x="-30%" y="-60%" width="160%" height="240%">
-      <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#000000" flood-opacity="0.25"/>
-    </filter>
-    <filter id="stlRare" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#e8b33c" flood-opacity="0.55"/>
-    </filter>
-    <marker id="stlArrowHead2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0 0 L6 3 L0 6 Z" fill="#8a93a5"/>
-    </marker>
-  </defs>
+  <!-- ===== 左：有货版（成功态） ===== -->
+  <text x="320" y="60" font-size="14" font-weight="700" fill="#9fe0af">有货版（成功态）</text>
 
-  <rect x="0" y="0" width="1280" height="720" fill="url(#stlBg)"/>
+  <!-- 装饰分隔标题 -->
+  <path d="M180 108 h96" stroke="#e8b33c" stroke-width="1" opacity="0.15"/>
+  <text x="320" y="114" font-size="17" fill="#e8b33c" text-anchor="middle" font-weight="700" letter-spacing="4">✦ 获得奖励 ✦</text>
+  <path d="M364 108 h96" stroke="#e8b33c" stroke-width="1" opacity="0.15"/>
 
-  <!-- ================= 左：有货版 ================= -->
-  <text x="56" y="52" font-size="13" font-weight="700" fill="#9fe0af">状态 A · 有货（loot 数组非空 · 撤离成功）</text>
-  <g filter="url(#stlShadow)">
-    <rect x="48" y="66" width="576" height="360" rx="10" fill="#1d2027" stroke="#252a34" stroke-width="2"/>
-  </g>
-
-  <text x="76" y="104" font-size="16" fill="#e2e6ee">战利品</text>
-  <text x="596" y="104" font-size="11" fill="#5a6572" text-anchor="end">小标题 正文色 · 无元素名</text>
-  <line x1="76" y1="118" x2="596" y2="118" stroke="#2a2f3a"/>
-
-  <!-- 行 1 白 -->
+  <!-- 图标格 64×64 ×4（品质描边 + ×N 角标） -->
   <g>
-    <rect x="76" y="132" width="520" height="56" rx="8" fill="#181c24"/>
-    <circle cx="100" cy="160" r="6" fill="#c9ced9"/>
-    <text x="122" y="167" font-size="16" fill="#c9ced9">生锈的匕首</text>
-    <rect x="270" y="145" width="52" height="22" rx="4" fill="#2a2f3a"/>
-    <text x="296" y="161" font-size="11" fill="#c9ced9" text-anchor="middle">白 · 普通</text>
-    <text x="576" y="167" font-size="12" fill="#5a6572" text-anchor="end">q1</text>
-  </g>
-  <!-- 行 2 蓝 -->
-  <g>
-    <rect x="76" y="196" width="520" height="56" rx="8" fill="#161e2b" stroke="#2a3d58"/>
-    <circle cx="100" cy="224" r="6" fill="#6fa8e0"/>
-    <text x="122" y="231" font-size="16" fill="#6fa8e0">火焰水晶</text>
-    <rect x="270" y="209" width="52" height="22" rx="4" fill="#1c2c40"/>
-    <text x="296" y="225" font-size="11" fill="#6fa8e0" text-anchor="middle">蓝 · 稀有</text>
-    <text x="576" y="231" font-size="12" fill="#5a6572" text-anchor="end">q2</text>
-  </g>
-  <!-- 行 3 金 -->
-  <g>
-    <rect x="76" y="260" width="520" height="56" rx="8" fill="#241f12" stroke="#6b5320"/>
-    <circle cx="100" cy="288" r="6" fill="#e8b33c"/>
-    <text x="122" y="295" font-size="16" font-weight="700" fill="#e8b33c">巨兽的犬齿</text>
-    <g filter="url(#stlRare)">
-      <rect x="264" y="273" width="58" height="22" rx="4" fill="#3a2d12"/>
-    </g>
-    <text x="293" y="289" font-size="11" fill="#f6d27a" text-anchor="middle">金 · 史诗</text>
-    <text x="576" y="295" font-size="12" fill="#e8b33c" text-anchor="end">q3</text>
+    <rect x="176" y="140" width="64" height="64" rx="8" fill="#1c2230" stroke="#c9ced9" stroke-width="2"/>
+    <text x="208" y="180" font-size="22" fill="#c9ced9" text-anchor="middle">🗡</text>
+    <rect x="222" y="134" width="24" height="16" rx="8" fill="#131c2c" stroke="#c9ced9"/>
+    <text x="234" y="146" font-size="10" fill="#c9ced9" text-anchor="middle">×2</text>
+
+    <rect x="256" y="140" width="64" height="64" rx="8" fill="#1c2230" stroke="#6fa8e0" stroke-width="2"/>
+    <text x="288" y="180" font-size="22" fill="#6fa8e0" text-anchor="middle">💠</text>
+    <rect x="302" y="134" width="24" height="16" rx="8" fill="#131c2c" stroke="#6fa8e0"/>
+    <text x="314" y="146" font-size="10" fill="#6fa8e0" text-anchor="middle">×1</text>
+
+    <rect x="336" y="140" width="64" height="64" rx="8" fill="#1c2230" stroke="#a86fe0" stroke-width="2"/>
+    <text x="368" y="180" font-size="22" fill="#a86fe0" text-anchor="middle">📿</text>
+    <rect x="382" y="134" width="24" height="16" rx="8" fill="#131c2c" stroke="#a86fe0"/>
+    <text x="394" y="146" font-size="10" fill="#a86fe0" text-anchor="middle">×3</text>
+
+    <rect x="416" y="140" width="64" height="64" rx="8" fill="#1c2230" stroke="#e8b33c" stroke-width="2"/>
+    <text x="448" y="180" font-size="22" fill="#e8b33c" text-anchor="middle">👑</text>
+    <rect x="462" y="134" width="24" height="16" rx="8" fill="#131c2c" stroke="#e8b33c"/>
+    <text x="474" y="146" font-size="10" fill="#e8b33c" text-anchor="middle">×1</text>
   </g>
 
-  <g font-size="11.5" fill="#8a93a5">
-    <text x="76" y="346">排列：竖排三行，不是「·」横排 —— 一行一件才好认出品质</text>
-    <text x="76" y="368">品质色点统一在左，色点直径 12，距名字 16</text>
-    <text x="76" y="390">超过 3 行：折成 3 行 + 右侧「等 12 件」，不许把按钮顶出去</text>
-  </g>
-  <text x="76" y="412" font-size="11" fill="#5a6572">代码现状：一行横排用「·」连起来，全部同一灰色 #8a93a5，无品质区分</text>
-
-  <!-- ================= 右：空版 ================= -->
-  <text x="664" y="52" font-size="13" font-weight="700" fill="#e0a3a3">状态 B · 空（现在永远是这一种）</text>
-  <g filter="url(#stlShadow)">
-    <rect x="656" y="66" width="576" height="360" rx="10" fill="#171b22" stroke="#252a34" stroke-width="2"/>
+  <!-- 品质图例 -->
+  <g font-size="11" fill="#8d95a5">
+    <text x="176" y="228">白 #c9ced9（普通）</text>
+    <text x="308" y="228">蓝 #6fa8e0（稀有）</text>
+    <text x="424" y="228">紫 #a86fe0（史诗）</text>
+    <text x="540" y="228" fill="#e8b33c">金 #e8b33c（传说）</text>
   </g>
 
-  <text x="684" y="104" font-size="16" fill="#c9ced9">战利品</text>
-  <line x1="684" y1="118" x2="1204" y2="118" stroke="#2a2f3a"/>
+  <!-- ===== 右：空版（失败态） ===== -->
+  <text x="960" y="60" font-size="14" font-weight="700" fill="#e0a3a3">空版（失败态）</text>
+  <text x="960" y="130" font-size="15" fill="#8d95a5" text-anchor="middle">本局收获未带出 · 全数遗失</text>
+  <text x="960" y="156" font-size="12" fill="#5d6575" text-anchor="middle">（不显示图标格，避免玩家看着心塞）</text>
 
-  <!-- 空态 -->
-  <g>
-    <rect x="684" y="132" width="520" height="120" rx="8" fill="#14181f" stroke="#2b3240" stroke-dasharray="6 5"/>
-    <g transform="translate(736 192)" stroke="#5a6572" stroke-width="2" fill="none">
-      <rect x="-20" y="-9" width="40" height="28" rx="4"/>
-      <path d="M-20 -9 L-20 -16 L20 -16 L20 -9"/>
-      <path d="M-7 4 L7 4"/>
-    </g>
-    <text x="776" y="188" font-size="15" font-style="italic" fill="#8a93a5">（战利品清单占位：待战斗侧接入）</text>
-    <text x="776" y="212" font-size="11" fill="#5a6572">flow_root.gd 第 1095 行原文，代码里写死</text>
+  <!-- 注记 -->
+  <g opacity="0.9">
+    <rect x="200" y="300" width="880" height="120" rx="10" fill="#0d1017" stroke="#2b3240"/>
+    <text x="224" y="332" font-size="13" font-weight="700" fill="#e8b33c">v3.0 变更（2026-10-27，同步总图 v3.0；原 T13 定稿）</text>
+    <text x="224" y="360" font-size="12.5" fill="#8d95a5">· 旧「灰字清单」→ 奖励图标格 64×64：品质描边（白/蓝/紫/金）+ 右上角 ×N 数量角标</text>
+    <text x="224" y="382" font-size="12.5" fill="#8d95a5">· 上方「✦ 获得奖励 ✦」装饰分隔标题（两侧渐隐线）</text>
+    <text x="224" y="404" font-size="12.5" fill="#5d6575">· 品质色与遗物背包品质底色同源，全项目通用</text>
   </g>
-
-  <g font-size="11.5" fill="#8a93a5">
-    <text x="684" y="282">问题：这行字里「占位」「战斗侧」「接入」都是内部行话，</text>
-    <text x="684" y="304">玩家看到会觉得「游戏没做完」。空态应该这么说：</text>
-  </g>
-
-  <g>
-    <rect x="684" y="318" width="520" height="92" rx="8" fill="#12201a" stroke="#2e4a36"/>
-    <text x="700" y="342" font-size="12" font-weight="700" fill="#9fe0af">建议空态文案（按结局分）</text>
-    <g font-size="12" fill="#8a93a5">
-      <text x="700" y="364" fill="#e2e6ee">撤离成功、一件没捡 →「这趟什么都没带回来」</text>
-      <text x="700" y="384" fill="#e2e6ee">撤离成功、捡了 12 件 → 正常清单（左图）</text>
-      <text x="700" y="402" fill="#e0a3a3">阵亡 → 红字「本局捡到的 12 件全部丢失」（不是空占位）</text>
-    </g>
-  </g>
-
-  <!-- ================= 数据链路 ================= -->
-  <line x1="56" y1="446" x2="1224" y2="446" stroke="#2a2f3a"/>
-  <text x="56" y="476" font-size="13" font-weight="700" fill="#e8b33c">数据链路：断在第二步</text>
-
-  <g font-size="12">
-    <g>
-      <rect x="56" y="492" width="270" height="62" rx="8" fill="#1d2027" stroke="#4a7a56" stroke-width="1.5"/>
-      <text x="72" y="516" fill="#9fe0af">① 战斗内拾取 → 临时背包</text>
-      <text x="72" y="538" fill="#8a93a5" font-size="11">battle.gd 121~122 注释</text>
-    </g>
-    <path d="M326 523 L366 523" stroke="#8a93a5" stroke-width="1.5" marker-end="url(#stlArrowHead2)"/>
-    <g>
-      <rect x="370" y="492" width="270" height="62" rx="8" fill="#1a1414" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="5 4"/>
-      <text x="386" y="516" fill="#e0a3a3">② 发 loot 字段 → 结算数据</text>
-      <text x="386" y="538" fill="#8a93a5" font-size="11">✕ 没做：combat.gd 365~371 只有 5 个字段</text>
-    </g>
-    <path d="M640 523 L680 523" stroke="#8a93a5" stroke-width="1.5" marker-end="url(#stlArrowHead2)"/>
-    <g>
-      <rect x="684" y="492" width="270" height="62" rx="8" fill="#1a1414" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="5 4"/>
-      <text x="700" y="516" fill="#e0a3a3">③ 结算屏列清单</text>
-      <text x="700" y="538" fill="#8a93a5" font-size="11">✕ 显示占位文字</text>
-    </g>
-    <path d="M954 523 L994 523" stroke="#8a93a5" stroke-width="1.5" marker-end="url(#stlArrowHead2)"/>
-    <g>
-      <rect x="998" y="492" width="226" height="62" rx="8" fill="#1a1414" stroke="#e2554f" stroke-width="1.5" stroke-dasharray="5 4"/>
-      <text x="1014" y="516" fill="#e0a3a3">④ 存进主城仓库</text>
-      <text x="1014" y="538" fill="#8a93a5" font-size="11">✕ 存档无「装备」这一项</text>
-    </g>
-  </g>
-
-  <!-- ================= 规格速查 + 灰字 ================= -->
-  <g>
-    <rect x="56" y="576" width="560" height="92" rx="8" fill="#0d1017" stroke="#2b3240"/>
-    <text x="72" y="600" font-size="12" font-weight="700" fill="#e8b33c">规格速查</text>
-    <g font-size="11.5" fill="#8d95a5">
-      <text x="72" y="622">小标题 16 <tspan fill="#e2e6ee">#e2e6ee</tspan>　清单 15 <tspan fill="#8a93a5">#8a93a5</tspan>　行高 64 · 行 rx 8</text>
-      <text x="72" y="642">色点 12：白 <tspan fill="#c9ced9">#c9ced9</tspan> / 蓝 <tspan fill="#6fa8e0">#6fa8e0</tspan> / 金 <tspan fill="#e8b33c">#e8b33c</tspan></text>
-      <text x="72" y="660">空态：斜体 <tspan fill="#8a93a5">#8a93a5</tspan> + 虚线框，不写内部行话</text>
-    </g>
-  </g>
-
-  <g>
-    <rect x="640" y="576" width="584" height="92" rx="8" fill="#0d1017" stroke="#2b3240"/>
-    <text x="656" y="600" font-size="12" font-weight="700" fill="#8a93a5">行为规则（灰字）</text>
-    <g font-size="11.5" fill="#8d95a5">
-      <text x="656" y="622">· 名字里含「·」时要转义，避免和分隔符混成两件</text>
-      <text x="656" y="642">· loot 元素是字典时取 name 字段，不许 str(dict) 出花括号</text>
-      <text x="656" y="660">· 清单不可点、不进 Tab 焦点、不触发掉落音</text>
-    </g>
-  </g>
-
-  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B004-战利品 / 1280×720 / v1.0</text>
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-SVG文档-结算 / B004-战利品 / v3.0 · 旧「有货版/空版灰字清单」图作废</text>
 </svg>

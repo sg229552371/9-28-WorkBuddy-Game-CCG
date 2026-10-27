@@ -1,157 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
-  <title>B005 负重条 界面规格图（1280×720）</title>
-
-  <defs>
-    <linearGradient id="btlBg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0d1017"/>
-      <stop offset="1" stop-color="#161b26"/>
-    </linearGradient>
-    <linearGradient id="btlPanel" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1d2330"/>
-      <stop offset="1" stop-color="#141922"/>
-    </linearGradient>
-    <linearGradient id="btlCurve" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="#e2554f" stop-opacity="0.85"/>
-      <stop offset="0.5" stop-color="#e6d9b3" stop-opacity="0.9"/>
-      <stop offset="1" stop-color="#8cd99a" stop-opacity="0.9"/>
-    </linearGradient>
-    <marker id="btlArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
-    </marker>
-    <marker id="btlArrowS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="#e8b33c"/>
-    </marker>
-  </defs>
-
-  <rect x="0" y="0" width="1280" height="720" fill="url(#btlBg)"/>
-  <g stroke="#1a2130" stroke-width="1" opacity="0.55">
-    <path d="M0 120 L1280 120 M0 300 L1280 300 M0 540 L1280 540"/>
-    <path d="M320 0 L320 720 M640 0 L640 720 M960 0 L960 720"/>
+  <title>B005 负重 · v5.0 定稿（腿部移速图标 + 百分比；超 100% 变红；不再画数字条）</title>
+  <rect width="1280" height="720" fill="#10151d"/>
+  <g opacity="0.15">
+    <rect x="0" y="0" width="1280" height="720" fill="#1a2230"/>
   </g>
 
-  <rect x="0" y="0" width="1280" height="64" fill="url(#btlPanel)"/>
-  <rect x="0" y="62" width="1280" height="2" fill="#2b3240"/>
-  <text x="32" y="40" font-size="22" font-weight="700" fill="#f2fafe">B005 · 左下负重（一行数字 → 建议加进度条）</text>
-  <text x="1248" y="40" font-size="13" fill="#8d95a5" text-anchor="end">(16, bottom-42)　22 号　#e6d9b3　阈值 100</text>
-
-  <!-- ================= 三种状态（1:1 实尺寸，含建议进度条） ================= -->
-  <text x="32" y="102" font-size="12" fill="#5d6575" letter-spacing="2">三种状态 · 现状只有文字，虚线框内为建议追加的进度条（代码当前没有）</text>
-
-  <!-- 状态 1 -->
+  <!-- 左下移速负重（v5.0 上移至 (22,582)，为其下圆形按钮让位） -->
   <g>
-    <text x="32" y="136" font-size="13" font-weight="700" fill="#8cd99a">状态 1 · 正常（负重 35 / 100）</text>
-    <text x="32" y="180" font-size="22" fill="#e6d9b3" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">负重 35 / 100</text>
-    <g>
-      <rect x="220" y="164" width="260" height="12" rx="6" fill="#1a1e27" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 3"/>
-      <rect x="222" y="166" width="91" height="8" rx="4" fill="#e6d9b3"/>
-    </g>
-    <text x="496" y="176" font-size="11" fill="#5d6575">速度 100%（阈值内无减速）</text>
+    <!-- 腿部移速图标（跑步小人简形） -->
+    <circle cx="30" cy="588" r="3" fill="#e2e6ee"/>
+    <path d="M30 591 l-4 9 M30 591 l5 6 6 2 M30 591 l-6 4 -6 1" fill="none" stroke="#e2e6ee" stroke-width="2" stroke-linecap="round"/>
+    <text x="52" y="600" font-size="18" fill="#e2e6ee" font-weight="700">移速 -50%</text>
   </g>
-  <line x1="32" y1="204" x2="1248" y2="204" stroke="#2b3240" stroke-width="1" stroke-dasharray="5 4"/>
 
-  <!-- 状态 2 -->
+  <!-- 对比：超 100% 超载态 -->
   <g>
-    <text x="32" y="238" font-size="13" font-weight="700" fill="#f5b942">状态 2 · 变橙警告（负重 85 / 100）</text>
-    <text x="32" y="282" font-size="22" fill="#e6d9b3" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">负重 85 / 100</text>
-    <g>
-      <rect x="220" y="266" width="260" height="12" rx="6" fill="#1a1e27" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 3"/>
-      <rect x="222" y="268" width="221" height="8" rx="4" fill="#f5b942"/>
-    </g>
-    <text x="496" y="278" font-size="11" fill="#8a93a5">速度 100%，但已接近阈值 → 条变黄提醒</text>
-  </g>
-  <line x1="32" y1="306" x2="1248" y2="306" stroke="#2b3240" stroke-width="1" stroke-dasharray="5 4"/>
-
-  <!-- 状态 3 -->
-  <g>
-    <text x="32" y="340" font-size="13" font-weight="700" fill="#ff7b73">状态 3 · 超限（负重 120 / 100）＋「移动变慢」</text>
-    <text x="32" y="384" font-size="22" fill="#e2554f" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">负重 120 / 100</text>
-    <text x="248" y="384" font-size="18" fill="#ff7b73" stroke="#000000" stroke-width="4" paint-order="stroke" stroke-linejoin="round">· 移动变慢</text>
-    <g>
-      <rect x="220" y="368" width="260" height="12" rx="6" fill="#1a1e27" stroke="#2b3240" stroke-width="1" stroke-dasharray="4 3"/>
-      <!-- 100 处封顶，超出部分用溢出段表示 -->
-      <rect x="222" y="370" width="256" height="8" rx="4" fill="#e2554f"/>
-      <rect x="482" y="368" width="18" height="12" rx="3" fill="#e2554f" fill-opacity="0.55"/>
-    </g>
-    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3">
-      <path d="M478 358 L478 392"/>
-    </g>
-    <text x="486" y="404" font-size="11" fill="#e8b33c">100 阈值，超出部分画溢出段</text>
-    <text x="520" y="380" font-size="11" fill="#ff7b73">速度 = 1 − 0.8 × (120−100)/100 = 0.84 → 84%</text>
+    <circle cx="30" cy="628" r="3" fill="#ff8a84"/>
+    <path d="M30 631 l-4 9 M30 631 l5 6 6 2 M30 631 l-6 4 -6 1" fill="none" stroke="#ff8a84" stroke-width="2" stroke-linecap="round"/>
+    <text x="52" y="640" font-size="18" fill="#ff8a84" font-weight="700">移速 -65%</text>
+    <text x="146" y="640" font-size="11" fill="#ff8a84" opacity="0.85">← 超 100%：图标与数字一起变红</text>
   </g>
 
-  <!-- ================= 现状 vs 建议 ================= -->
-  <line x1="32" y1="410" x2="1248" y2="410" stroke="#2b3240" stroke-width="1" stroke-dasharray="6 5"/>
-  <g>
-    <text x="32" y="440" font-size="13" font-weight="700" fill="#8d95a5">现状（代码真画的）</text>
-    <rect x="32" y="452" width="320" height="60" rx="8" fill="#141922" stroke="#2b3240" stroke-width="1.5"/>
-    <text x="52" y="490" font-size="22" fill="#e6d9b3" stroke="#000000" stroke-width="4" paint-order="stroke">负重 37 / 100</text>
-    <text x="366" y="478" font-size="11.5" fill="#8a93a5">只有一行字：left 16，bottom-42</text>
-    <text x="366" y="496" font-size="11.5" fill="#8a93a5">无条、无图标、无变色</text>
-
-    <text x="640" y="440" font-size="13" font-weight="700" fill="#e8b33c">建议（虚线态）</text>
-    <rect x="640" y="452" width="320" height="60" rx="8" fill="#141922" stroke="#e8b33c" stroke-width="1.5" stroke-dasharray="6 4"/>
-    <text x="656" y="480" font-size="20" fill="#e6d9b3">负重 37 / 100</text>
-    <rect x="656" y="490" width="288" height="8" rx="4" fill="#1a1e27" stroke="#2b3240" stroke-width="1"/>
-    <rect x="657" y="491" width="106" height="6" rx="3" fill="#e6d9b3"/>
-    <text x="366" y="528" font-size="11" fill="#5d6575">玩家只能读数字 + 心算</text>
-    <text x="974" y="478" font-size="11.5" fill="#8a93a5">数字 22 号 · 下方条 288×8</text>
-    <text x="974" y="496" font-size="11.5" fill="#8a93a5">米 → 黄（&gt;80）→ 红（&gt;100）</text>
-  </g>
-
-  <!-- ================= 负重效果曲线 ================= -->
-  <g>
-    <rect x="640" y="540" width="608" height="128" rx="10" fill="#12161f" fill-opacity="0.9" stroke="#2b3240" stroke-width="1.5"/>
-    <text x="656" y="562" font-size="12" font-weight="700" fill="#e8b33c">负重 → 移动速度（slope=0.8 / divisor=100 / minFactor=0.2）</text>
-    <!-- 坐标轴 -->
-    <g stroke="#3a4150" stroke-width="1">
-      <path d="M684 646 L1216 646"/>
-      <path d="M684 646 L684 578"/>
+  <!-- 标注 -->
+  <g opacity="0.55">
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3" fill="none">
+      <rect x="14" y="574" width="120" height="34"/>
     </g>
-    <text x="1216" y="662" font-size="10" fill="#5d6575" text-anchor="end">负重 →</text>
-    <text x="676" y="582" font-size="10" fill="#5d6575" text-anchor="end">100%</text>
-    <text x="676" y="650" font-size="10" fill="#5d6575" text-anchor="end">0%</text>
-    <!-- 网格 -->
-    <g stroke="#232a36" stroke-width="1" stroke-dasharray="2 4">
-      <path d="M684 596 L1216 596"/><path d="M684 612 L1216 612"/><path d="M684 629 L1216 629"/>
-    </g>
-    <!-- 100 阈值 -->
-    <path d="M820 574 L820 646" stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3"/>
-    <text x="824" y="586" font-size="10" fill="#e8b33c">100</text>
-    <!-- 曲线：100 之前 100%，之后线性下降，200 处触底 20% -->
-    <path d="M684 582 L820 582 L1120 634 L1216 634" fill="none" stroke="url(#btlCurve)" stroke-width="2.4" stroke-linejoin="round"/>
-    <!-- 关键点 -->
-    <circle cx="820" cy="582" r="3" fill="#e6d9b3"/>
-    <circle cx="1120" cy="634" r="3" fill="#e2554f"/>
-    <text x="1124" y="628" font-size="10" fill="#ff7b73">200 → 20%（下限）</text>
-    <text x="860" y="606" font-size="10" fill="#8a93a5">每超 100 减 0.8</text>
-    <g font-size="10" fill="#5d6575">
-      <text x="820" y="662" text-anchor="middle">100</text>
-      <text x="970" y="662" text-anchor="middle">150</text>
-      <text x="1120" y="662" text-anchor="middle">200</text>
+    <g fill="#e8b33c" font-size="10.5">
+      <text x="146" y="588">腿形图标 @ (22,582) + 文案 (52,598) 18 号</text>
+      <text x="146" y="604" fill="#8d95a5">v5.0 上移：为其下背包/强化圆形按钮让位（B008）</text>
+      <text x="146" y="620" fill="#8d95a5">数字条方案（180×10，v2.0）已作废</text>
     </g>
   </g>
 
-  <!-- 采样表 -->
-  <g>
-    <rect x="32" y="540" width="580" height="128" rx="10" fill="#0d1017" fill-opacity="0.96" stroke="#3a4150" stroke-width="1.5"/>
-    <text x="48" y="562" font-size="12" font-weight="700" fill="#e8b33c">速度采样（按 weight_factor() 实算）</text>
-    <g font-size="11.5" fill="#cdd3de">
-      <text x="48" y="584">负重 ≤100 → 100%</text>
-      <text x="48" y="602">110 → 92%</text>
-      <text x="48" y="620">125 → 80%</text>
-      <text x="196" y="584">150 → 60%</text>
-      <text x="196" y="602">200 → 20%（minFactor 下限）</text>
-      <text x="196" y="620">300 → 仍 20%，不会停死</text>
-      <text x="48" y="646" font-size="11" fill="#8a93a5">公式：w ≤ th → 1.0；否则 max(0.2, 1 − 0.8 × (w − 100) / 100)</text>
-      <text x="48" y="662" font-size="10.5" fill="#5d6575">注：原文「每多 100 点减 0.8 倍、最多慢到 1/5」——取 slope 0.8 + 下限 0.2 两个参数</text>
-    </g>
+  <!-- 版本注记 -->
+  <g opacity="0.9">
+    <rect x="920" y="64" width="328" height="82" rx="8" fill="#0d1017" stroke="#2b3240"/>
+    <text x="936" y="87" font-size="12" font-weight="700" fill="#e8b33c">B005 · v5.0 定稿（2026-10-27）</text>
+    <text x="936" y="106" font-size="11" fill="#8d95a5">v3.0：负重数字条改「腿部移速图标 + 百分比」——玩家关心的是变慢了多少</text>
+    <text x="936" y="124" font-size="11" fill="#5d6575">移速图标与升级选项 3（靴）图标同源</text>
+    <text x="936" y="140" font-size="11" fill="#5d6575">超 100% 变红（全项目负面红 #ff8a84）</text>
   </g>
-
-  <!-- 图角灰字 -->
-  <g>
-    <rect x="32" y="676" width="700" height="30" rx="6" fill="#0d1017" fill-opacity="0.96" stroke="#e8b33c" stroke-width="1.2" stroke-dasharray="6 4"/>
-    <text x="44" y="696" font-size="11.5" fill="#8a93a5">当前只是一行数字，没有进度条/条形图，玩家看不出快满了——建议改成进度条</text>
-  </g>
-
-  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">B005-负重条 / 1280×720 / v1.0</text>
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-SVG文档-战斗 / B005-负重条 / v5.0</text>
 </svg>

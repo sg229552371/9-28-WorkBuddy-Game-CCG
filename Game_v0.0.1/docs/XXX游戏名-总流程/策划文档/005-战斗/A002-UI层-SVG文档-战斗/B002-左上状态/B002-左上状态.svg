@@ -153,4 +153,13 @@
   </g>
 
   <text x="848" y="708" font-size="11" fill="#5d6575" text-anchor="end">B002-左上状态 / 1280×720 / v1.0</text>
+  <!-- ============ v5.0 废弃标记（盖在最上层） ============ -->
+  <rect x="0" y="0" width="1280" height="720" fill="#000000" opacity="0.74"/>
+  <g text-anchor="middle">
+    <rect x="270" y="270" width="740" height="180" rx="12" fill="#1a1414" stroke="#e2554f" stroke-width="2"/>
+    <text x="640" y="322" font-size="26" font-weight="800" fill="#ff8a84">⚠ 本图已废弃（v5.0 定稿 · 2026-10-27）</text>
+    <text x="640" y="362" font-size="17" fill="#e0a3a3">v5.0 反馈：HUD 血条整体删除——角色头顶自带血条，HUD 不再重复画</text>
+    <text x="640" y="390" font-size="17" fill="#e0a3a3">左上区域清空（Z2 取消）；本图与 B002-左上状态.md 一并保留留史</text>
+    <text x="640" y="422" font-size="14" fill="#8a93a5">现行 HUD 布局见 A002-UI层-战斗总SVG文档.svg v5.0</text>
+  </g>
 </svg>

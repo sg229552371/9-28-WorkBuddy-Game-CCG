@@ -4,15 +4,17 @@
   <rect width="1280" height="720" fill="#131c2c"/>
 
   <g opacity="0.35" font-family="Noto Sans SC, Microsoft YaHei, sans-serif">
-    <text x="640" y="248" font-size="32" font-weight="bold" fill="#e8b33c" text-anchor="middle">弹幕射击 × 背包肉鸽</text>
-    <rect x="480" y="320" width="320" height="56" rx="6" fill="#e8b33c"/>
-    <text x="640" y="356" font-size="24" font-weight="bold" fill="#131c2c" text-anchor="middle">开始游戏</text>
-    <rect x="480" y="392" width="320" height="44" rx="6" fill="#252a34"/>
-    <text x="640" y="420" font-size="20" fill="#e2e6ee" text-anchor="middle">操作说明</text>
-    <rect x="480" y="572" width="320" height="44" rx="6" fill="#252a34"/>
-    <text x="640" y="600" font-size="20" fill="#e2e6ee" text-anchor="middle">退出游戏</text>
+    <text x="64" y="122" font-size="30" font-weight="bold" fill="#e8b33c">弹幕射击 × 背包肉鸽</text>
+    <rect x="64" y="216" width="300" height="68" rx="16" fill="#e8b33c"/>
+    <text x="214" y="260" font-size="26" font-weight="bold" fill="#131c2c" text-anchor="middle">开始游戏</text>
+    <rect x="64" y="300" width="210" height="52" rx="12" fill="#252a34"/>
+    <text x="169" y="333" font-size="18" fill="#e2e6ee" text-anchor="middle">设置</text>
+    <rect x="64" y="368" width="210" height="52" rx="12" fill="#252a34"/>
+    <text x="169" y="401" font-size="18" fill="#e2e6ee" text-anchor="middle">图鉴</text>
+    <rect x="64" y="436" width="210" height="52" rx="12" fill="#252a34"/>
+    <text x="169" y="469" font-size="18" fill="#e2e6ee" text-anchor="middle">退出游戏</text>
   </g>
-  <text x="120" y="60" font-family="Noto Sans SC, Microsoft YaHei, sans-serif" font-size="13" fill="#5a6572">↑ 背后是主菜单，被 60% 黑幕遮住（仍隐约可见）</text>
+  <text x="120" y="60" font-family="Noto Sans SC, Microsoft YaHei, sans-serif" font-size="13" fill="#5a6572">↑ 背后是主菜单（v3.0 布局：Logo 左上 + 左列按钮，次按钮 210 宽），被 60% 黑幕遮住（仍隐约可见）</text>
 
   <rect x="0" y="0" width="1280" height="720" fill="rgba(0,0,0,0.6)"/>
 

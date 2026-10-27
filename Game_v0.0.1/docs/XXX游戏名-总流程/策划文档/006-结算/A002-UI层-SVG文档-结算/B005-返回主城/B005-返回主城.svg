@@ -1,154 +1,57 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="'Noto Sans SC','Microsoft YaHei','PingFang SC',sans-serif">
-  <title>B005-返回主城 · 两个按钮 + 去向流程</title>
-
+  <title>B005-返回主城 · v3.0 定稿（成功态双大按钮：返回主城蓝 + 下一关金带倒计时；失败态单大按钮）</title>
   <defs>
-    <linearGradient id="stlBg" x1="0" y1="0" x2="0.6" y2="1">
-      <stop offset="0" stop-color="#131c2c"/>
-      <stop offset="0.55" stop-color="#101725"/>
-      <stop offset="1" stop-color="#0b1119"/>
+    <linearGradient id="b5blue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a7ec4"/><stop offset="1" stop-color="#35619c"/>
     </linearGradient>
-    <linearGradient id="stlGoldBtn" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f0c257"/>
-      <stop offset="1" stop-color="#dcac33"/>
+    <linearGradient id="b5gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0c257"/><stop offset="1" stop-color="#dcac33"/>
     </linearGradient>
-    <filter id="stlShadow" x="-30%" y="-60%" width="160%" height="240%">
-      <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#000000" flood-opacity="0.25"/>
-    </filter>
-    <filter id="stlGlowGold" x="-40%" y="-60%" width="180%" height="240%">
-      <feDropShadow dx="0" dy="0" stdDeviation="9" flood-color="#e8b33c" flood-opacity="0.5"/>
-    </filter>
-    <marker id="stlArrowHead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0 0 L6 3 L0 6 Z" fill="#8a93a5"/>
-    </marker>
   </defs>
+  <rect width="1280" height="720" fill="#10151d"/>
+  <g opacity="0.12"><rect width="1280" height="720" fill="#1a2230"/></g>
 
-  <rect x="0" y="0" width="1280" height="720" fill="url(#stlBg)"/>
-
-  <!-- ================= 左上：两按钮并排 ================= -->
-  <text x="56" y="52" font-size="13" font-weight="700" fill="#e8b33c">按钮并排（1:1 实尺寸 · flow_root.gd 1047~1057）</text>
-
-  <g filter="url(#stlGlowGold)">
-    <rect x="56" y="76" width="320" height="52" rx="8" fill="url(#stlGoldBtn)"/>
-  </g>
-  <text x="216" y="110" font-size="20" font-weight="700" fill="#131c2c" text-anchor="middle">返回主城</text>
-  <text x="216" y="150" font-size="11" fill="#e8b33c" text-anchor="middle">主按钮 · 金底 / 深字 #131c2c</text>
-
-  <rect x="408" y="76" width="320" height="52" rx="8" fill="#252a34" stroke="#3a4150" stroke-width="1.5"/>
-  <text x="568" y="110" font-size="20" fill="#e2e6ee" text-anchor="middle">回主菜单</text>
-  <text x="568" y="150" font-size="11" fill="#8a93a5" text-anchor="middle">次按钮 · 灰底 #252a34 / 灰边</text>
-
-  <!-- 尺寸标注 -->
-  <g opacity="0.95">
-    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="5 4" fill="none">
-      <path d="M56 46 L56 40 M376 46 L376 40 M56 43 L376 43"/>
-      <path d="M384 76 L396 76 M384 128 L396 128 M390 76 L390 128"/>
-      <path d="M736 76 L748 76 M736 128 L748 128 M742 76 L742 128"/>
-      <path d="M376 64 L408 64 M376 64 L376 76 M408 64 L408 76"/>
-    </g>
-    <text x="216" y="38" font-size="11" fill="#e8b33c" text-anchor="middle">320 × 52　rx 8</text>
-    <text x="402" y="106" font-size="11" fill="#e8b33c" text-anchor="middle">52</text>
-    <text x="754" y="106" font-size="11" fill="#e8b33c" text-anchor="middle">52</text>
-    <text x="392" y="60" font-size="10.5" fill="#e8b33c" text-anchor="middle">间距 32</text>
-  </g>
+  <!-- ===== 左：成功态（双大按钮） ===== -->
+  <text x="320" y="70" font-size="14" font-weight="700" fill="#9fe0af">成功态 · 双大按钮</text>
   <g>
-    <rect x="56" y="212" width="672" height="74" rx="8" fill="#0d1017" stroke="#2b3240"/>
-    <text x="72" y="234" font-size="12" font-weight="700" fill="#e8b33c">规格速查</text>
-    <g font-size="11.5" fill="#8d95a5">
-      <text x="72" y="254">金按钮：底 <tspan fill="#e8b33c">#e8b33c</tspan>（渐变 #f0c257→#dcac33）　字 20 号 700 <tspan fill="#131c2c">#131c2c</tspan>　rx 8</text>
-      <text x="72" y="274">灰按钮：底 <tspan fill="#e2e6ee">#252a34</tspan>　边 <tspan fill="#8a93a5">#3a4150</tspan> 1.5px　字 20 号 <tspan fill="#e2e6ee">#e2e6ee</tspan></text>
+    <rect x="120" y="110" width="160" height="50" rx="10" fill="url(#b5blue)" stroke="#7fb0e8" stroke-width="1.2"/>
+    <text x="200" y="142" font-size="17" fill="#ffffff" text-anchor="middle" font-weight="700">返回主城</text>
+
+    <rect x="300" y="106" width="244" height="58" rx="12" fill="url(#b5gold)" stroke="#ffe073" stroke-width="1.5"/>
+    <text x="392" y="143" font-size="19" fill="#131c2c" text-anchor="middle" font-weight="800">下一关 ▶</text>
+    <text x="486" y="141" font-size="14" fill="#131c2c" opacity="0.75" font-weight="700">00:06</text>
+  </g>
+  <text x="120" y="196" font-size="12" fill="#8d95a5">倒计时归零自动进下一关；点「返回主城」可取消（T21 待拍板）</text>
+
+  <!-- ===== 右：失败态（单大按钮） ===== -->
+  <text x="960" y="70" font-size="14" font-weight="700" fill="#e0a3a3">失败态 · 单大按钮</text>
+  <g>
+    <rect x="838" y="106" width="244" height="58" rx="12" fill="url(#b5gold)" stroke="#ffe073" stroke-width="1.5"/>
+    <text x="960" y="143" font-size="19" fill="#131c2c" text-anchor="middle" font-weight="800">返回主城</text>
+  </g>
+  <text x="838" y="196" font-size="12" fill="#8d95a5">失败没有「下一关」，只有一条路回城</text>
+
+  <!-- 按钮规格标注 -->
+  <g opacity="0.6">
+    <g stroke="#e8b33c" stroke-width="1" stroke-dasharray="4 3" fill="none">
+      <rect x="300" y="106" width="244" height="58"/>
+      <rect x="120" y="110" width="160" height="50"/>
+    </g>
+    <g fill="#e8b33c" font-size="10.5">
+      <text x="560" y="122">下一关 244 × 58（主）· 返回主城 160 × 50（次）</text>
+      <text x="560" y="138" fill="#8d95a5">金渐变=主推荐 · 蓝渐变=次选（层级用尺寸+颜色双重拉开）</text>
+      <text x="560" y="154" fill="#8d95a5">倒计时数字在按钮内右侧 14 号</text>
     </g>
   </g>
 
-  <!-- ================= 右上：去向流程 ================= -->
-  <text x="664" y="52" font-size="13" font-weight="700" fill="#e8b33c">去向流程（SCREEN_GRAPH 第 24 行）</text>
-
-  <g>
-    <rect x="664" y="80" width="130" height="56" rx="8" fill="#252a34" stroke="#3a4150"/>
-    <text x="729" y="114" font-size="14" fill="#e2e6ee" text-anchor="middle">结算屏</text>
+  <!-- 注记 -->
+  <g opacity="0.9">
+    <rect x="200" y="260" width="880" height="140" rx="10" fill="#0d1017" stroke="#2b3240"/>
+    <text x="224" y="292" font-size="13" font-weight="700" fill="#e8b33c">v3.0 变更（2026-10-27，同步总图 v3.0）</text>
+    <text x="224" y="320" font-size="12.5" fill="#8d95a5">· 旧「320×52 两颗灰金按钮」→ 双大按钮：返回主城（蓝 160×50）+ 下一关（金 244×58 + 00:06 倒计时）</text>
+    <text x="224" y="342" font-size="12.5" fill="#8d95a5">· 失败态只有单个大「返回主城」（金 244×58）</text>
+    <text x="224" y="364" font-size="12.5" fill="#5d6575">· 「回主菜单」v3.0 视觉稿未放（T12 继续待拍板）；倒计时自动进关涉及流程锁（T21 待拍板）</text>
+    <text x="224" y="386" font-size="12.5" fill="#5d6575">· 快捷键：Enter=主推荐按钮 · Esc=返回主城</text>
   </g>
-
-  <!-- 上支：返回主城 -->
-  <path d="M794 100 L824 100 L824 88 L850 88" stroke="#e8b33c" stroke-width="1.8" fill="none" marker-end="url(#stlArrowHead)"/>
-  <g>
-    <rect x="854" y="66" width="150" height="44" rx="8" fill="#e8b33c"/>
-    <text x="929" y="94" font-size="13" font-weight="700" fill="#131c2c" text-anchor="middle">返回主城</text>
-  </g>
-  <path d="M1004 88 L1022 88" stroke="#8a93a5" stroke-width="1.5" marker-end="url(#stlArrowHead)"/>
-  <g>
-    <rect x="1026" y="66" width="198" height="44" rx="8" fill="#1d2027" stroke="#3a4150"/>
-    <text x="1125" y="94" font-size="13" fill="#9fe0af" text-anchor="middle">主城（回城闭环）</text>
-  </g>
-  <text x="854" y="128" font-size="11" fill="#8a93a5">go_city() → change_scene_to_file(city.tscn)</text>
-
-  <!-- 下支：回主菜单 -->
-  <path d="M794 118 L824 118 L824 166 L850 166" stroke="#8a93a5" stroke-width="1.5" fill="none" marker-end="url(#stlArrowHead)"/>
-  <g>
-    <rect x="854" y="144" width="150" height="44" rx="8" fill="#252a34" stroke="#3a4150"/>
-    <text x="929" y="172" font-size="13" fill="#e2e6ee" text-anchor="middle">回主菜单</text>
-  </g>
-  <path d="M1004 166 L1022 166" stroke="#8a93a5" stroke-width="1.5" marker-end="url(#stlArrowHead)"/>
-  <g>
-    <rect x="1026" y="144" width="198" height="44" rx="8" fill="#1d2027" stroke="#3a4150"/>
-    <text x="1125" y="172" font-size="13" fill="#8a93a5" text-anchor="middle">主菜单（跳过主城）</text>
-  </g>
-  <text x="854" y="206" font-size="11" fill="#8a93a5">只隐藏 FlowLayer，不销毁 → 能再从主城上冒出来</text>
-
-  <!-- ================= 中部：三条路径对比 ================= -->
-  <line x1="56" y1="306" x2="1224" y2="306" stroke="#2a2f3a"/>
-  <text x="56" y="336" font-size="13" font-weight="700" fill="#e8b33c">实际要点几次才真正玩上主城</text>
-
-  <!-- 路1 -->
-  <g>
-    <rect x="56" y="352" width="368" height="186" rx="10" fill="#1a1414" stroke="#e2554f" stroke-width="1.5"/>
-    <text x="76" y="378" font-size="13" font-weight="700" fill="#ff8a84">路径 A · 撤离成功（赢）→ 点 2 次 ✕</text>
-
-    <text x="76" y="404" font-size="11.5" fill="#8a93a5">小板（battle.gd 800×480）</text>
-    <text x="76" y="424" font-size="13" fill="#e0a3a3">战斗结算（阵亡） ← 赢也这么写</text>
-    <rect x="76" y="434" width="328" height="30" rx="5" fill="#252a34" stroke="#3a4150"/>
-    <text x="240" y="454" font-size="12" fill="#e2e6ee" text-anchor="middle">返回主城（56 高）</text>
-
-    <text x="76" y="486" font-size="11.5" fill="#8a93a5">大屏（FlowLayer 层级 100）</text>
-    <text x="76" y="506" font-size="13" fill="#e8b33c">战斗结算 / 撤离成功！</text>
-    <rect x="76" y="516" width="328" height="14" rx="4" fill="#e8b33c" opacity="0.35"/>
-    <text x="240" y="527" font-size="10" fill="#131c2c" text-anchor="middle">返回主城（320×52）</text>
-  </g>
-
-  <!-- 路2 -->
-  <g>
-    <rect x="456" y="352" width="368" height="186" rx="10" fill="#1d2027" stroke="#252a34" stroke-width="1.5"/>
-    <text x="476" y="378" font-size="13" font-weight="700" fill="#9fe0af">路径 B · 阵亡（输）→ 点 1 次 ✓</text>
-
-    <text x="476" y="404" font-size="11.5" fill="#5a6572">小板：不弹（battle.gd 148 只处理 extract）</text>
-    <rect x="476" y="416" width="328" height="30" rx="5" fill="#171b22" stroke="#2b3240" stroke-dasharray="4 4"/>
-    <text x="640" y="436" font-size="11" fill="#5a6572" text-anchor="middle">（没有这块板）</text>
-
-    <text x="476" y="474" font-size="11.5" fill="#8a93a5">大屏（直接盖在战斗画面上）</text>
-    <text x="476" y="494" font-size="13" fill="#e0a3a3">战斗结算 / 不幸阵亡…</text>
-    <rect x="476" y="504" width="328" height="26" rx="5" fill="#e8b33c" opacity="0.55"/>
-    <text x="640" y="522" font-size="11" fill="#131c2c" text-anchor="middle">返回主城 → 直接进主城</text>
-      </g>
-
-  <!-- 路3 -->
-  <g>
-    <rect x="856" y="352" width="368" height="186" rx="10" fill="#12201a" stroke="#2e4a36" stroke-width="1.5"/>
-    <text x="876" y="378" font-size="13" font-weight="700" fill="#9fe0af">目标态 · 合并后只 1 块板</text>
-    <g font-size="12" fill="#8a93a5">
-      <text x="876" y="406">战斗内小板只留「正在结算…」一行，</text>
-      <text x="876" y="426">不带按钮，1 秒后自动切全局屏。</text>
-      <text x="876" y="452" fill="#e2e6ee">全局屏承担全部数据 + 唯一按钮组。</text>
-    </g>
-    <rect x="876" y="470" width="328" height="30" rx="5" fill="#e8b33c"/>
-    <text x="1040" y="490" font-size="12" font-weight="700" fill="#131c2c" text-anchor="middle">返回主城（点 1 次进主城）</text>
-    <text x="876" y="526" font-size="11" fill="#5a6572">赢 / 输 体验一致，不再「赢了更麻烦」</text>
-  </g>
-
-  <!-- ================= 底部灰字：真实问题 ================= -->
-  <g>
-    <rect x="56" y="556" width="1168" height="72" rx="8" fill="#0d1017" stroke="#2b3240"/>
-    <text x="72" y="580" font-size="12.5" fill="#8a93a5">真实问题：战斗内面板赢了要按两次返回（战斗内一次 + 全局一次），输了只按一次——行为不一致。越赢越麻烦，这是玩家最容易骂出口的一条。</text>
-    <text x="72" y="602" font-size="12.5" fill="#8a93a5">另外：两个按钮都是中灰底，主按钮只多一圈金描边，分量太接近；按钮无悬停 / 按下 / 焦点三态（_make_button 只设 normal）；连点两次会连发两次 change_scene。</text>
-    <text x="72" y="620" font-size="11" fill="#5d6575">建议：主按钮实心金（如左图）、次按钮灰；补 hover / pressed / focus；点后立即禁用防连点。</text>
-  </g>
-
-  <text x="1248" y="700" font-size="11" fill="#5d6575" text-anchor="end">B005-返回主城 / 1280×720 / v1.0</text>
+  <text x="1248" y="708" font-size="11" fill="#5d6575" text-anchor="end">A002-UI层-SVG文档-结算 / B005-返回主城 / v3.0 · 旧「两个按钮+去向流程」图作废</text>
 </svg>

@@ -162,4 +162,13 @@
   <text x="640" y="80" font-size="12" fill="#e8b33c" text-anchor="middle">内容面板 1120 宽</text>
 
   <text x="1248" y="708" font-size="12" fill="#5d6575" text-anchor="end">B005-操作说明 / 1280×720 / v1.0</text>
+  <!-- ============ v3.0 废弃标记（盖在最上层） ============ -->
+  <rect x="0" y="0" width="1280" height="720" fill="#000000" opacity="0.74"/>
+  <g text-anchor="middle">
+    <rect x="270" y="270" width="740" height="180" rx="12" fill="#1a1414" stroke="#e2554f" stroke-width="2"/>
+    <text x="640" y="322" font-size="26" font-weight="800" fill="#ff8a84">⚠ 本图已废弃（001 v3.0 定稿 · 2026-10-27）</text>
+    <text x="640" y="362" font-size="17" fill="#e0a3a3">主菜单「操作说明」独立按钮取消，全部内容并入设置窗口「操作」页签</text>
+    <text x="640" y="390" font-size="17" fill="#e0a3a3">按键表数据仍以 B005-操作说明.md 为准；设置窗口见 B003-设置.svg v3.0</text>
+    <text x="640" y="422" font-size="14" fill="#8a93a5">现行主菜单布局见 A002-UI层-主菜单总SVG文档.svg v3.0</text>
+  </g>
 </svg>
